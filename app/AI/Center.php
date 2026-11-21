@@ -49,8 +49,8 @@ final class Center
                     if (trim((string) ($tr[$code]['alt'] ?? '')) === '') $gap['media'][] = $m;
                 }
             }
-            if (can('settings.edit')) {
-                foreach (app()->theme->settingsFields() as $f) {
+            if (can('settings.info')) {
+                foreach (\Core\SiteSettings::fields() as $f) {   // nur Felder, die die Person bearbeiten darf
                     if (!isset($f['name']) || !in_array($f['type'] ?? 'text', ['text', 'textarea', 'richtext', 'inline'], true) || !Fields::translatable($f)) continue;
                     $v = app()->settings->get($f['name']);
                     if (is_string($v) && trim($v) !== '' && (string) app()->settings->get($f['name'] . '@' . $code, '') === '') $gap['settings']++;

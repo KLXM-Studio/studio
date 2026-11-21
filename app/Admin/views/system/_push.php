@@ -22,7 +22,7 @@ $psCan = \Core\Features::canView();
           <span class="set-row__sub"><?= e(__('Ein- und ausschalten unter Administration → Funktionen & Erweiterungen (Kommunikation).')) ?></span></div>
           <div class="set-row__ctl"><?= $ps['feature'] ? '<span class="adm-badge">' . e(__('an')) . '</span>' : '<span class="adm-badge adm-badge--muted">' . e(__('aus')) . '</span>' ?>
             <?php if ($psCan): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/funktionen#f-push')) ?>"><?= e(__('Funktionen')) ?></a><?php endif; ?></div></div>
-        <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= e(__('VAPID-Schlüssel')) ?></span>
+        <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= e(__('VAPID-Schlüssel')) ?><?php if (\Core\Sites::multi()): ?> <span class="set-scope set-scope--net"><?= e(__('Gilt für: alle Websites')) ?></span><?php endif; ?></span>
           <span class="set-row__sub"><?= e(__('Ein Schlüsselpaar für alle Websites dieser Installation (config/config.local.php). Neu erzeugen nur auf der Kommandozeile – alle Abos werden dabei ungültig.')) ?></span></div>
           <div class="set-row__ctl"><?php if ($ps['keys']): ?><span class="adm-badge"><?= e(__('vorhanden')) ?></span> <code><?= e($ps['fingerprint']) ?></code><?php else: ?>
             <span class="adm-badge adm-badge--warn"><?= e(__('fehlen')) ?></span><?php if (can('system.manage')): ?> <button class="adm-btn adm-btn--small adm-btn--primary" type="submit" form="push-keys"><?= e(__('Schlüssel anlegen')) ?></button><?php endif; ?><?php endif; ?></div></div>

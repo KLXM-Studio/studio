@@ -80,7 +80,7 @@ final class DashboardController extends AdminController
     public function placeholderOk(Request $r): Response
     {
         $this->auth($r);
-        if (!can('pages.edit') && !can('settings.edit') && !can('system.manage')) throw new HttpException(403);
+        if (!can('pages.edit') && !can('settings.info') && !can('system.manage')) throw new HttpException(403);
         $text = trim($r->str('text'));
         if (mb_strlen($text) > 1000 || !preg_match('~^' . substr(Metrics::PLACEHOLDER_RX, 1, -2) . '$~u', $text)) throw new HttpException(422, __('Ungültige Angabe.'));
         $ok = Metrics::placeholdersOk();

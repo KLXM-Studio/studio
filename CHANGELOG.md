@@ -10,6 +10,28 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Einstellungen: verständlich gegliedert, Website-Angaben als eigenes Recht, Versionen
+- **Alle Einstellungsseiten nach einem Muster** (wie E-Mail-Versand und Netzwerk-Bereich): Wichtiges zuerst, Seltenes
+  eingeklappt (mit Kurzstand im Kopf), je Gruppe ein Satz zu Geltung und Rückfall, Kennzeichen „Gilt für: diese Website / alle
+  Websites“ (mit mehreren Websites), wirksamer Wert als Platzhalter bzw. „Wirksam: …“, Pflicht mit *, Warnhinweis an Schaltern
+  mit großer Wirkung, abhängige Felder erst sichtbar, wenn ihr Schalter an ist. Neue Schlüssel in `Fields::renderGroups`/`renderField`:
+  `lead`, `scope`, `alert`, `summary`, `danger`, `effective`, `keep`. Gespeicherte Werte und Schlüssel bleiben unverändert.
+- **Grundeinstellungen neu gegliedert:** Allgemein (Kit und Adresse, Wartung, Zusammenarbeit, Darstellung, Verwaltung eingeklappt),
+  Indexierung (Suchmaschinen, KI-Crawler, eigene robots.txt-Regeln eingeklappt), Mediathek (Löschen und Bildrechte, Hochladen, Prüfen),
+  Spamschutz (Feineinstellungen und Protokoll eingeklappt), Suche (Gewichtung/Synonyme eingeklappt, Suche mit KI), KI und Besucher-Chat
+  mit Abhängigkeiten. Die Hauptadresse steht nur noch auf der Seite „Domain“, wenn es sie gibt. Alle Texte von `SystemSchema`,
+  `Indexing` und der Suche sind übersetzbar (EN).
+- **Recht „Website-Angaben pflegen“** (`settings.info`, `Core\SiteSettings`): Kontakt, Öffnungszeiten, Hinweisbalken, Social Media,
+  Texte im Fußbereich, Header-Button und Standard-Vorschaubild; `settings.edit` bleibt „alles“ (auch Logo, Rechtstexte, SEO, Kit-Schalter)
+  und schließt `settings.info` ein. Einstufung je Feld mit `'level' => 'info'|'site'` im Kit, sonst nach Feldname. Mit nur
+  `settings.info` heißt die Seite „Website-Angaben“; die KI-Aktion `set_notice` braucht `settings.info`. Bestehende Rollen behalten
+  ihre Rechte; die Standardrolle Redaktion neuer Websites bekommt nur `settings.info`.
+- **Pflichtwerte:** Impressum und Datenschutzerklärung lassen sich einmal gesetzt nicht mehr leeren (Verwaltung, REST-API, MCP).
+- **Versionen der Einstellungen** (`Core\SettingsRevisions`, Tabelle `settings_revisions`, additiv): jede Änderung der
+  Website-Einstellungen und Grundeinstellungen – Verwaltung, REST-API, MCP, KI – mit Zeit, Person, vorher/nachher (Geheimnisse nie);
+  Liste „Letzte Änderungen“ mit „Zurücknehmen“, solange die Felder seitdem nicht erneut geändert wurden.
+- **Barrierefreiheit:** Umgebungsbanner als benannter Bereich, Trenner in Reiterleisten ohne `role=separator`, Netzwerk-Seiten ohne
+  doppelten Bereich und mit Kontrast – axe ohne Funde auf allen Einstellungsseiten.
 ### Kalender mit Serien (Tabellenart „calendar“), Orte, Vorkommens-Index
 - **Vorkommens-Index** (`Core\Data\Occurrences`, Tabelle `data_occurrences`): alle Termine aller Kalender-Tabellen – auch
   bestehender Inhaltstabellen mit „Als Kalender nutzen“ – 12 Monate zurück und 24 Monate voraus vorberechnet; Pflege beim

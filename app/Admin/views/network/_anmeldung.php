@@ -22,11 +22,11 @@ $multi = \Core\Network\Area::active();
     </form>
   </section>
   <?php $nhSet = \Core\NetworkHost::get(); // Netzwerk-Domain (Core\NetworkHost): zentrale Adresse für Verwaltung und Anmeldung ?>
-  <section class="adm-card" id="net-host" aria-labelledby="net-host-h">
+  <div class="adm-card" id="net-host">
     <h2 id="net-host-h"><?= e(__('Netzwerk-Domain')) ?><?= $nhSet !== null ? ': ' . e($nhSet) : '' ?></h2>
     <form id="netnetworkhost" method="post" action="<?= e(url('/admin/system/network-host')) ?>"><?= csrf_field() ?></form>
     <?php $nhForm = 'netnetworkhost'; $nhBack = 'network'; include dirname(__DIR__) . '/system/_network_host.php'; ?>
-  </section>
+  </div><?php // kein zweiter Bereich „Netzwerk-Domain“: der eingebundene Teil ist schon einer (axe landmark-unique) ?>
   <?php if ($multi): // Adresse der Verwaltung gilt für alle Websites (Core\AdminPath) ?>
   <section class="adm-card" id="verwaltungsadresse" aria-labelledby="ap-h">
     <?php if (\Core\AdminPath::canManage()): // Sprungmarke #adminpath (alte Adresse) landet hier ?><form id="adminpath" method="post" action="<?= e(url('/admin/system/admin-path')) ?>"><?= csrf_field() ?></form><?php endif; ?>

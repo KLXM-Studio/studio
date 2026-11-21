@@ -18,6 +18,7 @@ $dis = $mon['from_config'] ? ' disabled' : '';
 <form class="adm-card" method="post" action="<?= e(url('/admin/system/ueberwachung')) ?>" aria-labelledby="mon-h">
   <?= csrf_field() ?>
   <h2 id="mon-h"><?= icon('heartbeat') ?> <?= e(__('Status-Abfrage')) ?> <span class="adm-badge<?= $mon['enabled'] ? '' : ' adm-badge--muted' ?>"><?= e($mon['enabled'] ? __('an') : __('aus')) ?></span></h2>
+  <p class="set-group__lead"><?php if (\Core\Sites::multi()): ?><span class="set-scope"><?= e(__('Gilt für: diese Website')) ?></span> <?php endif; ?><?= e(__('Standard: aus. Ohne eingetragenen Schlüssel beantwortet die Website keine Abfrage, auch wenn der Schalter an ist.')) ?></p>
   <div class="f f--bool"><label class="f-check"><input type="checkbox" role="switch" name="enabled" value="1"<?= $mon['enabled'] ? ' checked' : '' ?><?= $dis ?>> <span><?= e(__('Signierte Status-Abfrage erlauben')) ?></span></label></div>
   <div class="f"><label for="mon-keys"><?= e(__('Öffentliche Schlüssel des Überwachungsdienstes')) ?></label>
     <textarea id="mon-keys" name="keys" rows="3" spellcheck="false" aria-describedby="mon-keys-h"<?= $dis ?>><?= e($lines) ?></textarea>
