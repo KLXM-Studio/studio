@@ -27,6 +27,12 @@
 .mo-net th,.mo-net td{padding:10px 8px}
 .mo-net tbody th .adm-badge{display:inline-block;margin:6px 4px 0 0}
 .mo-open{margin-top:8px}
+/* Systemmeldungen (app/Admin/views/system/meldungen.php, Core\Mail\Alerts) */
+.al-modes{margin:0 0 8px;padding:0;border:0}
+.al-sub{margin:18px 0 8px;font-size:14px}
+.al-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 16px}
+.al-table select,.al-table input{width:100%;min-width:130px}
+.al-test{white-space:nowrap;vertical-align:middle}
 /* Schmal: jede Zeile als Karte, Beschriftung aus data-label */
 @media (max-width:860px){
   .mo-table thead{display:none}

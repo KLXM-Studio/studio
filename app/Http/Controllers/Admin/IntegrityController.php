@@ -30,7 +30,7 @@ final class IntegrityController extends AdminController
         $files = Permissions::installationAdmin() && (!\Core\Network\Area::active() || $net);
         return $this->view('system/integritaet', ['title' => $net ? __('Integrität der Dateien') : __('Integrität'), 'files' => $files ? Integrity::lastFiles() : null, 'canFiles' => $files,
             'db' => $net ? null : Integrity::lastDb(), 'showDb' => !$net, 'net' => $net, 'mail' => (bool) app()->settings->get('sys.integrity_mail', true),
-            'systemTo' => $net ? \Core\Network\SystemMail::recipients() : []]);
+            'systemTo' => $net ? Integrity::recipients('files') : []]);
     }
 
     /** Jetzt prüfen (Datenbank immer, Dateien nur für die Installations-Verwaltung) */

@@ -55,14 +55,16 @@ if ($showDb) $section('db', __('Datenbank dieser Website'), __('Trigger und View
 ?>
 <section class="adm-card" aria-labelledby="ig-mail">
   <h2 id="ig-mail"><?= icon('envelope-simple') ?> <?= e(__('Hinweis per E-Mail')) ?></h2>
-  <?php if ($net): // Netzwerk: neue Fehler in den Dateien gehen an „Systemmeldungen an“ (Core\Network\SystemMail) ?>
-  <p><?= e(__('Neue Fehler meldet die Prüfung an: {to}', ['to' => $systemTo ? implode(', ', $systemTo) : __('– niemand (bitte unter E-Mail „Systemmeldungen an“ eintragen)')])) ?></p>
-  <p><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/network/email#systemmeldungen')) ?>"><?= e(__('Systemmeldungen an … ändern')) ?></a></p>
+  <?php if ($net): // Netzwerk: neue Fehler in den Dateien gehen an die Systemmeldungen (Core\Mail\Alerts, Kategorie „Integrität“) ?>
+  <p><?= e(__('Neue Fehler meldet die Prüfung an: {to}', ['to' => $systemTo ? implode(', ', $systemTo) : __('– niemand (bitte unter „Systemmeldungen“ festlegen)')])) ?></p>
+  <p><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/network/meldungen')) ?>"><?= e(__('Systemmeldungen einstellen')) ?></a></p>
   <?php else: ?>
   <form method="post" action="<?= e(url('/admin/system/integritaet/settings')) ?>" class="adm-row"><?= csrf_field() ?>
-    <label class="f-check"><input type="checkbox" name="mail" value="1"<?= $mail ? ' checked' : '' ?>><span><?= e(\Core\Network\Area::active() ? __('Neue Fehler an die Administration dieser Website melden (je Fund einmal)') : __('Neue Fehler an alle Konten mit allen Rechten melden (je Fund einmal)')) ?></span></label>
+    <label class="f-check"><input type="checkbox" name="mail" value="1"<?= $mail ? ' checked' : '' ?>><span><?= e(__('Neue Fehler per E-Mail melden (je Fund einmal)')) ?></span></label>
     <button class="adm-btn adm-btn--small" type="submit"><?= e(__('Speichern')) ?></button>
   </form>
+  <p class="adm-muted"><?= e(__('Empfänger (Systemmeldungen, Kategorie „Integrität“): {to}', ['to' => implode(', ', \Core\Integrity::recipients('db')) ?: __('– niemand')])) ?>
+    <?php if (!\Core\Network\Area::active() && \Core\Permissions::installationAdmin()): ?> · <a href="<?= e(url('/admin/system/meldungen')) ?>"><?= e(__('Systemmeldungen einstellen')) ?></a><?php endif; ?></p>
   <?php endif; ?>
 </section>
   </div>

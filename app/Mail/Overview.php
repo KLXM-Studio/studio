@@ -21,15 +21,16 @@ final class Overview
 {
     /**
      * Mailarten des Cores: Schlüssel → [Bezeichnung, Zweck (Core\Mail\Purposes), Netzwerk-Mail, Kontosicherheit, Empfänger-Art, Erklärung].
-     * Empfänger-Art: person | network | notify | delivery | visitor | admins | reviewers | support | mention | list
+     * Empfänger-Art: person | network | notify | delivery | visitor | alert:{kategorie} | alerts | reviewers | support | mention | list
      */
     public const TYPES = [
         'account' => ['Einladung, Passwort, E-Mail-Änderung', 'account', false, true, 'person', 'An Konten dieser Website. Geht immer an die Person selbst – auch bei aktiver Test-Umleitung.'],
         'network' => ['Mails an Netzwerk-Konten', 'account', true, true, 'network', 'Einladung, Passwort und E-Mail-Änderung der Netzwerk-Administration – auf jeder Website über das Netzwerk-Konto.'],
-        'requests' => ['Neue Anfrage, neuer Eintrag', 'notify', false, false, 'notify', 'Hinweis an die Redaktion ohne Inhalte, mit Link in die Verwaltung. Auch „Zustellung fehlgeschlagen“.'],
+        'requests' => ['Neue Anfrage, neuer Eintrag', 'notify', false, false, 'notify', 'Hinweis an die Redaktion ohne Inhalte, mit Link in die Verwaltung. „Zustellung fehlgeschlagen“ ist eine Systemmeldung.'],
         'delivery' => ['Zustellung von Anfragen per E-Mail', 'notify', false, false, 'delivery', 'Der Inhalt der Anfrage für Tabellen mit Zustellung per E-Mail – nur verschlüsselt (TLS), optional S/MIME.'],
         'receipt' => ['Eingangsbestätigung an Besucher', 'visitor', false, false, 'visitor', 'Bestätigung an die Adresse aus dem Formular, wenn die Tabelle sie eingeschaltet hat (höchstens 3 je Stunde und Adresse).'],
-        'integrity' => ['Sicherheitshinweis der Integritätsprüfung', 'notify', false, false, 'admins', 'Unerwartete Änderungen an Dateien oder Datenbank – einmal je Fund.'],
+        'integrity' => ['Sicherheitshinweis der Integritätsprüfung', 'notify', false, false, 'alert:integrity', 'Unerwartete Änderungen an Dateien oder Datenbank – einmal je Fund.'],
+        'alerts' => ['Systemmeldungen (technische Warnungen)', 'notify', false, false, 'alerts', 'Integrität, Sicherheit, Sicherung, Geplante Aufgaben, technische Fehler, Updates, Zustellprobleme – wer sie bekommt, regelt eine Einstellung (Core\\Mail\\Alerts).'],
         'review' => ['Änderungen warten auf Freigabe', 'notify', false, false, 'reviewers', 'Über API, MCP oder KI eingereichte Änderungen – höchstens alle 15 Minuten.'],
         'support' => ['Support-Meldungen', 'notify', false, false, 'support', 'Neue Meldungen und Antworten im Support.'],
         'chat' => ['Erwähnungen im Chat', 'notify', false, false, 'mention', 'Ungelesene Erwähnungen im Chat der Verwaltung.'],
@@ -171,9 +172,10 @@ final class Overview
             'notify' => self::notifyRecipients($mailTo, $none),
             'delivery' => self::deliveryRecipients(),
             'visitor' => [__('Adresse aus dem Formular'), __('Einstellung der Tabelle (Eingangsbestätigung)'), '/admin/data'],
-            'admins' => [implode(', ', self::admins()) ?: $none, app()->settings->get('sys.integrity_mail', true)
-                ? (\Core\Sites::multi() ? __('Administration dieser Website (Datenbank)') : __('alle Konten mit allen Rechten dieser Website'))
-                : __('ausgeschaltet (Grundeinstellungen → Integrität)'), '/admin/system/integritaet'],
+            'alert:integrity' => [implode(', ', \Core\Integrity::recipients('db')) ?: $none, app()->settings->get('sys.integrity_mail', true)
+                ? __('Systemmeldungen, Kategorie „Integrität“ ({via})', ['via' => Alerts::viaText(Alerts::resolve('integrity', ['scope' => 'site'])['via'], null, 'site')])
+                : __('ausgeschaltet (Grundeinstellungen → Integrität)'), self::alertsEdit()],
+            'alerts' => self::alertRecipients($none),
             'reviewers' => self::reviewRecipients($none),
             'support' => [__('Support-Team bzw. die meldende Person'), __('Support'), null],
             'mention' => [__('die erwähnte Person'), __('Chat'), null],
@@ -228,14 +230,23 @@ final class Overview
         }
     }
 
-    /** @return list<string> Empfänger der Integritäts-Hinweise dieser Website (wie Integrity::notify) */
-    private static function admins(): array
+    /** Systemmeldungen: „Kategorie → Empfänger“ je Kategorie (Core\Mail\Alerts) */
+    private static function alertRecipients(string $none): array
     {
-        if (\Core\Sites::multi()) return \Core\Integrity::recipients('db');
-        $roles = array_keys(array_filter(\Core\Permissions::roles(), fn($r) => in_array('*', (array) $r['permissions'], true)));
-        if (!$roles) return [];
-        $in = implode(',', array_fill(0, count($roles), '?'));
-        return array_values(array_map('strval', array_column(app()->db->fetchAll("SELECT email FROM users WHERE disabled = 0 AND role IN ($in) ORDER BY email", $roles), 'email')));
+        $parts = [];
+        foreach (Alerts::overview() as $a) $parts[] = $a['label'] . ' → ' . ($a['to'] ? implode(', ', $a['to']) : ($a['via'] === 'off' ? __('aus') : $none));
+        $mode = Alerts::mode(Alerts::config(), ['agency_accounts' => Alerts::agencyAccounts(), 'list' => \Core\Network\SystemMail::configured()]);
+        return [implode('; ', $parts), __('Systemmeldungen: {mode}', ['mode' => Alerts::viaText($mode)]), self::alertsEdit()];
+    }
+
+    /** Link zur Einstellung der Systemmeldungen – nur für wer sie ändern darf */
+    private static function alertsEdit(): ?string
+    {
+        try {
+            return \Core\Permissions::installationAdmin() ? Alerts::page() : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     // ------------------------------------------------------------------ Testversand
