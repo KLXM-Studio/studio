@@ -28,7 +28,7 @@
   <h3 id="einstellungen-sammelseite">Wo Seiten von Funktionen und Erweiterungen erscheinen</h3>
   <p>Damit die Seitenleiste übersichtlich bleibt, gilt eine feste Ordnung:</p>
   <ul>
-    <li><b>Inhalte</b> (z. B. Seiten, Daten, Anfragen, Buchungen) stehen im Hauptmenü.</li>
+    <li><b>Inhalte</b> (z. B. Seiten, Daten, Eingang, Buchungen) stehen im Hauptmenü.</li>
     <li>Unter <b>Einrichtung</b> gibt es aufklappbare Gruppen: <b>Website</b> (Website-Angaben, Design, Seitenvorlagen, Blöcke, Landingpages, Weiterleitungen) und <b>System</b> (Grundeinstellungen, Funktionen &amp; Erweiterungen, Einstellungen der Funktionen, Benutzer &amp; Rollen und die Werkzeuge der Erweiterungen, z. B. Video-Werkzeuge); dazu <b>Statistiken</b>, sobald es welche gibt. Die Gruppe der aktuellen Seite ist offen; ob die andere offen oder zu ist, merkt sich Ihr Browser. Sie sehen nur Punkte, die Ihre Rolle öffnen darf – bleibt in einer Gruppe nur ein Punkt, steht er direkt da.</li>
     <li><b>Reine Einstellungen</b> der Funktionen und Erweiterungen stehen gesammelt unter <b>Einrichtung › System › Einstellungen der Funktionen</b> – je Funktion oder Erweiterung eine Karte mit kurzer Beschreibung, nur die, die Ihre Rolle öffnen darf. Heute z. B. Glossar, Chat und API &amp; MCP. Gehört eine Einstellungsseite zu einer Datentabelle (Glossar), erscheint sie zusätzlich dort als Knopf und Unterpunkt.</li>
     <li><b>Statistiken und Berichte</b> stehen gesammelt unter <b>Einrichtung › Statistiken</b> – der Punkt erscheint erst, wenn eine Funktion oder Erweiterung welche mitbringt.</li>

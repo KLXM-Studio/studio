@@ -9,7 +9,7 @@
         <tr><th>Art</th><th>Wofür</th><th>Was der Assistent einstellt</th></tr>
         <tr><td><b>Inhalte auf der Website</b></td><td>Aktuelles, Team, Termine, Verzeichnis, Produkte</td><td>Liste auf einer Seite, auf Wunsch eine Detailseite je Eintrag (mit Vorlage), Website-Suche</td></tr>
         <tr><td><b>Formular, das nur eine E-Mail schickt</b></td><td>Kontakt, Rückrufbitte</td><td>Eingang mit Zustellung „Nur per E-Mail“: Jede Einsendung geht mit vollem Inhalt an die angegebenen Adressen, auf der Website wird nichts gespeichert (nur ein Zustellprotokoll ohne Inhalte). Keine Detailseite, kein Eingang.</td></tr>
-        <tr><td><b>Anfragen sammeln &amp; bearbeiten</b></td><td>Terminwunsch, Rezeptbestellung, Beratung</td><td>Verschlüsselter Eingang unter „Anfragen“ mit Status, Benachrichtigung ohne Inhalte und Löschfrist; auf Wunsch zusätzlich per E-Mail</td></tr>
+        <tr><td><b>Anfragen sammeln &amp; bearbeiten</b></td><td>Terminwunsch, Rezeptbestellung, Beratung</td><td>Verschlüsselter Eingang im Menüpunkt „Eingang“ mit Status, Benachrichtigung ohne Inhalte und Löschfrist; auf Wunsch zusätzlich per E-Mail</td></tr>
         <tr><td><b>Anmeldung oder Bewerbung</b></td><td>Kurse, Veranstaltungen, Bewerbungen</td><td>Öffentliches Formular, Einträge als Entwurf = Teilnehmerliste in der Verwaltung, Bestätigung an die Absender, optional <b>Obergrenze</b> (danach zeigt das Formular „ausgebucht“). Nicht in Suche und Sitemap. Bewerbungen sind ein verschlüsselter Eingang.</td></tr>
         <tr><td><b>Interne Liste</b></td><td>Kontakte, Inventar, Aufgaben</td><td>Nur in der Verwaltung: keine Detailseiten, kein Formular, nicht in Suche und Sitemap</td></tr>
         <tr><td><b>Aus externer Quelle</b></td><td>Feed, API, OpenImmo</td><td>führt zu <b>Externe Quellen</b> (eigener Ablauf)</td></tr>
@@ -37,7 +37,7 @@
   <p>Im Bereich <b>Verschlüsselung</b> wählen Sie für die ganze Tabelle eine von vier Möglichkeiten:</p>
   <ul>
     <li><b>Keine Verschlüsselung</b> – Einträge liegen normal in der Datenbank. Richtig für Inhalte der Website, Anmeldungen und Listen ohne vertrauliche Angaben.</li>
-    <li><b>Zentraler Schlüssel</b> – jede Einsendung wird beim Absenden verschlüsselt und ist nur unter <b>Anfragen</b> mit dem geheimen Schlüssel lesbar. Empfohlen für Gesundheitsdaten.</li>
+    <li><b>Zentraler Schlüssel</b> – jede Einsendung wird beim Absenden verschlüsselt und ist nur im <b>Eingang</b> mit dem geheimen Schlüssel lesbar. Empfohlen für Gesundheitsdaten.</li>
     <li><b>Zentraler Schlüssel + Kopie per E-Mail</b> – zusätzlich geht der volle Inhalt an die Empfänger (Formular &amp; Eingang → Zustellung).</li>
     <li><b>Nur per E-Mail, nichts speichern</b> – die Website behält nur ein Zustellprotokoll ohne Inhalte.</li>
   </ul>

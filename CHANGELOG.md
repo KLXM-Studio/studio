@@ -10,6 +10,14 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Verwaltung: Menüpunkt „Anfragen“ heißt „Eingang“
+- Der Bereich mit den verschlüsselten Eingangs-Tabellen heißt jetzt **„Eingang“** (EN „Inbox“), weil Websites selbst
+  Datentabellen namens „Anfragen“ anlegen. Geändert sind nur Beschriftungen (Menü, Seitentitel, Verweise, Funktion,
+  Rechte-Gruppe, Befehlspalette – findet auch „eingang“, „inbox“, „anfragen“, Übersicht, Handbuch, Tutorials). Route
+  `/admin/requests`, Rechte `requests.*`, Funktion `requests` und Dashboard-Schlüssel bleiben; einzelne Einsendungen
+  heißen weiter „Anfrage“, die Vorlage bzw. der Zweck „Anfragen“ beim Anlegen einer Tabelle ebenso. Handbuch-Anker
+  `#anfragen` bleibt, `#eingang` kommt hinzu.
+
 ### Kontakte: Adressbuch-Ansicht wie eine Kontakte-App
 - **Standardansicht für Adressbücher** (Tabellenart „contacts“, `Core\Data\AddressBook`): drei Spalten – links Adressbücher, Listen
   (Werte von „Listen“) mit Anzahl und die Filter „Alle“, „Nicht auf der Website“, „Ohne Foto“, „Ohne E-Mail“; in der Mitte die Namen
