@@ -164,7 +164,8 @@ export function initRRule(scope = document) {
       q('[data-rr-ex]').innerHTML = s.exdates.map(x => `<li><span>${esc(fmtDate(x))}</span> <button type="button" class="icon-btn" data-rr-exdel="${x}" aria-label="${esc(t('Ausnahme {date} entfernen', { date: fmtDate(x) }))}">✕</button></li>`).join('');
       q('[data-rr-summary]').textContent = summary(s, start());
     };
-    const write = () => { raw.value = build(s); raw.dispatchEvent(new Event('input', { bubbles: true })); render(); };
+    const preview = previewer(box, raw, startEl);
+    const write = () => { raw.value = build(s); raw.dispatchEvent(new Event('input', { bubbles: true })); render(); preview(); };
     // Sinnvolle Vorgaben aus dem Beginn (Wochentag, Tag im Monat)
     const defaults = () => {
       const d = start();
@@ -201,8 +202,111 @@ export function initRRule(scope = document) {
     });
     ui.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-rr-exnew]')) { e.preventDefault(); q('[data-rr-exadd]').click(); } });
     // Rohfeld von Hand geändert → Regel-Editor nachziehen
-    raw.addEventListener('input', e => { if (e.isTrusted) { s = parse(raw.value); render(); } });
-    startEl?.addEventListener('change', render);
+    raw.addEventListener('input', e => { if (e.isTrusted) { s = parse(raw.value); render(); preview(); } });
+    startEl?.addEventListener('change', () => { render(); preview(); });
     render();
+    preview();
   });
+}
+
+// ------------------------------------------------------------------ Vorschau „nächste Termine“ (Server: Series::preview)
+/**
+ * Unter dem Regel-Editor: die nächsten Termine aus dem Server (GET …/wiederholung) – mit Ausfällen (EXDATE, durchgestrichen),
+ * „fällt aus“ und geänderten Einzelterminen einer gespeicherten Serie. Nur in Formularen mit data-rrule-preview (Kalender-Tabellen).
+ */
+function previewer(box, raw, startEl) {
+  const form = box.closest('form');
+  const url = form?.dataset.rrulePreview;
+  if (!url) return () => {};
+  const out = document.createElement('div');
+  out.className = 'rr-preview';
+  out.setAttribute('aria-live', 'polite');
+  out.hidden = true;
+  box.querySelector('[data-rrule-ui]')?.append(out);
+  const allDayName = box.dataset.allday;
+  let timer = 0, seq = 0;
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const rule = raw.value.trim();
+      if (!rule) { out.hidden = true; out.innerHTML = ''; return; }
+      const allDay = allDayName ? [...form.querySelectorAll(`[name="${CSS.escape(allDayName)}"]`)].some(i => i.checked) : false;
+      const q = new URLSearchParams({ regel: rule, beginn: (startEl?.value || '').replace('T', ' '), ganztaegig: allDay ? '1' : '0', id: form.dataset.entryId || '' });
+      const my = ++seq;
+      try {
+        const res = await fetch(url + '?' + q, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        const j = await res.json();
+        if (my !== seq) return;
+        if (!j.items?.length) { out.hidden = true; out.innerHTML = ''; return; }
+        const state = { skipped: t('fällt aus (Ausnahme)'), cancelled: t('fällt aus'), changed: t('geändert') };
+        out.innerHTML = `<p class="rr-preview__title">${esc(t('Nächste Termine'))}</p><ol class="rr-preview__list" role="list">${j.items.map(i =>
+          `<li class="rr-preview__item${i.state ? ' is-' + esc(i.state) : ''}"><span class="rr-preview__date">${esc(i.date)}</span>${i.state ? `<span class="rr-preview__state">${esc(state[i.state] || '')}${i.note ? ' · ' + esc(i.note) : ''}</span>` : ''}</li>`).join('')}</ol>`;
+        out.hidden = false;
+      } catch { out.hidden = true; }
+    }, 250);
+  };
+}
+
+// ------------------------------------------------------------------ Serien-Dialog „nur dieser / dieser und folgende / alle“
+/**
+ * Formular eines Termins aus einer Serie (fieldset[data-series-scope], views/data/entry.php): ohne JavaScript wählt man den Bereich
+ * in der Seitenleiste; mit JavaScript fragt beim Speichern ein Dialog (wie Kalender-Apps) und überträgt die Wahl ins Formular.
+ */
+export function initSeries(scope = document) {
+  scope.querySelectorAll('[data-series-scope]:not([data-ready])').forEach(fs => {
+    fs.dataset.ready = '1';
+    const form = fs.closest('form');
+    if (!form) return;
+    fs.classList.add('is-js');
+    let confirmed = false;
+    form.addEventListener('submit', e => {
+      if (confirmed) { confirmed = false; return; }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const by = e.submitter;
+      const dlg = document.createElement('dialog');
+      dlg.className = 'adm-dialog dt-series-dlg';
+      dlg.setAttribute('aria-labelledby', 'dt-series-t');
+      const startName = form.querySelector('[data-rrule]')?.dataset.start;
+      const startVal = startName ? (form.querySelector(`[name="${CSS.escape(startName)}"]`)?.value || '').replace('T', ' ') : '';
+      const opts = [...fs.querySelectorAll('.dt-scope__opt')].map(l => {
+        const r = l.querySelector('input');
+        return `<label class="dt-scope__opt"><input type="radio" name="dlg-scope" value="${esc(r.value)}"${r.checked ? ' checked' : ''}> ${l.querySelector('span').outerHTML}</label>`;
+      }).join('');
+      dlg.innerHTML = `<h2 id="dt-series-t">${repeatIcon()} ${esc(t('Serientermin ändern'))}</h2>
+        <p>${esc(t('„{title}“ wiederholt sich ({rule}). Welche Termine sollen sich ändern?', { title: fs.dataset.title || '', rule: fs.dataset.rule || '' }))}</p>
+        <p class="dt-series-dlg__when">${esc(fs.dataset.when || '')}${startVal && fmtWhen(startVal) !== fs.dataset.when ? ' → ' + esc(fmtWhen(startVal)) : ''}</p>
+        <div class="dt-series-dlg__opts" role="radiogroup" aria-label="${esc(t('Welche Termine ändern?'))}">${opts}</div>
+        <div class="cms-confirm__foot"><span class="cms-confirm__right">
+          <button type="button" class="adm-btn" data-r="cancel">${esc(t('Abbrechen'))}</button>
+          <button type="button" class="adm-btn adm-btn--primary" data-r="ok">${esc(t('Ändern'))}</button></span></div>`;
+      document.body.append(dlg);
+      dlg.addEventListener('click', ev => {
+        const b = ev.target.closest('[data-r]');
+        if (!b) return;
+        if (b.dataset.r === 'ok') {
+          const v = dlg.querySelector('input[name=dlg-scope]:checked')?.value || 'this';
+          fs.querySelectorAll('input[name=scope]').forEach(r => { r.checked = r.value === v; });
+          confirmed = true;
+          dlg.close();
+          try { form.requestSubmit(by && by.form === form ? by : undefined); } catch { form.submit(); }
+        } else dlg.close();
+      });
+      dlg.addEventListener('close', () => dlg.remove());
+      dlg.showModal();
+      dlg.querySelector('input[name=dlg-scope]:checked')?.focus();
+    }, true);
+  });
+}
+
+function repeatIcon() {
+  return '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M24 128a72.08 72.08 0 0 1 72-72h108.69l-10.35-10.34a8 8 0 0 1 11.32-11.32l24 24a8 8 0 0 1 0 11.32l-24 24a8 8 0 0 1-11.32-11.32L204.69 72H96a56.06 56.06 0 0 0-56 56 8 8 0 0 1-16 0Zm200-8a8 8 0 0 0-8 8 56.06 56.06 0 0 1-56 56H51.31l10.35-10.34a8 8 0 0 0-11.32-11.32l-24 24a8 8 0 0 0 0 11.32l24 24a8 8 0 0 0 11.32-11.32L51.31 200H160a72.08 72.08 0 0 0 72-72 8 8 0 0 0-8-8Z"/></svg>';
+}
+
+/** „2027-01-19 20:00“ → lokales Datum mit Uhrzeit */
+function fmtWhen(v) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/.exec(v);
+  if (!m) return v;
+  const d = new Date(+m[1], m[2] - 1, +m[3]);
+  return d.toLocaleDateString(locale(), { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) + (m[4] ? `, ${m[4]}:${m[5]}` : '');
 }

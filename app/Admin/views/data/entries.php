@@ -105,6 +105,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     <?php if ($extTbl['actions']): // Erweiterungen (Extension::tableActions, Core\Slots): Knöpfe im Kopf ?>
     <span class="dt-head__pages"><?php foreach ($extTbl['actions'] as $xa): ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($xa['href'])) ?>" data-slot="<?= e($xa['extension']) ?>"><?= $xa['icon'] !== '' ? \Core\Icons::render($xa['icon']) . ' ' : '' ?><?= e($xa['label']) ?></a><?php endforeach; ?></span>
     <?php endif; ?>
+    <?php if (\Core\Data\Calendar::enabled($t)): // Kalender als ICS-Datei (Serien mit RRULE/EXDATE/RECURRENCE-ID) ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/kalender.ics')) ?>" download><?= icon('download-simple') ?> <?= e(__('ICS exportieren')) ?></a><?php endif; ?>
     <a class="adm-btn adm-btn--primary" href="<?= e(url($base . '/new') . ($multi ? '?lang=' . $lang : '')) ?>">+ <?= e($t['singular']) ?></a>
   </div>
 </header>

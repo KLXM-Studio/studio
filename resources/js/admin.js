@@ -1247,6 +1247,8 @@ function initBlockFields(scope = d) {
 /** Wiederholung (Feldtyp „rrule“, _rrule.js) – admin-rrule.mjs, nur wenn scope ein solches Feld enthält */
 function initRRule(scope) {
   if (scope.querySelector?.('[data-rrule]:not([data-rrule-ready])')) lazy('admin-rrule').then(m => m.initRRule?.(scope));
+  // Serien-Dialog „nur dieser / dieser und folgende / alle“ (Kalender mit Serien)
+  if (scope.querySelector?.('[data-series-scope]:not([data-ready])')) lazy('admin-rrule').then(m => m.initSeries?.(scope));
 }
 function init(scope = d) { initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();

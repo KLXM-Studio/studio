@@ -442,4 +442,5 @@ return [
     'Fax' => 'Fax',
     'Sonstige' => 'Other',
     'Website' => 'Website',
+    'fällt aus' => 'cancelled',
 ];

@@ -1282,6 +1282,31 @@ body.adm:has(.adm-env){padding-bottom:26px}
 .rr-adv summary{cursor:pointer;font-size:13px;color:var(--adm-t2)}
 .rr-adv__label{display:block;margin:8px 0 4px;font-size:13px}
 .rr-adv textarea{width:100%;font-family:var(--adm-mono);font-size:13px}
+/* Vorschau „Nächste Termine“ (Serien, _rrule.js) */
+.rr-preview{padding:12px 14px;border-radius:8px;background:var(--adm-fill)}
+.rr-preview[hidden]{display:none}
+.rr-preview__title{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--adm-t2)}
+.rr-preview__list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 20px}
+.rr-preview__item{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.rr-preview__item.is-skipped .rr-preview__date,.rr-preview__item.is-cancelled .rr-preview__date{text-decoration:line-through;color:var(--adm-t2)}
+.rr-preview__state{font-size:12px;font-weight:700;color:var(--adm-warn)}
+.rr-preview__item.is-changed .rr-preview__state{color:var(--adm-a)}
+/* Serien: Hinweis im Kopf, Bereich der Änderung (ohne JS in der Seitenleiste, mit JS als Dialog) */
+.dt-series-note{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 0;color:var(--adm-t2);font-size:14px}
+.dt-scope{display:grid;gap:8px;margin:0 0 12px;padding:0;border:0;min-width:0}
+.dt-scope.is-js{display:none}
+.dt-scope>legend{font-weight:700;margin-bottom:6px;padding:0}
+.dt-scope__opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--adm-line);border-radius:10px;cursor:pointer;background:var(--adm-surface)}
+.dt-scope__opt:has(input:checked){border-color:var(--adm-a);background:var(--adm-accent-bg);box-shadow:inset 0 0 0 1px var(--adm-a)}
+.dt-scope__opt input{margin-top:3px;flex:none;width:18px;height:18px}
+.dt-scope__opt span{display:grid;gap:2px}
+.dt-scope__opt small{color:var(--adm-t2);font-size:13px;line-height:1.4}
+.adm-dialog.dt-series-dlg{width:min(540px,calc(100vw - 32px))}
+.dt-series-dlg h2{display:flex;gap:8px;align-items:center;font-size:19px}
+.dt-series-dlg__when{margin:8px 0 12px;padding:10px 12px;border-radius:8px;background:var(--adm-fill);font-weight:600;font-variant-numeric:tabular-nums}
+.dt-series-dlg__opts{display:grid;gap:8px;margin-bottom:14px}
+.dt-cal__ev.is-cancelled a{text-decoration:line-through;text-decoration-color:var(--adm-t3)}
+.dt-cal__ev.is-cancelled .dt-cal__badge{display:inline-block;text-decoration:none}
 .dt-cal__map{display:grid;gap:0}
 .dt-cal__map[hidden]{display:none}
 /* Einträge als Kalender (app/Admin/views/data/_calendar.php) – nur Tokens, hell/dunkel */

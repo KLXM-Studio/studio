@@ -183,11 +183,18 @@ final class ContactsSelfTest
             $eq('Umwandlung: Telefon öffentlich, Mobil intern, Ort als „nur Ort“', [array_column(Combo::items($e1['telefon'] ?? []), 'public', 'label'), Combo::items($e1['adresse'] ?? [])[0]['public'] ?? null, $e1['oeffentlich'] ?? null],
                 [['work' => true, 'mobile' => false], '1', true]);
             $eq('Umwandlung: Altfelder ausgeblendet und nie öffentlich', [Exposure::isPrivate(Tables::field($ct2, 'mobil')), !empty(Tables::field($ct2, 'telefon_alt')['legacy'])], [true, true]);
+            // Reihenfolge wie die Vorlage (Grundfelder in ihren Abschnitten, Altfelder am Ende), Beschriftung/Pflicht des Grundschemas
+            $af = Tables::allFields($ct2);
+            $eq('Umwandlung: Abschnitte der Vorlage, Altfelder am Ende', [$af[1]['type'] ?? '', $af[1]['label'] ?? '', !empty(end($af)['legacy'])], ['section', 'Name & Organisation', true]);
+            $eq('Umwandlung: Grundfeld übernimmt Beschriftung und Pflicht', [Tables::field($ct2, 'name')['label'] ?? '', !empty(Tables::field($ct2, 'name')['required']), Tables::field($ct2, 'position')['label'] ?? ''],
+                ['Anzeigename', false, 'Funktion']);
             Convert::revert($ct2);
             $rv = $load($vh);
             $r1 = Entries::find($rv, (int) $v1) ?? [];
             $eq('Zurückdrehen: Art, Felder und Werte wie vorher', [Kinds::of($rv), $r1['funktion'] ?? null, $r1['telefon'] ?? null, $r1['mobil'] ?? null, $r1['rolle'] ?? null],
                 ['content', 'Vorsitz', self::WORK, self::MOBILE, ['vorstand']]);
+            $eq('Zurückdrehen: Reihenfolge, Beschriftung und Pflicht wie vorher', array_map(fn($f) => [$f['name'], $f['label'], !empty($f['required'])], array_slice(Tables::allFields($rv), 0, 6)),
+                [['name', 'Name', true], ['funktion', 'Funktion', false], ['telefon', 'Telefon', false], ['mobil', 'Mobil', false], ['ort', 'Ort', false], ['rolle', 'Rolle', false]]);
         } catch (\Throwable $x) {
             $fails[] = 'Adressbuch – Ausnahme: ' . $x->getMessage() . ' (' . basename($x->getFile()) . ':' . $x->getLine() . ')';
         } finally {

@@ -68,13 +68,15 @@ final class Calendar
     /** Ist die Tabelle ein Kalender (Funktion an, Beginn-Feld vorhanden)? */
     public static function enabled(array $table): bool
     {
-        $c = $table['settings']['calendar'] ?? [];
+        $c = self::config($table);
         return !empty($c['enabled']) && !Tables::isInbox($table) && ($c['start'] ?? '') !== '' && Tables::field($table, (string) $c['start'])
             && Features::on('calendar', false) && Features::on('data', false);
     }
 
     public static function config(array $table): array
     {
+        // Tabellenart „Kalender“ (Core\Data\Kinds): Zuordnung fest aufs Grundschema – ohne Einstellung
+        if (Kinds::isCalendar($table)) return Kinds::calendarSettings((array) ($table['settings']['calendar'] ?? []));
         return (array) ($table['settings']['calendar'] ?? []) + self::DEFAULTS;
     }
 
@@ -232,6 +234,37 @@ final class Calendar
         return ['start' => $start, 'end' => $end, 'all_day' => $allDay, 'has_end' => $hasEnd];
     }
 
+    /**
+     * Ort eines Termins (Art calendar) als [Text, Kartenpunkt]: freie Angabe „ort“, sonst Name und Anschrift des verknüpften Ortes
+     * (ort_ref, Tabelle der Art „Orte“); Kartenpunkt: eigener (standort), sonst der des Ortes. Andere Tabellen: Feld der Zuordnung.
+     * @return array{0: string, 1: string}
+     */
+    public static function place(array $table, array $e): array
+    {
+        $c = self::config($table);
+        if (!Kinds::isCalendar($table)) {
+            $v = $c['location'] !== '' ? trim((string) ($e[$c['location']] ?? '')) : '';
+            return (Tables::field($table, $c['location'])['type'] ?? '') === 'geo' ? ['', $v] : [ICal::plain($v), ''];
+        }
+        $text = trim((string) ($e['ort'] ?? ''));
+        $geo = trim((string) ($e['standort'] ?? ''));
+        $ref = (int) ($e['ort_ref'] ?? 0);
+        $target = $ref > 0 ? Tables::findContent((string) (Tables::field($table, 'ort_ref')['target'] ?? '')) : null;
+        if ($target && ($p = Entries::find($target, $ref)) && ($p['status'] ?? '') === 'published') {
+            $p = Exposure::publicEntry($target, $p);
+            if ($text === '') {
+                $adr = '';
+                if (($af = Tables::field($target, 'adresse')) && \Core\Combo::is($af['type'])) {
+                    $i = \Core\Combo::items($p['adresse'] ?? null)[0] ?? [];
+                    $adr = \Core\Combo::itemText('addresses', $i);
+                }
+                $text = implode(', ', array_filter([Entries::title($target, $p), $adr]));
+            }
+            if ($geo === '') $geo = trim((string) ($p['standort'] ?? ''));
+        }
+        return [$text, $geo];
+    }
+
     /** Gespeicherte Wiederholung eines Eintrags */
     public static function recurrence(array $table, array $e): array
     {
@@ -250,12 +283,35 @@ final class Calendar
     public static function occurrences(array $table, DateTimeInterface $from, DateTimeInterface $to, array $opts = []): array
     {
         if (!self::enabled($table)) return [];
-        $c = self::config($table);
         $tz = self::tz();
         $from = DateTimeImmutable::createFromInterface($from)->setTimezone($tz);
         $to = DateTimeImmutable::createFromInterface($to)->setTimezone($tz);
         if ($to <= $from) return [];
         $limit = max(1, min(self::MAX_OCCURRENCES, (int) ($opts['limit'] ?? self::MAX_OCCURRENCES)));
+        // Vorkommens-Index (Core\Data\Occurrences), wenn aufgebaut und aktuell – sonst Berechnung wie bisher
+        $idx = Occurrences::query($table, $from, $to, $opts, $limit);
+        return $idx ?? self::compute($table, $from, $to, ['limit' => $limit] + $opts);
+    }
+
+    /**
+     * Vorkommen berechnen (ohne Index): Einträge mit Beginn vor dem Ende des Zeitraums laden und Wiederholungen expandieren.
+     * Kalender mit Serien (Art calendar): abweichende Einzeltermine (Core\Data\Series) ersetzen das Vorkommen ihrer Serie
+     * (_recurrence_id) – auch, wenn sie selbst nicht passen (dann fällt das Vorkommen weg, z. B. andere Kategorie oder Entwurf);
+     * „Fällt aus“ (abgesagt) bleibt sichtbar mit cancelled = true. Zusätzliche Schlüssel je Vorkommen: cancelled, series (ID des
+     * Serienkopfs oder null), rid (ursprünglicher Beginn „JJJJ-MM-TT HH:MM“ bei Serien), override (Einzeltermin).
+     * 'all' => true (Index-Aufbau): ohne Obergrenze, MAX_PER_ENTRY des Index.
+     */
+    public static function compute(array $table, DateTimeInterface $from, DateTimeInterface $to, array $opts = []): array
+    {
+        if (!self::enabled($table)) return [];
+        $c = self::config($table);
+        $tz = self::tz();
+        $from = DateTimeImmutable::createFromInterface($from)->setTimezone($tz);
+        $to = DateTimeImmutable::createFromInterface($to)->setTimezone($tz);
+        if ($to <= $from) return [];
+        $all = !empty($opts['all']);
+        $limit = $all ? PHP_INT_MAX : max(1, min(self::MAX_OCCURRENCES, (int) ($opts['limit'] ?? self::MAX_OCCURRENCES)));
+        $perEntry = $all ? Occurrences::MAX_PER_ENTRY : self::MAX_PER_ENTRY;
 
         $q = ['status' => $opts['status'] ?? 'published', 'where' => array_merge((array) ($opts['where'] ?? []), [[$c['start'], '<', $to->format('Y-m-d H:i')]]),
             'sort' => $c['start'], 'dir' => 'asc'];
@@ -263,13 +319,32 @@ final class Calendar
         if (!empty($opts['ids'])) $q['ids'] = $opts['ids'];
         if (!empty($opts['q'])) $q['q'] = (string) $opts['q'];
         if (!empty($opts['source'])) $q['source'] = (string) $opts['source'];   // geteilte Tabellen (Core\Data\Shared)
+        if (!empty($opts['internal'])) $q['internal'] = true;
+        $series = Kinds::isCalendar($table);
+        $replaced = [];                                           // Serienkopf → [ursprünglicher Beginn => true]
+        if ($series) {
+            $q['overrides'] = true;                               // Köpfe, Einzeltermine und einfache Termine in einer Abfrage
+            foreach (Tables::db($table)->fetchAll('SELECT ' . Series::SERIES . ' AS s, ' . Series::RID . " AS r FROM {$table['table']} WHERE " . Series::SERIES . ' > 0') as $r) {
+                $replaced[(int) $r['s']][(string) $r['r']] = true;
+            }
+        }
         $out = [];
         foreach (Entries::query($table, $q) as $e) {
             $span = self::span($table, $e);
             if (!$span) continue;
+            $cancelled = $series && !empty($e[Kinds::CANCELLED_FIELD]);
+            $head = $series ? (int) ($e[Series::SERIES] ?? 0) : 0;
+            if ($head > 0) {                                      // abweichender Einzeltermin: eigener Zeitraum, Schlüssel der Serie
+                $rid = (string) ($e[Series::RID] ?? '');
+                if ($span['end'] > $from && $span['start'] < $to) {
+                    $out[] = self::occ($e, $span, $span['start'], true, ['series' => $head, 'rid' => $rid, 'override' => true, 'cancelled' => $cancelled,
+                        'key' => $head . '-' . self::ridKey($rid)]);
+                }
+                continue;
+            }
             $rec = self::recurrence($table, $e);
             if ($rec['rrule'] === '') {
-                if ($span['end'] > $from && $span['start'] < $to) $out[] = self::occ($e, $span, $span['start'], false);
+                if ($span['end'] > $from && $span['start'] < $to) $out[] = self::occ($e, $span, $span['start'], false, ['cancelled' => $cancelled]);
                 continue;
             }
             $dur = $span['start']->diff($span['end']);
@@ -277,27 +352,37 @@ final class Calendar
                 $rule = new RRule($rec['rrule'], \DateTime::createFromImmutable($span['start']));
                 $begin = \DateTime::createFromImmutable($from->sub($dur)->modify('+1 second'));
                 $until = \DateTime::createFromImmutable($to->modify('-1 second'));
-                $starts = $rule->getOccurrencesBetween($begin, $until, self::MAX_PER_ENTRY);
+                $starts = $rule->getOccurrencesBetween($begin, $until, $perEntry);
             } catch (\Throwable) {
                 $starts = [$span['start']];                       // ungültige Regel → Einzeltermin
             }
             $skip = array_flip($rec['exdates']);
+            $own = $replaced[(int) $e['id']] ?? [];
             foreach ($starts as $st) {
                 $st = DateTimeImmutable::createFromInterface($st)->setTimezone($tz);
                 if (isset($skip[$st->format('Y-m-d')])) continue;
+                if ($own && isset($own[$st->format('Y-m-d H:i')])) continue;   // ersetzt durch einen Einzeltermin
                 $end = $st->add($dur);
-                if ($end > $from && $st < $to) $out[] = self::occ($e, $span, $st, true);
+                if ($end > $from && $st < $to) {
+                    $out[] = self::occ($e, $span, $st, true, $series ? ['series' => (int) $e['id'], 'rid' => $st->format('Y-m-d H:i'), 'cancelled' => $cancelled] : []);
+                }
             }
         }
         usort($out, fn($a, $b) => [$a['start'], !$a['all_day'], $a['entry']['id']] <=> [$b['start'], !$b['all_day'], $b['entry']['id']]);
-        return array_slice($out, 0, $limit);
+        return $all ? $out : array_slice($out, 0, $limit);
     }
 
-    private static function occ(array $e, array $span, DateTimeImmutable $start, bool $recurring): array
+    /** Ursprünglicher Beginn „JJJJ-MM-TT HH:MM“ → Teil des Schlüssels „JJJJMMTTTHHMM“ */
+    public static function ridKey(string $rid): string
+    {
+        return preg_match('~^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?$~', $rid, $m) ? $m[1] . $m[2] . $m[3] . 'T' . ($m[4] ?? '00') . ($m[5] ?? '00') : $rid;
+    }
+
+    private static function occ(array $e, array $span, DateTimeImmutable $start, bool $recurring, array $extra = []): array
     {
         $end = $start->add($span['start']->diff($span['end']));
-        return ['entry' => $e, 'start' => $start, 'end' => $end, 'all_day' => $span['all_day'], 'has_end' => $span['has_end'],
-            'recurring' => $recurring, 'key' => $e['id'] . '-' . $start->format('Ymd\THi')];
+        return array_merge(['entry' => $e, 'start' => $start, 'end' => $end, 'all_day' => $span['all_day'], 'has_end' => $span['has_end'],
+            'recurring' => $recurring, 'key' => $e['id'] . '-' . $start->format('Ymd\THi'), 'cancelled' => false, 'series' => null, 'rid' => '', 'override' => false], $extra);
     }
 
     /** Nächste Termine ab jetzt (laufende eingeschlossen); $days = 0 → bis zu einem Jahr */

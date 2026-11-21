@@ -281,6 +281,10 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/{id}/delete', [Admin\DataController::class, 'entryDelete']);
     $r->post('/admin/data/{handle}/{id}/duplicate', [Admin\DataController::class, 'entryDuplicate']);
     $r->post('/admin/data/{handle}/{id}/translate', [Admin\DataController::class, 'translate']);
+    // Kalender mit Serien (Core\Data\Series): Vorschau der Wiederholung, einzelner Termin (fällt aus / entfernen), ICS-Export
+    $r->get('/admin/data/{handle}/wiederholung', [Admin\DataController::class, 'rrulePreview']);
+    $r->get('/admin/data/{handle}/kalender.ics', [Admin\DataController::class, 'exportIcs']);
+    $r->post('/admin/data/{handle}/{id}/serie', [Admin\DataController::class, 'series']);
     $r->get('/admin/data/{handle}/{id}', [Admin\DataController::class, 'entryEdit']);
     $r->post('/admin/data/{handle}/{id}', [Admin\DataController::class, 'entrySave']);
     $r->get('/admin/data/{handle}', [Admin\DataController::class, 'entries']);
