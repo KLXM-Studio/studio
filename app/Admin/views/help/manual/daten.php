@@ -159,6 +159,16 @@
     <li><b>Für die Website:</b> Felder, die nur auf der Website erscheinen (z. B. „Vita“), stehen im Eintrag im Abschnitt „Für die Website“.</li>
     <li><b>Kontakt-Feld:</b> In anderen Tabellen verknüpfen Sie Einträge mit Kontakten über ein Feld „Verknüpfung“ mit einer Tabelle aus der Gruppe „Adressbücher“.</li>
   </ul>
+  <h4 id="adressbuch-ansicht">Adressbuch-Ansicht: Kontakte wie in einer Kontakte-App</h4>
+  <p>Adressbücher öffnen sich als <b>Adressbuch</b> – über den Menüpunkt <b>Kontakte</b> oder unter Daten. Oben rechts schalten Sie zwischen <b>Adressbuch</b> und <b>Tabelle</b> (der bisherigen Liste mit Spalten) um; Ihre Wahl merkt sich die Verwaltung für Ihr Konto.</p>
+  <ul>
+    <li><b>Links</b> stehen Ihre Adressbücher, die <b>Listen</b> (z. B. „Vorstand“, „Presse“) mit Anzahl und die Filter <b>Nicht auf der Website</b>, <b>Ohne Foto</b> und <b>Ohne E-Mail</b>. Mit „Neue Liste“ legen Sie eine Liste an (wer Felder ändern darf).</li>
+    <li><b>In der Mitte</b> die Namen von A bis Z nach Nachname, mit Foto oder Initialen und Funktion; eine Weltkugel zeigt Kontakte, die auf der Website stehen. Die Suche findet Name, Funktion, Telefonnummer (auch ohne Leerzeichen) und E-Mail-Adresse schon während der Eingabe; die Buchstabenleiste rechts springt zu einem Anfangsbuchstaben. Taste <kbd>/</kbd> springt in die Suche, <kbd>↑</kbd>/<kbd>↓</kbd> wandern durch die Namen, <kbd>Eingabe</kbd> öffnet die Karte.</li>
+    <li><b>Rechts</b> die Karte des gewählten Kontakts: Foto, Name, Funktion und Organisation, Knöpfe zum Anrufen, Schreiben und für die Karte, darunter alle Angaben mit Beschriftung. Jede Angabe trägt das Merkmal <b>öffentlich</b> (Weltkugel) oder <b>intern</b> (Schloss) – so sehen Sie auf einen Blick, was auf der Website steht. Unten die Listen des Kontakts (mit × entfernen, über das Auswahlfeld hinzufügen), „Bearbeiten“ und „Versionen“.</li>
+    <li><b>Listen zuordnen:</b> Ziehen Sie einen Namen auf eine Liste links – oder ohne Maus: <b>Auswählen</b> antippen, Kontakte ankreuzen, Liste wählen und <b>Zu Liste hinzufügen</b> bzw. <b>Aus Liste entfernen</b>. Jede Änderung landet in den Versionen des Kontakts.</li>
+    <li><b>Exportieren:</b> Die aktuelle Liste (oder die ausgewählten Kontakte, oder ein einzelner Kontakt über „vCard“) als vCard-Datei – mit <b>allen Angaben</b> oder <b>nur den öffentlichen</b> (dann nur Kontakte, die auf der Website stehen). „In Apps abonnieren …“ führt zur Seite <a href="#abonnieren">Abonnieren</a>.</li>
+    <li><b>Auf dem Telefon</b> zeigt das Adressbuch eine Spalte nach der anderen: Listen → Namen → Karte, jeweils mit Zurück-Link oben links.</li>
+  </ul>
   <p><b>Bestehende Personen-Tabelle umwandeln:</b> Eine vorhandene Tabelle (z. B. „Team“) lässt sich an Ort und Stelle in ein Adressbuch umwandeln – Einträge, Verknüpfungen und Detailseiten bleiben. Das erledigt die Technik mit dem Befehl <code>data:convert</code>: zuerst ein Probelauf mit Bericht (welches Feld wohin, wie Namen aufgeteilt werden, was danach nicht mehr öffentlich ist), erst dann die Umwandlung; sie lässt sich zurückdrehen.</p>
 
   <h3 id="gruppe">Mehrere gleichartige Angaben (Wiederholbare Gruppe)</h3>
