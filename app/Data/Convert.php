@@ -44,7 +44,7 @@ final class Convert
         'hinweise' => [['textarea'], '~^(hinweise|anfahrt|beschreibung)$~'],
     ];
     /** Feldtypen, deren Werte sich verlustarm in den Typ eines Grundfelds übertragen lassen (Altfeld bleibt ausgeblendet) */
-    private const CASTS = ['select>multiselect', 'date>datetime', 'richtext>textarea', 'text>textarea'];
+    private const CASTS = ['select>multiselect', 'date>datetime', 'text>textarea'];
     /** Titel-Feld der Art */
     private const TITLE = [Kinds::CONTACTS => 'name', Kinds::CALENDAR => 'titel', Kinds::PLACES => 'name'];
     private const SAME = [
@@ -116,7 +116,7 @@ final class Convert
                 if (isset($taken[$to])) continue;
                 $plan[$src] = self::action($fields[$src], $to, $schema[$to]['type'], null, null);
                 if (in_array($plan[$src]['action'], ['keep', 'rename'], true)) $taken[$to] = $src;
-                if (in_array($plan[$src]['action'], ['cast', 'combine'], true)) $taken[$to] = $src;
+                if (in_array($plan[$src]['action'], ['cast', 'combine', 'copy'], true)) $taken[$to] = $src;
             }
         }
         // 4. gleichartige Felder nach Namensmuster (Bildfeld der Tabelle zuerst fürs Foto)
@@ -151,7 +151,7 @@ final class Convert
         // Grundfelder ohne Quelle: neu (leer); Namensaufteilung, wenn Vor-/Nachname fehlen
         $added = [];
         foreach ($schema as $n => $def) {
-            if (isset($taken[$n]) || array_filter($plan, fn($p) => $p['to'] === $n && in_array($p['action'], ['combine', 'cast'], true))) continue;
+            if (isset($taken[$n]) || array_filter($plan, fn($p) => $p['to'] === $n && in_array($p['action'], ['combine', 'cast', 'copy'], true))) continue;
             $added[] = $n;
         }
         $split = $kind === Kinds::CONTACTS && in_array('vorname', $added, true) && in_array('nachname', $added, true) ? ($taken['name'] ?? (isset($fields['name']) ? 'name' : $tf)) : null;
@@ -159,6 +159,7 @@ final class Convert
         foreach ($plan as $n => &$p) {
             $p += ['label' => null, 'public' => null, 'note' => ''];
             if (in_array($p['action'], ['combine', 'cast'], true)) $p['legacy_name'] = isset($schema[$n]) ? self::free($n . '_alt', $fields) : $n;
+            if ($p['action'] === 'copy') $p['own_to'] = isset($schema[$n]) ? self::free($n . ($kind === Kinds::CALENDAR ? '_web' : '_eigen'), $fields) : $n;
             // Grundfeld übernimmt Beschriftung und Pflicht des Grundschemas (Bericht nennt Abweichungen; --revert stellt alt her)
             if (in_array($p['action'], ['keep', 'rename'], true) && isset($schema[$p['to']])) {
                 $def = $schema[$p['to']];
@@ -181,6 +182,8 @@ final class Convert
     {
         if ($f['type'] === $toType) return ['action' => $f['name'] === $to ? 'keep' : 'rename', 'to' => $to];
         if (in_array($f['type'] . '>' . $toType, self::CASTS, true) && !Combo::isMulti($toType)) return ['action' => 'cast', 'to' => $to, 'from_type' => $f['type']];
+        // Rich-Text → Text des Grundfelds: Text wird kopiert, das Rich-Text-Feld bleibt sichtbar (Website unverändert, „Nur Website“)
+        if (in_array($f['type'], ['richtext', 'mediatext'], true) && $toType === 'textarea') return ['action' => 'copy', 'to' => $to, 'from_type' => $f['type']];
         if (!Combo::isMulti($toType)) return ['action' => 'own', 'to' => $f['name'], 'note' => __('Typ passt nicht zu „{to}“ – bleibt eigenes Feld', ['to' => $to])];
         $s = mb_strtolower($f['name'] . ' ' . $f['label']);
         $label ??= match ($toType) {
@@ -222,6 +225,7 @@ final class Convert
             $p = $plan['fields'][$n] ?? null;
             if (!$p) continue;
             if (in_array($p['action'], ['rename', 'own'], true) && $p['to'] !== $n) { $f['name'] = $p['to']; $renames[$n] = $p['to']; }
+            if ($p['action'] === 'copy' && ($p['own_to'] ?? $n) !== $n) { $f['name'] = (string) $p['own_to']; $renames[$n] = (string) $p['own_to']; }
             if (in_array($p['action'], ['keep', 'rename'], true) && isset($schema[$p['to']])) {
                 $f['label'] = $schema[$p['to']]['label'];
                 $f['required'] = !empty($schema[$p['to']]['required']);
@@ -316,7 +320,10 @@ final class Convert
     private static function rewrites(array $plan): array
     {
         $out = [];
-        foreach ($plan as $n => $p) if ($p['to'] !== $n) $out[$n] = $p['to'];
+        foreach ($plan as $n => $p) {
+            $to = $p['action'] === 'copy' ? (string) ($p['own_to'] ?? $n) : $p['to'];
+            if ($to !== $n) $out[$n] = $to;
+        }
         return $out;
     }
 
@@ -363,6 +370,7 @@ final class Convert
             $l[] = sprintf('  %-16s %-10s → %s', $n, '(' . $by[$n]['type'] . ')', match ($p['action']) {
                 'keep' => "{$p['to']} (bleibt, wird Grundfeld)",
                 'rename' => "{$p['to']} (umbenannt, Werte bleiben)",
+                'copy' => "{$p['to']} (Text daraus kopiert) · bleibt sichtbar als eigenes Feld „" . ($p['own_to'] ?? $n) . '“',
                 'cast' => "{$p['to']} ({$type}, Werte übernommen) · Altfeld bleibt ausgeblendet" . ($p['legacy_name'] !== $n ? " als „{$p['legacy_name']}“" : ''),
                 'combine' => "{$p['to']}[" . $lbl($type, $p['label']) . ', ' . ($p['public'] === 'entry' ? 'wie je Eintrag freigegeben' : ($p['public'] === true ? 'öffentlich' : 'intern')) . ']'
                     . ($type === 'addresses' ? ' (Teil der Anschrift)' : '') . ' · Altfeld bleibt ausgeblendet' . ($p['legacy_name'] !== $n ? " als „{$p['legacy_name']}“" : ''),
@@ -384,8 +392,8 @@ final class Convert
         }
         if ($relabel) $l[] = '  Beschriftung/Pflicht aus dem Grundschema: ' . implode(', ', $relabel);
         if ($plan['kind'] === Kinds::CALENDAR) {
-            $own = array_keys(array_filter($plan['fields'], fn($p) => $p['action'] === 'own'));
-            if ($own) $l[] = '  Eigene Felder werden „Nur Website“ (nie in ICS-Datei, Abo, CalDAV): ' . implode(', ', array_map(fn($n) => $plan['fields'][$n]['to'], $own));
+            $own = array_keys(array_filter($plan['fields'], fn($p) => in_array($p['action'], ['own', 'copy'], true)));
+            if ($own) $l[] = '  Eigene Felder werden „Nur Website“ (nie in ICS-Datei, Abo, CalDAV): ' . implode(', ', array_map(fn($n) => $plan['fields'][$n]['action'] === 'copy' ? $plan['fields'][$n]['own_to'] : $plan['fields'][$n]['to'], $own));
         }
         $l[] = '';
         $l[] = 'Reihenfolge im Formular:';
@@ -514,6 +522,11 @@ final class Convert
             $multi = [];
             $address = [];
             foreach ($plan['fields'] as $src => $p) {
+                if ($p['action'] === 'copy') {
+                    $x = ICal::plain(($p['from_type'] ?? '') === 'mediatext' ? Entries::html($t, $e, $src) : (string) ($e[$src] ?? ''));
+                    $set[$p['to']] = $x !== '' ? $x : null;
+                    continue;
+                }
                 if ($p['action'] === 'cast') {
                     // Typ des Grundfelds: Auswahl → Mehrfachauswahl, Datum → Datum & Uhrzeit (ganztägig), Rich-Text → Text
                     $v = $e[$src] ?? null;
@@ -677,7 +690,7 @@ final class Convert
             $out[] = $c;
         }
         $restored = array_flip(array_column($out, 'name'));
-        $made = array_flip([...(array) ($st['plan']['added'] ?? []), ...array_column(array_filter((array) ($st['plan']['fields'] ?? []), fn($p) => in_array($p['action'] ?? '', ['combine', 'cast'], true)), 'to')]);
+        $made = array_flip([...(array) ($st['plan']['added'] ?? []), ...array_column(array_filter((array) ($st['plan']['fields'] ?? []), fn($p) => in_array($p['action'] ?? '', ['combine', 'cast', 'copy'], true)), 'to')]);
         foreach ($in['fields'] as $f) {
             $id = (string) ($f['id'] ?? '');
             if (isset($beforeIds[$id])) continue;
