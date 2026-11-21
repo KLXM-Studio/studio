@@ -24,6 +24,14 @@ final class Settings
         $this->defaults = array_replace($this->defaults, $defaults);
     }
 
+    /** Registrierte Standardwerte lesen bzw. ersetzen (Theme::withKit stellt die des aktiven Kits danach wieder her) @internal */
+    public function defaultsState(?array $restore = null): array
+    {
+        $now = $this->defaults;
+        if ($restore !== null) $this->defaults = $restore;
+        return $now;
+    }
+
     private function load(): void
     {
         if ($this->values !== null) {

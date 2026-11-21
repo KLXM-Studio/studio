@@ -31,7 +31,7 @@ $color = fn(string $name, string $label, string $var, string $light, string $dar
 // Gemeinsame Werte der Voreinstellungen (werden je Vorlage überschrieben)
 $base = [
     'font_body' => 'inter', 'font_head' => 'inter', 'font_mono' => 'system-mono', 'label_font' => 'body',
-    'fs_min' => 16, 'fs_max' => 18.5, 'ratio' => 1.25, 'vw_min' => 360, 'vw_max' => 1280,
+    'fs_min' => 16, 'fs_max' => 18.5, 'ratio' => 1.25, 'line_height' => 1.62, 'vw_min' => 360, 'vw_max' => 1280,
     'heading_weight' => 650, 'heading_tracking' => -2,
     'radius' => 10, 'buttons' => 'solid', 'cards' => 'outlined', 'shadow' => 'soft', 'density' => 'normal', 'space' => 'normal', 'wrap' => 76,
     'secondary_role' => 'sections', 'heading_case' => 'normal', 'emphasis' => 'accent', 'links' => 'underline',
@@ -93,6 +93,9 @@ return [
             ['name' => 'ratio', 'label' => 'Verhältnis der Schriftstufen', 'type' => 'range', 'var' => '--f-ratio', 'unit' => '',
                 'min' => 1.125, 'max' => 1.6, 'step' => 0.025, 'default' => 1.25,
                 'help' => '1,125 = ruhig (Texte, Behörden) · 1,25 = ausgewogen · 1,414 = kräftig · 1,5+ = plakativ (Agentur, Kultur). Auf kleinen Bildschirmen automatisch flacher.'],
+            ['name' => 'line_height', 'label' => 'Zeilenhöhe des Fließtexts', 'type' => 'range', 'var' => '--f-lh', 'unit' => '',
+                'min' => 1.3, 'max' => 2, 'step' => 0.02, 'default' => 1.62,
+                'help' => '1,4–1,5 = kompakt (schmale Spalten, große Schrift) · 1,6 = ausgewogen · 1,7+ = luftig (lange Texte). Überschriften behalten ihre eigene Zeilenhöhe.'],
             ['name' => 'vw_min', 'label' => 'Fließend ab Bildschirmbreite (px)', 'type' => 'range', 'var' => '--f-vw-min', 'unit' => '',
                 'min' => 320, 'max' => 480, 'step' => 10, 'default' => 360, 'help' => 'Unterhalb gelten die kleinen Werte.'],
             ['name' => 'vw_max', 'label' => 'Fließend bis Bildschirmbreite (px)', 'type' => 'range', 'var' => '--f-vw-max', 'unit' => '',

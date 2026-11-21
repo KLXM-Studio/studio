@@ -7,7 +7,8 @@ namespace Core;
 
 /**
  * php bin/console kits:selftest – Vererbung von Kits (theme.php → 'extends'): Zusammenführen der Definition (Theme::mergeDefinition),
- * Standardwerte des geerbten Designs (design_defaults), Kette eines Kits ohne Eltern.
+ * Standardwerte des geerbten Designs (design_defaults), Kette eines Kits ohne Eltern, Theme::withKit (Vorschau mit anderem Kit),
+ * eigene Stylesheets der Kits ('css'), Paketprüfung von Kind-Kits ohne templates/ (KitPackages::check).
  */
 final class KitSelfTest
 {
@@ -71,6 +72,72 @@ final class KitSelfTest
                 if (!str_contains($f, '{value}') && !is_file($fluid . '/assets/' . $f)) $missing[] = $f;
             }
             $eq('fluid: Dateien der Liste option_css vorhanden', $missing, []);
+            // Zeilenhöhe des Fließtexts als Token (--f-lh): Style-Editor, Kind-Kits (design_defaults) und Kit-Designer setzen sie ohne eigenes CSS
+            $lh = array_values(array_filter(array_merge(...array_map(fn($g) => (array) ($g['tokens'] ?? []), (array) ($def['design']['groups'] ?? []))), fn($t) => ($t['name'] ?? '') === 'line_height'))[0] ?? [];
+            $eq('fluid: Token line_height → --f-lh (Standard 1,62)', [$lh['var'] ?? null, $lh['default'] ?? null], ['--f-lh', 1.62]);
+            $eq('fluid: Grund-CSS nutzt --f-lh', [str_contains((string) file_get_contents($fluid . '/assets/css/_base.css'), '/var(--f-lh,1.62)'), str_contains((string) file_get_contents($fluid . '/assets/css/_tokens.css'), '--f-lh:1.62')], [true, true]);
+        }
+        // Theme::withKit: anderes Kit nur für die Dauer eines Aufrufs (Vorschau), danach alles wie vorher – auch bei Fehlern
+        $other = '';
+        foreach (array_keys(Kit::all()) as $k) if ($k !== app()->theme->name && Kit::definitionFile(Kit::dir($k)) !== null) { $other = (string) $k; break; }
+        if ($other !== '') {
+            $before = [app()->theme->name, Design::values(), app()->currentPage];
+            $inside = Theme::withKit($other, fn(Theme $t) => [app()->theme->name, $t->name]);
+            $eq('withKit: im Aufruf das andere Kit', $inside, [$other, $other]);
+            $eq('withKit: danach Kit und Design-Werte wie vorher', [app()->theme->name, Design::values(), app()->currentPage], $before);
+            $first = array_key_first(array_filter(Theme::withKit($other, fn() => Design::tokens()), fn($t) => ($t['type'] ?? '') === 'range'));
+            if ($first !== null) {
+                $probe = Theme::withKit($other, fn() => Design::get((string) $first), [(string) $first => -99999]);
+                $eq('withKit: Werte nur für den Aufruf (begrenzt), danach kein Override', [is_numeric($probe), Design::values()], [true, $before[1]]);
+            }
+            try {
+                Theme::withKit($other, function () { app()->currentPage = ['id' => -1]; throw new \RuntimeException('x'); });
+            } catch (\RuntimeException) {
+            }
+            $eq('withKit: nach Fehler wiederhergestellt', [app()->theme->name, app()->currentPage], [$before[0], $before[2]]);
+            $eq('withKit: Theme-Objekt geht ebenso', Theme::withKit(app()->theme, fn(Theme $t) => $t === app()->theme), true);
+        }
+        // Kind-Kits mit eigenem CSS ('css' => [...]) und Paketprüfung ohne templates/ – zwei Test-Kits in storage/kits, danach entfernt
+        if (Kit::exists('fluid')) {
+            $tmp = ROOT . '/storage/tmp/kits-selftest-' . bin2hex(random_bytes(4));
+            $write = function (string $dir, array $files): void {
+                foreach ($files as $f => $c) { @mkdir(dirname("$dir/$f"), 0775, true); file_put_contents("$dir/$f", $c); }
+            };
+            $theme = fn(string $label, string $parent, string $css) => "<?php\nreturn [\n    'extends' => '$parent',\n    'label' => '$label',\n    'version' => '0.0.1',\n    'css' => ['$css'],\n];\n";
+            $write("$tmp/selftest-css-a", ['theme.php' => $theme('Test A', 'fluid', 'css/a.css'), 'public/css/a.css' => "body{--selftest-a:1}\n"]);
+            $write("$tmp/selftest-css-b", ['theme.php' => $theme('Test B', 'selftest-css-a', 'css/b.css'), 'public/css/b.css' => "body{--selftest-b:1}\n",
+                'templates/probe.php' => "<html><head><title>x</title></head><body></body></html>"]);
+            $write("$tmp/selftest-solo", ['theme.php' => "<?php\nreturn [\n    'label' => 'Solo',\n    'version' => '0.0.1',\n];\n"]);
+            try {
+                $ca = KitPackages::check("$tmp/selftest-css-a");
+                $cs = KitPackages::check("$tmp/selftest-solo");
+                $eq('check: Kind-Kit ohne templates/ ohne Warnung, eigenständiges Kit mit', [preg_grep('~templates/~', $ca['warnings']), (bool) preg_grep('~templates/~', $cs['warnings']), $ca['meta']['extends'], $cs['meta']['extends']],
+                    [[], true, 'fluid', '']);
+                $eq('check: fehlendes Eltern-Kit als Warnung', (bool) preg_grep('~selftest-css-a~', KitPackages::check("$tmp/selftest-css-b")['warnings']), true);
+                $ia = KitPackages::install("$tmp/selftest-css-a", true, 'kits:selftest');
+                $ib = KitPackages::install("$tmp/selftest-css-b", true, 'kits:selftest');
+                Kit::reset();
+                $eq('Test-Kits installiert', [$ia['ok'], $ib['ok']], [true, true]);
+                $b = new Theme('selftest-css-b');
+                $urls = array_map(fn($u) => (string) preg_replace('~\?v=\w+$~', '', $u), $b->kitStylesheets());
+                $eq("'css': Eltern zuerst, dann Kind, je aus dem eigenen Ordner", $urls, [Kit::url('selftest-css-a', 'css/a.css'), Kit::url('selftest-css-b', 'css/b.css')]);
+                $eq("'css': nicht in der zusammengeführten Definition", array_key_exists('css', $b->def), false);
+                $html = $b->render('probe');
+                $eq("'css': ganze Seite ohne Liste extraCss → vor </head>", [str_contains($html, 'css/a.css'), strpos($html, 'css/b.css') < strpos($html, '</head>'), strpos($html, 'css/a.css') < strpos($html, 'css/b.css')], [true, true, true]);
+                $eq("kit:check: vorhandene Stylesheets ohne Warnung", array_values(array_filter(KitCheck::run($b), fn($r) => str_contains($r['text'], "('css')"))), []);
+                @unlink(Kit::publicDir('selftest-css-b') . '/css/b.css');
+                $eq("'css': fehlende Datei fällt weg, kit:check meldet sie", [count((new Theme('selftest-css-b'))->kitStylesheets()), count(array_filter(KitCheck::run(new Theme('selftest-css-b')), fn($r) => str_contains($r['text'], "'css/b.css'")))], [1, 1]);
+                $eq("'css': Kit ohne Angabe – keine Stylesheets (z. B. fluid)", (new Theme('fluid'))->kitStylesheets(), []);
+            } finally {
+                foreach (['selftest-css-b', 'selftest-css-a'] as $n) if (Kit::source($n) === 'upload') KitPackages::remove($n);
+                foreach (['selftest-css-a', 'selftest-css-b', 'selftest-solo'] as $n) {
+                    foreach (array_reverse(glob("$tmp/$n/{,*/,*/*/}*", GLOB_BRACE) ?: []) as $f) is_dir($f) ? @rmdir($f) : @unlink($f);
+                    @rmdir("$tmp/$n");
+                }
+                @rmdir($tmp);
+                Kit::reset();
+            }
+            $eq('Test-Kits entfernt', [Kit::exists('selftest-css-a'), Kit::exists('selftest-css-b')], [false, false]);
         }
         return ['ok' => $ok, 'fails' => $fails];
     }

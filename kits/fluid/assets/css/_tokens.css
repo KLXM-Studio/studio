@@ -7,7 +7,7 @@
   --f-c3:#B45309;--f-c4:#BE185D;--f-c5:#0369A1;
   --f-font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--f-font-head:var(--f-font);
   --f-font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;--f-font-label:var(--f-font);
-  --f-fs-min:16;--f-fs-max:18.5;--f-ratio:1.25;--f-vw-min:360;--f-vw-max:1280;--f-hw:650;--f-track:-2;
+  --f-fs-min:16;--f-fs-max:18.5;--f-ratio:1.25;--f-vw-min:360;--f-vw-max:1280;--f-hw:650;--f-track:-2;--f-lh:1.62;
   --f-radius:10px;--f-shadow:0 1px 2px var(--f-sh1),0 12px 32px -12px var(--f-sh2);--f-density:1;--f-space:1;--f-wrap:76rem;
   --f-on-dark:#FFFFFF;--f-sh1:rgb(8 10 20/.07);--f-sh2:rgb(8 10 20/.22);
 

@@ -6407,6 +6407,7 @@ return [
     'Kits' => 'Kits',
     'Kits bringen Gestaltung, Blöcke und Startinhalte einer Website mit. Sie gelten für die ganze Installation: Jede Website wählt ihr Kit unter Grundeinstellungen → Aktives Kit. Zusätzliche Kits lassen sich als Paket installieren – per Composer oder als ZIP-Datei.' => 'Kits provide a website\'s design, blocks and starter content. They apply to the whole installation: each website chooses its kit under Basic settings → Active kit. Additional kits can be installed as a package – via Composer or as a ZIP file.',
     'Ordner templates/ fehlt.' => 'Folder templates/ is missing.',
+    'Eltern-Kit „{name}“ (extends) ist in dieser Installation nicht vorhanden – das Kit funktioniert erst mit ihm.' => 'Parent kit “{name}” (extends) is not available in this installation – the kit only works with it.',
     'Ordner {dir} ist nicht beschreibbar.' => 'Folder {dir} is not writable.',
     'PHP-Erweiterung zip fehlt.' => 'PHP extension zip is missing.',
     'Prüfen und installieren' => 'Check and install',
