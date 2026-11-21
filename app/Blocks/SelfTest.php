@@ -50,6 +50,7 @@ final class SelfTest
             $t->subpages();
             $t->listFilter();
             $t->defaultChanges();
+            $t->templateComments();
         } finally {
             app()->editing = $prev;
         }
@@ -57,6 +58,25 @@ final class SelfTest
     }
 
     /** Erster Block (Bild mit Vorrang), Seitenüberschrift (Core\Headings), Leistungs-Hinweise von kit:check */
+    /**
+     * Vorlagen: Ein Zeilenkommentar (// …) innerhalb eines <?php … ?>-Abschnitts darf keinen weiteren Code in derselben Zeile
+     * verschlucken (Fehler 2026-11: „// Serien: … $title = …“ machte Termintitel leer). Prüft alle Block-, Fragment- und Ansichtsvorlagen.
+     */
+    private function templateComments(): void
+    {
+        $files = array_merge(glob(ROOT . '/app/Blocks/*.php') ?: [], glob(ROOT . '/app/Views/*.php') ?: [], glob(ROOT . '/app/Views/*/*.php') ?: [],
+            glob(ROOT . '/kits/*/blocks/*.php') ?: [], glob(ROOT . '/kits/*/fragments/*.php') ?: [], glob(ROOT . '/kits/*/templates/*.php') ?: []);
+        $bad = [];
+        foreach ($files as $f) {
+            foreach (file($f) ?: [] as $no => $line) {
+                if (!str_contains($line, '<?php') || !str_contains($line, '//')) continue;
+                /* Code nach „; //“ in derselben Zeile ohne schließendes PHP-Tag dahinter */
+                if (preg_match('~;\s*//[^\n]*\$[A-Za-z_]\w*\s*=[^=>]~', $line) && !preg_match('~//[^\n]*\?>~', $line)) $bad[] = basename(dirname($f)) . '/' . basename($f) . ':' . ($no + 1);
+            }
+        }
+        $this->assert($bad === [], 'Vorlagen: kein Code hinter einem Zeilenkommentar (' . implode(', ', $bad) . ')');
+    }
+
     private function firstBlock(): void
     {
         $m = ['id' => 0, 'mime' => 'image/jpeg', 'file' => 'x.jpg', 'width' => 800, 'height' => 600, 'variants_json' => null, 'alt' => '', 'focus_x' => 50, 'focus_y' => 50];
