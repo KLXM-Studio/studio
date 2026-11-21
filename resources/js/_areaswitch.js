@@ -1,12 +1,16 @@
 /*
- * Popover-Menüs der Verwaltung ([data-pop], app/Admin/views/_areaswitch.php, _topbar.php): Umschalter Netzwerk ↔ Website,
- * Favoriten, Seitenbaum, Konto, Quellen-Auswahl. Öffnen/Schließen und Escape übernimmt der Browser (popover/popovertarget);
- * hier: Lage am Knopf (Top Layer – darf über die Seitenleiste hinausragen; ≤ 600 px Blatt von unten per CSS), aria-expanded,
+ * Popover-Menüs der Kopfleiste ([data-pop], app/Admin/views/_areaswitch.php, _topbar.php): Umschalter Netzwerk ↔ Website,
+ * Favoriten, Seitenbaum, Konto und Hilfe, Quellen-Auswahl der Suche. Öffnen/Schließen und Escape übernimmt der Browser (popover/popovertarget);
+ * hier: Lage am Knopf (Top Layer – darf über die Leiste hinausragen; ≤ 600 px Blatt von unten per CSS), aria-expanded,
  * Tastatur (↑ ↓ Pos1 Ende, Fokus aufs erste Element bzw. den Filter), Filter ab > 8 Einträgen.
  */
 const d = document;
 const SHEET = matchMedia('(max-width:600px)');
-const items = pop => [...pop.querySelectorAll('[role^=menuitem]')].filter(el => !el.hidden && el.offsetParent !== null);
+// Einträge für die Pfeiltasten: Menüpunkte bzw. (Favoriten-Liste ohne Menü-Rolle) Links und Knöpfe
+const items = pop => {
+  const m = [...pop.querySelectorAll('[role^=menuitem]')];
+  return (m.length ? m : [...pop.querySelectorAll('a[href],button:not([disabled]),input.adm-fav__name')]).filter(el => !el.hidden && el.offsetParent !== null);
+};
 
 function place(pop, btn) {
   pop.style.top = pop.style.left = pop.style.right = '';

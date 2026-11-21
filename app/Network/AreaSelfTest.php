@@ -42,6 +42,20 @@ final class AreaSelfTest
             foreach (Area::nav() as $g) foreach ($g['items'] as $it) $navKeys[] = $it[0];
             $eq('Seitenleiste ohne doppelte Punkte', count($navKeys), count(array_unique($navKeys)));
 
+            // ---------------------------------------------------------- Umschalter Netzwerk ↔ Website (views/_areaswitch.php)
+            $sw = Area::switcher();
+            $eq('Umschalter: alle Websites', count($sw), count(Sites::all()));
+            $eq('Umschalter: genau eine aktuelle Website', count(array_filter($sw, fn($s) => $s['current'])), 1);
+            $eq('Umschalter: Netzwerk-Website zuerst', $sw[0]['network'] ?? false, true);
+            $eq('Umschalter: jede Website mit Namen, Domain und Icon', array_filter($sw, fn($s) => $s['name'] === '' || $s['host'] === '' || $s['icon'] === ''), []);
+            foreach ($sw as $s) {
+                $own = trim((string) (Sites::all()[$s['key']]['label'] ?? ''));
+                $sn = trim((string) (\Core\Network\Stats::cached($s['key'])['site_name'] ?? ''));
+                // Name aus den Website-Einstellungen statt Hostname, wenn als eigener Name nur eine Domain eingetragen ist
+                if ($sn !== '' && in_array(strtolower($own), (new \Core\Site($s['key'], Sites::all()[$s['key']]))->hosts(), true)) $eq("Umschalter: Name statt Domain ({$s['key']})", $s['name'], $sn);
+            }
+            $eq('Suche: Quellen der Kopfleiste', \Core\Http\Controllers\Admin\SearchController::SCOPES, ['f', 'c', 'p', 'd', 'k', 't', 'm']);
+
             // ---------------------------------------------------------- Weiterleitungen
             $eq('POST wird nie umgeleitet', Area::redirect($req('POST', '/admin/system/aufgaben')), null);
             $eq('Grundeinstellungen bleiben', Area::redirect($req('GET', '/admin/system')), null);

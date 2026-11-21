@@ -52,26 +52,14 @@ export function drill({ panel, title, label = '', back = '', home, box = null, a
   if (label) panel.setAttribute('aria-label', label);
   body.classList.add('is-drill');
   if (area) side.dataset.area = area;
-  // Favoriten und Netzwerk-Umschalter weichen dem Bereichsmenü; der Stern in der Werkzeugzeile blendet sie wieder ein
-  const peek = side.querySelector('[data-drill-peek]');
-  if (peek) {
-    peek.hidden = false;
-    peek.addEventListener('click', () => {
-      const on = !body.classList.contains('is-drill-peek');
-      body.classList.toggle('is-drill-peek', on);
-      peek.setAttribute('aria-expanded', String(on));
-      if (on) side.querySelector(':scope > .adm-netswitch > summary, :scope > .adm-fav a, :scope > .adm-fav button')?.focus();
-    });
-  }
   // Bereichsmodus erkennbar machen: Seitenleiste ab dem Bereichsmenü leicht getönt (admin.css „--drill-top“)
-  const fav = side.querySelector(':scope > .adm-fav');
+  const fav = side.querySelector(':scope > .adm-brand-row');   // letzte Zeile über dem Bereichsmenü
   if (fav && 'ResizeObserver' in window) {
     const mark = () => side.style.setProperty('--drill-top', Math.round(box.offsetTop - (parseFloat(getComputedStyle(side).rowGap) || 0) / 2) + 'px');
     // auch alles darüber beobachten (z. B. die aufgeklappte Website-Auswahl im Netzwerk) – sonst blieb die Linie mitten im Menü stehen
     const ro = new ResizeObserver(mark);
     for (let el = side.firstElementChild; el; el = el.nextElementSibling) { ro.observe(el); if (el === fav) break; }
     side.querySelectorAll(':scope > details').forEach(dt => dt.addEventListener('toggle', mark));
-    peek?.addEventListener('click', () => requestAnimationFrame(mark));
     btn.addEventListener('click', () => requestAnimationFrame(mark));
     mark();
   }

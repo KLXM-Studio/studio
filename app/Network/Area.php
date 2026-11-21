@@ -9,8 +9,8 @@ use Core\Http\Request;
 use Core\Sites;
 
 /**
- * Netzwerk-Bereich der Verwaltung (/admin/network/…): eigener Bereich mit dunklem Kopf „NETZWERK“, eigener Seitenleiste und
- * Umschalter Netzwerk ↔ Website – nur in Installationen mit mehreren Websites (Sites::multi()), nur auf der Netzwerk-Website,
+ * Netzwerk-Bereich der Verwaltung (/admin/network/…): eigener Bereich mit Kopfleiste in Petrol, eigener Seitenleiste und
+ * Umschalter Netzwerk ↔ Website (links in der Kopfleiste, app/Admin/views/_areaswitch.php) – nur in Installationen mit mehreren Websites (Sites::multi()), nur auf der Netzwerk-Website,
  * nur für Netzwerk-Konten (Rolle network). Alles, was für die ganze Installation gilt (Geplante Aufgaben, Sicherung außer Haus,
  * Kits, Schriften, Branding, Dateien-Integrität, Systemmeldungen, geteilte Medien/Daten, KI-Verbindungen, Netzwerk-Domain, Adresse der Verwaltung,
  * Agentur-Zugang per OpenID Connect, Netzwerk-Konten, E-Mail des Netzwerks), liegt dort – die Verwaltung einer Website zeigt nur

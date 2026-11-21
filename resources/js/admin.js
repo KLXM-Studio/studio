@@ -29,7 +29,7 @@ import { initNavGroups } from './_navgroups.js';   // Seitenleiste → Administr
 import { initSupport } from './_support.js';
 import { initNetwork } from './_network.js';
 import { initPopovers } from './_areaswitch.js';   // Popover-Menüs: Umschalter Netzwerk ↔ Website, Favoriten, Konto (data-pop)
-import { initQuickbar } from './_quickbar.js';   // PROTOTYP Kopfleiste (Variante B): Suche in der Leiste, Ein-/Ausblenden
+import { initQuickbar } from './_quickbar.js';   // Kopfleiste: Suche in der Leiste, Favoriten-Stern, Ein-/Ausblenden beim Scrollen
 import { initOnline } from './_online.js';   // „online“-Herzschlag (Core\Presence::ONLINE)
 import { initReview } from './_review.js';   // Prüf-Ebene „Eingereicht“ (Core\Review)
 import { initRedirects } from './_redirects.js';   // Administration → Weiterleitungen (Core\Redirects)
@@ -77,14 +77,6 @@ initDrawer();
 // ------------------------------------------------------------ Assistent-Chat (_assistant.js → assistant.mjs)
 if (IN_ADMIN) initAssistant();
 
-// ------------------------------------------------------------ Hilfe-Abschnitt der Seitenleiste: Zustand merken (nur dieser Browser)
-{
-  const box = $('[data-helpbox]');
-  if (box) {
-    try { if (!box.open && localStorage.getItem('adm.helpbox') === '1') box.open = true; } catch {}
-    box.addEventListener('toggle', () => { try { localStorage.setItem('adm.helpbox', box.open ? '1' : '0'); } catch {} });
-  }
-}
 // ------------------------------------------------------------ Administration: aufklappbare Gruppen „Einstellungen“, „Werkzeuge“ (_navgroups.js)
 initNavGroups();
 // ------------------------------------------------------------ Bereichsnavigation (Daten): serverseitig in der Seitenleiste

@@ -1,14 +1,14 @@
 /* ==========================================================================
    Umschalter Netzwerk ↔ Website (app/Admin/views/_areaswitch.php, resources/js/_areaswitch.js) und Popover-Menüs der
-   Verwaltung (.adm-pop): Top Layer (popover), darf über die Seitenleiste hinausragen; Telefon (≤ 600 px) als Blatt von unten.
-   Eigene Tokens --pop-* auf der Wurzel – die Seitenleiste definiert --adm-* für dunklen Grund um, das Popover nicht.
+   Verwaltung (.adm-pop): Top Layer (popover), darf über die Kopfleiste hinausragen; Telefon (≤ 600 px) als Blatt von unten.
+   Eigene Tokens --pop-* auf der Wurzel – unabhängig vom dunklen Grund der Kopf- und Seitenleiste.
    Kontraste (WCAG AA): --pop-t2 auf --pop-bg hell 7,4:1, dunkel 8,1:1.
    ========================================================================== */
 html.adm-ui{--pop-bg:#FFFFFF;--pop-ink:#1B2130;--pop-t2:#4A5263;--pop-line:#E1E4EA;--pop-hover:#EEF1F6;--pop-cur:#E6ECF7;--pop-acc:#314164;--pop-mark:#DCE6FA;--pop-field:#F4F6F9;--pop-shadow:0 18px 48px rgba(16,22,36,.22),0 2px 6px rgba(16,22,36,.08)}
 @media (prefers-color-scheme: dark){html.adm-ui:not([data-theme=light]){--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC;--pop-line:#363A46;--pop-hover:#2A2E39;--pop-cur:#2F3749;--pop-acc:#B4C4E8;--pop-mark:#3A4A6E;--pop-field:#262A33;--pop-shadow:0 18px 48px rgba(0,0,0,.55)}}
 html.adm-ui[data-theme=dark]{--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC;--pop-line:#363A46;--pop-hover:#2A2E39;--pop-cur:#2F3749;--pop-acc:#B4C4E8;--pop-mark:#3A4A6E;--pop-field:#262A33;--pop-shadow:0 18px 48px rgba(0,0,0,.55)}
 
-/* Knopf in der Seitenleiste (Variante A) bzw. Kopfleiste (Variante B) – auf dunklem Grund */
+/* Knopf links in der Kopfleiste – auf dunklem Grund */
 .adm-sw{min-width:0}
 .adm-sw__btn{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:7px 10px 7px 8px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.06);color:#F4F6FA;font:inherit;text-align:left;cursor:pointer}
 .adm-sw__btn:hover{background:rgba(255,255,255,.11)}
@@ -23,8 +23,6 @@ html.adm-ui[data-theme=dark]{--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC
 .adm-sw__chev{display:grid;place-items:center;color:#C3CBDA}
 .adm-sw__chev .ico{width:14px;height:14px;transition:transform .15s}
 .adm-sw__btn[aria-expanded=true] .adm-sw__chev .ico{transform:rotate(180deg)}
-.adm-sw--side{margin:0 2px}
-.is-drill:not(.is-drill-peek):not(.is-drill-nav) .adm-side > .adm-sw{display:none}
 
 /* Popover (gemeinsam für Umschalter, Favoriten, Seitenbaum, Konto, Quellen-Auswahl) */
 .adm-pop{position:fixed;inset:auto;margin:0;width:min(380px,calc(100vw - 24px));max-height:min(72vh,600px);overflow:auto;overscroll-behavior:contain;padding:6px;border:1px solid var(--pop-line);border-radius:12px;background:var(--pop-bg);color:var(--pop-ink);box-shadow:var(--pop-shadow);font:400 14px/1.4 var(--adm-font);color-scheme:light dark}
@@ -36,6 +34,9 @@ html.adm-ui[data-theme=dark]{--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC
 .adm-pop__head strong{font-size:15px}
 .adm-pop__head a{color:var(--pop-acc);font-size:13px;font-weight:600}
 .adm-pop--end .adm-pop__head,.adm-pop--tree .adm-pop__head{display:flex}
+.adm-pop__sep{height:1px;margin:4px 6px;background:var(--pop-line)}
+.adm-pop__count{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--pop-cur);color:var(--pop-ink)!important;font-weight:700}
+.adm-pop__item kbd{margin-left:auto}
 .adm-pop__x{display:none;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:none;color:var(--pop-ink);cursor:pointer}
 .adm-pop__x .ico{width:18px;height:18px}
 .adm-pop__filter{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;padding:0 10px;border:1px solid var(--pop-line);border-radius:8px;background:var(--pop-field);color:var(--pop-t2)}

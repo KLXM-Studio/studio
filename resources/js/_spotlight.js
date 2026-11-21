@@ -1,7 +1,9 @@
 /*
  * Spotlight-Suche (⌘K / Strg+K): Aktionen, Seiten, Datensätze, Medien, Einstellungen.
  * ↑↓ auswählen · ↵ öffnen · ⌘↵ alternativ (z. B. auf der Website ansehen) · esc schließen
+ * Kürzel wie in der Suche der Kopfleiste (_quickbar.js): p: Seiten · d: Daten · m: Medien · k: Kontakte · t: Termine · f: Favoriten · > Befehle
  */
+const SCOPES = { 'p:': 'p', 'd:': 'd', 'm:': 'm', 'k:': 'k', 't:': 't', 'f:': 'f', '>': 'c' };
 import { t } from './_i18n.js';
 import { layerBox, pathClosest, ui } from './_shadow.js';
 import { ico } from './_icons.js';
@@ -44,10 +46,12 @@ function hl(text, q) {
 }
 
 async function load() {
-  const q = input.value.trim();
+  let q = input.value.trim(), scope = '';
+  const m = q.match(/^(>|[pdmktf]:)\s*/i);
+  if (m) { scope = SCOPES[m[1].toLowerCase()]; q = q.slice(m[0].length); }
   ctrl?.abort(); ctrl = new AbortController();
   try {
-    const r = await fetch(endpoint() + '?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' }, signal: ctrl.signal, credentials: 'same-origin' });
+    const r = await fetch(endpoint() + '?q=' + encodeURIComponent(q) + (scope ? '&scope=' + scope : ''), { headers: { Accept: 'application/json' }, signal: ctrl.signal, credentials: 'same-origin' });
     const data = await r.json();
     items = []; let html = '';
     for (const g of data.groups) {

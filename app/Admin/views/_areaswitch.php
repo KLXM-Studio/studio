@@ -1,21 +1,20 @@
 <?php
 /**
  * Umschalter Netzwerk ↔ Website (Core\Network\Area) – gleiches Element in Netzwerk- und Website-Ansicht, nur für Netzwerk-Konten
- * in Installationen mit mehreren Websites. Knopf mit Titel („Netzwerk“ bzw. Name der Website) öffnet ein Popover (Top Layer,
- * darf über die Seitenleiste hinausragen; Telefon: Blatt von unten): oben „Netzwerk-Verwaltung“, darunter alle Websites mit Namen,
+ * in Installationen mit mehreren Websites, links in der Kopfleiste (_topbar.php). Knopf mit Titel („Netzwerk“ bzw. Name der Website)
+ * öffnet ein Popover (Top Layer, darf über die Leiste hinausragen; Telefon: Blatt von unten): oben „Netzwerk-Verwaltung“, darunter alle Websites mit Namen,
  * Domain und Schlüssel, ab mehr als 8 Websites mit Filter. Tastatur: Pfeile, Pos1/Ende, Enter, Escape (resources/js/_areaswitch.js).
  * Ohne JavaScript öffnet das Popover nativ (popovertarget), Website wechseln per Einmal-Anmeldung (POST /admin/network/open).
- * @var bool $netArea  @var string $swMode 'side' | 'top'
+ * @var bool $netArea
  */
-$swMode = $swMode ?? 'side';
 $swSites = \Core\Network\Area::switcher();
 $swCur = null;
 foreach ($swSites as $s) if ($s['current']) $swCur = $s;
 $swOnNet = \Core\Network\Network::isNetworkSite();
-$swId = 'adm-sw-' . $swMode;
+$swId = 'adm-sw-pop';
 $swFilter = count($swSites) > 8;
 ?>
-<div class="adm-sw adm-sw--<?= e($swMode) ?><?= $netArea ? ' is-net' : '' ?>" data-sw>
+<div class="adm-sw<?= $netArea ? ' is-net' : '' ?>" data-sw>
   <button type="button" class="adm-sw__btn" popovertarget="<?= e($swId) ?>" aria-haspopup="menu" aria-controls="<?= e($swId) ?>" data-pop-btn>
     <?php if ($netArea): ?>
     <span class="adm-sw__tile adm-sw__tile--net" aria-hidden="true"><?= icon('network') ?></span>
@@ -38,9 +37,9 @@ $swFilter = count($swSites) > 8;
       <div role="menu" aria-label="<?= e(__('Bereich wechseln')) ?>" class="adm-sw__menu">
         <?php // Netzwerk-Verwaltung: eigener Eintrag oben ?>
         <?php if ($swOnNet): ?>
-        <a role="menuitem" class="adm-sw__item adm-sw__item--net" href="<?= e(url('/admin/network')) ?>"<?= $netArea ? ' aria-current="page"' : '' ?>>
+        <a role="menuitem" class="adm-sw__item adm-sw__item--net" data-filter-text="<?= e(mb_strtolower(__('Netzwerk-Verwaltung') . ' netzwerk network')) ?>" href="<?= e(url('/admin/network')) ?>"<?= $netArea ? ' aria-current="page"' : '' ?>>
         <?php else: ?>
-        <button role="menuitem" type="submit" name="site" value="<?= e(\Core\Network\Network::siteKey()) ?>" class="adm-sw__item adm-sw__item--net">
+        <button role="menuitem" type="submit" name="site" value="<?= e(\Core\Network\Network::siteKey()) ?>" class="adm-sw__item adm-sw__item--net" data-filter-text="<?= e(mb_strtolower(__('Netzwerk-Verwaltung') . ' netzwerk network')) ?>">
         <?php endif; ?>
           <span class="adm-sw__ico adm-sw__ico--net" aria-hidden="true"><?= icon('network') ?></span>
           <span class="adm-sw__t"><span class="adm-sw__n"><?= e(__('Netzwerk-Verwaltung')) ?></span><small><?= e(__('{n} Websites · Einstellungen der ganzen Installation', ['n' => count($swSites)])) ?></small></span>
