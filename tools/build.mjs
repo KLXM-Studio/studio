@@ -12,6 +12,8 @@
  *           Alles liegt unter public/assets/ – ganz oben in public/ würde jeder Ordner die gleichnamige Seitenadresse
  *           sperren (Core\PublicPaths)
  * Vendoren: node_modules                → public/assets/vendor              (Core: Editor.js, PDF.js, MapLibre)
+ *           tools/vendor-releases.json  → public/assets/vendor/{name}/{version}  (Bibliotheken ohne npm-Paket, z. B. a11y_datetime:
+ *                                         Release-Datei von GitHub mit fester Prüfsumme, Zwischenablage tools/.cache)
  * Symbole:  resources/icons/icons.json    → public/assets/icons/{core,thema}.svg, icons.svg, icons-map.json, catalog.json (Phosphor duotone, tools/icons.mjs)
  * Kits:     kits/{name}/build.mjs       → eigene Vendoren des Kits (z. B. Schriften), Pakete aus
  *           kits/{name}/package.json    (wird bei Bedarf automatisch installiert)
@@ -30,7 +32,8 @@ import { build, context } from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import { icons } from './icons.mjs';
 
 const TOOLS = path.dirname(fileURLToPath(import.meta.url));
@@ -66,6 +69,48 @@ function versionDir(base, ver) {
   return dir;
 }
 const VENDOR_VERSIONS = { maplibre: () => pkgVersion('maplibre-gl'), pdfjs: () => pkgVersion('pdfjs-dist') };
+
+/**
+ * Bibliotheken ohne npm-Paket (tools/vendor-releases.json): Release-Dateien mit fester Adresse und SHA-256 – a11y_datetime
+ * (barrierefreier Fork von flatpickr) liegt nicht auf npm, und das Git-Repository enthält keine gebauten Dateien (eine
+ * Git-Abhängigkeit müsste mit rund 30 Werkzeugen, darunter „stylus: latest“, selbst bauen – nicht reproduzierbar). Das
+ * offizielle Release-Archiv (dist.zip) hat eine von GitHub veröffentlichte Prüfsumme; die Lizenz kommt vom Commit des Tags.
+ * Heruntergeladen wird nur, wenn der Versionsordner unvollständig ist (Zwischenablage tools/.cache, nicht im Repository);
+ * eine abweichende Prüfsumme bricht den Build ab.
+ */
+const RELEASES = JSON.parse(fs.readFileSync(path.join(TOOLS, 'vendor-releases.json'), 'utf8'));
+async function releaseFile(name, file) {
+  const r = RELEASES[name], f = r.files[file];
+  const cache = path.join(TOOLS, '.cache', `${name}-${r.version}-${file}`);
+  const sha = b => crypto.createHash('sha256').update(b).digest('hex');
+  if (fs.existsSync(cache) && sha(fs.readFileSync(cache)) === f.sha256) return cache;
+  console.log(`  laden   ${f.url}`);
+  const res = await fetch(f.url);
+  if (!res.ok) throw new Error(`${name}: ${f.url} → HTTP ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (sha(buf) !== f.sha256) throw new Error(`${name}: Prüfsumme von ${file} stimmt nicht (erwartet ${f.sha256}, erhalten ${sha(buf)})`);
+  fs.mkdirSync(path.dirname(cache), { recursive: true });
+  fs.writeFileSync(cache, buf);
+  return cache;
+}
+/** a11y_datetime → public/assets/vendor/a11y_datetime/{version}/ (Skript, Stylesheet, deutsche Texte) + LICENSE.txt daneben */
+async function a11yDatetime() {
+  const r = RELEASES.a11y_datetime, base = path.join(PUB, 'assets/vendor/a11y_datetime');
+  const want = ['a11y_datetime.min.js', 'a11y_datetime.min.css', 'l10n/de.min.js'];
+  const dir = versionDir(base, r.version);
+  if (!want.every(f => fs.existsSync(path.join(dir, f))) || !fs.existsSync(path.join(base, 'LICENSE.txt'))) {
+    const zip = await releaseFile('a11y_datetime', 'dist.zip');
+    const unzip = f => execFileSync('unzip', ['-p', zip, 'dist/' + f], { maxBuffer: 16 << 20 });
+    fs.mkdirSync(path.join(dir, 'l10n'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'a11y_datetime.min.js'), unzip('a11y_datetime.min.js'));
+    fs.writeFileSync(path.join(dir, 'a11y_datetime.min.css'), unzip('a11y_datetime.min.css'));
+    // Sprachdatei liegt nur unminifiziert bei: verkleinern (Inhalt unverändert)
+    const { transform } = await import('esbuild');
+    fs.writeFileSync(path.join(dir, 'l10n/de.min.js'), (await transform(unzip('l10n/de.js').toString('utf8'), { minify: true, legalComments: 'none' })).code);
+    fs.copyFileSync(await releaseFile('a11y_datetime', 'LICENSE.md'), path.join(base, 'LICENSE.txt'));
+  }
+  for (const f of want) console.log('  vendor  ' + path.relative(ROOT, path.join(dir, f)));
+}
 
 /**
  * import '../vendor/{maplibre|pdfjs}/datei.mjs' in resources/js → '../vendor/{paket}/{version}/datei.mjs' (extern, nicht gebündelt)
@@ -155,6 +200,9 @@ async function vendors() {
   }
   copy(nm('maplibre-gl/LICENSE.txt'), path.join(ml, 'LICENSE.txt'));
   bundledLicenses('maplibre-gl', path.join(ml, 'THIRD-PARTY-LICENSES.txt'));
+
+  // a11y_datetime (Datums- und Zeitauswahl, resources/js/_datetime.js)
+  await a11yDatetime();
 
   // Mozilla PDF.js (Viewer für PDF-Dateien)
   // Code (pdf.min.mjs, Worker, WASM – passen nur zusammen) unter vendor/pdfjs/{version}/ (VERSION daneben);
@@ -351,6 +399,8 @@ const options = ([src, outdir]) => {
   plugins: isAdminPart(src) ? [vendorVersioned, adminShared] : [vendorVersioned],
   legalComments: 'none',
   logLevel: 'warning',
+  // Versionsordner der Datums-/Zeitauswahl (resources/js/_datetime.js lädt vendor/a11y_datetime/{version}/)
+  define: { A11Y_DT_VERSION: JSON.stringify(RELEASES.a11y_datetime.version) },
   };
 };
 

@@ -3,7 +3,7 @@
  * Reiter · Repeater · Rich-Text · Medienauswahl · Bestätigungen · Link-Vorschläge
  * Wird auch vom Inline-Editor genutzt (window.CMSAdmin).
  */
-import { initBar, layer, layerBox, listen, pathTarget, ui, uiAll, openDialog, deepActive, shadowFor, addRoot, setUiCss, pathClosest, inPath, IN_ADMIN, topInset } from './_shadow.js';
+import { initBar, layer, layerBox, listen, pathTarget, ui, uiAll, openDialog, deepActive, shadowFor, addRoot, setUiCss, pathClosest, inPath, IN_ADMIN, topInset, onRoot, barHost } from './_shadow.js';
 import './_shared.js';   // gemeinsame Module für die nachgeladenen Teile admin-*.mjs (window.CMSAdminModules)
 import { lazy } from './_lazy.js';   // Teile, die erst bei Bedarf laden: KI, Block-Designer, Externe Quellen, KI-Einstellungen, Wiederholungen
 import './_media.js';
@@ -17,6 +17,7 @@ import { initSecCount } from './_fsec.js';
 import { initExposure } from './_exposure.js';
 import { initRowMenus } from './_rowmenu.js';   // Eintragslisten: Zeilenmenü (⋯) an den Knopf setzen   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
 import { initDateOnly } from './_dateonly.js';   // Datum/Uhrzeit nur als Datum bei „ganztägig“ (Core\Fields 'date_only_if')
+import { initDatetime, watchDatetime } from './_datetime.js';   // Datums-/Zeitauswahl a11y_datetime statt der des Browsers (Progressive Enhancement)
 import { initIban } from './_iban.js';
 import { initRuleBuilder } from './_schema_rules.js';
 import { initRepeaterCollapse, initSettingsPreview } from './_settings.js';
@@ -1250,7 +1251,23 @@ function initRRule(scope) {
   // Serien-Dialog „nur dieser / dieser und folgende / alle“ (Kalender mit Serien)
   if (scope.querySelector?.('[data-series-scope]:not([data-ready])')) lazy('admin-rrule').then(m => m.initSeries?.(scope));
 }
-function init(scope = d) { initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+/**
+ * Datums- und Zeitfelder (_datetime.js): in der Verwaltung überall, auf der Website nur in der CMS-Oberfläche (Schatten-Wurzeln:
+ * Seitenleiste, Dialoge) – Formulare der Website erweitert dataform.js mit den Farben des Kits. Einstellung „Datums- und
+ * Zeitauswahl“ (sys.datetime_picker) kommt als data-dt am <html> der Verwaltung bzw. an der Werkzeugleiste.
+ */
+const dtOpts = () => {
+  const src = IN_ADMIN ? d.documentElement : barHost();
+  return { lang: (IN_ADMIN ? d.documentElement.lang : src?.dataset.lang) === 'en' ? 'en' : 'de', theme: 'dt-adm', mode: src?.dataset.dt || 'picker' };
+};
+function initDt(scope) {
+  const root = scope.getRootNode?.() || scope;
+  if (!IN_ADMIN && !(root instanceof ShadowRoot)) return;
+  initDatetime(scope, dtOpts());
+}
+if (IN_ADMIN) watchDatetime(d, dtOpts());
+onRoot(r => watchDatetime(r, dtOpts()));
+function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 

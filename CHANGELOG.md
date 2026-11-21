@@ -50,6 +50,23 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **CardDAV mit Abo-Token** (Erweiterung dav 1.5.0): Token als Passwort, nur lesen, nur die gebundene Kontakte-Tabelle; neuer Filter
   `subscriptions.apps` für weitere Zugänge auf der Seite „Abonnieren“. Selbsttest `subscriptions:selftest`.
 
+### Datums- und Zeitauswahl: barrierefreier Kalender (a11y_datetime)
+- **Statt der Auswahl des Browsers** erweitert der barrierefreie Picker **a11y_datetime** (FriendsOfREDAXO, Fork von flatpickr, MIT,
+  5.3.3) alle Felder `date`, `time` und `datetime` – Verwaltung (Felder aus `Core\Fields`, Datentabellen, Seiten „Online ab/bis“,
+  Mitteilungen planen, Kalender mit „Ganztägig“), Seitenleiste „Eintrag bearbeiten“ auf der Website und Formulare der Datentabellen
+  auf der Website. Progressive Enhancement: die Felder bleiben `<input type="date|time|datetime-local">` mit dem Format des Servers,
+  ohne JavaScript ändert sich nichts. Anzeige TT.MM.JJJJ / HH:MM (Englisch DD/MM/YYYY), Wochenbeginn Montag, Eintippen bleibt
+  möglich, Tastatur (Pfeil nach unten öffnet, Escape schließt), Ansagen und Tagesnamen auf Deutsch, Label, Hinweise, Pflichtfeld und
+  Fehler bleiben verknüpft; Tabellenstruktur (Zeilen per `aria-owns`) und deutsche Beschriftungen ergänzt, wo 5.3.3 sie auslässt.
+- **Website lädt nur bei Bedarf:** `dataform.js` holt `js/datetime.mjs`, den Picker und `css/datetime.css` erst, wenn ein Formular
+  ein Datums- oder Zeitfeld hat; CSP ohne Ausnahme (keine Inline-Stile). Farben aus `--kit-*` bzw. `--adm-*`, hell/dunkel.
+- **Grundeinstellung „Datums- und Zeitauswahl“** (`sys.datetime_picker`): Kalender überall (Standard, auf Telefonen ohne
+  Bildschirmtastatur), nur am Computer, oder immer die Auswahl des Browsers. Kit-Schalter `'datetime_picker' => false` – gesetzt
+  für praxis (eingefrorene Anfrageformulare; Pixelvergleich ohne Abweichung).
+- **Einbindung ohne Fremd-CDN:** a11y_datetime liegt nicht auf npm; `tools/build.mjs` lädt das offizielle Release-Archiv und die
+  Lizenz mit fester SHA-256 (`tools/vendor-releases.json`) nach `public/assets/vendor/a11y_datetime/5.3.3/`, `tools/licenses.mjs`
+  prüft mit. Entwicklerhandbuch → Feldtypen → „Datums- und Zeitauswahl“, Formulare, Build; Handbuch → Grundeinstellungen.
+
 ### Adressbuch (Tabellenart „contacts“) und Freigabe je Feld und Ziel
 - **Tabellenart Adressbuch** (`settings.kind = contacts`, `Core\Data\Kinds`): eine normale Inhaltstabelle (Route, Detailseiten,
   Revisionen, Workflow, geteilte Tabellen, Suche, API, Blöcke) mit festem, versioniertem Grundschema (`settings.kind_version`, nur

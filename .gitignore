@@ -74,3 +74,6 @@ deploy/targets/*.env
 # Psalm (tools/psalm, nur Entwicklung: Taint-Analyse)
 /tools/psalm/vendor/
 /public/assets/vendor/pdfjs/cmaps/
+
+# Release-Dateien der Vendoren ohne npm-Paket (tools/vendor-releases.json, tools/build.mjs)
+/tools/.cache/
