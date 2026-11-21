@@ -360,6 +360,11 @@
     <TaintedInclude>
       <code><![CDATA[$fluid . '/theme.php']]></code>
     </TaintedInclude>
+    <TaintedFile>
+      <code><![CDATA[$fluid . '/assets/css/_base.css']]></code>
+      <code><![CDATA[$fluid . '/assets/css/_tokens.css']]></code>
+      <code><![CDATA[Kit::publicDir('selftest-css-b') . '/css/b.css']]></code>
+    </TaintedFile>
   </file>
   <file src="../../app/Landing.php">
     <TaintedFile>
