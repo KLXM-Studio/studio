@@ -184,7 +184,11 @@
   const blockedEmbed = () => [...d.querySelectorAll('consent-embed[service]')].some(el => { const k = el.getAttribute('service') || ''; return services.has(k) && !has(k); });
   const suppressed = () => {
     const mode = cfg.openMode;
-    if (cfg.preview || (mode !== 'on_demand' && mode !== 'never')) return false;   // unbekannt = always (sichere Seite)
+    if (cfg.preview) return false;
+    /* „Hinweis nur, wenn nötig“ (Server: Consent::bannerless): alle optionalen Dienste laden nur über Platzhalter –
+       die Einwilligung holt der Platzhalter am Inhalt ein, „Datenschutz-Einstellungen“ bleibt zum Ansehen/Widerruf. */
+    if (cfg.embedOnly) return true;
+    if (mode !== 'on_demand' && mode !== 'never') return false;   // unbekannt = always (sichere Seite)
     if (mode === 'never') return true;
     if (optional.some(loadsOnConsent)) return false;
     return !blockedEmbed();

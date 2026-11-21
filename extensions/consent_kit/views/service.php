@@ -1,7 +1,7 @@
 <?php
 /**
  * Dienst anlegen/bearbeiten – Reiter: Allgemein · Cookies & Speicher · Scripts · Ereignisse · Varianten · Erweitert.
- * @var array $s  @var array $domains  @var array $errors  @var ?bool $complete
+ * @var array $s  @var array $domains  @var array $errors  @var ?bool $complete  @var ?array $eoIssues
  */
 use Core\Fields;
 use Klxm\Consent\AdminController;
@@ -50,6 +50,11 @@ $p = $s['preset'] ? \Klxm\Consent\Presets::get($s['preset']) : null;
       <div class="f f--half"><label for="ck-grp"><?= e(__('Gruppe')) ?></label>
         <select id="ck-grp" name="s[grp]"><?php foreach (Repository::GROUPS as $k => [$n]): ?><option value="<?= e($k) ?>"<?= $k === $s['grp'] ? ' selected' : '' ?>><?= e(__($n)) ?></option><?php endforeach; ?></select></div>
       <div class="f f--half f--bool"><input type="hidden" name="s[active]" value="0"><label class="f-check"><input type="checkbox" name="s[active]" value="1"<?= !empty($s['active']) ? ' checked' : '' ?>> <span><?= e(__('Aktiv (wird im Hinweis angeboten)')) ?></span></label></div>
+      <div class="f f--bool"><input type="hidden" name="s[embed_only]" value="0"><label class="f-check"><input type="checkbox" name="s[embed_only]" value="1" aria-describedby="ck-eo-h"<?= !empty($s['embed_only']) ? ' checked' : '' ?>> <span><?= e(__('Nur Einbettung mit Platzhalter')) ?></span></label>
+        <p class="f-help" id="ck-eo-h"><?= e(__('Der Dienst lädt nur über Platzhalter (Block „Externer Inhalt“, Video-Block): Die Einwilligung wird am Inhalt eingeholt. Ist das bei allen aktiven Diensten so, braucht es keinen Hinweis beim Seitenaufruf (Einstellung „Hinweis nur, wenn nötig“). Voraussetzungen: Domains eingebetteter Inhalte (Reiter „Erweitert“), nicht Statistik/Marketing, kein Consent Mode, keine Ereignisse, kein Code vor der Einwilligung, Code höchstens vom Anbieter der Einbettung.')) ?></p>
+        <?php $eoIssues = array_diff_key($eoIssues ?? [], ['flag' => true]); if (!empty($s['embed_only']) && $eoIssues): ?>
+        <p class="adm-flash adm-flash--info"><?= e(__('Zählt trotzdem nicht als reine Einbettung – der Hinweis erscheint deshalb: {reasons}.', ['reasons' => implode('; ', $eoIssues)])) ?></p>
+        <?php endif; ?></div>
     </div>
     <?php if ($s['param_defs']): ?>
     <h3 class="f-heading"><?= e(__('Angaben für diese Website')) ?></h3>

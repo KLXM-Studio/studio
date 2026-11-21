@@ -51,7 +51,7 @@ if (!function_exists('consent_has')) {
 return [
     'name' => 'consent_kit',
     'label' => 'Consent-Kit (Cookie-Einwilligung)',
-    'version' => '1.4.0',
+    'version' => '1.5.0',
     'requires' => '>=1.0.0',
     'description' => 'Einwilligungsverwaltung: Dienste aus geprüften Vorlagen, barrierefreier Hinweis im Design der Website, 2-Klick-Platzhalter, Google Consent Mode v2, GPC, Protokoll ohne IP-Adresse. Port des REDAXO-AddOns consent_kit (MIT).',
     'author' => 'KLXM Crossmedia GmbH and contributors',
@@ -66,6 +66,9 @@ return [
         $x->feature('consent', 'Cookie-Einwilligung (Consent-Kit): Dienste, Hinweis, Protokoll', ['consent.manage']);
         $x->permissions('Cookie-Einwilligung', ['consent.manage' => 'Dienste, Design, Einstellungen und Protokoll der Cookie-Einwilligung verwalten']);
         $x->migration(1, fn(Core\Database $db) => Klxm\Consent\Repository::migrate($db));
+        $x->migration(2, fn(Core\Database $db) => Klxm\Consent\Repository::migrateEmbedOnly($db));
+        // Ruhiger Hinweis (Einrichtung): Banner wäre nicht nötig, „Hinweis nur, wenn nötig“ ist aber aus
+        $x->health(fn() => Klxm\Consent\Consent::health(), 'setup');
         // Reine Konfiguration → Sammelseite Administration → Einstellungen → Einstellungen der Funktionen (Core\AdminPages)
         $x->adminPage(['href' => '/admin/consent', 'label' => 'Cookie-Einwilligung', 'kind' => 'settings', 'icon' => 'cookie',
             'perm' => 'consent.manage', 'feature' => 'consent', 'description' => 'Dienste, Texte und Darstellung des Cookie-Hinweises, Protokoll']);
@@ -122,6 +125,7 @@ return [
             echo 'Consent-Kit (' . site()->key . '): ' . $n . " Protokolleinträge gelöscht.\n";
             return 0;
         });
+        $x->command('consent:selftest', 'Consent-Kit: Selbsttest „Hinweis nur, wenn nötig“ (Einordnung der Vorlagen, Hinweis ja/nein je Konstellation, Platzhalter ohne fremde Adressen)', fn(array $args): int => Klxm\Consent\SelfTest::run());
         $x->command('consent:status', 'Consent-Kit: aktive Dienste, Hosts in der CSP und Protokoll-Umfang dieser Website', function (array $args): int {
             foreach (Klxm\Consent\Consent::statusLines() as $line) echo $line, "\n";
             return 0;
