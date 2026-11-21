@@ -15,6 +15,9 @@ namespace Core;
  * Überschrift mit 'collapse' => true|'open': aufklappbarer Abschnitt bis zur nächsten Überschrift (geöffnet bei Fehlern darin
  * und bei leeren Pflichtfeldern); 'summary' = Kurztext im Kopf, 'count' => true = „3 von 7 ausgefüllt“ im Kopf,
  * 'variants' => [...] = ganzer Abschnitt nur bei diesen Varianten des Blocks.
+ * Einstellungsseiten (renderGroups): Überschrift mit 'lead' (ein Satz zu Geltung/Rückfall), 'scope' => 'site'|'network',
+ * 'summary' (Kurztext im eingeklappten Kopf); Feld mit 'danger' (Warnhinweis), 'effective' (wirksamer Wert), 'keep' (einmal
+ * gesetzt, nicht leer speicherbar – prüft der Aufrufer, z. B. Core\SiteSettings), 'show_if' (nur sichtbar, wenn …).
  */
 final class Fields
 {
@@ -426,13 +429,27 @@ final class Fields
             $note = $h !== null ? (!empty($h['help']) ? '<p class="set-group__note">' . e((string) $h['help']) . '</p>' : '')
                 . (!empty($h['links']) ? '<p class="set-group__note">' . implode(' · ', array_map(fn($l) => '<a href="' . e(url((string) $l['url'])) . '">' . e((string) $l['label']) . '</a>', (array) $h['links'])) . '</p>' : '') : '';
             $list = $g['body'] !== '' ? '<div class="set-list">' . $g['body'] . '</div>' : '';
+            // 'scope' => 'site'|'network': Kennzeichen „Gilt für: diese Website“ bzw. „alle Websites“ (nur, wo es eine Rolle spielt)
+            $scope = match ($h['scope'] ?? null) {
+                'site' => ' <span class="set-scope">' . e(__('Gilt für: diese Website')) . '</span>',
+                'network' => ' <span class="set-scope set-scope--net">' . e(__('Gilt für: alle Websites')) . '</span>',
+                default => '',
+            };
+            // 'lead': ein Satz über der Gruppe – wofür sie gilt und was greift, wenn sie leer bleibt (Muster der E-Mail-Gruppen);
+            // ohne Titel steht das Kennzeichen „Gilt für“ vor dem Satz
+            $leadText = $h !== null && !empty($h['lead']) ? e((string) $h['lead']) : '';
+            if ($title === '' && $scope !== '') { $leadText = ltrim($scope) . ($leadText !== '' ? ' ' . $leadText : ''); $scope = ''; }
+            $lead = $leadText !== '' ? '<p class="set-group__lead">' . $leadText . '</p>' : '';
+            // 'alert': deutlicher Warnhinweis über der Gruppe (z. B. „Die Live-Website ist für Suchmaschinen gesperrt“)
+            if ($h !== null && !empty($h['alert'])) $lead = '<p class="adm-flash adm-flash--error" role="note">' . e((string) $h['alert']) . '</p>' . $lead;
             $collapse = $h['collapse'] ?? false;
             if ($collapse && $title !== '') {
-                $html .= '<details class="set-group set-group--collapse"' . ($collapse === 'open' || $g['err'] ? ' open' : '') . '><summary class="set-group__title">' . $title . '</summary>'
-                    . ($g['body'] !== '' ? $note . $list : $note) . '</details>';
+                $html .= '<details class="set-group set-group--collapse"' . ($collapse === 'open' || $g['err'] ? ' open' : '') . '><summary class="set-group__title">' . $title . $scope
+                    . (!empty($h['summary']) ? ' <span class="set-group__hint">' . e((string) $h['summary']) . '</span>' : '') . '</summary>'
+                    . $lead . ($g['body'] !== '' ? $note . $list : $note) . '</details>';
             } else {
-                $html .= '<section class="set-group">' . ($title !== '' ? '<h3 class="set-group__title">' . $title . '</h3>' : '')
-                    . ($g['body'] !== '' ? $list . $note : $note) . '</section>';
+                $html .= '<section class="set-group">' . ($title !== '' ? '<h3 class="set-group__title">' . $title . $scope . '</h3>' : '')
+                    . $lead . ($g['body'] !== '' ? $list . $note : $note) . '</section>';
             }
             $g = null;
         };
@@ -524,9 +541,17 @@ final class Fields
         $id = 'f-' . preg_replace('~[^a-z0-9]+~i', '-', $prefix . '-' . $name);
         $err = $errors[$p] ?? null;
         $req = !empty($f['required']);
-        $label = e($f['label'] ?? $name) . ($req ? ' <span class="req" aria-hidden="true">*</span>' : '');
-        $help = !empty($f['help']) ? '<p class="f-help" id="' . $id . '-h">' . e($f['help']) . '</p>' : '';
-        $describedBy = trim((!empty($f['help']) ? "$id-h " : '') . ($err ? "$id-e" : ''));
+        // 'keep' => true: darf nicht geleert werden, sobald ein Wert gesetzt ist (z. B. Impressum-Seite) – Stern wie Pflicht
+        $label = e($f['label'] ?? $name) . ($req || !empty($f['keep']) ? ' <span class="req" aria-hidden="true">*</span>' : '');
+        // Hilfe unter dem Feld: 'danger' (Warnhinweis vor dem Text, z. B. „sperrt die Website für Besucher“), 'help', 'effective'
+        // (wirksamer Wert, wenn das Feld leer bleibt bzw. was gerade greift – „Wirksam: …“)
+        $hasHelp = !empty($f['help']) || !empty($f['danger']) || (isset($f['effective']) && (string) $f['effective'] !== '');
+        $help = $hasHelp ? '<p class="f-help" id="' . $id . '-h">'
+            . (!empty($f['danger']) ? '<span class="f-danger">' . icon('warning') . '<span>' . e((string) $f['danger']) . '</span></span>' : '')
+            . (!empty($f['help']) ? e($f['help']) : '')
+            . (isset($f['effective']) && (string) $f['effective'] !== '' ? '<span class="f-eff">' . e(__('Wirksam:')) . ' <strong>' . e((string) $f['effective']) . '</strong></span>' : '')
+            . '</p>' : '';
+        $describedBy = trim(($hasHelp ? "$id-h " : '') . ($err ? "$id-e" : ''));
         $aria = ($describedBy ? ' aria-describedby="' . $describedBy . '"' : '') . ($err ? ' aria-invalid="true"' : '') . ($req ? ' required' : '');
         $errHtml = $err ? '<p class="f-error" id="' . $id . '-e">' . e($err) . '</p>' : '';
         $width = ($f['width'] ?? 'full') === 'half' ? ' f--half' : '';

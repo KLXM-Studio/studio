@@ -25,6 +25,7 @@
 @import "./_features.css";   /* Funktionen & Erweiterungen (Core\Features, app/Admin/views/features.php, resources/js/_features.js) */   /* Externe Quellen (Core\Sources): Zuordnung, Vorschau, Protokoll, Badge „aus Quelle“ */
 @import "./_netarea.css";   /* Netzwerk-Bereich: Kopf „NETZWERK“, Seitenleiste, Umschalter (Core\Network\Area) */
 @import "./_mailsettings.css";   /* E-Mail-Versand: nummerierte Gruppen, wirksamer Absender (system/_mail.php, network/_email.php) */
+@import "./_settingsui.css";   /* Einstellungsseiten: Geltung, Warnhinweis, wirksamer Wert, Letzte Änderungen (Fields::renderGroups) */
 @import "./_toast.css";   /* Meldungen (Toast), gemeinsam mit editor.shadow.css */
 /* ==========================================================================
    Admin-Oberfläche (Core). Nutzt dieselbe Schrift und Farbwelt wie das Theme.
