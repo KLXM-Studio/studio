@@ -39,14 +39,16 @@ final class Indexing
     public static function fields(): array
     {
         return [
-            ['name' => 'sys.ai_crawlers', 'label' => 'KI-Crawler', 'type' => 'select', 'required' => true, 'default' => 'allow',
-                'options' => ['allow' => 'Alle erlauben (wie Suchmaschinen)', 'training' => 'KI-Training sperren, Antworten mit Quellenlink erlauben', 'all' => 'Alle KI-Crawler sperren'],
-                'help' => '„KI-Training sperren“ hält z. B. GPTBot, ClaudeBot, Google-Extended und CCBot fern; Assistenten, die beim Antworten auf Ihre Seiten verlinken (z. B. ChatGPT-Suche, Perplexity), bleiben erlaubt. Seriöse Anbieter halten sich an die robots.txt – eine technische Sperre ist es nicht.'],
-            ['name' => 'sys.llms_txt', 'label' => 'llms.txt anbieten (Übersicht für KI-Assistenten)', 'type' => 'bool', 'default' => false,
-                'help' => 'Unter /llms.txt eine kurze Liste der wichtigsten Seiten mit Beschreibung (Standard llmstxt.org). Nicht bei „Alle KI-Crawler sperren“.'],
-            ['name' => 'sys.robots_extra', 'label' => 'Eigene Regeln für die robots.txt (optional)', 'type' => 'textarea', 'rows' => 4, 'max' => 4000,
+            ['name' => 'sys.ai_crawlers', 'label' => __('KI-Crawler'), 'type' => 'select', 'required' => true, 'default' => 'allow',
+                'options' => ['allow' => __('Alle erlauben (wie Suchmaschinen)'), 'training' => __('KI-Training sperren, Antworten mit Quellenlink erlauben'), 'all' => __('Alle KI-Crawler sperren')],
+                'help' => __('„KI-Training sperren“ hält z. B. GPTBot, ClaudeBot, Google-Extended und CCBot fern; Assistenten, die beim Antworten auf Ihre Seiten verlinken (z. B. ChatGPT-Suche, Perplexity), bleiben erlaubt.')],
+            ['name' => 'sys.llms_txt', 'label' => __('llms.txt anbieten (Übersicht für KI-Assistenten)'), 'type' => 'bool', 'default' => false,
+                'show_if' => ['sys.ai_crawlers' => ['allow', 'training']],
+                'help' => __('Unter /llms.txt eine kurze Liste der wichtigsten Seiten mit Beschreibung (Standard llmstxt.org).')],
+            ['name' => 'sys.robots_extra', 'label' => __('Eigene Regeln für die robots.txt (für Fachleute)'), 'type' => 'textarea', 'rows' => 4, 'max' => 4000,
                 'placeholder' => "User-agent: *\nDisallow: /intern/",
-                'help' => 'Werden unten angefügt. Erlaubt: User-agent, Allow, Disallow, Crawl-delay, Sitemap und Kommentare (#). Seiten einzeln sperren Sie besser über „Nicht indexieren“ in den Seiteneinstellungen.'],
+                'help' => __('Werden unten angefügt. Erlaubt: User-agent, Allow, Disallow, Crawl-delay, Sitemap und Kommentare (#). Seiten einzeln sperren Sie besser über „Nicht indexieren“ in den Seiteneinstellungen.'),
+                'danger' => __('Eine Regel „Disallow: /“ sperrt die ganze Website für die genannten Crawler.')],
         ];
     }
 
@@ -119,9 +121,9 @@ final class Indexing
     public static function warnings(): array
     {
         $w = [];
-        if ((bool) app()->settings->get('sys.noindex') && environment() === 'production') $w[] = 'Die Live-Website ist für Suchmaschinen gesperrt („Suchmaschinen aussperren“ ist an).';
+        if ((bool) app()->settings->get('sys.noindex') && environment() === 'production') $w[] = __('Die Live-Website ist für Suchmaschinen gesperrt („Suchmaschinen aussperren“ ist an).');
         foreach (self::extraLines() as $l) {
-            if (preg_match('~^Disallow\s*:\s*/\s*$~i', $l)) { $w[] = 'Eine eigene Regel „Disallow: /“ sperrt die ganze Website für die genannten Crawler.'; break; }
+            if (preg_match('~^Disallow\s*:\s*/\s*$~i', $l)) { $w[] = __('Eine eigene Regel „Disallow: /“ sperrt die ganze Website für die genannten Crawler.'); break; }
         }
         return $w;
     }
