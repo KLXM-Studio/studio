@@ -32,6 +32,7 @@ $core = [
     'anmelden' => 'Anmelden & Konto',
     'bearbeiten' => 'Inhalte bearbeiten',
     'einstellungen' => $settingsTitle,
+    'listen' => 'Arbeiten in Listen: Menü, Rechtsklick, Auswahl',
     'seiten' => 'Seiten verwalten',
     'entwuerfe' => 'Entwürfe prüfen und aufräumen',
     'aufgabenliste' => 'Aufgaben für die Redaktion',
