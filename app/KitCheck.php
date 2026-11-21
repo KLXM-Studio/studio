@@ -13,7 +13,8 @@ namespace Core;
  *    liest (nur mit -v; viele werden über Kern-Helfer verarbeitet);
  *  - Kern-Fragmente mit geändertem Original (Core\Fragments::overrides, wie fragments:list);
  *  - Kit-Vertrag: Pflicht-Rollen --kit-* (accent, on-accent, link, muted, radius) in den Stylesheets des Kits;
- *  - Vererbung (theme.php → 'extends'): Eltern-Kit fehlt, Schleife oder zu tief.
+ *  - Vererbung (theme.php → 'extends'): Eltern-Kit fehlt, Schleife oder zu tief;
+ *  - eigene Stylesheets (theme.php → 'css'): gebaute Datei fehlt.
  */
 final class KitCheck
 {
@@ -38,6 +39,12 @@ final class KitCheck
                         break;
                     }
                 }
+            }
+        }
+        // Eigene Stylesheets ('css' => [...]): gebaute Datei fehlt → lädt still nichts
+        foreach ($kit->kitStylesheetEntries() as [$k, $path]) {
+            if (!is_file(Kit::publicDir($k) . '/' . $path)) {
+                $out[] = ['level' => 'warn', 'file' => Kit::relative((string) Kit::definitionFile(Kit::dir($k))), 'text' => "Stylesheet '$path' ('css') fehlt in " . Kit::relative(Kit::publicDir($k)) . ' – Quelle unter assets/ anlegen und bauen bzw. im Paket unter public/ mitliefern.'];
             }
         }
         $blocks = $kit->blocks();
