@@ -68,7 +68,8 @@ $row = function (array $n) use (&$row, &$count, $multi, $statusCell, $short): st
         ))) . '</span>'
         . '<span class="pt-menu">' . ($p['is_home'] ? '' : '<label class="pt-switch" title="Im Hauptmenü zeigen"><input type="checkbox" data-menu' . ($p['menu'] ? ' checked' : '') . ' aria-label="„' . e($p['title']) . '“ im Menü zeigen"><span></span></label>') . '</span>'
         . '<span class="pt-date" title="' . e(\Core\Format::admin()->datetime(strtotime((string) $p['updated_at']))) . '">' . e($short((string) $p['updated_at'])) . '</span>'
-        . '<span class="pt-more"><button type="button" class="pt-morebtn" data-more aria-label="Aktionen für „' . e($p['title']) . '“">' . icon('dots-three') . '</button></span>'
+        // Zeilenmenü wie in allen Listen (resources/js/_rowmenu.js openMenu); ohne JavaScript: Link zu den Seiteneinstellungen
+        . '<span class="pt-more"><a class="pt-morebtn rm-btn" href="' . e(url('/admin/pages/' . $id)) . '" role="button" data-more aria-haspopup="menu" aria-label="' . e(__('Weitere Aktionen: {title}', ['title' => $p['title']])) . '" title="' . e(__('Weitere Aktionen')) . '">' . icon('dots-three') . '</a></span>'
         . '</div>';
     if ($kids) {
         $h .= '<ul role="group">' . implode('', array_map($row, $kids)) . '</ul>';
@@ -127,7 +128,8 @@ $canSpecial = $canSpecial404 || ($templates && can('data.schema')) || !empty($pa
 </div>
 <?php endif; ?>
 <div id="panel-baum"<?= $canSpecial ? ' role="tabpanel" aria-labelledby="tab-baum"' : '' ?>>
-<div class="pt" data-pagetree data-base="<?= e(url('/admin/pages')) ?>" data-can-publish="<?= $canPub ? '1' : '0' ?>" data-can-templates="<?= can('system.manage') ? '1' : '0' ?>" data-languages="<?= e(json_encode($multi ? Lang::all() : [], JSON_UNESCAPED_UNICODE)) ?>" data-lang="<?= e($lang) ?>">
+<div class="pt" data-pagetree data-base="<?= e(url('/admin/pages')) ?>" data-can-publish="<?= $canPub ? '1' : '0' ?>" data-can-templates="<?= can('system.manage') ? '1' : '0' ?>" data-languages="<?= e(json_encode($multi ? Lang::all() : [], JSON_UNESCAPED_UNICODE)) ?>" data-lang="<?= e($lang) ?>"<?= ($tkU = app()->auth->user()) && \Core\Tasks\Tasks::canCreate($tkU) ? ' data-tasks="' . e(url('/admin/aufgaben/neu')) . '"' : '' ?>>
+  <button type="button" hidden data-pt-versions<?= \Core\Http\Controllers\Admin\VersionsController::attrs('/admin/api/pages/__ID__/versions') ?>><?= e(__('Versionen')) ?></button>
   <div class="dt-bar pt-bar">
     <?php if ($multi): ?><nav class="fx-seg dt-seg" aria-label="Sprache"><?php foreach (Lang::all() as $code => $label): ?><a href="<?= e(url('/admin/pages?lang=' . $code)) ?>"<?= $code === $lang ? ' aria-current="true"' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav><?php endif; ?>
     <label class="fx-search dt-search"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 2a5 5 0 1 0 3 9l3.3 3.3 1-1L11 10A5 5 0 0 0 7 2zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg><input type="search" placeholder="Seiten filtern" aria-label="Seiten filtern" data-filter></label>

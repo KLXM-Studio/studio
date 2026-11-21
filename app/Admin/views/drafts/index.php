@@ -79,7 +79,7 @@ $anyDiscard = (bool) array_filter($items, fn($i) => $i['can_discard']);
     </tr></thead>
     <tbody>
     <?php foreach ($items as $n => $i): $aid = DraftController::anchor($i['key']); $sel = $i['can_publish'] || $i['can_discard']; ?>
-      <tr class="rv-row dr-row<?= $i['stale'] ? ' is-stale' : '' ?>" id="<?= e($aid) ?>">
+      <tr class="rv-row dr-row<?= $i['stale'] ? ' is-stale' : '' ?>" id="<?= e($aid) ?>"<?= \Core\RowMenu::host('dr-menu-' . $n) ?>>
         <td class="rv-table__sel"><?php if ($sel): ?><input type="checkbox" name="items[]" value="<?= e($i['key']) ?>" id="dr-sel-<?= $n ?>" aria-labelledby="dr-t-<?= $n ?>" data-rv-item<?= ($i['state'] ?? '') === 'offline' ? ' data-rv-noall' : '' ?>><?php endif; ?></td>
         <td class="dr-what">
           <span class="rv-row__type"><?= e($typeLabel($i)) ?></span><?php if ($multi): ?> <span class="dr-lang" title="<?= e(Lang::all()[$i['lang']] ?? $i['lang']) ?>"><?= e(strtoupper($i['lang'])) ?></span><?php endif; ?>
@@ -109,13 +109,18 @@ $anyDiscard = (bool) array_filter($items, fn($i) => $i['can_discard']);
         </td>
         <td class="dr-actions">
           <a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url($i['edit'])) ?>"><?= e($i['type'] === 'page' ? __('Im Editor öffnen') : __('Bearbeiten')) ?><span class="sr-only"> – <?= e($i['title']) ?></span></a>
-          <a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url($showUrl($i))) ?>"><?= e(__('Unterschiede')) ?><span class="sr-only"> – <?= e($i['title']) ?></span></a>
-          <?php if ($i['can_publish']): ?><button class="adm-btn adm-btn--small" type="submit" formaction="<?= e(url('/admin/entwuerfe/veroeffentlichen')) ?>" name="one" value="<?= e($i['key']) ?>"
-            data-confirm="<?= e(__('„{title}“ veröffentlichen?', ['title' => $i['title']])) ?>" data-confirm-ok="<?= e(__('Veröffentlichen')) ?>"><?= e(__('Veröffentlichen')) ?><span class="sr-only"> – <?= e($i['title']) ?></span></button><?php endif; ?>
-          <?php if ($i['can_discard']): ?><button class="adm-btn adm-btn--small adm-btn--danger-text" type="submit" formaction="<?= e(url('/admin/entwuerfe/verwerfen')) ?>" name="one" value="<?= e($i['key']) ?>"
-            data-confirm="<?= e($i['type'] === 'page' ? __('Entwurf von „{title}“ verwerfen? Die Seite geht zurück auf die veröffentlichte Fassung; der Entwurf bleibt unter „Versionen“ gesichert.', ['title' => $i['title']]) : __('„{title}“ verwerfen? Der Eintrag wird gelöscht und unter „Zuletzt verworfen“ gesichert.', ['title' => $i['title']])) ?>"
-            data-confirm-ok="<?= e(__('Verwerfen')) ?>"><?= e(__('Verwerfen')) ?><span class="sr-only"> – <?= e($i['title']) ?></span></button>
-          <?php elseif ($i['type'] === 'page' && $i['state'] === 'new'): ?><span class="dr-actions__note"><?= e(__('Neue Seite – Löschen unter „Seiten“')) ?></span><?php endif; ?>
+          <?php // Zeilenmenü wie in allen Listen (Core\RowMenu): ⋯, Rechtsklick, Umschalt+F10 – Knöpfe gehören zum Formular der Liste
+          $drItems = [
+              ['key' => 'open', 'label' => $i['type'] === 'page' ? __('Im Editor öffnen') : __('Bearbeiten'), 'href' => url($i['edit'])],
+              ['key' => 'preview', 'label' => __('Unterschiede'), 'href' => url($showUrl($i))],
+          ];
+          if ($i['can_publish']) $drItems[] = ['key' => 'publish', 'label' => __('Veröffentlichen'), 'attrs' => ['formaction' => url('/admin/entwuerfe/veroeffentlichen'), 'name' => 'one', 'value' => $i['key'],
+              'data-confirm' => __('„{title}“ veröffentlichen?', ['title' => $i['title']]), 'data-confirm-ok' => __('Veröffentlichen')]];
+          if ($i['can_discard']) $drItems[] = ['key' => 'delete', 'icon' => 'arrow-counter-clockwise', 'label' => __('Verwerfen'), 'attrs' => ['formaction' => url('/admin/entwuerfe/verwerfen'), 'name' => 'one', 'value' => $i['key'],
+              'data-confirm' => $i['type'] === 'page' ? __('Entwurf von „{title}“ verwerfen? Die Seite geht zurück auf die veröffentlichte Fassung; der Entwurf bleibt unter „Versionen“ gesichert.', ['title' => $i['title']]) : __('„{title}“ verwerfen? Der Eintrag wird gelöscht und unter „Zuletzt verworfen“ gesichert.', ['title' => $i['title']]),
+              'data-confirm-ok' => __('Verwerfen')]];
+          echo \Core\RowMenu::render('dr-menu-' . $n, $i['title'] !== '' ? $i['title'] : '–', $drItems); ?>
+          <?php if (!$i['can_discard'] && $i['type'] === 'page' && $i['state'] === 'new'): ?><span class="dr-actions__note"><?= e(__('Neue Seite – Löschen unter „Seiten“')) ?></span><?php endif; ?>
         </td>
       </tr>
     <?php endforeach; ?>

@@ -798,9 +798,14 @@ final class DataController extends AdminController
         $t = $this->table($handle);
         if (!can('data.edit', $handle) || !\Core\Data\Calendar::enabled($t)) throw new HttpException(404);
         $c = \Core\Data\Calendar::config($t);
-        $entries = Entries::query($t, ['status' => 'published', 'sort' => $c['start'], 'dir' => 'asc', 'limit' => 5000, 'source' => 'own']);
+        // ?ids[]=…: nur diese Termine (Zeilenmenü „ICS exportieren“, Mehrfachauswahl) – auch Entwürfe, nur eigene Einträge
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($r->query['ids'] ?? [])))));
+        $entries = $ids
+            ? array_values(array_filter(array_map(fn($id) => Entries::find($t, $id), array_slice($ids, 0, 500)), fn($e) => $e && !Shared::isForeign($t, $e)))
+            : Entries::query($t, ['status' => 'published', 'sort' => $c['start'], 'dir' => 'asc', 'limit' => 5000, 'source' => 'own']);
         $body = \Core\Data\ICal::calendar($t, $entries, ['publish' => true, 'name' => $t['name'] . ' – ' . site_name()]);
-        return new Response($body, 200, ['Content-Type' => 'text/calendar; charset=utf-8', 'Content-Disposition' => 'attachment; filename="' . $t['handle'] . '.ics"',
+        $file = (count($entries) === 1 ? \Core\VCard::fileName(Entries::title($t, $entries[0])) : '') ?: $t['handle'];
+        return new Response($body, 200, ['Content-Type' => 'text/calendar; charset=utf-8', 'Content-Disposition' => 'attachment; filename="' . $file . '.ics"',
             'Cache-Control' => 'private, no-store']);
     }
 

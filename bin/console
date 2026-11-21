@@ -92,7 +92,8 @@
  *   db:selftest                                       Selbsttest Core\Db\Table (anlegen, idempotent, umbenennen, Indizes, Fremdschlüssel)
  *   charts:selftest                                   Selbsttest Core\Charts (Beschreibung, Zahlen, CSP-sichere Ausgabe, Tabelle, Quellen)
  *   kits:selftest                                     Selbsttest Vererbung von Kits (extends, Zusammenführen, design_defaults)
- *   format:selftest                                   Selbsttest Core\Format (Datum, relativ, Zahl, Betrag, Größe, Dauer, Auszug; DE/EN)
+ *   rowmenu:selftest                                  Selbsttest Core\RowMenu (Reihenfolge, ARIA, Formulare mit CSRF, Rückfrage)
+ *   format:selftest                                 Selbsttest Core\Format (Datum, relativ, Zahl, Betrag, Größe, Dauer, Auszug; DE/EN)
  *   features:list                                     Funktionen dieser Website: an/aus, Quelle (Konfiguration, Verwaltung, Standard)
  *   features:release [--dry-run] [--only=features|extensions]
  *                                                     In der Konfiguration festgelegte Funktionen/Erweiterungen an die Verwaltung
@@ -1928,6 +1929,13 @@ switch ($cmd) {
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);
+
+    case 'rowmenu:selftest':
+        // Core\RowMenu: einheitliches Zeilenmenü aller Listen (Reihenfolge, ARIA, Formulare mit CSRF und Rückfrage)
+        $res = Core\RowMenu::selftest();
+        foreach ($res['errors'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, {$res['fail']} fehlgeschlagen\n";
+        exit($res['fail'] ? 1 : 0);
 
     case 'format:selftest':
         // Core\Format: Datum, relative Angaben, Zahlen, Beträge, Größen, Dauer, Auszug – und gleiche Ausgaben wie die früheren Helfer

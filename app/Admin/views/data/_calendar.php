@@ -21,6 +21,9 @@ foreach ($cal['occ'] as $o) {
 $weekdays = [__('Montag'), __('Dienstag'), __('Mittwoch'), __('Donnerstag'), __('Freitag'), __('Samstag'), __('Sonntag')];
 $fmt = fn(DateTimeInterface $d, string $p) => (new IntlDateFormatter(\Core\I18n::locale(), IntlDateFormatter::NONE, IntlDateFormatter::NONE, $d->getTimezone(), null, $p))->format($d);
 $canEdit = can('data.edit', $t['handle']);
+// Termin im Raster: Rechtsklick bzw. Umschalt+F10 öffnet das Zeilenmenü (Core\RowMenu) – dieselben Aktionen wie in der Liste
+$evN = 0;
+$extRow = \Core\Extensions::tableActions($t)['row'];
 $de = str_starts_with(\Core\I18n::locale(), 'de');
 ?>
 <section class="dt-cal" aria-labelledby="dt-cal-month">
@@ -49,14 +52,16 @@ $de = str_starts_with(\Core\I18n::locale(), 'de');
           <?php foreach ($events as $o): $e = $o['entry']; $draft = $e['status'] === 'draft';
             // Serie (Kalender mit Serien): Klick öffnet genau dieses Vorkommen (?vorkommen=…), Einzeltermine sich selbst
             $href = ($o['series'] ?? null) && empty($o['override']) ? url($base . '/' . $e['id']) . '?vorkommen=' . rawurlencode(Calendar::ridKey((string) $o['rid'])) : url($base . '/' . $e['id']); ?>
-          <li class="dt-cal__ev<?= $o['all_day'] ? ' is-allday' : '' ?><?= $draft ? ' is-draft' : '' ?><?= !empty($o['cancelled']) ? ' is-cancelled' : '' ?>">
-            <a href="<?= e($href) ?>" title="<?= e(Calendar::when($o) . ($o['recurring'] ? ' · ' . __('Serie') : '') . (!empty($o['override']) ? ' · ' . __('geändert') : '') . (!empty($o['cancelled']) ? ' · ' . __('fällt aus') : '')) ?>">
+          <?php $mid = 'cal-menu-' . (++$evN); ?>
+          <li class="dt-cal__ev<?= $o['all_day'] ? ' is-allday' : '' ?><?= $draft ? ' is-draft' : '' ?><?= !empty($o['cancelled']) ? ' is-cancelled' : '' ?>"<?= \Core\RowMenu::host($mid) ?>>
+            <a href="<?= e($href) ?>" aria-keyshortcuts="Shift+F10" title="<?= e(Calendar::when($o) . ($o['recurring'] ? ' · ' . __('Serie') : '') . (!empty($o['override']) ? ' · ' . __('geändert') : '') . (!empty($o['cancelled']) ? ' · ' . __('fällt aus') : '')) ?>">
               <?php if (!$o['all_day']): ?><span class="dt-cal__time"><?= e($o['start']->format('H:i')) ?></span><?php endif; ?>
               <span class="dt-cal__title"><?= e(Entries::title($t, $e)) ?></span>
               <?php if ($o['recurring']): ?><span class="dt-cal__rec" aria-hidden="true"><?= icon('repeat') ?></span><span class="sr-only">(<?= e(__('Serie')) ?>)</span><?php endif; ?>
               <?php if ($draft): ?><span class="dt-cal__badge"><?= e(__('Entwurf')) ?></span><?php endif; ?>
               <?php if (!empty($o['cancelled'])): ?><span class="dt-cal__badge"><?= e(__('fällt aus')) ?></span><?php endif; ?>
             </a>
+            <?= \Core\RowMenu::pop($mid, Entries::title($t, $e) . ' · ' . Calendar::when($o), \Core\RowMenu::forEntry($t, $e, ['open' => $href, 'row' => $extRow, 'back' => '/admin/data/' . $t['handle'] . '?monat=' . $cal['month']])) ?>
           </li>
           <?php endforeach; ?>
         </ul><?php endif; ?>
