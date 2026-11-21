@@ -106,7 +106,7 @@ final class FeatureInfo
             'forms.data' => ['group' => 'data', 'desc' => __('Öffentliche Formulare legen Einträge in Inhaltstabellen an (z. B. Einreichungen).'),
                 'effects' => ['frontend' => __('Formular-Block und /formular/… – Besucher können Einträge anlegen (mit Spam-Schutz)'), 'data' => __('Eingaben der Besucher als Einträge (Entwurf)')]],
             'requests' => ['group' => 'data', 'desc' => __('Online-Anfragen: verschlüsselte Eingangs-Tabellen und ihre Formulare.'),
-                'effects' => ['menu' => __('Menüpunkt „Anfragen“'), 'frontend' => __('Anfrage-Formulare (/anfrage/…, /api/form/…)'), 'cron' => __('Aufbewahrungsfrist: inbox:purge (täglich empfohlen)'),
+                'effects' => ['menu' => __('Menüpunkt „Eingang“'), 'frontend' => __('Anfrage-Formulare (/anfrage/…, /api/form/…)'), 'cron' => __('Aufbewahrungsfrist: inbox:purge (täglich empfohlen)'),
                     'data' => __('Anfragen verschlüsselt (libsodium) – lesbar nur mit dem geheimen Schlüssel')]],
             'requests.mail' => ['group' => 'data', 'desc' => __('Anfragen je Eingang zusätzlich oder ausschließlich per E-Mail zustellen – mit vollem Inhalt, Anhängen und optional S/MIME-Verschlüsselung.'),
                 'effects' => ['menu' => __('Abschnitt „Zustellung der Anfragen“ in den Einstellungen eines Eingangs'), 'external' => __('Inhalte der Anfragen gehen per E-Mail an die eingetragenen Empfänger (SMTP mit TLS; mit Zertifikat Ende-zu-Ende per S/MIME)'),

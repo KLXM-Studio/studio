@@ -38,11 +38,11 @@ $some = is_array($role['tables'] ?? null);
       <div class="set-row set-row--stack">
         <label class="us-radio"><input type="radio" name="tables_mode" value="some"<?= $some ? ' checked' : '' ?>> <span class="set-row__label"><?= e(__('Nur ausgewählte:')) ?></span></label>
         <div class="set-checks us-tablepick">
-          <?php foreach ($tables as $t): ?><label class="f-check"><input type="checkbox" name="tables[]" value="<?= e($t['handle']) ?>"<?= $some && in_array($t['handle'], $role['tables'], true) ? ' checked' : '' ?>> <span><?= icon($t['icon'], ['class' => 'us-tico']) ?> <?= e($t['name']) ?><?php if (\Core\Data\Tables::isInbox($t)): ?> <small class="adm-muted">(<?= e(__('Anfragen')) ?>)</small><?php endif; ?></span></label><?php endforeach; ?>
+          <?php foreach ($tables as $t): ?><label class="f-check"><input type="checkbox" name="tables[]" value="<?= e($t['handle']) ?>"<?= $some && in_array($t['handle'], $role['tables'], true) ? ' checked' : '' ?>> <span><?= icon($t['icon'], ['class' => 'us-tico']) ?> <?= e($t['name']) ?><?php if (\Core\Data\Tables::isInbox($t)): ?> <small class="adm-muted">(<?= e(__('Eingang')) ?>)</small><?php endif; ?></span></label><?php endforeach; ?>
         </div>
       </div>
     </div>
-    <p class="set-group__note"><?= e(__('Gilt für die Rechte im Bereich „Daten“ (außer „Tabellen und Felder ändern“) und für „Anfragen“ – z. B. nur eine Eingangs-Tabelle lesen.')) ?></p>
+    <p class="set-group__note"><?= e(__('Gilt für die Rechte im Bereich „Daten“ (außer „Tabellen und Felder ändern“) und für den „Eingang“ – z. B. nur eine Eingangs-Tabelle lesen.')) ?></p>
   </fieldset>
   <?php endif; ?>
   <div class="adm-savebar"><button class="adm-btn adm-btn--primary" type="submit"><?= e(__('Rolle speichern')) ?></button> <a class="adm-btn" href="<?= e(url('/admin/users/rollen')) ?>"><?= e(__('Abbrechen')) ?></a></div>

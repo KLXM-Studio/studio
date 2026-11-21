@@ -18,4 +18,4 @@ $last = (int) end($data);
 <?php else: ?>
 <p class="adm-muted"><?= e(__('Keine Anfragen in den letzten 12 Wochen.')) ?></p>
 <?php endif; ?>
-<p class="dash-links"><a href="<?= e(url('/admin/requests')) ?>"><?= e(__('Zu den Anfragen')) ?></a></p>
+<p class="dash-links"><a href="<?= e(url('/admin/requests')) ?>"><?= e(__('Zum Eingang')) ?></a></p>

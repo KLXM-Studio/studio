@@ -385,7 +385,7 @@ final class DataController extends AdminController
             $t = Tables::find($def['handle']);
         }
         if (Tables::isInbox($t)) {
-            return $this->back('/admin/data/' . $def['handle'] . '/schema', 'success', __('Eingang „{name}“ angelegt. Formular mit dem Block „Formular (Datentabelle)“ auf einer Seite einfügen – eingegangene Anfragen lesen Sie unter „Anfragen“.', ['name' => $def['name']]));
+            return $this->back('/admin/data/' . $def['handle'] . '/schema', 'success', __('Eingang „{name}“ angelegt. Formular mit dem Block „Formular (Datentabelle)“ auf einer Seite einfügen – eingegangene Anfragen lesen Sie im „Eingang“.', ['name' => $def['name']]));
         }
         if ($r->str('with_template') === '1' && $def['settings']['route'] !== '') {
             $this->makeTemplate($t);
@@ -838,7 +838,7 @@ final class DataController extends AdminController
         $need = match ($r->post['action'] ?? '') { 'publish', 'draft' => 'data.publish', 'delete' => 'data.delete', default => 'data.edit' };
         if (!can($need, $handle)) return Response::fail(__('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'), 403);
         $t = $this->table($handle);
-        if (Tables::isInbox($t)) return Response::fail(__('Eingangs-Tabelle: Anfragen unter „Anfragen“ bearbeiten.'), 403);
+        if (Tables::isInbox($t)) return Response::fail(__('Eingangs-Tabelle: Anfragen im „Eingang“ bearbeiten.'), 403);
         $ids = array_map('intval', (array) ($r->post['ids'] ?? []));
         // „Online ab“ in der Zukunft (Core\Schedule): bleiben offline – Hinweis statt „ist online“
         $waiting = ($r->post['action'] ?? '') === 'publish' ? array_values(array_filter(array_map(fn($id) => Entries::find($t, $id), $ids), fn($e) => $e && \Core\Schedule::pending($e))) : [];

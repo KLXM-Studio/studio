@@ -216,7 +216,7 @@ $heads = [
       </div>
       <p class="set-group__note"><?= e(match (true) {
           $p === 'mail' => __('Datenschutz: Inhalte gehen per E-Mail hinaus und werden auf der Website nicht gespeichert (nur ein Zustellprotokoll ohne Inhalte). Ohne S/MIME-Zertifikat ist die E-Mail nur auf dem Transportweg verschlüsselt – für Gesundheitsdaten lieber „Anfragen sammeln“ wählen oder S/MIME einrichten. Scheitert der Versand, wird die Einsendung verschlüsselt gesichert.'),
-          $kind === 'inbox' => __('Datenschutz: Alle Angaben werden Ende-zu-Ende verschlüsselt gespeichert und sind nur unter „Anfragen“ mit dem geheimen Schlüssel lesbar.'),
+          $kind === 'inbox' => __('Datenschutz: Alle Angaben werden Ende-zu-Ende verschlüsselt gespeichert und sind nur im „Eingang“ mit dem geheimen Schlüssel lesbar.'),
           default => __('Datenschutz: Anmeldungen werden nicht verschlüsselt gespeichert und erscheinen als Entwurf in der Teilnehmerliste – nicht auf der Website, nicht in der Suche. Für vertrauliche Angaben lieber „Anfragen sammeln“ wählen.'),
       }) ?></p>
       <?php if ($kind === 'inbox' && $p !== 'mail' && !\Core\FormCrypto::ready()): // „Nur per E-Mail“ braucht keinen Schlüssel ?>

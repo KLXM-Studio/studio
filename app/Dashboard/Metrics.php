@@ -166,7 +166,7 @@ final class Metrics
         }
         if (can('requests.read') && Features::on('requests') && Inbox::readable()) {
             $n = Inbox::newCount();
-            $add('requests', 1, 'warn', 'tray', $n, __('Neue Anfragen lesen'), __('Über Formulare eingegangen und noch nicht geöffnet.'), '/admin/requests', __('Anfragen öffnen'));
+            $add('requests', 1, 'warn', 'tray', $n, __('Neue Anfragen lesen'), __('Über Formulare eingegangen und noch nicht geöffnet.'), '/admin/requests', __('Eingang öffnen'));
         }
         if (\Core\Review\Queue::canReview()) {
             $add('review', 2, 'warn', 'clipboard-text', \Core\Review\Queue::pendingCount(), __('Eingereichte Änderungen prüfen'),

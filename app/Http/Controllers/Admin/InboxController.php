@@ -85,7 +85,7 @@ final class InboxController extends AdminController
         ];
         // Postfächer in der Seitenleiste (wie Feedback und Medien): Eingänge, Status, Einrichtung
         $vars['drill'] = \Core\Theme::capture(ROOT . '/app/Admin/views/requests/_nav.php', $vars);
-        $vars['drillTitle'] = __('Anfragen');
+        $vars['drillTitle'] = __('Eingang');
         return $this->view('requests/index', $vars);
     }
 

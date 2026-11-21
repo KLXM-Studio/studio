@@ -101,7 +101,7 @@ $langs = array_diff_key(Lang::all(), [Lang::default() => 1]);
       <h3 class="set-group__title" id="t-dv-h"><?= e(__('Zustellung der Anfragen')) ?></h3>
       <?php foreach ($alerts as $a): ?>
       <p class="adm-flash adm-flash--error"><?= e(__('Zustellung fehlgeschlagen')) ?> (<?= e(\Core\Format::admin()->datetime(strtotime((string) $a['at']))) ?>, <?= e((string) $a['ref']) ?>): <?= e((string) $a['reason']) ?> –
-        <?= e(!empty($a['stored']) ? __('Anfrage verschlüsselt gesichert (unter „Anfragen“).') : __('Anfrage NICHT gesichert.')) ?></p>
+        <?= e(!empty($a['stored']) ? __('Anfrage verschlüsselt gesichert (im „Eingang“).') : __('Anfrage NICHT gesichert.')) ?></p>
       <?php endforeach; ?>
       <div class="set-list">
         <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= e(Delivery::modeLabel($dv['mode'])) ?></span>
@@ -172,6 +172,6 @@ $langs = array_diff_key(Lang::all(), [Lang::default() => 1]);
           <p class="f-help"><?= e(__('0 = nie. Gezählt ab dem Tag, an dem die Anfrage als erledigt markiert wurde.')) ?> <?= e(__('Bei „Nur per E-Mail“ wird nichts gespeichert – die Frist gilt dann nur für Anfragen, die nach einem Zustellfehler verschlüsselt gesichert wurden.')) ?></p>
           <input type="number" id="t-ib-ret" name="settings[inbox][retention_days]" min="0" max="3650" value="<?= (int) $ib['retention_days'] ?>"></div>
       </div>
-      <p class="set-group__note"><?= e(__('Alle Angaben werden Ende-zu-Ende verschlüsselt gespeichert; lesbar nur unter „Anfragen“ mit dem geheimen Schlüssel. Keine Detailseiten, keine Ausgabe auf der Website, nicht in Suche, Sitemap, API-Inhalten oder Kalender-Abos. Jedes Entschlüsseln wird protokolliert.')) ?></p>
+      <p class="set-group__note"><?= e(__('Alle Angaben werden Ende-zu-Ende verschlüsselt gespeichert; lesbar nur im „Eingang“ mit dem geheimen Schlüssel. Keine Detailseiten, keine Ausgabe auf der Website, nicht in Suche, Sitemap, API-Inhalten oder Kalender-Abos. Jedes Entschlüsseln wird protokolliert.')) ?></p>
     </section>
 <?php endif; ?>

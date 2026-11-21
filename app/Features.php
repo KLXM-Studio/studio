@@ -46,7 +46,7 @@ final class Features
             'data' => ['Datentabellen (Collections)', ['data.edit', 'data.publish', 'data.delete', 'data.schema']],
             'data.schema' => ['Tabellen und Felder selbst anlegen (Tabellen-Designer)', ['data.schema']],
             'data.shared' => ['Geteilte Daten verwalten (Tabellen mehrerer Websites)', ['data.shared.manage']],
-            'requests' => ['Anfragen: verschlüsselte Eingangs-Tabellen und ihre Formulare', ['requests.read', 'requests.manage']],
+            'requests' => ['Eingang: verschlüsselte Eingangs-Tabellen und ihre Formulare', ['requests.read', 'requests.manage']],
             // Anfragen je Eingang auch per E-Mail zustellen – mit vollem Inhalt, optional S/MIME (Core\Data\Delivery); Standard je Tabelle: nur im System
             'requests.mail' => ['Anfragen per E-Mail zustellen (mit Inhalt, optional S/MIME-verschlüsselt)', []],
             'forms.data' => ['Formulare für Datentabellen (Inhaltstabellen)', []],
