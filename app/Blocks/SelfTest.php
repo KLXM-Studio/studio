@@ -18,6 +18,8 @@ use Core\Block;
  * (Besucher und Bearbeiten-Modus, gleich wie Kit-Export), keine Inline-Styles/Skripte.
  * Besucher-Filter in Listen (Core\Blocks\ListFilter, Entries::facets): ab … Einträgen, nur Optionen mit Treffern, ab zwei Knöpfen,
  * Auswahl aus der Adresse, Kit-Vorgabe, Ausgabe der Datenliste.
+ * Geänderte Standardwerte (Core\Blocks\DefaultChanges): bisheriger Zustand für gespeicherte Blöcke, verschachtelt, idempotent,
+ * Objekte bleiben Objekte, neue Blöcke bekommen den neuen Standard.
  */
 final class SelfTest
 {
@@ -47,6 +49,7 @@ final class SelfTest
             $t->peopleSource();
             $t->subpages();
             $t->listFilter();
+            $t->defaultChanges();
         } finally {
             app()->editing = $prev;
         }
@@ -551,6 +554,42 @@ final class SelfTest
         } finally {
             app()->request = $prevReq;
             if ($x = \Core\Data\Tables::find($h)) \Core\Data\Tables::delete($x);
+        }
+    }
+
+    /** Geänderte Standardwerte: gespeicherte Blöcke ohne Wert behalten ihr Aussehen, neue nutzen den neuen Standard */
+    private function defaultChanges(): void
+    {
+        $rules = ['media_text' => ['valign' => 'center'], 'gallery' => ['single_large' => false]];
+        $json = json_encode(['time' => 1, 'blocks' => [
+            ['id' => 'a', 'type' => 'media_text', 'data' => ['text' => '<p>x</p>'], 'tunes' => ['section' => new \stdClass()]],
+            ['id' => 'b', 'type' => 'media_text', 'data' => ['valign' => 'top']],
+            ['id' => 'c', 'type' => 'gallery', 'data' => new \stdClass()],
+            ['id' => 'd', 'type' => 'layout', 'data' => ['columns' => [['blocks' => [['id' => 'e', 'type' => 'gallery', 'data' => ['single_large' => null]],
+                ['id' => 'f', 'type' => 'media_text', 'data' => ['title' => 'T']]]]]]],
+            ['id' => 'g', 'type' => 'richtext', 'data' => ['text' => '"type":"media_text"']],
+        ]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $out = DefaultChanges::patchJson($json, $rules);
+        $d = json_decode((string) $out, true);
+        $this->assert(($d['blocks'][0]['data']['valign'] ?? null) === 'center', 'Standardwerte: Text + Bild ohne Wert → bisher „Mitte“');
+        $this->assert(($d['blocks'][1]['data']['valign'] ?? null) === 'top', 'Standardwerte: vorhandener Wert bleibt');
+        $this->assert(($d['blocks'][2]['data']['single_large'] ?? null) === false, 'Standardwerte: Galerie mit leeren Daten → Einzelbild groß aus');
+        $this->assert(array_key_exists('single_large', $d['blocks'][3]['data']['columns'][0]['blocks'][0]['data']) && $d['blocks'][3]['data']['columns'][0]['blocks'][0]['data']['single_large'] === null, 'Standardwerte: auch null bleibt (verschachtelt)');
+        $this->assert(($d['blocks'][3]['data']['columns'][0]['blocks'][1]['data']['valign'] ?? null) === 'center', 'Standardwerte: verschachtelt in Layout-Spalten');
+        $this->assert(!isset($d['blocks'][4]['data']['valign']) && !isset($d['blocks'][3]['data']['valign']), 'Standardwerte: andere Blocktypen unberührt');
+        $this->assert(str_contains((string) $out, '"tunes":{"section":{}}'), 'Standardwerte: leere Objekte bleiben Objekte');
+        $this->assert(DefaultChanges::patchJson((string) $out, $rules) === null, 'Standardwerte: zweiter Lauf ändert nichts (idempotent)');
+        $this->assert(DefaultChanges::patchJson('{"blocks":[{"id":"x","type":"cta","data":{}}]}', $rules) === null, 'Standardwerte: ohne betroffene Blöcke unverändert');
+        $n = 0;
+        $this->assert(DefaultChanges::patchData('gallery', ['layout' => 'grid'], $n, $rules) === ['layout' => 'grid', 'single_large' => false] && $n === 1, 'Standardwerte: patchData für Tabellen von Erweiterungen');
+        $this->assert(isset(DefaultChanges::rules()['media_text']['valign'], DefaultChanges::rules()['gallery']['single_large']), 'Standardwerte: Regeln der Änderung 2026-11 vorhanden');
+        // Neue Blöcke (ohne gespeicherten Wert): Standard der Felddefinition – Galerie „Einzelnes Bild groß“ an
+        $g = app()->theme->block('gallery') ? app()->theme->makeBlock(['id' => 'n', 'type' => 'gallery', 'data' => []]) : null;
+        $this->assert($g === null || !empty($g->data['single_large']), 'Standardwerte: neue Galerie bekommt „Einzelnes Bild groß“');
+        $mt = app()->theme->block('media_text');
+        if ($mt && in_array('valign', array_column((array) ($mt['fields'] ?? []), 'name'), true)) {
+            $b = app()->theme->makeBlock(['id' => 'n', 'type' => 'media_text', 'data' => []]);
+            $this->assert(($b?->data['valign'] ?? null) === 'follow', 'Standardwerte: neuer Text + Bild-Block bekommt „Mitlaufen“');
         }
     }
 

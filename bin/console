@@ -1127,6 +1127,8 @@ switch ($cmd) {
             foreach (Core\Data\Tables::all() as $t) {
                 try { Core\Schedule::ensure($t); } catch (Throwable $e) { fwrite(STDERR, "  Zeitplan {$t['handle']}: " . $e->getMessage() . "\n"); }
             }
+            // Geänderte Block-Standardwerte (Core\Blocks\DefaultChanges): bestehende Blöcke behalten ihr Aussehen – einmal je Website
+            foreach (Core\Blocks\DefaultChanges::run() as $line) echo "  $line\n";
             // Symbole der Datentabellen: alte Unicode-Zeichen → Symbolnamen (Core\Icons) – idempotent
             foreach (Core\Icons::migrateTables() as $line) echo "  $line\n";
             if (Core\Icons::catalog()['icons']) $app->settings->set('sys.icons', 1);
