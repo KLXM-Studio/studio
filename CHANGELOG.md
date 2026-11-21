@@ -33,6 +33,18 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Tabellen ohne die Art verhalten sich unverändert (praxis: HTML- und Pixelvergleich ohne Abweichung). Selbsttest
   `calendar:selftest`. Handbuch → Daten → „Kalender mit Serien“; Entwicklerhandbuch → Kalender → „Tabellenart calendar, Serien,
   Vorkommens-Index“.
+### Kalender: „In den Kalender“ auf Termin-Detailseiten (Termin-Aktionen)
+- **Block „Termin-Aktionen“** (`event_actions`, nur Detailseiten-Vorlagen) und automatisch im Kopf von „Datensatz-Felder“ bei
+  Kalender-Tabellen (im Block abschaltbar): **In den Kalender** (.ics-Datei des Termins) und **Abonnieren** (webcal-Adresse des
+  öffentlichen Feeds); Fragment `event-actions` (vom Kit überschreibbar), Stile `css/event-actions.css` (`--eva-*`).
+- **Serien:** genau ein Termin – das Vorkommen aus `?vorkommen=JJJJMMTTTHHMM`, sonst der nächste stattfindende (ein abgesagter
+  davor als Hinweis); `GET /kalender/{tabelle}/{slug}.ics?vorkommen=…` liefert ein VEVENT ohne RRULE mit eigener UID, geänderte
+  Einzeltermine mit ihren Werten. Vergangen: Hinweis „vorbei“ statt Knopf (Serie: Link zum nächsten Termin), abgesagt: „fällt aus“.
+- **Google Kalender / Outlook.com** als reine Links (kein Skript, `rel="noopener noreferrer"`, Hinweis „öffnet Google“), Zeiten in
+  UTC, ganztägig als Datum; **Standard aus** – Grundeinstellungen → Karten & externe Quellen (`sys.calendar_links`) oder je Block.
+- Ort und Beschreibung nur aus Feldern mit Freigabe für die Kalender-Datei (`ics`); Seiten-Cache gilt bis zum Ende des Termins.
+  Selbsttest in `calendar:selftest`.
+
 ### Kalender und Kontakte per App abonnieren
 - **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche
   webcal-Adresse des Kalender-Feeds bzw. öffentliche **.vcf-Sammeldatei** der freigegebenen Kontakte (`/vcard/{tabelle}.vcf`, nur

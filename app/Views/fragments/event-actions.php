@@ -16,7 +16,7 @@ if (!$a) return;
 if ($a['until']) \Core\PageCache::until($a['until']);   // zwischengespeicherte Seite nur bis zum Ende bzw. bis zum nächsten Termin
 $open = $a['state'] === 'open';
 if ($open && !$a['ics'] && !$a['webcal'] && !$a['links']) {
-    if (is_editing()) echo '<p class="dl-empty">' . e(__('Termin-Aktionen: Ohne öffentlichen Kalender-Feed der Tabelle gibt es keine .ics-Datei. Einschalten unter Daten → Tabelle → Felder & Einstellungen → Kalender → „Öffentlicher Feed“.')) . '</p>';
+    if (is_editing()) echo '<p class="dl-empty">' . e(__('Termin-Aktionen: Ohne öffentlichen Kalender-Feed der Tabelle gibt es keine .ics-Datei. Einschalten unter Daten → Tabelle → Felder & Einstellungen → Kalender → „Öffentlicher iCal-Feed (Abonnieren)“.')) . '</p>';
     return;
 }
 app()->theme->markUsed('event_actions');   // Stile css/event-actions.css (Theme::conditionalCss) – auch aus „Datensatz-Felder“

@@ -5349,7 +5349,7 @@ return [
     'Stelle: Eckdaten' => 'Vacancy: key facts',
     'Stelle: Bewerbung' => 'Vacancy: application',
     'Dieser Block gehört auf die Detailseite einer Kalender-Tabelle. Die Vorschau erscheint, sobald es einen Termin gibt.' => 'This block belongs on the detail page of a calendar table. The preview appears as soon as there is an event.',
-    'Termin-Aktionen: Ohne öffentlichen Kalender-Feed der Tabelle gibt es keine .ics-Datei. Einschalten unter Daten → Tabelle → Felder & Einstellungen → Kalender → „Öffentlicher Feed“.' => 'Event actions: without a public calendar feed for the table there is no .ics file. Switch it on under Data → table → Fields & settings → Calendar → “Public feed”.',
+    'Termin-Aktionen: Ohne öffentlichen Kalender-Feed der Tabelle gibt es keine .ics-Datei. Einschalten unter Daten → Tabelle → Felder & Einstellungen → Kalender → „Öffentlicher iCal-Feed (Abonnieren)“.' => 'Event actions: without a public calendar feed for the table there is no .ics file. Switch it on under Data → table → Fields & settings → Calendar → “Public iCal feed (subscribe)”.',
     'Termin-Aktionen' => 'Event actions',
     'Leer = Tabelle des aufgerufenen Eintrags.' => 'Empty = table of the entry being viewed.',
     '„In den Kalender“ und „Abonnieren“ für den aufgerufenen Termin – für Detailseiten-Vorlagen von Kalender-Tabellen.' => '“Add to calendar” and “Subscribe” for the event being viewed – for detail page templates of calendar tables.',
