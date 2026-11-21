@@ -92,6 +92,8 @@
 .ab-card{display:flex;flex-direction:column;min-width:0;min-height:0}
 .ab-card__bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;padding:10px 16px;border-bottom:1px solid var(--adm-line)}
 .ab-card__bar .ab-chip{margin-right:auto}
+.ab-card__bar .ab-rowmenu{width:32px;height:32px}
+.ab-rowmenu__danger,.ab-rowmenu__danger .ico{color:var(--adm-err)!important}
 .ab-card__body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:22px clamp(18px,3vw,34px) 28px}
 .ab-card__none{display:grid;place-content:center;justify-items:center;gap:10px;height:100%;padding:24px;color:var(--adm-t3);text-align:center}
 .ab-card__none .ico{width:48px;height:48px;color:var(--adm-in)}

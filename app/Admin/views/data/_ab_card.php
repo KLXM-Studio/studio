@@ -36,15 +36,22 @@ $badge = function (array $r) use ($tg): string {
 <div class="ab-card__bar">
   <a class="ab-back" href="<?= e(AddressBook::link($t, $s, ['k' => ''])) ?>" data-ab-pane="names"><?= icon('arrow-left') ?> <span><?= e($scopeLabel) ?></span></a>
   <span class="ab-chip<?= $online ? ' is-public' : '' ?>"><?= icon($online ? 'globe' : 'lock') ?> <?= e($online ? __('Auf der Website') : ($e['status'] !== 'published' ? __('Entwurf') : __('Nur intern'))) ?></span>
-  <details class="ab-menu ab-menu--right">
-    <summary class="adm-btn adm-btn--small adm-btn--ghost"><?= icon('export') ?> <?= e(__('vCard')) ?></summary>
-    <div class="ab-menu__pop">
-      <a href="<?= e($base . '/vcard?ids[]=' . $id) ?>" download><?= e(__('Alle Angaben')) ?></a>
-      <a href="<?= e($base . '/vcard?ids[]=' . $id . '&umfang=oeffentlich') ?>" download><?= e(__('Nur öffentliche Angaben')) ?></a>
-    </div>
-  </details>
-  <button type="button" class="adm-btn adm-btn--small adm-btn--ghost ab-hide-s"<?= \Core\Http\Controllers\Admin\VersionsController::attrs('/admin/api/data/' . $t['handle'] . '/' . $id . '/versions') ?>><?= icon('clock-counter-clockwise') ?> <?= e(__('Versionen')) ?></button>
   <a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e($base . '/' . $id) ?>"><?= icon('pencil-simple') ?> <?= e(__('Bearbeiten')) ?></a>
+  <?php // Weitere Aktionen: Zeilenmenü wie in den Eintragslisten (Popover, resources/js/_rowmenu.js) – Reihenfolge wie in allen Listen
+  $menuId = 'ab-menu-' . $id; $view = \Core\Data\Entries::url($t, $e); $canDel = can('data.delete', $t['handle']); ?>
+  <button type="button" class="dt-rowmenu ab-rowmenu" popovertarget="<?= e($menuId) ?>" aria-label="<?= e(__('Weitere Aktionen: {title}', ['title' => $name])) ?>" title="<?= e(__('Weitere Aktionen')) ?>"><?= icon('dots-three') ?></button>
+  <div class="dt-rowmenu__pop" id="<?= e($menuId) ?>" popover role="menu" aria-label="<?= e($name) ?>">
+    <a class="dt-rowmenu__item" role="menuitem" href="<?= e($base . '/' . $id) ?>"><?= icon('pencil-simple') ?> <?= e(__('Bearbeiten')) ?></a>
+    <?php if ($view && $online): ?><a class="dt-rowmenu__item" role="menuitem" href="<?= e($view) ?>" target="_blank" rel="noopener"><?= icon('arrow-square-out') ?> <?= e(__('Auf der Website ansehen')) ?></a><?php endif; ?>
+    <button type="submit" form="ab-dup" class="dt-rowmenu__item" role="menuitem" formaction="<?= e($base . '/' . $id . '/duplicate') ?>" title="<?= e(__('Kopie als Entwurf anlegen')) ?>"><?= icon('copy') ?> <?= e(__('Duplizieren')) ?></button>
+    <a class="dt-rowmenu__item" role="menuitem" href="#ab-card-lists"><?= icon('list-bullets') ?> <?= e(__('Zu Liste hinzufügen')) ?></a>
+    <button type="button" class="dt-rowmenu__item" role="menuitem"<?= \Core\Http\Controllers\Admin\VersionsController::attrs('/admin/api/data/' . $t['handle'] . '/' . $id . '/versions') ?>><?= icon('clock-counter-clockwise') ?> <?= e(__('Versionen')) ?></button>
+    <a class="dt-rowmenu__item" role="menuitem" href="<?= e($base . '/vcard?ids[]=' . $id) ?>" download><?= icon('export') ?> <?= e(__('vCard – alle Angaben')) ?></a>
+    <a class="dt-rowmenu__item" role="menuitem" href="<?= e($base . '/vcard?ids[]=' . $id . '&umfang=oeffentlich') ?>" download><?= icon('export') ?> <?= e(__('vCard – nur öffentliche Angaben')) ?></a>
+    <?php if ($canDel): ?><button type="submit" form="ab-del" class="dt-rowmenu__item ab-rowmenu__danger" role="menuitem" formaction="<?= e($base . '/' . $id . '/delete') ?>" data-confirm="<?= e(__('„{name}“ löschen?', ['name' => $name])) ?>"><?= icon('trash') ?> <?= e(__('Löschen')) ?></button><?php endif; ?>
+  </div>
+  <form id="ab-dup" method="post" hidden><?= csrf_field() ?></form>
+  <?php if ($canDel): ?><form id="ab-del" method="post" hidden><?= csrf_field() ?></form><?php endif; ?>
 </div>
 <div class="ab-card__body">
   <div class="ab-hero">
