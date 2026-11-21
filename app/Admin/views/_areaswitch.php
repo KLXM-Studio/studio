@@ -18,7 +18,7 @@ $swFilter = count($swSites) > 8;
   <button type="button" class="adm-sw__btn" popovertarget="<?= e($swId) ?>" aria-haspopup="menu" aria-controls="<?= e($swId) ?>" data-pop-btn>
     <?php if ($netArea): ?>
     <span class="adm-sw__tile adm-sw__tile--net" aria-hidden="true"><?= icon('network') ?></span>
-    <span class="adm-sw__txt"><span class="adm-sw__eyebrow"><?= e(__('Netzwerk-Verwaltung')) ?></span><span class="adm-sw__name"><?= e(__('Netzwerk')) ?></span></span>
+    <span class="adm-sw__txt"><span class="adm-sw__eyebrow"><?= e(__('{n} Websites', ['n' => count($swSites)])) ?></span><span class="adm-sw__name"><?= e(__('Netzwerk')) ?></span></span>
     <?php else: ?>
     <img class="adm-sw__tile" src="<?= e($swCur['icon'] ?? '') ?>" width="28" height="28" alt="">
     <span class="adm-sw__txt"><span class="adm-sw__eyebrow"><?= e(__('Website')) ?></span><span class="adm-sw__name"><?= e($swCur['name'] ?? site()->label()) ?></span></span>

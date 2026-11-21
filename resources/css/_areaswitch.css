@@ -18,7 +18,7 @@ html.adm-ui[data-theme=dark]{--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC
 .adm-sw__tile--net{display:grid;place-items:center;background:rgba(255,255,255,.14);color:#F4F6FA}
 .adm-sw__tile--net .ico{width:17px;height:17px}
 .adm-sw__txt{display:grid;min-width:0;line-height:1.25}
-.adm-sw__eyebrow{font-size:13px;font-weight:700;font-variant:all-small-caps;letter-spacing:.1em;color:#C3CBDA}
+.adm-sw__eyebrow{font-size:13px;font-weight:700;font-variant:all-small-caps;letter-spacing:.1em;color:#C3CBDA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-sw__name{font-size:14px;font-weight:700;color:#FFFFFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .adm-sw__chev{display:grid;place-items:center;color:#C3CBDA}
 .adm-sw__chev .ico{width:14px;height:14px;transition:transform .15s}
