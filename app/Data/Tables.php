@@ -422,7 +422,7 @@ final class Tables
                     $opts[$k] = $v;
                 }
                 // Listen einer Kontakte-Tabelle dürfen leer beginnen (Listen legt die Redaktion später an)
-                if (!$opts && !Kinds::allowsEmptyOptions($kind, $fname)) $errors["fields.$i"] = "Feld „{$label}“: Bitte Auswahlmöglichkeiten angeben (eine pro Zeile).";
+                if (!$opts && !Kinds::allowsEmptyOptions($kind, $fname) && empty($f['legacy'])) $errors["fields.$i"] = "Feld „{$label}“: Bitte Auswahlmöglichkeiten angeben (eine pro Zeile).";
                 $def['options'] = $opts;
             }
             // Übersetzungen der Beschriftung und der Auswahltexte (Frontend in weiteren Sprachen)
@@ -444,7 +444,8 @@ final class Tables
             }
             if (in_array($type, ['relation', 'relations'], true)) {
                 $target = (string) ($f['target'] ?? '');
-                if (!self::findContent($target) && $target !== $handle) $errors["fields.$i"] = "Feld „{$label}“: Bitte die verknüpfte Tabelle wählen (Eingangs-Tabellen sind nicht verknüpfbar).";
+                if ($target === '' && (Kinds::allowsEmptyTarget($kind, $fname) || !empty($f['legacy']))) { /* Kalender: Ort aus der Liste – Ziel wählt die Redaktion später */ }
+                elseif (!self::findContent($target) && $target !== $handle) $errors["fields.$i"] = "Feld „{$label}“: Bitte die verknüpfte Tabelle wählen (Eingangs-Tabellen sind nicht verknüpfbar).";
                 elseif ($sharedOwner !== null && $target !== $handle && ((self::findContent($target)['shared']['owner'] ?? null) !== $sharedOwner)) {
                     $errors["fields.$i"] = __('Feld „{label}“: Geteilte Tabellen können nur mit geteilten Tabellen derselben Website verknüpft werden.', ['label' => $label]);
                 }
@@ -530,6 +531,11 @@ final class Tables
             'form' => DataForms::validateSettings((array) ($s['form'] ?? []), $all, $errors, $existing['settings']['form'] ?? null, $formUploads, $formKnown),
         ];
         $settings['kind'] = $kind;
+        // Kalender (Art calendar): Zuordnung fest aufs Grundschema (Core\Data\Kinds::CALENDAR_MAP), Fehler der freien Zuordnung entfallen
+        if ($kind === Kinds::CALENDAR) {
+            $settings['calendar'] = Kinds::calendarSettings($settings['calendar']);
+            unset($errors['settings.calendar']);
+        }
         // Version des Grundschemas (nur additiv; data:convert/Upgrade ergänzen neue Grundfelder) und Stand einer Umwandlung
         if (Kinds::isSpecial($kind)) $settings['kind_version'] = Kinds::version($kind);
         $conv = $in['_convert'] ?? ($s['convert'] ?? ($existing['settings']['convert'] ?? null));
@@ -719,6 +725,8 @@ final class Tables
             $renames = [];
         }
         self::sync(self::find((int) $table['id']), $renames);
+        // Vorkommens-Index (Kalender): Einstellung oder Felder geändert → neu, sofern schon aufgebaut (Occurrences::changed prüft die Signatur)
+        if (($now = self::find((int) $table['id'])) && !self::isInbox($now)) Occurrences::changed($now, 0);
         PageCache::clear();
         if (isset($table['shared'])) {
             Shared::ensurePool($table['shared']['key']);   // erstes Bild-/Dateifeld: jetzt den Pool „data-{key}“ anlegen
@@ -760,6 +768,7 @@ final class Tables
             app()->db->query("DELETE FROM pages WHERE id = ? AND type = 'template'", [(int) $table['settings']['detail_page_id']]);
         }
         self::$cache = [];
+        Occurrences::drop($table);
         PageCache::clear();
         \Core\Extensions::emit(new \Core\Events\TableSchemaChanged($table, 'deleted', [], array_column(self::dataFields($table['fields']), 'name')));
     }
@@ -813,6 +822,15 @@ final class Tables
         // Freigabe je Eintrag (Core\Data\Exposure, Modus „Redaktion entscheidet“): JSON {feld: {web, vcard, ics}} – bleibt, wenn einmal da
         if (Exposure::hasEditorChoice($table) || ($sm->tablesExist([$name]) && in_array(Exposure::STATE, array_map(fn($c) => $c->getName(), $sm->listTableColumns($name)), true))) {
             $t->addColumn(Exposure::STATE, 'text', ['notnull' => false]);
+        }
+        // Kalender mit Serien (Core\Data\Series, Art calendar): abweichende Einzeltermine verweisen auf den Serienkopf (_series) und das
+        // ersetzte Vorkommen (_recurrence_id, Ortszeit „JJJJ-MM-TT HH:MM“), _uid = UID aus Kalender-Apps – bleiben, wenn einmal da
+        $cols = $sm->tablesExist([$name]) ? array_map(fn($c) => $c->getName(), $sm->listTableColumns($name)) : [];
+        if (Kinds::isCalendar($table) || in_array(Series::SERIES, $cols, true)) {
+            $t->addColumn(Series::SERIES, 'integer', ['notnull' => false]);
+            $t->addColumn(Series::RID, 'string', ['length' => 20, 'notnull' => false]);
+            $t->addColumn(Series::UID, 'string', ['length' => 255, 'notnull' => false]);
+            $t->addIndex([Series::SERIES], $name . '_series');
         }
         foreach ($table['fields'] as $f) {
             $kind = self::TYPES[$f['type']][1] ?? 'string';

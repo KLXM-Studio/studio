@@ -115,7 +115,16 @@ final class DataController extends AdminController
         $all = [];
         foreach (self::PRESETS as $k => $p) {
             $all[$k] = $p;
-            if ($k === 'events') $all['jobs'] = \Core\Data\Jobs::preset();
+            if ($k === 'events') {
+                // Kalender: Tabellenart „calendar“ mit Grundschema (Serien mit Einzelterminen und Ausfällen, Ort aus der Liste) und Orte
+                $all['calendar'] = ['name' => 'Kalender', 'singular' => 'Termin', 'icon' => 'calendar-dots', 'route' => 'kalender-termine', 'sort' => ['beginn', 'asc'],
+                    'kind' => \Core\Data\Kinds::CALENDAR, 'schema_type' => 'Event', 'fields' => \Core\Data\Kinds::presetFields(\Core\Data\Kinds::CALENDAR),
+                    'title' => 'titel', 'image' => '', 'desc' => 'beschreibung', 'calendar' => \Core\Data\Kinds::calendarSettings(['duration' => 60, 'feed' => true])];
+                $all['places'] = ['name' => 'Orte', 'singular' => 'Ort', 'icon' => 'map-pin', 'route' => 'orte', 'sort' => ['name', 'asc'],
+                    'kind' => \Core\Data\Kinds::PLACES, 'schema_type' => 'Place', 'fields' => \Core\Data\Kinds::presetFields(\Core\Data\Kinds::PLACES),
+                    'title' => 'name', 'image' => '', 'desc' => 'hinweise'];
+                $all['jobs'] = \Core\Data\Jobs::preset();
+            }
             // Adressbuch: Tabellenart „contacts“ mit festem Grundschema (Core\Data\Kinds) – Freigabe je Kontakt und je Angabe
             if ($k === 'team') $all['contacts'] = ['name' => 'Adressbuch', 'singular' => 'Kontakt', 'icon' => 'address-book', 'route' => 'kontakte', 'sort' => ['nachname', 'asc'],
                 'kind' => \Core\Data\Kinds::CONTACTS, 'schema_type' => 'Person', 'fields' => \Core\Data\Kinds::presetFields(\Core\Data\Kinds::CONTACTS),
@@ -623,7 +632,19 @@ final class DataController extends AdminController
         if ($origin = \Core\Sources\Sources::origin($t, (int) $e['id'])) {
             return $this->view('data/external_entry', ['t' => $t, 'e' => $e, 'origin' => $origin]);
         }
-        return $this->view('data/entry', ['t' => $t, 'e' => $e, 'values' => $e, 'errors' => []]);
+        // Serie (Kalender, Core\Data\Series): aus dem Kalender ein Vorkommen geöffnet (?vorkommen=JJJJMMTTTHHMM) – Formular mit dessen
+        // Beginn/Ende, Speichern fragt „nur dieser / dieser und folgende / alle“; ein vorhandener Einzeltermin öffnet sich direkt
+        $values = $e;
+        $occ = null;
+        if (\Core\Data\Series::isHead($t, $e) && ($rid = \Core\Data\Series::ridFromKey($r->str('vorkommen')))) {
+            $ov = \Core\Data\Series::overrides($t, (int) $e['id'])[$rid] ?? null;
+            if ($ov) return Response::redirect(url("/admin/data/$handle/" . (int) $ov['id']));
+            if (\Core\Data\Series::hasOccurrence($t, $e, $rid)) {
+                $values = array_merge($e, \Core\Data\Series::valuesFor($t, $e, $rid));
+                $occ = $rid;
+            }
+        }
+        return $this->view('data/entry', ['t' => $t, 'e' => $e, 'values' => $values, 'errors' => [], 'occ' => $occ]);
     }
 
     public function entrySave(Request $r, string $handle, ?string $id = null): Response
@@ -659,11 +680,19 @@ final class DataController extends AdminController
             $in['online_from'] = $r->str('online_from');
             $in['online_until'] = $r->str('online_until');
         }
-        [$newId, $errors] = Entries::save($t, $id !== null ? (int) $id : null, $in);
+        // Serie: Vorkommen bearbeitet → Bereich „nur dieser / dieser und folgende / alle“ (Core\Data\Series)
+        $occ = $id !== null ? \Core\Data\Series::ridFromKey($r->str('vorkommen')) : null;
+        $head = $occ !== null ? Entries::find($t, (int) $id) : null;
+        if ($occ !== null && $head && \Core\Data\Series::isHead($t, $head) && in_array($scope = $r->str('scope'), \Core\Data\Series::SCOPES, true)) {
+            [$newId, $errors] = \Core\Data\Series::edit($t, $head, $occ, $in, $scope);
+        } else {
+            $occ = null;
+            [$newId, $errors] = Entries::save($t, $id !== null ? (int) $id : null, $in);
+        }
         if ($errors) {
             app()->session->flash('error', 'Bitte prüfen Sie die markierten Felder – es wurde nichts gespeichert.');
             $e = $id !== null ? Entries::find($t, (int) $id) : null;
-            return $this->view('data/entry', ['t' => $t, 'e' => $e, 'values' => $in + ($e ?? []), 'errors' => $errors], 422);
+            return $this->view('data/entry', ['t' => $t, 'e' => $e, 'values' => $in + ($e ?? []), 'errors' => $errors, 'occ' => $occ], 422);
         }
         $this->changed();
         $to = $r->str('then') === 'new' ? "/admin/data/$handle/new" : ($r->str('then') === 'list' ? "/admin/data/$handle" : "/admin/data/$handle/$newId");
@@ -713,6 +742,66 @@ final class DataController extends AdminController
         }
         Entries::delete($t, (int) $id);
         return $this->back("/admin/data/$handle", 'success', 'Eintrag gelöscht.');
+    }
+
+    /**
+     * Einzelnen Termin einer Serie: action = cancel (fällt aus) | uncancel | remove (scope this|following|all). Zurück zum Kalender bzw.
+     * zum Eintrag; JSON mit Accept: application/json.
+     */
+    public function series(Request $r, string $handle, string $id): Response
+    {
+        $this->auth($r);
+        $t = $this->table($handle);
+        $this->noInbox($t, $r);
+        $action = $r->str('action');
+        if (!can($action === 'remove' ? 'data.delete' : 'data.edit', $handle)) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+        $head = Entries::find($t, (int) $id) ?? throw new HttpException(404);
+        if (Shared::isForeign($t, $head)) throw new HttpException(403, __('Dieser Eintrag gehört zu einer anderen Website und lässt sich hier nicht ändern.'));
+        $rid = \Core\Data\Series::ridFromKey($r->str('vorkommen'));
+        if (!\Core\Data\Series::isHead($t, $head) || $rid === null) throw new HttpException(422, __('Unbekannter Termin der Serie.'));
+        $when = fmt()->datetime(\Core\Data\Series::ridTime($rid)?->getTimestamp() ?? time());
+        $msg = match ($action) {
+            'cancel', 'uncancel' => (function () use ($t, $head, $rid, $action, $when) {
+                \Core\Data\Series::cancel($t, $head, $rid, $action === 'cancel');
+                return $action === 'cancel' ? __('Termin am {date} fällt aus – er bleibt sichtbar, als abgesagt gekennzeichnet.', ['date' => $when]) : __('Termin am {date} findet wieder statt.', ['date' => $when]);
+            })(),
+            'remove' => (function () use ($t, $head, $rid, $r, $when) {
+                $scope = in_array($r->str('scope'), \Core\Data\Series::SCOPES, true) ? $r->str('scope') : 'this';
+                \Core\Data\Series::remove($t, $head, $rid, $scope);
+                return match ($scope) { 'all' => __('Serie gelöscht.'), 'following' => __('Serie endet vor dem {date}.', ['date' => $when]), default => __('Termin am {date} entfernt.', ['date' => $when]) };
+            })(),
+            default => throw new HttpException(422, __('Unbekannte Aktion.')),
+        };
+        $this->changed();
+        if (str_contains((string) ($r->server['HTTP_ACCEPT'] ?? ''), 'application/json')) return Response::json(['ok' => true, 'message' => $msg]);
+        $back = Entries::find($t, (int) $id) ? "/admin/data/$handle/$id" : "/admin/data/$handle";
+        return $this->back($r->str('then') === 'list' ? "/admin/data/$handle" : $back, 'success', $msg);
+    }
+
+    /** Wiederholungs-Editor: Klartext und nächste Termine (JSON) – ?regel=…&beginn=…&ganztaegig=0|1&id=… (gespeicherte Serie) */
+    public function rrulePreview(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        $t = $this->table($handle);
+        if (!can('data.edit', $handle)) throw new HttpException(403);
+        $head = ctype_digit($r->str('id')) ? Entries::find($t, (int) $r->str('id')) : null;
+        $rule = mb_substr($r->str('regel'), 0, 2000);
+        [$norm, $err] = \Core\Data\Calendar::normalize($rule);
+        if ($err !== null) return Response::json(['summary' => '', 'items' => [], 'error' => __('Die Regel ist unvollständig oder ungültig.')]);
+        return Response::json(\Core\Data\Series::preview($t, $head && !\Core\Data\Series::isOverride($t, $head) ? $head : null, mb_substr($r->str('beginn'), 0, 20), $r->str('ganztaegig') === '1', $norm));
+    }
+
+    /** Kalender als ICS-Datei herunterladen (veröffentlichte Termine mit Serien und Einzelterminen, Freigabe „Kalender (ICS)“) */
+    public function exportIcs(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        $t = $this->table($handle);
+        if (!can('data.edit', $handle) || !\Core\Data\Calendar::enabled($t)) throw new HttpException(404);
+        $c = \Core\Data\Calendar::config($t);
+        $entries = Entries::query($t, ['status' => 'published', 'sort' => $c['start'], 'dir' => 'asc', 'limit' => 5000, 'source' => 'own']);
+        $body = \Core\Data\ICal::calendar($t, $entries, ['publish' => true, 'name' => $t['name'] . ' – ' . site_name()]);
+        return new Response($body, 200, ['Content-Type' => 'text/calendar; charset=utf-8', 'Content-Disposition' => 'attachment; filename="' . $t['handle'] . '.ics"',
+            'Cache-Control' => 'private, no-store']);
     }
 
     /** Übersetzung eines Eintrags anlegen oder öffnen */

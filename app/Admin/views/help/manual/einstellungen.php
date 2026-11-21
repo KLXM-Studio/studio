@@ -13,4 +13,16 @@
     <?php if (\Core\Notice::has()): ?><li><b>Hinweisbalken:</b> Mit <b>Anzeigen ab</b> und <b>Anzeigen bis</b> planen Sie einen Hinweis im Voraus (z. B. Betriebsferien) – er erscheint und verschwindet von selbst, der Haken muss dafür gesetzt sein. Unter <b>Darstellung</b> wählen Sie den Balken oben (wie im Design, linksbündig oder zentriert) oder eine <b>schwebende Bubble</b> unten links, unten mittig oder mitten im Bildschirm, die Besucher schließen können. Optional machen <b>Farbe</b> (z. B. Signalgelb, Rot) und <b>Hervorheben</b> (Pulsieren, kurz wackeln, Leuchten) den Hinweis auffälliger – die Bewegung läuft nur wenige Sekunden.</li><?php endif; ?>
     <li>Mit dem <b>Stern</b> merken Sie sich einen Reiter als Favorit.</li>
   </ul>
+  <h3 id="website-angaben">Website-Angaben und Website-Einstellungen</h3>
+  <p>Die Seite gibt es in zwei Stufen – je nach Rolle:</p>
+  <ul>
+    <li><b>Website-Angaben pflegen</b> (Recht <code>settings.info</code>): Name, Adresse und Kontakt, Öffnungszeiten, Hinweisbalken, Social Media, Texte im Fußbereich, Beschriftung und Link des Buttons im Kopfbereich und das Standard-Vorschaubild für soziale Netzwerke. Wer nur dieses Recht hat, sieht die Seite als <b>Website-Angaben</b> mit genau diesen Feldern.</li>
+    <li><b><?= e($settingsTitle ?? app()->theme->settingsTitle()) ?> ändern</b> (Recht <code>settings.edit</code>): alles, zusätzlich Logo, Rechtstexte (Impressum, Datenschutz, Barrierefreiheit), SEO und Titel-Zusatz sowie die Schalter des Kits.</li>
+  </ul>
+  <p>Bestehende Rollen behalten ihre Rechte. Auf <b>neuen</b> Websites bekommt die Rolle „Redaktion“ nur die Website-Angaben; die Administration kann unter <b>Benutzer &amp; Rollen</b> jederzeit mehr freigeben. Technisches – Kit, Domain, E-Mail-Versand, Suchmaschinen aussperren – steht in den <a href="#grundeinstellungen">Grundeinstellungen</a>.</p>
+  <ul>
+    <li><b>Pflichtfelder</b> sind mit * markiert. <b>Impressum</b> und <b>Datenschutzerklärung</b> lassen sich, einmal gewählt, nicht mehr leeren – nur durch eine andere Seite ersetzen.</li>
+    <li>Jede Gruppe beginnt mit einem Satz, wofür sie gilt und was passiert, wenn Felder leer bleiben; leere Felder zeigen den Wert, der dann gilt (z. B. „leer: Name der Website“).</li>
+    <li><b>Letzte Änderungen:</b> Unter dem Formular stehen die letzten Änderungen mit Zeit, Person und Weg (Verwaltung, REST-API, MCP, KI), jeweils vorher → nachher. <b>Zurücknehmen</b> stellt die Werte vor dieser Änderung wieder her – solange niemand die Felder seitdem erneut geändert hat; sonst sagt ein Hinweis, welches Feld, und nichts wird überschrieben.</li>
+  </ul>
   <?php include __DIR__ . '/_design.php'; ?>

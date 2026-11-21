@@ -50,7 +50,7 @@ final class Assistant
         'translate_page' => ['pages.edit', 'Übersetzung der Seite anlegen', '{"page": Seiten-ID, "lang": "en"} – Kopie in der Zielsprache als Entwurf (danach „✦ Aus … übersetzen“)'],
         'translate_entry' => ['data.edit', 'Übersetzung des Eintrags anlegen', '{"table": "kurzname", "id": Eintrags-ID, "lang": "en"} – Kopie in der Zielsprache als Entwurf'],
         'set_alt_text' => ['media.upload', 'Alt-Text setzen', '{"media": Bild-ID, "alt": "Beschreibung, höchstens 125 Zeichen"} – Alternativtext eines Bildes'],
-        'set_notice' => ['settings.edit', 'Hinweisbalken setzen', '{"text": "kurzer Hinweis", "active": true} – Hinweisbalken oben auf der Website (active false = ausblenden)'],
+        'set_notice' => ['settings.info', 'Hinweisbalken setzen', '{"text": "kurzer Hinweis", "active": true} – Hinweisbalken oben auf der Website (active false = ausblenden)'],
     ];
 
     // ================================================================== Verfügbarkeit, Oberfläche

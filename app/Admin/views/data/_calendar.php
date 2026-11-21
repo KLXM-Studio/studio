@@ -46,13 +46,16 @@ $de = str_starts_with(\Core\I18n::locale(), 'de');
           <?php if ($canEdit): ?><a class="dt-cal__add" href="<?= e($newUrl($key)) ?>" data-cal-add><span aria-hidden="true">+</span><span class="sr-only"><?= e(__('Neuer Termin am {date}', ['date' => $fmt($d, $de ? 'd. MMMM y' : 'd MMMM y')])) ?></span></a><?php endif; ?>
         </div>
         <?php if ($events): ?><ul class="dt-cal__events" role="list">
-          <?php foreach ($events as $o): $e = $o['entry']; $draft = $e['status'] === 'draft'; ?>
-          <li class="dt-cal__ev<?= $o['all_day'] ? ' is-allday' : '' ?><?= $draft ? ' is-draft' : '' ?>">
-            <a href="<?= e(url($base . '/' . $e['id'])) ?>" title="<?= e(Calendar::when($o) . ($o['recurring'] ? ' · ' . __('Serie') : '')) ?>">
+          <?php foreach ($events as $o): $e = $o['entry']; $draft = $e['status'] === 'draft';
+            // Serie (Kalender mit Serien): Klick öffnet genau dieses Vorkommen (?vorkommen=…), Einzeltermine sich selbst
+            $href = ($o['series'] ?? null) && empty($o['override']) ? url($base . '/' . $e['id']) . '?vorkommen=' . rawurlencode(Calendar::ridKey((string) $o['rid'])) : url($base . '/' . $e['id']); ?>
+          <li class="dt-cal__ev<?= $o['all_day'] ? ' is-allday' : '' ?><?= $draft ? ' is-draft' : '' ?><?= !empty($o['cancelled']) ? ' is-cancelled' : '' ?>">
+            <a href="<?= e($href) ?>" title="<?= e(Calendar::when($o) . ($o['recurring'] ? ' · ' . __('Serie') : '') . (!empty($o['override']) ? ' · ' . __('geändert') : '') . (!empty($o['cancelled']) ? ' · ' . __('fällt aus') : '')) ?>">
               <?php if (!$o['all_day']): ?><span class="dt-cal__time"><?= e($o['start']->format('H:i')) ?></span><?php endif; ?>
               <span class="dt-cal__title"><?= e(Entries::title($t, $e)) ?></span>
               <?php if ($o['recurring']): ?><span class="dt-cal__rec" aria-hidden="true"><?= icon('repeat') ?></span><span class="sr-only">(<?= e(__('Serie')) ?>)</span><?php endif; ?>
               <?php if ($draft): ?><span class="dt-cal__badge"><?= e(__('Entwurf')) ?></span><?php endif; ?>
+              <?php if (!empty($o['cancelled'])): ?><span class="dt-cal__badge"><?= e(__('fällt aus')) ?></span><?php endif; ?>
             </a>
           </li>
           <?php endforeach; ?>
@@ -61,5 +64,5 @@ $de = str_starts_with(\Core\I18n::locale(), 'de');
       <?php if ($d->format('N') === '7') echo '</tr>'; endfor; ?>
     </tbody>
   </table>
-  <p class="dt-foot"><span><?= e(__('{n} Termine in diesem Ansichtsbereich', ['n' => count($cal['occ'])])) ?> · <?= e(__('Klick auf einen Tag legt einen Termin an; Serien öffnen den Serien-Eintrag.')) ?></span></p>
+  <p class="dt-foot"><span><?= e(__('{n} Termine in diesem Ansichtsbereich', ['n' => count($cal['occ'])])) ?> · <?= e(\Core\Data\Kinds::isCalendar($t) ? __('Klick auf einen Tag legt einen Termin an; ein Termin einer Serie öffnet genau diesen Termin.') : __('Klick auf einen Tag legt einen Termin an; Serien öffnen den Serien-Eintrag.')) ?></span></p>
 </section>

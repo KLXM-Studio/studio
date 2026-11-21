@@ -1,0 +1,19 @@
+/*
+ * Datums- und Zeitauswahl a11y_datetime (resources/js/_datetime.js) – Farben aus den Token der Verwaltung.
+ * Der Kalender trägt .dt.dt-adm; Token des Pickers (--a11y-dt-*) direkt am Kalender, damit sie auch in Schatten-Wurzeln
+ * (Seitenleiste auf der Website, admin.shadow.css) und unabhängig von der Systemeinstellung hell/dunkel gelten.
+ */
+@import "./_datetime-shape.css";
+.flatpickr-calendar.dt-adm{
+  --a11y-dt-font-size:14px;--a11y-dt-radius:12px;
+  --a11y-dt-calendar-bg:var(--adm-card);--a11y-dt-calendar-border:var(--adm-line);
+  --a11y-dt-month-bg:transparent;--a11y-dt-month-fg:var(--adm-ink);
+  --a11y-dt-weekdays-bg:transparent;--a11y-dt-weekdays-fg:var(--adm-t3);
+  --a11y-dt-day-fg:var(--adm-ink);--a11y-dt-day-disabled-fg:color-mix(in srgb,var(--adm-t3) 55%,transparent);
+  --a11y-dt-day-not-allowed-fg:color-mix(in srgb,var(--adm-t3) 70%,transparent);
+  --a11y-dt-day-hover-bg:var(--adm-hover);--a11y-dt-today-color:var(--adm-a);
+  --a11y-dt-selected-bg:var(--adm-a);--a11y-dt-selected-fg:#fff;
+  --a11y-dt-shadow:0 12px 32px rgba(0,0,0,.16);
+  --a11y-dt-focus-ring:2px solid var(--adm-a);
+  font-family:var(--adm-font);color:var(--adm-ink)
+}

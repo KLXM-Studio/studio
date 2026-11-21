@@ -81,7 +81,7 @@ final class AdminUi
         $h .= '<div class="adm-tabs" role="tablist" aria-label="' . e($label !== '' ? $label : __('Bereiche')) . '">';
         $i = 0;
         foreach ($sections as $id => $sec) {
-            if ($sec === '-') { $h .= '<span class="adm-tabs__sep" role="separator"></span>'; continue; }
+            if ($sec === '-') { $h .= '<span class="adm-tabs__sep" aria-hidden="true"></span>'; continue; }   // kein role=separator: in einer tablist sind nur Reiter erlaubt (axe)
             $warn = (string) ($sec['warn'] ?? '');
             $err = !empty($sec['error']);   // Bereich enthält Fehler: wird beim Laden geöffnet (admin.js data-tab-error)
             $h .= '<button type="button" role="tab" id="tab-' . e($id) . '" aria-controls="panel-' . e($id) . '" data-tab="' . e($id) . '" aria-selected="' . ($i === 0 ? 'true' : 'false') . '"'

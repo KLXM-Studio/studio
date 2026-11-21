@@ -20,7 +20,9 @@ final class Permissions
                 'pages.edit' => __('Seiten bearbeiten (als Entwurf)'),
                 'pages.publish' => __('Seiten veröffentlichen'),
                 'pages.manage' => __('Seiten anlegen, verschieben, löschen, Seiteneinstellungen'),
-                'settings.edit' => __('{title} ändern', ['title' => app()->theme->settingsTitle()]),
+                // Website-Einstellungen des Kits in zwei Stufen (Core\SiteSettings): Angaben (ungefährlich) und alles
+                'settings.info' => __('Website-Angaben pflegen (Kontakt, Öffnungszeiten, Hinweisbalken, Social Media, Fußbereich)'),
+                'settings.edit' => __('{title} ändern – alles, auch Logo, Rechtstexte, SEO und Schalter des Kits', ['title' => app()->theme->settingsTitle()]),
                 // Weiterleitungen und 404-Protokoll (Core\Redirects) – zusätzlich Funktion „redirects“
                 'redirects.manage' => __('Weiterleitungen und 404-Protokoll verwalten'),
             ],
@@ -106,7 +108,8 @@ final class Permissions
             // Zentrale Konten der Netzwerk-Website (Core\Network) – nicht in „Benutzer & Rollen“ vergebbar
             'network' => ['name' => 'Netzwerk-Administration', 'description' => 'Alle Websites und alle Daten (zentral verwaltet)', 'permissions' => ['*'], 'builtin' => 1],
             'editor' => ['name' => 'Redaktion', 'description' => 'Inhalte pflegen und veröffentlichen',
-                'permissions' => ['pages.edit', 'pages.publish', 'pages.manage', 'settings.edit', 'media.upload', 'media.delete',
+                // Neue Websites: nur Website-Angaben (settings.info); bestehende Rollen behalten ihre Rechte (seed legt nur Fehlendes an)
+                'permissions' => ['pages.edit', 'pages.publish', 'pages.manage', 'settings.info', 'media.upload', 'media.delete',
                     'data.edit', 'data.publish', 'data.delete', 'requests.read', 'requests.manage', 'support.report', 'support.answer', 'ai.use', 'chat.use', 'push.view', 'tasks.use'], 'builtin' => 1],
             'author' => ['name' => 'Autorin / Autor', 'description' => 'Entwürfe schreiben, nichts veröffentlichen',
                 'permissions' => ['pages.edit', 'media.upload', 'data.edit', 'support.report'], 'builtin' => 1],
@@ -174,6 +177,8 @@ final class Permissions
         // Funktionsumfang der Website (config) schlägt jede Rolle
         if (!Features::allowsPermission($perm)) return false;
         if (in_array('*', $role['permissions'], true)) return true;
+        // „Website-Einstellungen“ (alles) schließt „Website-Angaben“ ein (Core\SiteSettings)
+        if ($perm === 'settings.info' && in_array('settings.edit', $role['permissions'], true)) return true;
         if (!in_array($perm, $role['permissions'], true)) return false;
         // Tabellenauswahl der Rolle gilt für Daten-Rechte und für Anfragen (Eingangs-Tabellen, z. B. nur „Rezeptanfragen“)
         if ($table !== null && is_array($role['tables'])

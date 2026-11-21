@@ -175,6 +175,14 @@ final class Entries
             $ids = array_values(array_filter(array_map('intval', (array) $o['ids'])));
             $where[] = $ids ? 'id IN (' . implode(',', $ids) . ')' : '1 = 0';
         }
+        // Kalender mit Serien (Art calendar): abweichende Einzeltermine (Core\Data\Series) erscheinen nicht als eigene Einträge in Listen,
+        // Suche, Sitemap, Feeds und Verwaltung – nur über ihre Serie bzw. die Vorkommen. 'overrides' => true: mit, 'only': nur sie; Abfrage
+        // nach IDs: mit
+        if (Kinds::isCalendar($table)) {
+            $ov = $o['overrides'] ?? (!empty($o['ids']) ? true : false);
+            if ($ov === 'only') $where[] = Series::SERIES . ' > 0';
+            elseif ($ov !== true) $where[] = '(' . Series::SERIES . ' IS NULL OR ' . Series::SERIES . ' = 0)';
+        }
         $q = trim((string) ($o['q'] ?? ''));
         if ($q !== '') {
             // q_public (Besucher-Suche in Blöcken): „Nie öffentlich“-Felder (Core\Data\Exposure) nicht durchsuchen – sonst verriete ein Treffer den Wert
@@ -231,6 +239,17 @@ final class Entries
             }
         }
         return [$where, $params];
+    }
+
+    /**
+     * Auswahl der Einträge als Unterabfrage „SELECT id FROM … WHERE …“ mit denselben Optionen wie query() (Status, Sprache, Suche, where,
+     * Quelle geteilter Tabellen, Freigabe auf der Website) – für Abfragen, die in einer anderen Tabelle filtern (Vorkommens-Index).
+     * @return array{0: string, 1: array}
+     */
+    public static function filterSql(array $table, array $o): array
+    {
+        [$where, $params] = self::where($table, $o);
+        return ["SELECT id FROM {$table['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params];
     }
 
     /** Bedingungen [[feld, op, wert], …] als SQL-Teile (Parameter werden an $params angehängt) */
@@ -581,6 +600,13 @@ final class Entries
         if (Exposure::hasEditorChoice($table)) {
             $row[Exposure::STATE] = json_encode(Exposure::cleanState($table, $in[Exposure::STATE] ?? null, $current), JSON_UNESCAPED_UNICODE);
         }
+        // Serien (Art calendar, Core\Data\Series): Verweis auf den Serienkopf, ersetztes Vorkommen, UID aus Kalender-Apps – nur interne Aufrufer
+        if (Kinds::isCalendar($table)) {
+            foreach ([Series::SERIES, Series::RID, Series::UID] as $k) {
+                if (!array_key_exists($k, $in)) continue;
+                $row[$k] = $k === Series::SERIES ? ((int) $in[$k] > 0 ? (int) $in[$k] : null) : (($v = trim((string) $in[$k])) !== '' ? mb_substr($v, 0, $k === Series::RID ? 20 : 255) : null);
+            }
+        }
         if ($shared && array_key_exists('_suggest', $in)) {
             // „Dem Verband vorschlagen“ – nur Mitglieder, nicht die Eigentümer-Website
             $row['suggest'] = !Shared::isOwner($table) && !empty($in['_suggest']) && $in['_suggest'] !== '0' ? 1 : 0;
@@ -604,6 +630,7 @@ final class Entries
             }
         }
         self::changed($table);
+        Occurrences::changed($table, (int) $id);          // Vorkommens-Index der Serie (Kalender)
         if (!empty($scheduled)) \Core\Schedule::refresh();
         if ($versioned && ($saved = self::find($table, (int) $id))) {
             $was = $current['status'] ?? null;
@@ -637,6 +664,10 @@ final class Entries
         $db = Tables::db($table);
         // Stand vor dem Löschen für Erweiterungen (Core\Events\EntryDeleted) – nur laden, wenn jemand zuhört
         $before = \Core\Extensions::listens('entry.deleted') ? self::find($table, $id) : null;
+        // Serienkopf (Art calendar): abweichende Einzeltermine der Serie gehören dazu und gehen mit
+        if (Kinds::isCalendar($table)) {
+            foreach ($db->fetchAll("SELECT id FROM {$table['table']} WHERE " . Series::SERIES . ' = ? AND id != ?', [$id, $id]) as $ov) self::delete($table, (int) $ov['id']);
+        }
         Revisions::forget($table, $id);
         if (Tables::isShared($table)) {
             // Geteilt: nur eigene Einträge; Auswahl aller Websites mit entfernen
@@ -654,6 +685,7 @@ final class Entries
             else Tables::db($t)->query('DELETE FROM ' . Tables::pivot($t, $f['name']) . ' WHERE target_id = ?', [$id]);
         }
         self::changed($table);
+        Occurrences::changed($table, $id);
         \Core\Extensions::emit(new \Core\Events\EntryDeleted($table, $id, $before));   // Erweiterungen (Extension::on)
     }
 

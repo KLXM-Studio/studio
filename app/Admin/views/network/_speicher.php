@@ -12,6 +12,7 @@ $sum = array_sum(array_column($usage, 'total')) + (int) ($install['total'] ?? 0)
 $max = max([1, ...array_values(array_map(fn($u) => (int) $u['total'], $usage))]);
 $name = fn(string $k) => (string) ($stats[$k]['label'] ?? $k);
 ?>
+<h2 class="adm-sr"><?= e(__('Speicher')) ?></h2><?php // Überschriften-Reihenfolge h1 → h2 → h3 (axe heading-order) ?>
 <?= \Core\AdminUi::group(__('Insgesamt'), [
     \Core\AdminUi::row(__('Belegt'), '<strong>' . e(fmt()->bytes($sum)) . '</strong>', __('{n} Websites und die gemeinsamen Daten der Installation – ohne Programmdateien.', ['n' => count($usage)])),
     \Core\AdminUi::row(__('Zählung'), '<a class="adm-btn adm-btn--small" href="' . e(url('/admin/network/speicher?neu=1')) . '">' . icon('arrows-clockwise') . ' ' . e(__('Neu zählen')) . '</a>', __('Wird stündlich neu gezählt.')),

@@ -10,7 +10,13 @@ use Core\PageCache;
 
 /**
  * Bestehende Tabelle an Ort und Stelle in eine Tabellenart mit Grundschema umwandeln (php bin/console data:convert, Core\Data\Kinds) –
- * heute in ein Adressbuch (contacts). Gleiche Tabelle, gleiche IDs: Verknüpfungen, Revisionen, Detailseiten bleiben.
+ * in ein Adressbuch (contacts), einen Kalender mit Serien (calendar) oder eine Ortsliste (places). Gleiche Tabelle, gleiche IDs:
+ * Verknüpfungen, Revisionen, Detailseiten bleiben.
+ *
+ * Nach der Umwandlung stehen die Felder wie in der Vorlage der Art (Kinds::presetFields): Grundfelder in ihren Abschnitten, danach die
+ * eigenen Felder mit ihren bisherigen Abschnitten; Abschnitte, die nur noch Altfelder enthielten, entfallen; Altfelder stehen am Ende.
+ * Felder, die zu einem Grundfeld werden, bekommen dessen Beschriftung und Pflicht-Angabe. --revert stellt Reihenfolge, Abschnitte,
+ * Beschriftungen und Pflicht wieder her (alte Feldliste im Zustand).
  *
  *  - plan(): Probelauf (Standard) – Feldzuordnung aufs Grundschema (automatischer Vorschlag, überschreibbar mit --map), Bericht je
  *    Feld, Namensaufteilung, Freigabe-Vorschlag (mobil/privat und „Nie öffentlich“ → intern), betroffene Blöcke/Seiten, Einstellungen.
@@ -25,7 +31,22 @@ use Core\PageCache;
  */
 final class Convert
 {
-    /** Gleichartige Felder → Grundfeld (Typen, Namensmuster); erstes passendes Feld gewinnt */
+    /** Gleichartige Felder → Grundfeld (Typen, Namensmuster); erstes passendes Feld gewinnt – je Art */
+    private const SAME_CALENDAR = [
+        'ort' => [['text'], '~^(ort|location|veranstaltungsort|treffpunkt)$~'],
+        'standort' => [['geo'], '~^(standort|karte|geo|ort_?karte|koordinaten)$~'],
+        'kategorie' => [['multiselect', 'select'], '~^(kategorie|kategorien|kalender|category|art)$~'],
+        'beschreibung' => [['textarea', 'text', 'richtext'], '~^(beschreibung|kurztext|description|teaser)$~'],
+        'abgesagt' => [['bool'], '~^(abgesagt|faellt_?aus|cancelled|ausfall)$~'],
+    ];
+    private const SAME_PLACES = [
+        'standort' => [['geo'], '~^(standort|karte|geo|ort_?karte|koordinaten)$~'],
+        'hinweise' => [['textarea'], '~^(hinweise|anfahrt|beschreibung)$~'],
+    ];
+    /** Feldtypen, deren Werte sich verlustarm in den Typ eines Grundfelds übertragen lassen (Altfeld bleibt ausgeblendet) */
+    private const CASTS = ['select>multiselect', 'date>datetime', 'text>textarea'];
+    /** Titel-Feld der Art */
+    private const TITLE = [Kinds::CONTACTS => 'name', Kinds::CALENDAR => 'titel', Kinds::PLACES => 'name'];
     private const SAME = [
         'vorname' => [['text'], '~^(vorname|first_?name|given_?name)$~'],
         'nachname' => [['text'], '~^(nachname|familienname|last_?name|surname|family_?name)$~'],
@@ -54,7 +75,8 @@ final class Convert
         if (!Kinds::isSpecial($kind)) $errors[] = __('Unbekannte Tabellenart „{kind}“ (möglich: {list}).', ['kind' => $kind, 'list' => implode(', ', array_keys(Kinds::VERSIONS))]);
         if (Tables::isInbox($t)) $errors[] = __('Eingangs-Tabellen lassen sich nicht umwandeln.');
         if (Tables::isShared($t)) $errors[] = __('Geteilte Tabellen lassen sich in dieser Version noch nicht umwandeln.');
-        if (Kinds::of($t) === $kind) $errors[] = __('Die Tabelle ist schon ein Adressbuch.');
+        if (Kinds::of($t) === $kind) $errors[] = __('Die Tabelle hat schon die Art „{kind}“.', ['kind' => Kinds::label($kind)]);
+        if (Kinds::isSpecial(Kinds::of($t)) && Kinds::of($t) !== $kind) $errors[] = __('Die Tabelle hat schon eine Art mit Grundschema – erst zurückdrehen (--revert).');
         if ($errors) return ['ok' => false, 'errors' => $errors];
 
         $schema = array_column(Kinds::schema($kind), null, 'name');
@@ -77,29 +99,44 @@ final class Convert
             if (isset($taken[$n]) || isset($plan[$n]) || !isset($fields[$n])) continue;
             if ($fields[$n]['type'] === $def['type']) { $plan[$n] = ['action' => 'keep', 'to' => $n]; $taken[$n] = $n; }
         }
-        // 3. Titel-Feld → Anzeigename
+        // 3. Titel-Feld → Titel der Art (Anzeigename, Titel, Name)
         $tf = (string) ($t['settings']['title_field'] ?? '');
-        if (!isset($taken['name']) && $tf !== '' && !isset($plan[$tf]) && ($fields[$tf]['type'] ?? '') === 'text' && !isset($fields['name'])) {
-            $plan[$tf] = ['action' => 'rename', 'to' => 'name'];
-            $taken['name'] = $tf;
+        $tn = self::TITLE[$kind] ?? 'name';
+        if (!isset($taken[$tn]) && $tf !== '' && !isset($plan[$tf]) && ($fields[$tf]['type'] ?? '') === 'text' && (!isset($fields[$tn]) || $tf === $tn)) {
+            $plan[$tf] = ['action' => $tf === $tn ? 'keep' : 'rename', 'to' => $tn];
+            $taken[$tn] = $tf;
+        }
+        // 3b. Kalender: Zuordnung der Kalender-Einstellung (Beginn, Ende, ganztägig, Wiederholung, Ort, Beschreibung, Kategorie)
+        if ($kind === Kinds::CALENDAR && !empty($t['settings']['calendar']['enabled'])) {
+            $cal = (array) $t['settings']['calendar'];
+            foreach (['start' => 'beginn', 'end' => 'ende', 'all_day' => 'ganztaegig', 'recurrence' => 'wiederholung', 'location' => 'ort', 'description' => 'beschreibung', 'category' => 'kategorie'] as $k => $to) {
+                $src = (string) ($cal[$k] ?? '');
+                if ($src === '' || !isset($fields[$src]) || isset($plan[$src])) continue;
+                if ($k === 'location' && $fields[$src]['type'] === 'geo') $to = 'standort';
+                if (isset($taken[$to])) continue;
+                $plan[$src] = self::action($fields[$src], $to, $schema[$to]['type'], null, null);
+                if (in_array($plan[$src]['action'], ['keep', 'rename'], true)) $taken[$to] = $src;
+                if (in_array($plan[$src]['action'], ['cast', 'combine', 'copy'], true)) $taken[$to] = $src;
+            }
         }
         // 4. gleichartige Felder nach Namensmuster (Bildfeld der Tabelle zuerst fürs Foto)
         $order = array_keys($fields);
         $img = Tables::imageField($t);
         if ($img !== '') $order = array_values(array_unique([$img, ...$order]));
-        foreach (self::SAME as $to => [$types, $re]) {
-            if (isset($taken[$to])) continue;
+        foreach (match ($kind) { Kinds::CALENDAR => self::SAME_CALENDAR, Kinds::PLACES => self::SAME_PLACES, default => self::SAME } as $to => [$types, $re]) {
+            if (isset($taken[$to]) || !isset($schema[$to])) continue;
             foreach ($order as $n) {
                 $f = $fields[$n];
                 if (isset($plan[$n]) || !in_array($f['type'], $types, true) || !preg_match($re, $n)) continue;
                 if (isset($fields[$to]) && $to !== $n && !isset($plan[$to])) continue;   // Ziel belegt (anderer Typ) – Konflikt unten
-                $plan[$n] = ['action' => $n === $to ? 'keep' : 'rename', 'to' => $to];
+                $plan[$n] = self::action($f, $to, $schema[$to]['type'], null, null);
+                if ($plan[$n]['action'] === 'own') { unset($plan[$n]); continue; }
                 $taken[$to] = $n;
                 break;
             }
         }
-        // 5. Telefon, E-Mail, Web und Anschrift → beschriftete Mehrfachfelder (Altfelder bleiben ausgeblendet)
-        foreach ($fields as $n => $f) {
+        // 5. Adressbuch: Telefon, E-Mail, Web und Anschrift → beschriftete Mehrfachfelder (Altfelder bleiben ausgeblendet)
+        foreach ($kind === Kinds::CONTACTS ? $fields : [] as $n => $f) {
             if (isset($plan[$n])) continue;
             $to = match ($f['type']) { 'tel' => 'telefon', 'email' => 'email', 'url' => 'web', default => null };
             if ($to === null && $f['type'] === 'text') foreach (self::ADR as $part => $re) if (preg_match($re, $n)) { $to = 'adresse'; break; }
@@ -109,23 +146,33 @@ final class Convert
         // 6. übrige Felder bleiben eigene Felder; belegt ein eigenes Feld den Namen eines Grundfelds mit anderem Typ: umbenennen
         foreach ($fields as $n => $f) {
             if (isset($plan[$n])) continue;
-            $plan[$n] = isset($schema[$n]) ? ['action' => 'own', 'to' => self::free($n . '_eigen', $fields), 'note' => __('Name gehört zum Grundschema – umbenannt')] : ['action' => 'own', 'to' => $n];
+            $plan[$n] = isset($schema[$n]) ? ['action' => 'own', 'to' => self::free($n . ($kind === Kinds::CALENDAR ? '_web' : '_eigen'), $fields), 'note' => __('Name gehört zum Grundschema – umbenannt')] : ['action' => 'own', 'to' => $n];
         }
         // Grundfelder ohne Quelle: neu (leer); Namensaufteilung, wenn Vor-/Nachname fehlen
         $added = [];
         foreach ($schema as $n => $def) {
-            if (isset($taken[$n]) || array_filter($plan, fn($p) => $p['to'] === $n && $p['action'] === 'combine')) continue;
+            if (isset($taken[$n]) || array_filter($plan, fn($p) => $p['to'] === $n && in_array($p['action'], ['combine', 'cast', 'copy'], true))) continue;
             $added[] = $n;
         }
-        $split = in_array('vorname', $added, true) && in_array('nachname', $added, true) ? ($taken['name'] ?? (isset($fields['name']) ? 'name' : $tf)) : null;
+        $split = $kind === Kinds::CONTACTS && in_array('vorname', $added, true) && in_array('nachname', $added, true) ? ($taken['name'] ?? (isset($fields['name']) ? 'name' : $tf)) : null;
         // Altfelder, deren Name ein neues Grundfeld braucht (Telefon tel → telefon phones): umbenennen in „…_alt“
         foreach ($plan as $n => &$p) {
             $p += ['label' => null, 'public' => null, 'note' => ''];
-            if ($p['action'] === 'combine') $p['legacy_name'] = isset($schema[$n]) ? self::free($n . '_alt', $fields) : $n;
+            if (in_array($p['action'], ['combine', 'cast'], true)) $p['legacy_name'] = isset($schema[$n]) ? self::free($n . '_alt', $fields) : $n;
+            if ($p['action'] === 'copy') $p['own_to'] = isset($schema[$n]) ? self::free($n . ($kind === Kinds::CALENDAR ? '_web' : '_eigen'), $fields) : $n;
+            // Grundfeld übernimmt Beschriftung und Pflicht des Grundschemas (Bericht nennt Abweichungen; --revert stellt alt her)
+            if (in_array($p['action'], ['keep', 'rename'], true) && isset($schema[$p['to']])) {
+                $def = $schema[$p['to']];
+                $p['label_from'] = (string) $fields[$n]['label'];
+                $p['label_to'] = (string) $def['label'];
+                $p['required_from'] = !empty($fields[$n]['required']);
+                $p['required_to'] = !empty($def['required']);
+            }
         }
         unset($p);
         $entries = Entries::query($t, ['status' => 'all', 'lang' => 'all', 'source' => 'all', 'internal' => true]);
         return ['ok' => !$errors, 'errors' => $errors, 'kind' => $kind, 'table' => $t['handle'], 'fields' => $plan, 'added' => $added, 'split' => $split,
+            'layout' => self::layout($t, $kind, $plan),
             'entries' => count($entries), 'drafts' => count(array_filter($entries, fn($e) => $e['status'] !== 'published')),
             'refs' => self::references($t, self::rewrites($plan)), 'settings' => self::settingsRewrites($t, $plan)];
     }
@@ -134,6 +181,9 @@ final class Convert
     private static function action(array $f, string $to, string $toType, ?string $label, ?bool $public): array
     {
         if ($f['type'] === $toType) return ['action' => $f['name'] === $to ? 'keep' : 'rename', 'to' => $to];
+        if (in_array($f['type'] . '>' . $toType, self::CASTS, true) && !Combo::isMulti($toType)) return ['action' => 'cast', 'to' => $to, 'from_type' => $f['type']];
+        // Rich-Text → Text des Grundfelds: Text wird kopiert, das Rich-Text-Feld bleibt sichtbar (Website unverändert, „Nur Website“)
+        if (in_array($f['type'], ['richtext', 'mediatext'], true) && $toType === 'textarea') return ['action' => 'copy', 'to' => $to, 'from_type' => $f['type']];
         if (!Combo::isMulti($toType)) return ['action' => 'own', 'to' => $f['name'], 'note' => __('Typ passt nicht zu „{to}“ – bleibt eigenes Feld', ['to' => $to])];
         $s = mb_strtolower($f['name'] . ' ' . $f['label']);
         $label ??= match ($toType) {
@@ -156,11 +206,125 @@ final class Convert
         return $n;
     }
 
+    /**
+     * Felder nach der Umwandlung (Eingabe für Tables::validate): umbenannt, Altfelder ausgeblendet, Grundfelder mit Beschriftung/Pflicht
+     * des Grundschemas, fehlende Grundfelder ergänzt (Auswahl übernimmt die Möglichkeiten des Quellfeldes) und geordnet wie die Vorlage
+     * der Art: Grundfelder in ihren Abschnitten, eigene Felder mit ihren Abschnitten, Altfelder am Ende.
+     * @return array{fields: list<array>, renames: array<string, string>, legacy: array<string, string>, lines: list<string>, dropped: list<string>}
+     */
+    private static function prepare(array $t, array $plan): array
+    {
+        $kind = (string) $plan['kind'];
+        $schema = array_column(Kinds::schema($kind), null, 'name');
+        $fields = Tables::toInput($t)['fields'];
+        $renames = [];
+        $legacy = [];
+        $srcOf = [];                                     // Grundfeld → Quellfeld (für Auswahl-Möglichkeiten)
+        foreach ($fields as &$f) {
+            $n = (string) ($f['name'] ?? '');
+            $p = $plan['fields'][$n] ?? null;
+            if (!$p) continue;
+            if (in_array($p['action'], ['rename', 'own'], true) && $p['to'] !== $n) { $f['name'] = $p['to']; $renames[$n] = $p['to']; }
+            if ($p['action'] === 'copy' && ($p['own_to'] ?? $n) !== $n) { $f['name'] = (string) $p['own_to']; $renames[$n] = (string) $p['own_to']; }
+            if (in_array($p['action'], ['keep', 'rename'], true) && isset($schema[$p['to']])) {
+                $f['label'] = $schema[$p['to']]['label'];
+                $f['required'] = !empty($schema[$p['to']]['required']);
+                $f['in_list'] = !empty($schema[$p['to']]['in_list']);
+                unset($f['labels'], $f['legacy']);          // ausgeblendete Spalte einer früheren Umwandlung wird wieder Grundfeld
+            }
+            if (in_array($p['action'], ['combine', 'cast'], true)) {
+                $f['legacy'] = 1;
+                $f['in_list'] = 0;
+                $f['required'] = false;
+                if ($p['legacy_name'] !== $n) $f['name'] = $p['legacy_name'];
+                $legacy[$n] = $p['legacy_name'];
+                $srcOf[$p['to']] ??= $f;
+            }
+        }
+        unset($f);
+        $fields = self::ruleRefs($fields, $renames + $legacy);
+        // Ordnen nach der Vorlage der Art: Gruppen = Abschnitt + Felder. Eigene Abschnitte mit gleicher Überschrift wie ein Abschnitt der
+        // Vorlage gehen in diesem auf (z. B. „Termin“), andere folgen mit ihren eigenen Feldern; leere Abschnitte entfallen
+        $byName = [];
+        foreach ($fields as $f) if (!in_array($f['type'] ?? '', Tables::LAYOUT, true)) $byName[(string) $f['name']] = $f;
+        $names = array_flip(array_column($fields, 'name'));
+        $sysLabels = array_map(fn($d) => mb_strtolower((string) $d['label']), $schema);
+        $groups = [];                                    // [key => ['head' => ?section, 'items' => [...], 'sys' => [...], 'own' => [...]]]
+        $key = '_';
+        $used = [];
+        foreach (Kinds::presetFields($kind) as $pf) {
+            if (($pf['type'] ?? '') === 'section') {
+                $pf['name'] = self::free((string) $pf['name'], $names);
+                $names[$pf['name']] = true;
+                $key = 'p:' . mb_strtolower((string) $pf['label']);
+                $groups[$key] = ['head' => $pf, 'items' => [], 'sys' => [], 'own' => []];
+                continue;
+            }
+            $groups[$key] ??= ['head' => null, 'items' => [], 'sys' => [], 'own' => []];
+            $n = (string) $pf['name'];
+            $f = isset($byName[$n]) && empty($byName[$n]['legacy']) ? $byName[$n] : $pf;
+            if (!isset($byName[$n]) && isset($srcOf[$n]['options']) && in_array($pf['type'], ['select', 'multiselect'], true)) {
+                $f['options'] = $srcOf[$n]['options'];   // z. B. Kategorie (Auswahl) → Kalender (Mehrfachauswahl) mit denselben Möglichkeiten
+                if (!empty($srcOf[$n]['options_i18n'])) $f['options_i18n'] = $srcOf[$n]['options_i18n'];
+            }
+            $groups[$key]['items'][] = $f;
+            $groups[$key]['sys'][] = $n;
+            $used[$n] = true;
+        }
+        $dropped = [];
+        $key = null;
+        $pendingContent = [];
+        foreach ($fields as $f) {
+            $type = (string) ($f['type'] ?? '');
+            if ($type === 'section') {
+                $lk = mb_strtolower((string) $f['label']);
+                $key = isset($groups['p:' . $lk]) ? 'p:' . $lk : 'o:' . (string) $f['name'];
+                $groups[$key] ??= ['head' => $f, 'items' => [], 'sys' => [], 'own' => [], 'orig' => true];
+                $pendingContent = [];
+                continue;
+            }
+            if ($type === 'content') { $pendingContent[] = $f; continue; }
+            $n = (string) $f['name'];
+            if (isset($used[$n]) || !empty($f['legacy'])) continue;
+            // eigenes Feld, das wegen des Grundschemas umbenannt wurde und gleich heißt wie ein Grundfeld: „… (Website)“
+            if (in_array($n, $renames, true) && in_array(mb_strtolower((string) $f['label']), $sysLabels, true) && !isset($schema[$n])) $f['label'] .= ' (' . __('Website') . ')';
+            $k = $key ?? 'o:_';
+            $groups[$k] ??= ['head' => null, 'items' => [], 'sys' => [], 'own' => []];
+            array_push($groups[$k]['items'], ...$pendingContent, ...[$f]);
+            $groups[$k]['own'][] = $n;
+            $pendingContent = [];
+        }
+        $out = [];
+        $lines = [];
+        foreach ($groups as $g) {
+            if (!$g['items']) { if (!empty($g['orig']) && $g['head']) $dropped[] = (string) $g['head']['label']; continue; }
+            if ($g['head']) $out[] = $g['head'];
+            array_push($out, ...$g['items']);
+            $lines[] = ($g['head'] ? '„' . $g['head']['label'] . '“' : __('ohne Abschnitt')) . ':' . ($g['sys'] ? ' ' . implode(' ', $g['sys']) : '')
+                . ($g['own'] ? ' + ' . __('eigene') . ': ' . implode(' ', $g['own']) : '');
+        }
+        $old = array_values(array_filter($fields, fn($f) => !empty($f['legacy'])));
+        array_push($out, ...$old);
+        if ($old) $lines[] = __('Altfelder (ausgeblendet) am Ende') . ': ' . implode(' ', array_column($old, 'name'));
+        if ($dropped) $lines[] = __('Abschnitte entfallen (enthielten nur noch Grund- oder Altfelder)') . ': ' . implode(', ', array_map(fn($x) => '„' . $x . '“', $dropped));
+        return ['fields' => $out, 'renames' => $renames, 'legacy' => $legacy, 'lines' => $lines, 'dropped' => $dropped];
+    }
+
+    /** Reihenfolge für den Bericht des Probelaufs */
+    private static function layout(array $t, string $kind, array $plan): array
+    {
+        $p = self::prepare($t, ['kind' => $kind, 'fields' => $plan]);
+        return ['lines' => $p['lines'], 'dropped' => $p['dropped']];
+    }
+
     /** Verweise alt → neu für Blöcke (feld → grundfeld bzw. Mehrfachfeld) */
     private static function rewrites(array $plan): array
     {
         $out = [];
-        foreach ($plan as $n => $p) if ($p['to'] !== $n) $out[$n] = $p['to'];
+        foreach ($plan as $n => $p) {
+            $to = $p['action'] === 'copy' ? (string) ($p['own_to'] ?? $n) : $p['to'];
+            if ($to !== $n) $out[$n] = $to;
+        }
         return $out;
     }
 
@@ -207,6 +371,8 @@ final class Convert
             $l[] = sprintf('  %-16s %-10s → %s', $n, '(' . $by[$n]['type'] . ')', match ($p['action']) {
                 'keep' => "{$p['to']} (bleibt, wird Grundfeld)",
                 'rename' => "{$p['to']} (umbenannt, Werte bleiben)",
+                'copy' => "{$p['to']} (Text daraus kopiert) · bleibt sichtbar als eigenes Feld „" . ($p['own_to'] ?? $n) . '“',
+                'cast' => "{$p['to']} ({$type}, Werte übernommen) · Altfeld bleibt ausgeblendet" . ($p['legacy_name'] !== $n ? " als „{$p['legacy_name']}“" : ''),
                 'combine' => "{$p['to']}[" . $lbl($type, $p['label']) . ', ' . ($p['public'] === 'entry' ? 'wie je Eintrag freigegeben' : ($p['public'] === true ? 'öffentlich' : 'intern')) . ']'
                     . ($type === 'addresses' ? ' (Teil der Anschrift)' : '') . ' · Altfeld bleibt ausgeblendet' . ($p['legacy_name'] !== $n ? " als „{$p['legacy_name']}“" : ''),
                 default => ($p['to'] !== $n ? "{$p['to']} (eigenes Feld, umbenannt)" : 'bleibt eigenes Feld'),
@@ -219,10 +385,25 @@ final class Convert
             $l[] = '  Anschrift: ' . match ($scope) { 'entry' => 'je Eintrag wie freigegeben (Redaktion entscheidet)', '1' => 'öffentlich (alle Teile waren öffentlich)', 'city' => 'nur Ort öffentlich (Straße/PLZ waren nicht öffentlich)', default => 'intern' };
         }
         if ($plan['added']) $l[] = '  Neue Grundfelder (leer): ' . implode(', ', $plan['added']);
+        $relabel = [];
+        foreach ($plan['fields'] as $n => $p) {
+            if (!isset($p['label_to'])) continue;
+            if ($p['label_from'] !== $p['label_to']) $relabel[] = "„{$p['label_from']}“ → „{$p['label_to']}“";
+            if ($p['required_from'] !== $p['required_to']) $relabel[] = "{$p['to']}: " . ($p['required_to'] ? 'jetzt Pflicht' : 'nicht mehr Pflicht');
+        }
+        if ($relabel) $l[] = '  Beschriftung/Pflicht aus dem Grundschema: ' . implode(', ', $relabel);
+        if ($plan['kind'] === Kinds::CALENDAR) {
+            $own = array_keys(array_filter($plan['fields'], fn($p, $n) => in_array($p['action'], ['own', 'copy'], true) && empty($by[$n]['legacy']), ARRAY_FILTER_USE_BOTH));
+            if ($own) $l[] = '  Eigene Felder werden „Nur Website“ (nie in ICS-Datei, Abo, CalDAV): ' . implode(', ', array_map(fn($n) => $plan['fields'][$n]['action'] === 'copy' ? $plan['fields'][$n]['own_to'] : $plan['fields'][$n]['to'], $own));
+        }
+        $l[] = '';
+        $l[] = 'Reihenfolge im Formular:';
+        foreach ($plan['layout']['lines'] as $line) $l[] = '  ' . $line;
         if ($plan['split']) $l[] = "  Vor-/Nachname: aus „{$plan['split']}“ aufgeteilt (letztes Wort = Nachname, Titel wie „Dr.“ → Titel) – Beispiele unten prüfen";
         $l[] = '';
         $l[] = 'Freigabe:';
-        $l[] = '  „Auf der Website zeigen“: veröffentlichte Einträge an (Website bleibt gleich)' . ($plan['drafts'] ? ", {$plan['drafts']} Entwürfe aus" : '');
+        if ($plan['kind'] === Kinds::CONTACTS) $l[] = '  „Auf der Website zeigen“: veröffentlichte Einträge an (Website bleibt gleich)' . ($plan['drafts'] ? ", {$plan['drafts']} Entwürfe aus" : '');
+        else $l[] = '  Status der Einträge bleibt (veröffentlicht/Entwurf) – Website, Feed und Kalender-Blöcke zeigen dieselben Termine.';
         $lost = [];
         foreach (Entries::query($t, ['status' => 'published', 'lang' => 'all', 'source' => 'all', 'internal' => true]) as $e) {
             foreach ($plan['fields'] as $n => $p) {
@@ -299,29 +480,20 @@ final class Convert
         // 1. Seiten vorher merken (für --revert)
         $pages = [];
         foreach (array_keys($plan['refs']) as $id) $pages[$id] = app()->db->fetch('SELECT content_draft, content_published FROM pages WHERE id = ?', [$id]);
-        // 2. Schema vorbereiten und prüfen (vor jeder Änderung): umbenennen, Altfelder ausblenden, Grundfelder ergänzen (Kinds::enforceInput), Art setzen
+        // 2. Schema vorbereiten und prüfen (vor jeder Änderung): umbenennen, Altfelder ausgeblendet, Grundfelder ergänzt und geordnet
+        // (prepare), Art setzen
         $in = Tables::toInput($t);
-        $renames = [];
-        $legacy = [];
-        foreach ($in['fields'] as &$f) {
-            $n = (string) ($f['name'] ?? '');
-            $p = $plan['fields'][$n] ?? null;
-            if (!$p) continue;
-            if (in_array($p['action'], ['rename', 'own'], true) && $p['to'] !== $n) { $f['name'] = $p['to']; $renames[$n] = $p['to']; }
-            if ($p['action'] === 'combine') {
-                $f['legacy'] = 1;
-                $f['in_list'] = 0;
-                if ($p['legacy_name'] !== $n) $f['name'] = $p['legacy_name'];
-                $legacy[$n] = $p['legacy_name'];
-            }
-        }
-        unset($f);
-        $in['fields'] = self::ruleRefs($in['fields'], $renames + $legacy);
+        $before = $in['fields'];
+        $prep = self::prepare($t, $plan);
+        $in['fields'] = $prep['fields'];
+        $renames = $prep['renames'];
+        $legacy = $prep['legacy'];
         foreach ($plan['settings'] as $k => [$a, $b]) $in['settings'][$k] = $b;
         if (isset($in['settings']['search']['fields']) && is_array($in['settings']['search']['fields'])) {
             foreach ($renames as $a => $b) if (isset($in['settings']['search']['fields'][$a])) { $in['settings']['search']['fields'][$b] = $in['settings']['search']['fields'][$a]; unset($in['settings']['search']['fields'][$a]); }
         }
-        $in['settings']['schema_type'] = ($in['settings']['schema_type'] ?? '') ?: 'Person';
+        $in['settings']['schema_type'] = ($in['settings']['schema_type'] ?? '') ?: match ($kind) { Kinds::CALENDAR => 'Event', Kinds::PLACES => 'Place', default => 'Person' };
+        if ($kind === Kinds::CALENDAR) $in['settings']['title_field'] = 'titel';
         $in['_kind'] = $kind;
         $in['_convert'] = ['kind' => $kind, 'from' => Kinds::of($t), 'at' => now(), 'renames' => $renames, 'legacy' => $legacy, 'added' => $plan['added']];
         [$def, $errors] = Tables::validate($in, $t);
@@ -336,7 +508,7 @@ final class Convert
         }
         // 4. Revision je Eintrag (Ausgangsstand), dann Schema ändern
         $rows = Entries::query($t, ['status' => 'all', 'lang' => 'all', 'source' => 'all', 'internal' => true]);
-        foreach ($rows as $e) Revisions::record($t, $e, __('Vor der Umwandlung in ein Adressbuch'));
+        foreach ($rows as $e) Revisions::record($t, $e, __('Vor der Umwandlung in „{kind}“', ['kind' => Kinds::label($kind)]));
         $log[] = '✓ Revision je Eintrag (' . count($rows) . ')';
         Tables::update($t, $def);
         $nt = Tables::find((string) $t['handle']) ?? throw new \RuntimeException('Tabelle fehlt nach der Umwandlung.');
@@ -351,6 +523,23 @@ final class Convert
             $multi = [];
             $address = [];
             foreach ($plan['fields'] as $src => $p) {
+                if ($p['action'] === 'copy') {
+                    $x = ICal::plain(($p['from_type'] ?? '') === 'mediatext' ? Entries::html($t, $e, $src) : (string) ($e[$src] ?? ''));
+                    $set[$p['to']] = $x !== '' ? $x : null;
+                    continue;
+                }
+                if ($p['action'] === 'cast') {
+                    // Typ des Grundfelds: Auswahl → Mehrfachauswahl, Datum → Datum & Uhrzeit (ganztägig), Rich-Text → Text
+                    $v = $e[$src] ?? null;
+                    $set[$p['to']] = match ($p['from_type'] ?? '') {
+                        'select' => json_encode(is_scalar($v) && (string) $v !== '' ? [(string) $v] : [], JSON_UNESCAPED_UNICODE),
+                        'richtext' => ($x = ICal::plain((string) $v)) !== '' ? $x : null,
+                        default => is_scalar($v) && trim((string) $v) !== '' ? (string) $v : null,
+                    };
+                    if (($p['from_type'] ?? '') === 'date' && $p['to'] === 'beginn' && is_scalar($v) && trim((string) $v) !== ''
+                        && !array_filter($plan['fields'], fn($q) => $q['to'] === 'ganztaegig')) $set['ganztaegig'] = 1;
+                    continue;
+                }
                 if ($p['action'] !== 'combine') continue;
                 $v = trim((string) ($e[$src] ?? ''));
                 if ($v === '') continue;
@@ -367,8 +556,8 @@ final class Convert
                 [$pre, $given, $family] = self::splitName((string) ($e[$plan['split']] ?? ''));
                 $set += ['praefix' => $pre !== '' ? $pre : null, 'vorname' => $given, 'nachname' => $family];
             }
-            $set[Kinds::PUBLIC_FIELD] = $e['status'] === 'published' ? 1 : 0;
-            $db->update($nt['table'], $set, 'id = :id', ['id' => (int) $e['id']]);
+            if ($kind === Kinds::CONTACTS) $set[Kinds::PUBLIC_FIELD] = $e['status'] === 'published' ? 1 : 0;
+            if ($set) $db->update($nt['table'], $set, 'id = :id', ['id' => (int) $e['id']]);
             $n++;
         }
         $log[] = "✓ Werte übernommen ({$n} Einträge)";
@@ -384,9 +573,13 @@ final class Convert
         }
         // 7. Zustand für --revert
         file_put_contents(self::stateFile($t), json_encode(['plan' => $plan, 'renames' => $renames, 'legacy' => $legacy, 'pages_before' => $pages, 'pages_after' => $after,
-            'at' => now()], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            'fields_before' => $before, 'calendar_before' => $t['settings']['calendar'] ?? null, 'schema_type_before' => (string) ($t['settings']['schema_type'] ?? ''),
+            'title_field_before' => (string) ($t['settings']['title_field'] ?? ''), 'at' => now()], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         PageCache::clear();
         Tables::flush();
+        if (($nt = Tables::find((string) $t['handle'])) && Calendar::enabled($nt)) {
+            $log[] = '✓ Vorkommens-Index: ' . Occurrences::rebuild($nt) . ' Termine in den nächsten ' . Occurrences::HORIZON . ' Monaten';
+        }
         $log[] = '✓ Fertig. Suchindex neu aufbauen: php bin/console search:index --site=' . site()->key;
         return $log;
     }
@@ -427,6 +620,7 @@ final class Convert
         if (!$conv || !is_file($file)) throw new \RuntimeException(__('Keine Umwandlung zum Zurückdrehen gefunden.'));
         $st = json_decode((string) file_get_contents($file), true) ?: [];
         $in = Tables::toInput($t);
+        if (!empty($st['fields_before'])) return self::revertFields($t, $st, $in, $conv, $file);
         $back = array_flip((array) ($st['renames'] ?? []));
         $legacyBack = array_flip((array) ($st['legacy'] ?? []));
         $restoredNames = array_merge(array_keys((array) ($st['renames'] ?? [])), array_keys((array) ($st['legacy'] ?? [])));
@@ -471,6 +665,79 @@ final class Convert
         @rename($file, $file . '.reverted-' . date('Ymd-His'));
         PageCache::clear();
         Tables::flush();
+        return $log;
+    }
+
+    /**
+     * Zurückdrehen mit gespeicherter Feldliste (ab Kalender-Stufe): alte Reihenfolge, Abschnitte, Namen, Beschriftungen und Pflicht der
+     * Felder von damals; seither ergänzte eigene Felder bleiben (am Ende), Felder der Umwandlung (neue Grundfelder, Mehrfachfelder)
+     * bleiben als ausgeblendete Spalten (Werte gehen nicht verloren).
+     */
+    private static function revertFields(array $t, array $st, array $in, array $conv, string $file): array
+    {
+        $cur = [];
+        foreach ($in['fields'] as $f) $cur[(string) ($f['id'] ?? '')] = $f;
+        $beforeIds = array_flip(array_map(fn($f) => (string) ($f['id'] ?? ''), (array) $st['fields_before']));
+        $out = [];
+        foreach ((array) $st['fields_before'] as $f) {
+            $id = (string) ($f['id'] ?? '');
+            if (in_array($f['type'] ?? '', Tables::LAYOUT, true)) { $out[] = $f; continue; }
+            if (!isset($cur[$id])) continue;                                   // seither gelöscht
+            $c = $cur[$id];
+            foreach (['name', 'label', 'labels', 'required', 'in_list', 'type', 'options', 'options_i18n', 'exposure', 'private', 'website_only'] as $k) {
+                if (array_key_exists($k, $f)) $c[$k] = $f[$k]; else unset($c[$k]);
+            }
+            unset($c['legacy'], $c['system']);
+            if (!empty($f['legacy'])) { $c['legacy'] = 1; $c['in_list'] = 0; }   // schon vorher ausgeblendet (frühere Umwandlung)
+            $out[] = $c;
+        }
+        $restored = array_flip(array_column($out, 'name'));
+        $made = array_flip([...(array) ($st['plan']['added'] ?? []), ...array_column(array_filter((array) ($st['plan']['fields'] ?? []), fn($p) => in_array($p['action'] ?? '', ['combine', 'cast', 'copy'], true)), 'to')]);
+        foreach ($in['fields'] as $f) {
+            $id = (string) ($f['id'] ?? '');
+            if (isset($beforeIds[$id])) continue;
+            $n = (string) ($f['name'] ?? '');
+            if (in_array($f['type'] ?? '', Tables::LAYOUT, true)) continue;      // Abschnitte der Vorlage fallen weg
+            unset($f['system']);
+            if (isset($made[$n])) {
+                $f['legacy'] = 1;
+                $f['in_list'] = 0;
+                $f['required'] = false;
+                $suffix = ($st['plan']['kind'] ?? '') === Kinds::CONTACTS ? '_kontakt' : '_' . (string) ($st['plan']['kind'] ?? 'art');
+                if (isset($restored[$n])) $f['name'] = self::free($n . $suffix, $restored + array_flip(array_column($in['fields'], 'name')));
+            }
+            $restored[(string) $f['name']] = true;
+            $out[] = $f;
+        }
+        $in['fields'] = $out;
+        foreach ((array) ($st['plan']['settings'] ?? []) as $k => [$a, $b]) $in['settings'][$k] = $a;
+        if (array_key_exists('calendar_before', $st) && is_array($st['calendar_before'])) $in['settings']['calendar'] = $st['calendar_before'];
+        foreach (['schema_type', 'title_field'] as $k) if (array_key_exists($k . '_before', $st)) $in['settings'][$k] = (string) $st[$k . '_before'];
+        $in['_kind'] = (string) ($conv['from'] ?? 'content');
+        $in['_convert'] = [];
+        unset($in['settings']['convert']);
+        [$def, $errors] = Tables::validate($in, $t);
+        if ($errors) throw new \RuntimeException('Schema: ' . implode(' ', array_map('strval', $errors)));
+        unset($def['settings']['convert'], $def['settings']['kind_version']);
+        Tables::update($t, $def);
+        $log = ['✓ Schema zurück: Art ' . Kinds::label((string) $in['_kind']) . ', Reihenfolge, Abschnitte, Beschriftungen und Pflicht wie vor der Umwandlung'];
+        $back = array_flip((array) ($st['renames'] ?? []));
+        foreach ((array) ($st['pages_before'] ?? []) as $id => $before) {
+            $now = app()->db->fetch('SELECT content_draft, content_published FROM pages WHERE id = ?', [(int) $id]);
+            if (!$now) continue;
+            $after = (array) ($st['pages_after'][$id] ?? []);
+            $upd = [];
+            foreach (['content_draft', 'content_published'] as $col) {
+                if (!array_key_exists($col, $after)) continue;
+                $upd[$col] = $now[$col] === $after[$col] ? $before[$col] : self::rewritePage((string) $now[$col], $t['handle'], $back);
+            }
+            if ($upd) app()->db->update('pages', $upd, 'id = :id', ['id' => (int) $id]);
+            $log[] = "✓ Seite {$id}: Blöcke zurück";
+        }
+        @rename($file, $file . '.reverted-' . date('Ymd-His'));
+        PageCache::clear();
+        Tables::flush();
+        if (($nt = Tables::find((string) $t['handle'])) && Calendar::enabled($nt)) Occurrences::rebuild($nt);
         return $log;
     }
 

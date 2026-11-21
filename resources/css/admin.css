@@ -27,7 +27,9 @@
 @import "./_addressbook.css";   /* Kontakte: Adressbuch-Ansicht (Core\Data\AddressBook, resources/js/_addressbook.js) */
 @import "./_netarea.css";   /* Netzwerk-Bereich: Kopf „NETZWERK“, Seitenleiste, Umschalter (Core\Network\Area) */
 @import "./_mailsettings.css";   /* E-Mail-Versand: nummerierte Gruppen, wirksamer Absender (system/_mail.php, network/_email.php) */
+@import "./_settingsui.css";   /* Einstellungsseiten: Geltung, Warnhinweis, wirksamer Wert, Letzte Änderungen (Fields::renderGroups) */
 @import "./_toast.css";   /* Meldungen (Toast), gemeinsam mit editor.shadow.css */
+@import "./_datetime.css";   /* Datums-/Zeitauswahl a11y_datetime (resources/js/_datetime.js), auch in admin.shadow.css */
 /* ==========================================================================
    Admin-Oberfläche (Core). Nutzt dieselbe Schrift und Farbwelt wie das Theme.
    ========================================================================== */
@@ -1283,6 +1285,31 @@ body.adm:has(.adm-env){padding-bottom:26px}
 .rr-adv summary{cursor:pointer;font-size:13px;color:var(--adm-t2)}
 .rr-adv__label{display:block;margin:8px 0 4px;font-size:13px}
 .rr-adv textarea{width:100%;font-family:var(--adm-mono);font-size:13px}
+/* Vorschau „Nächste Termine“ (Serien, _rrule.js) */
+.rr-preview{padding:12px 14px;border-radius:8px;background:var(--adm-fill)}
+.rr-preview[hidden]{display:none}
+.rr-preview__title{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--adm-t2)}
+.rr-preview__list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 20px}
+.rr-preview__item{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.rr-preview__item.is-skipped .rr-preview__date,.rr-preview__item.is-cancelled .rr-preview__date{text-decoration:line-through;color:var(--adm-t2)}
+.rr-preview__state{font-size:12px;font-weight:700;color:var(--adm-warn)}
+.rr-preview__item.is-changed .rr-preview__state{color:var(--adm-a)}
+/* Serien: Hinweis im Kopf, Bereich der Änderung (ohne JS in der Seitenleiste, mit JS als Dialog) */
+.dt-series-note{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 0;color:var(--adm-t2);font-size:14px}
+.dt-scope{display:grid;gap:8px;margin:0 0 12px;padding:0;border:0;min-width:0}
+.dt-scope.is-js{display:none}
+.dt-scope>legend{font-weight:700;margin-bottom:6px;padding:0}
+.dt-scope__opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--adm-line);border-radius:10px;cursor:pointer;background:var(--adm-surface)}
+.dt-scope__opt:has(input:checked){border-color:var(--adm-a);background:var(--adm-accent-bg);box-shadow:inset 0 0 0 1px var(--adm-a)}
+.dt-scope__opt input{margin-top:3px;flex:none;width:18px;height:18px}
+.dt-scope__opt span{display:grid;gap:2px}
+.dt-scope__opt small{color:var(--adm-t2);font-size:13px;line-height:1.4}
+.adm-dialog.dt-series-dlg{width:min(540px,calc(100vw - 32px))}
+.dt-series-dlg h2{display:flex;gap:8px;align-items:center;font-size:19px}
+.dt-series-dlg__when{margin:8px 0 12px;padding:10px 12px;border-radius:8px;background:var(--adm-fill);font-weight:600;font-variant-numeric:tabular-nums}
+.dt-series-dlg__opts{display:grid;gap:8px;margin-bottom:14px}
+.dt-cal__ev.is-cancelled a{text-decoration:line-through;text-decoration-color:var(--adm-t3)}
+.dt-cal__ev.is-cancelled .dt-cal__badge{display:inline-block;text-decoration:none}
 .dt-cal__map{display:grid;gap:0}
 .dt-cal__map[hidden]{display:none}
 /* Einträge als Kalender (app/Admin/views/data/_calendar.php) – nur Tokens, hell/dunkel */
@@ -2971,6 +2998,8 @@ html.adm-ui[data-theme=dark] .adm-tabs [role=tab][aria-selected=true]{background
   .dt-table td[data-label]:not(.dt-c-status):empty{display:none}
   .dt-c-title__in{flex-wrap:wrap}
   .dt-c-title .dt-view{opacity:1;margin-left:auto}
+  .dt-table .dt-clamp{display:inline;max-width:none}
+  .dt-table .dt-items{max-width:none}
 }
 
 /* Grundeinstellungen › Adresse der Verwaltung (Core\AdminPath): Domain als Vorsatz (.adm-prefix), lange Domains gekürzt */
@@ -3852,9 +3881,19 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 @media (max-width:700px){.adm-fields>.f-exp.f--half,.f-sec__body>.f-exp.f--half{grid-column:1/-1}}
 .f-exp{position:relative;border-radius:8px;container:fexp/inline-size}
 .f-exp:has(>.f[hidden]){display:none}
-.f-exp>.f>label:first-child,.f-exp>.f>legend,.f-exp>.f>.f-label,.f-exp>.f .rep-head>.f-label,.f-exp>.f.f--bool>.f-check{padding-right:var(--exp-w,8.5rem)}
-.f-exp[data-exp-w=s]{--exp-w:7.5rem}.f-exp[data-exp-w=m]{--exp-w:11rem}.f-exp[data-exp-w=l]{--exp-w:15.5rem}
-.f-exp__mark{position:absolute;top:-2px;right:0;z-index:3;margin:0}
+/* Feldkopf: Beschriftung links, Merkmal rechts in derselben Zeile (Fields::exposeInHead setzt es hinter die Beschriftung) */
+.f-exp :is(.f,.rep-head):has(>.f-exp__mark){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:center}
+.f-exp :is(.f,.rep-head):has(>.f-exp__mark)>*{grid-column:1/-1}
+.f-exp :is(.f,.rep-head):has(>.f-exp__mark)>:is(label,.f-label,.f-check):has(+.f-exp__mark){grid-column:1}
+.f-exp :is(.f,.rep-head)>.f-exp__mark{grid-column:2;justify-self:end;position:relative;z-index:3;margin:0}
+.f-exp :is(.f,.rep-head):has(>.f-exp__mark)>.rep{grid-column:1/-1}
+/* Felder mit <legend> (Mehrfachauswahl): Merkmal oben rechts, die Legende bricht vorher um */
+.f-exp__mark--abs{position:absolute;top:-2px;right:0;z-index:3;margin:0}
+.f-exp:has(>.f-exp__mark--abs)>.f>legend{padding-right:var(--exp-w,8.5rem)}
+.f-exp[data-exp-w=s]{--exp-w:7.5rem}.f-exp[data-exp-w=m]{--exp-w:11rem}.f-exp[data-exp-w=l]{--exp-w:15.5rem}.f-exp[data-exp-w=q]{--exp-w:2rem}
+/* dezent: immer öffentlich für alle Ziele – nur das Symbol */
+.f-exp__mark--quiet{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:999px;color:var(--adm-ok)}
+.f-exp__mark--quiet .ico{width:15px;height:15px}
 .f-exp__btn,.f-exp__tag{display:inline-flex;align-items:center;gap:5px;max-width:100%;min-height:24px;padding:2px 9px;border:1px solid var(--adm-line);border-radius:999px;background:var(--adm-fill);color:var(--adm-t2);font-size:12px;font-weight:600;line-height:18px;white-space:nowrap;list-style:none}
 .f-exp__btn{cursor:pointer}
 .f-exp__btn::-webkit-details-marker{display:none}
@@ -3864,23 +3903,23 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .f-exp__caret .ico{width:11px;height:11px}
 .f-exp__menu[open] .f-exp__caret{transform:rotate(180deg)}
 /* öffentlich: fest (is-public) bzw. mindestens ein Ziel angehakt; Angabe: „Öffentlich“ oder „Nur Ort“ gewählt */
-.f-exp.is-public .f-exp__tag,.f-exp--editor:has([data-expose-target]:checked)>.f-exp__menu>.f-exp__btn,
+.f-exp.is-public .f-exp__tag,.f-exp--editor:has([data-expose-target]:checked) .f-exp__mark>.f-exp__btn,
 .f-exp--item:has([data-expose-item]:checked:not([value="0"]))>.f-exp__btn{border-color:color-mix(in srgb,var(--adm-ok) 45%,transparent);background:var(--adm-ok-bg);color:var(--adm-ok)}
 .f-exp__on,.f-exp__ico--on,.f-exp__st{display:none}
-.f-exp--editor:has([data-expose-target]:checked) :is(.f-exp__on,.f-exp__ico--on){display:inline-flex}
-.f-exp--editor:has([data-expose-target]:checked) :is(.f-exp__off,.f-exp__ico--off){display:none}
+.f-exp--editor:has([data-expose-target]:checked) .f-exp__mark :is(.f-exp__on,.f-exp__ico--on){display:inline-flex}
+.f-exp--editor:has([data-expose-target]:checked) .f-exp__mark :is(.f-exp__off,.f-exp__ico--off){display:none}
 .f-exp--item:has([data-expose-item]:checked:not([value="0"])) .f-exp__ico--on{display:inline-flex}
 .f-exp--item:has([data-expose-item]:checked:not([value="0"])) .f-exp__ico--off{display:none}
 .f-exp--item:has([data-expose-item][value="1"]:checked) .f-exp__st[data-st="1"],.f-exp--item:has([data-expose-item][value="city"]:checked) .f-exp__st[data-st="city"],
 .f-exp--item:has([data-expose-item][value="0"]:checked) .f-exp__st[data-st="0"],.f-exp--item:not(:has([data-expose-item]:checked)) .f-exp__st[data-st="0"]{display:inline}
 /* intern: getönte Fläche (box-shadow statt Innenabstand – das Raster bleibt gleich) */
-.f-exp.is-internal,.f-exp--editor:not(:has([data-expose-target]:checked)){margin:0 -8px 8px;padding:6px 8px 2px;background:var(--adm-fill)}
-:is(.f-exp.is-internal,.f-exp--editor:not(:has([data-expose-target]:checked)))>.f-exp__mark{top:4px;right:8px}
+.f-exp.is-internal,.f-exp--editor:not(:has([data-expose-target]:checked)){margin:0 -8px 8px;padding:3px 8px 2px;background:var(--adm-fill)}
+:is(.f-exp.is-internal,.f-exp--editor:not(:has([data-expose-target]:checked)))>.f-exp__mark--abs{top:-2px;right:8px}
 .f-exp.is-internal :is(input:not([type=checkbox]):not([type=radio]),textarea,select),.f-exp--editor:not(:has([data-expose-target]:checked))>.f :is(input:not([type=checkbox]):not([type=radio]),textarea,select){background-color:var(--adm-card,#fff)}
-/* Schmales Feld (halbe Breite, Seitenleiste): Merkmal in eigener Zeile über der Beschriftung, rechtsbündig */
-@container fexp (max-width:380px){.f-exp[data-exp-w=l]>.f-exp__mark.f-exp__mark{position:relative;top:auto;right:auto;display:block;margin:0 0 4px;text-align:right}.f-exp[data-exp-w=l]>.f>:is(label:first-child,legend,.f-label,.f-check){padding-right:0}}
-@container fexp (max-width:300px){.f-exp[data-exp-w=m]>.f-exp__mark.f-exp__mark{position:relative;top:auto;right:auto;display:block;margin:0 0 4px;text-align:right}.f-exp[data-exp-w=m]>.f>:is(label:first-child,legend,.f-label,.f-check){padding-right:0}}
-@container fexp (max-width:200px){.f-exp[data-exp-w=s]>.f-exp__mark.f-exp__mark{position:relative;top:auto;right:auto;display:block;margin:0 0 4px;text-align:right}.f-exp[data-exp-w=s]>.f>:is(label:first-child,legend,.f-label,.f-check){padding-right:0}}
+/* Sehr schmales Feld: Merkmal rückt unter die Beschriftung (rechtsbündig) – nie darüber */
+@container fexp (max-width:340px){.f-exp[data-exp-w=l] :is(.f,.rep-head)>.f-exp__mark{grid-column:1/-1;margin-top:2px}.f-exp[data-exp-w=l] :is(.f,.rep-head):has(>.f-exp__mark)>:is(label,.f-label,.f-check){grid-column:1/-1}}
+@container fexp (max-width:260px){.f-exp[data-exp-w=m] :is(.f,.rep-head)>.f-exp__mark{grid-column:1/-1;margin-top:2px}.f-exp[data-exp-w=m] :is(.f,.rep-head):has(>.f-exp__mark)>:is(label,.f-label,.f-check){grid-column:1/-1}}
+@container fexp (max-width:180px){.f-exp[data-exp-w=s] :is(.f,.rep-head)>.f-exp__mark{grid-column:1/-1;margin-top:2px}.f-exp[data-exp-w=s] :is(.f,.rep-head):has(>.f-exp__mark)>:is(label,.f-label,.f-check){grid-column:1/-1}}
 .f-exp__pop{position:absolute;top:calc(100% + 6px);right:0;z-index:20;display:grid;gap:6px;min-width:230px;max-width:min(320px,80vw);margin:0;padding:10px 12px 8px;border:1px solid var(--adm-line);border-radius:10px;background:var(--adm-card,#fff);box-shadow:0 8px 24px rgba(0,0,0,.16);white-space:normal}
 .f-exp__pop legend{float:left;width:100%;margin-bottom:2px;padding:0;font-size:12px;font-weight:600;color:var(--adm-t2)}
 .f-exp__pop .f-check{font-weight:500}
@@ -3918,8 +3957,28 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .dt-vis{display:inline-flex;align-items:center;gap:4px;padding:0 8px;border:1px solid var(--adm-line);border-radius:999px;background:var(--adm-fill);color:var(--adm-t2);font-size:12px;font-weight:600;line-height:20px;white-space:nowrap}
 .dt-vis.is-public{border-color:color-mix(in srgb,var(--adm-ok) 45%,transparent);background:var(--adm-ok-bg);color:var(--adm-ok)}
 .dt-vis .ico{width:13px;height:13px}
-.dt-items{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
-.dt-items li{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.dt-items{display:flex;flex-direction:column;gap:2px;max-width:16rem;margin:0;padding:0;list-style:none}
+.dt-items li{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}
+.dt-items li>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* Lange Texte in Spalten: höchstens zwei Zeilen (voller Text im title) */
+.dt-clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;max-width:16rem;overflow:hidden;overflow-wrap:anywhere}
+/* Breite der Liste: Spalten nach Wichtigkeit ausblenden statt seitlich überlaufen (data-prio in data/entries.php) */
+.dt-list:has(.dt-table){container:dtlist/inline-size}
+@media (min-width:701px){
+  @container dtlist (max-width:1180px){.dt-table [data-prio="5"]{display:none}}
+  @container dtlist (max-width:1000px){.dt-table [data-prio="4"]{display:none}}
+  @container dtlist (max-width:860px){.dt-table [data-prio="3"]{display:none}}
+}
+/* Zeilenmenü (⋯): Duplizieren und Aktionen von Erweiterungen */
+.dt-rowmenu{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;margin:0;padding:0;border:0;border-radius:6px;background:none;color:var(--adm-t2);cursor:pointer}
+.dt-rowmenu:hover,.dt-rowmenu:focus-visible{background:var(--adm-hover);color:var(--adm-ink)}
+.dt-rowmenu .ico{width:18px;height:18px}
+.dt-rowmenu__pop{min-width:180px;margin:0;padding:4px;border:1px solid var(--adm-line);border-radius:10px;background:var(--adm-card,#fff);color:var(--adm-ink);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.dt-rowmenu__pop:popover-open{display:grid;gap:2px}
+.dt-rowmenu__pop[data-placed]{position:fixed;inset:auto;margin:0}
+.dt-rowmenu__item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:0;border-radius:6px;background:none;color:var(--adm-ink);font:inherit;font-size:13px;font-weight:500;text-align:left;text-decoration:none;cursor:pointer}
+.dt-rowmenu__item:hover,.dt-rowmenu__item:focus-visible{background:var(--adm-hover)}
+.dt-rowmenu__item .ico{width:15px;height:15px;color:var(--adm-t2)}
 .dt-items .ico{flex:none;width:13px;height:13px;color:var(--adm-t3)}
 .dt-items .is-public .ico{color:var(--adm-ok)}
 

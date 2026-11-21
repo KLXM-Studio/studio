@@ -52,7 +52,14 @@ export function addRoot(r) {
   if (!r || roots.has(r)) return r;
   roots.add(r);
   handlers.forEach(([type, fn, opts]) => r.addEventListener(type, fn, opts));
+  rootFns.forEach(fn => fn(r));
   return r;
+}
+/** fn(wurzel) für jede bestehende und jede später registrierte CMS-Schatten-Wurzel (z. B. Datumsauswahl beobachten) */
+const rootFns = [];
+export function onRoot(fn) {
+  rootFns.push(fn);
+  roots.forEach(r => fn(r));
 }
 
 /** Eigentliches Ziel eines Ereignisses (auch aus Schatten-Bäumen) */

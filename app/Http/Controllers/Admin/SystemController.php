@@ -33,6 +33,7 @@ final class SystemController extends AdminController
         }
         return $this->view('system', [
             'groups' => SystemSchema::groups(), 'values' => $values, 'errors' => $errors,
+            'revisions' => \Core\SettingsRevisions::latest('system', 6),
             'keyReady' => FormCrypto::ready(), 'fingerprint' => FormCrypto::fingerprint(), 'newSecret' => $newSecret,
             'info' => $this->info(),
         ], $errors ? 422 : 200);
@@ -64,6 +65,9 @@ final class SystemController extends AdminController
             return $this->edit($r, $errors, $values);
         }
         app()->settings->setMany($values);
+        // Version (Core\SettingsRevisions): geänderte Schlüssel vorher/nachher – Geheimnisse (Passwörter) nie
+        $secret = array_column(array_filter($schema, fn($f) => ($f['type'] ?? '') === 'secret' && isset($f['name'])), 'name');
+        \Core\SettingsRevisions::record('system', array_diff_key($current, array_flip($secret)), array_diff_key($values, array_flip($secret)), 'admin');
         // Verwendung je Zweck (Core\Mail\Accounts, Reiter E-Mail-Versand): mail_routes[zweck] = Konto; „standard“ = keine Zuordnung
         if (is_array($r->post['mail_routes'] ?? null)) {
             $acc = \Core\Mail\Accounts::all();
@@ -91,6 +95,16 @@ final class SystemController extends AdminController
         }
         $this->changed();
         return $this->back('/admin/system' . ($r->str('_tab') ? '#' . preg_replace('~[^\w\-]~', '', $r->str('_tab')) : ''), 'success', 'Grundeinstellungen gespeichert.');
+    }
+
+    /** Änderung der Grundeinstellungen zurücknehmen (Core\SettingsRevisions; nur Felder dieser Seite) */
+    public function undo(Request $r, string $id): Response
+    {
+        $this->auth($r, 'system.manage');
+        $allowed = array_column(array_filter(SystemSchema::fields(), fn($f) => isset($f['name']) && ($f['type'] ?? '') !== 'secret'), 'name');
+        $err = \Core\SettingsRevisions::undo((int) $id, $allowed, 'system');
+        if ($err === null) $this->changed();
+        return $this->back('/admin/system#info', $err === null ? 'success' : 'error', $err ?? __('Änderung zurückgenommen.'));
     }
 
     /** Live-Vorschau des App-Icons aus den (noch nicht gespeicherten) Formularwerten */

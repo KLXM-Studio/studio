@@ -68,7 +68,11 @@ $event = function (array $o, bool $withLoc) use ($t, $c, $link) {
     $title = e(Entries::title($t, $o['entry']));
     $time = $o['all_day'] ? '' : '<span class="cal-time">' . e($o['start']->format('H:i')) . '</span> ';
     $h = $time . ($url ? '<a class="cal-link" href="' . e($url) . '">' . $title . '</a>' : '<span class="cal-title">' . $title . '</span>');
-    if ($withLoc && $c['location'] !== '' && ($loc = Entries::html($t, $o['entry'], $c['location'], ['plain' => true])) !== '') {
+    // Kalender mit Serien: „fällt aus“ (Termin bleibt sichtbar)
+    if (!empty($o['cancelled'])) $h .= ' <span class="cal-tag cal-tag--cancelled">' . e(lt('fällt aus')) . '</span>';
+    if ($withLoc && \Core\Data\Kinds::isCalendar($t)) {
+        if (($loc = Calendar::place($t, $o['entry'])[0]) !== '') $h .= '<span class="cal-loc">' . e($loc) . '</span>';
+    } elseif ($withLoc && $c['location'] !== '' && ($loc = Entries::html($t, $o['entry'], $c['location'], ['plain' => true])) !== '') {
         $h .= '<span class="cal-loc">' . $loc . '</span>';
     }
     return $h;
@@ -117,7 +121,7 @@ $event = function (array $o, bool $withLoc) use ($t, $c, $link) {
         <span class="cal-num" aria-hidden="true"><?= (int) $day->format('j') ?></span>
         <span class="cal-full"><?= e(Calendar::dayLabel($day, 'long')) ?><?= $isToday ? ' (' . e(lt('heute')) . ')' : '' ?></span>
         <?php if ($events): ?><ul class="cal-events" role="list">
-          <?php foreach ($events as $o): ?><li class="cal-ev<?= $o['all_day'] ? ' cal-ev--allday' : '' ?>"><?= $event($o, false) ?></li><?php endforeach; ?>
+          <?php foreach ($events as $o): ?><li class="cal-ev<?= $o['all_day'] ? ' cal-ev--allday' : '' ?><?= !empty($o['cancelled']) ? ' cal-ev--cancelled' : '' ?>"><?= $event($o, false) ?></li><?php endforeach; ?>
         </ul><?php endif; ?>
       </td>
       <?php if ($day->format('N') === '7') echo '</tr>'; endfor; ?>
@@ -135,7 +139,7 @@ $event = function (array $o, bool $withLoc) use ($t, $c, $link) {
       <<?= $dTag ?> class="cal-adate"><time datetime="<?= e($key) ?>"<?= $isToday ? ' aria-current="date"' : '' ?>><?= e(Calendar::dayLabel($day, 'long')) ?></time><?= $isToday ? ' <span class="cal-badge">' . e(lt('heute')) . '</span>' : '' ?></<?= $dTag ?>>
       <ul class="cal-alist" role="list">
         <?php foreach ($events as $o): ?>
-        <li class="cal-aev"><span class="cal-atime"><?= e(Calendar::timeLabel($o)) ?></span><span class="cal-abody"><?= $event($o, true) ?></span></li>
+        <li class="cal-aev<?= !empty($o['cancelled']) ? ' cal-ev--cancelled' : '' ?>"><span class="cal-atime"><?= e(Calendar::timeLabel($o)) ?></span><span class="cal-abody"><?= $event($o, true) ?></span></li>
         <?php endforeach; ?>
       </ul>
     </li>
