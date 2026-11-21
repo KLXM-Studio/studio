@@ -3,9 +3,10 @@
 
   <h3 id="netzwerk-erkennen">So erkennen Sie, wo Sie sind</h3>
   <ul>
-    <li><b>Netzwerk-Bereich:</b> dunkler Kopf mit dem gelben Kennzeichen <b>NETZWERK</b> und dem Satz „Einstellungen für die ganze Installation – gelten für alle … Websites“, dazu eine eigene, fast schwarze Seitenleiste.</li>
-    <li><b>Verwaltung einer Website:</b> die gewohnte Seitenleiste in der Farbe der Verwaltung – ohne Netzwerk-Punkte.</li>
-    <li><b>Umschalter</b> oben in jeder Seitenleiste (nur für Netzwerk-Konten): links <b>Netzwerk</b>, rechts <b>Website</b> mit der Liste aller Websites. Das aktive Feld ist hervorgehoben. Eine andere Website öffnen Sie mit einem Klick – Sie werden dort automatisch angemeldet und haben die vollen Rechte der Website.</li>
+    <li><b>Netzwerk-Bereich:</b> die <b>Kopfleiste</b> über dem Inhalt ist <b>Petrol</b>, links steht „Netzwerk-Verwaltung · Netzwerk“ mit dem Netzwerk-Symbol; die Seitenleiste zeigt die Punkte des Netzwerks (Websites, Administratoren, Kits, Sicherung …).</li>
+    <li><b>Verwaltung einer Website:</b> die Kopfleiste in der Farbe der Verwaltung (Navy bzw. Ihre Akzent-Tönung), links „Website · Name der Website“; die Seitenleiste wie gewohnt – ohne Netzwerk-Punkte.</li>
+    <li><b>Umschalter</b> links in der Kopfleiste (nur für Netzwerk-Konten, in beiden Bereichen gleich): ein Klick öffnet die Liste mit <b>Netzwerk-Verwaltung</b> ganz oben und darunter allen Websites mit Namen, Domain und Kurzname; die geöffnete ist mit einem Haken markiert. Ab mehr als acht Websites filtern Sie per Eingabe, mit Pfeiltasten und <kbd>↵</kbd> geht es ohne Maus. Eine andere Website öffnen Sie mit einem Klick – Sie werden dort automatisch angemeldet.</li>
+    <li><b>Ansicht als Rolle/Person</b> färbt die Kopfleiste <b>Pflaume</b> und zeigt dort „Zurück zu meinem Konto“; eine <b>Testumgebung</b> erkennen Sie am Hinweis „Staging“ mit gestreifter Unterkante der Kopfleiste.</li>
   </ul>
 
   <h3 id="netzwerk-was-wo">Was liegt wo?</h3>

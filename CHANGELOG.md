@@ -243,11 +243,36 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (Grundschema, Mehrfachfelder, jeder Ausgabeweg je Ziel, CardDAV/CalDAV, Umwandlung/Zurückdrehen). Handbuch → Daten →
   „Adressbuch“, „Sichtbarkeit“; Entwicklerhandbuch → Daten → „Tabellenarten“, „Freigabe (Exposure)“.
 
+### Kopfleiste der Verwaltung: Umschalter, Suche, Favoriten, Konto
+- **Kopfleiste über dem Inhalt** (`views/_topbar.php`, `resources/css/_topbar.css`): rechts neben der Seitenleiste, die bis ganz
+  nach oben reicht (Marke oben) – kein Kopf über die ganze Breite. Links der Umschalter bzw. der Name der Website, in der Mitte die
+  Suche, rechts Seitenbaum-Schnellzugriff, Favoriten (Stern) und Konto-Menü mit Hilfe, Support (Zähler), Erste Schritte, Assistent,
+  Problem melden und Abmelden. Die Seitenleiste ist reine Navigation; „Website ansehen“ bleibt ihr erster Punkt.
+- **Farbe je Modus, ganze Fläche:** Website Navy (bzw. die Akzent-Tönung „mitfärben“), Netzwerk **Petrol**, „Ansicht als
+  Rolle/Person“ Pflaume mit „Zurück zu meinem Konto“; Testumgebung als Hinweis „Staging“ mit gestreifter Unterkante statt des
+  Streifens am Seitenende. Weiß darauf ≥ 9:1. Das gelbe Kennzeichen „NETZWERK“ und die Graphit-Seitenleiste entfallen.
+- **Umschalter Netzwerk ↔ Website** (`views/_areaswitch.php`, `Area::switcher()`): gleiches Element in beiden Ansichten, nur für
+  Netzwerk-Konten; Titel „Netzwerk“ bzw. Name der Website, aufgeklappt „Netzwerk-Verwaltung“ und alle Websites mit dem **Namen aus
+  den Website-Einstellungen** (statt Hostnamen), Domain, Schlüssel, App-Icon, Haken an der geöffneten; ohne abgeschnittene Texte
+  (Popover im Top Layer), Filter ab mehr als 8 Websites, Tastatur (Pfeile, Pos1/Ende, Enter, Escape), `role="menu"`, auf dem
+  Telefon als Blatt von unten.
+- **Suche in der Leiste** (`resources/js/_quickbar.js`, nach dem Vorbild der Quickbar für REDAXO 6): Quelle wählen oder per Kürzel
+  (`p:` Seiten, `d:` Daten, `m:` Medien, `k:` Kontakte, `t:` Termine, `f:` Favoriten, `>` Befehle) – serverseitig über
+  `/admin/api/search?scope=`; ohne Eingabe Favoriten, zuletzt geöffnet, **zuletzt bearbeitet** (Seiten und Einträge) und Aktionen;
+  Treffer hervorgehoben, Bild↑/↓ zwischen Gruppen, →/← Zusatzaktionen, ⌘↵ neuer Tab, ⌘D Favorit; ⌘K springt ins Feld. Die Suche
+  zeigt nur, was die Person öffnen darf (Seiten, Einträge je Tabelle, Medien). Die Befehlspalette (Editor, Website, Telefon) kennt
+  dieselben Kürzel.
+- **Ein-/Ausblenden beim Scrollen:** nach unten aus, nach oben ein – nie bei offenem Menü, offener Suche oder Fokus in der Leiste;
+  ⌘K und Fokus holen sie zurück, ohne Animation bei „Bewegung reduzieren“.
+- Telefon: Kopfleiste über die ganze Breite mit Menü-Knopf (Seitenleiste als Schublade), Lupe, Favoriten und Konto.
+- Handbuch: Anmelden → „Kopfleiste: Suche, Favoriten, Konto“, Netzwerk-Verwaltung → „So erkennen Sie, wo Sie sind“;
+  Entwicklerhandbuch: Verwaltung → „Kopfleiste“, „Suche und Befehlspalette“, Netzwerk → „Netzwerk-Bereich“.
+
 ### Netzwerk-Verwaltung: eigener Bereich, Website-Verwaltung nur Website-Eigenes
-- **Netzwerk-Bereich** (`Core\Network\Area`, nur mit mehreren Websites): `/admin/network` mit dunklem Kopf „NETZWERK“, eigener
+- **Netzwerk-Bereich** (`Core\Network\Area`, nur mit mehreren Websites): `/admin/network` mit Kopfleiste in Petrol, eigener
   Seitenleiste (Websites, Administratoren, Anmeldung & Domain, E-Mail, Kits, Schriften, Branding, Geteilte Medien & Daten,
-  KI-Verbindungen, Geplante Aufgaben, Sicherung außer Haus, Integrität der Dateien, Speicher, Protokoll) und einem deutlichen
-  **Umschalter Netzwerk ↔ Website** oben in jeder Seitenleiste. Die Verwaltung einer Website zeigt nur noch Website-Eigenes.
+  KI-Verbindungen, Geplante Aufgaben, Sicherung außer Haus, Integrität der Dateien, Speicher, Protokoll) und dem
+  **Umschalter Netzwerk ↔ Website** links in der Kopfleiste. Die Verwaltung einer Website zeigt nur noch Website-Eigenes.
 - **Umgezogen** (alt → neu, alte Adressen leiten weiter – 301, von anderen Websites 302 zur Netzwerk-Website; Favoriten und
   Befehlspalette angepasst): `/admin/system/aufgaben` → `/admin/network/aufgaben`, `/admin/system/sicherung` → `/admin/network/sicherung`,
   `/admin/system/kits` → `/admin/network/kits`, `/admin/system/fonts` → `/admin/network/schriften`, `/admin/system/branding` →
