@@ -117,6 +117,12 @@ final class SystemSchema
                     'help' => 'Auch ohne Drittanbieter-Kontakt kann eine Praxis oder Behörde verlangen, dass Karten erst auf Wunsch laden. Spart außerdem Daten (MapLibre ≈ 800 KB).'],
                 ['name' => 'sys.map_radius', 'label' => 'Kartengebiet je Ort (km)', 'type' => 'number', 'default' => 25, 'width' => 'half',
                     'help' => 'Detailkacheln liefert der Proxy nur in diesem Umkreis um Orte, die auf der Website als Karte vorkommen – so kann niemand den Server als kostenlosen Kachelserver missbrauchen.'],
+                // Termin-Aktionen (Core\Data\EventActions): reine Links zu Kalender-Diensten – Standard aus, Blöcke können abweichen
+                ['type' => 'heading', 'label' => 'Termine: Links zu Kalender-Diensten',
+                    'help' => '„In den Kalender“ und „Abonnieren“ auf Termin-Detailseiten kommen immer vom eigenen Server. Zusätzlich lassen sich reine Links zu Google Kalender und Outlook.com zeigen: ohne Skript und ohne Kontakt beim Laden der Seite – erst beim Klick öffnet sich die Seite des Anbieters, der dann Titel, Zeit, Ort und Beschreibung des Termins erhält.'],
+                ['name' => 'sys.calendar_links', 'label' => 'Links auf Termin-Detailseiten', 'type' => 'multiselect', 'default' => [],
+                    'options' => ['google' => 'Google Kalender', 'outlook' => 'Outlook.com'],
+                    'help' => 'Nichts angehakt = keine Links zu Anbietern (Standard). Die Blöcke „Termin-Aktionen“ und „Datensatz-Felder“ können abweichen.'],
                 ['type' => 'heading', 'label' => 'Zwischenspeicher'],
                 ['name' => 'sys.proxy_cache_mb', 'label' => 'Maximale Größe (MB)', 'type' => 'number', 'default' => 500, 'width' => 'half',
                     'help' => 'Externe Inhalte werden unter /storage/cache/proxy gespeichert (außerhalb des öffentlichen Ordners). Wird die Größe überschritten, fallen die ältesten Dateien weg.'],
