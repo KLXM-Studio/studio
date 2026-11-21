@@ -120,20 +120,21 @@ final class StructuredData
     public static function events(array $table, array $occurrences, int $max = 20): void
     {
         foreach (array_slice($occurrences, 0, $max) as $o) {
-            self::add(self::event($table, $o['entry'], $o['start'], $o['end'], (bool) $o['all_day']));
+            self::add(self::event($table, $o['entry'], $o['start'], $o['end'], (bool) $o['all_day'], !empty($o['cancelled'])));
         }
     }
 
-    private static function event(array $table, array $e, \DateTimeInterface $start, ?\DateTimeInterface $end, bool $allDay): array
+    private static function event(array $table, array $e, \DateTimeInterface $start, ?\DateTimeInterface $end, bool $allDay, bool $cancelled = false): array
     {
         $c = Calendar::config($table);
         $e = Data\Exposure::publicEntry($table, $e);
         $n = ['@type' => 'Event', 'name' => Entries::title($table, $e),
             'startDate' => $allDay ? $start->format('Y-m-d') : $start->format('c'),
-            'eventStatus' => 'https://schema.org/EventScheduled', 'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
+            'eventStatus' => 'https://schema.org/' . ($cancelled ? 'EventCancelled' : 'EventScheduled'), 'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
             'organizer' => self::orgOf($table, $e)];
         if ($end) $n['endDate'] = $allDay ? \DateTimeImmutable::createFromInterface($end)->modify('-1 day')->format('Y-m-d') : $end->format('c');
-        $loc = ($c['location'] ?? '') !== '' ? trim(Entries::text($table, $e, $c['location'])) : '';
+        // Kalender mit Grundschema: Ort bzw. Ort aus der Liste (Name und Anschrift)
+        $loc = Data\Kinds::isCalendar($table) ? Calendar::place($table, $e)[0] : (($c['location'] ?? '') !== '' ? trim(Entries::text($table, $e, $c['location'])) : '');
         $foreign = Data\Shared::isForeign($table, $e);
         $n['location'] = $foreign ? ['@type' => 'Place', 'name' => $loc !== '' ? $loc : $n['organizer']['name']]
             : ($loc !== '' ? ['@type' => 'Place', 'name' => $loc] + self::orgAddress() : ['@type' => 'Place', 'name' => site_name()] + self::orgAddress());

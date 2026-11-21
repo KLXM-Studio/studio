@@ -22,8 +22,17 @@ namespace Core\Data;
 final class Kinds
 {
     public const CONTACTS = 'contacts';
+    /** Kalender: Termine mit Serien (RFC 5545), abweichenden Einzelterminen und Ausfällen (Core\Data\Series, Core\Data\Occurrences) */
+    public const CALENDAR = 'calendar';
+    /** Orte: Veranstaltungsorte mit Anschrift und Kartenpunkt – Verknüpfung „Ort aus der Liste“ (ort_ref) in Kalendern */
+    public const PLACES = 'places';
     /** Aktuelle Version des Grundschemas je Art */
-    public const VERSIONS = [self::CONTACTS => 1];
+    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1];
+    /** Feste Kalender-Zuordnung der Art calendar (settings.calendar → Grundfelder) */
+    public const CALENDAR_MAP = ['start' => 'beginn', 'end' => 'ende', 'all_day' => 'ganztaegig', 'recurrence' => 'wiederholung', 'location' => 'ort',
+        'description' => 'beschreibung', 'category' => 'kategorie'];
+    /** Feld „Fällt aus“ (Termin bzw. einzelner Termin einer Serie wird angezeigt, aber als abgesagt) */
+    public const CANCELLED_FIELD = 'abgesagt';
     /** Feld „Auf der Website zeigen“ (Freigabe des ganzen Kontakts) */
     public const PUBLIC_FIELD = 'oeffentlich';
 
@@ -49,6 +58,25 @@ final class Kinds
         return self::of($t) === self::CONTACTS;
     }
 
+    /** Kalender mit Grundschema (Serien, Einzeltermine, Ausfälle)? */
+    public static function isCalendar(array $t): bool
+    {
+        return self::of($t) === self::CALENDAR;
+    }
+
+    public static function isPlaces(array $t): bool
+    {
+        return self::of($t) === self::PLACES;
+    }
+
+    /**
+     * Kalender-Einstellung (settings.calendar) einer Tabelle der Art calendar: Zuordnung fest aufs Grundschema, eingeschaltet;
+     * Dauer ohne Ende, öffentlicher Feed und „Datum im Seitentitel“ bleiben einstellbar.
+     */
+    public static function calendarSettings(array $c): array
+    {
+        return array_merge(Calendar::DEFAULTS, array_intersect_key($c, array_flip(['duration', 'feed', 'title_date'])), self::CALENDAR_MAP, ['enabled' => true]);
+    }
     public static function version(string $kind): int
     {
         return self::VERSIONS[$kind] ?? 0;
@@ -59,6 +87,8 @@ final class Kinds
     {
         return match ($kind) {
             self::CONTACTS => __('Adressbuch'),
+            self::CALENDAR => __('Kalender'),
+            self::PLACES => __('Orte'),
             'inbox' => __('Eingang'),
             default => __('Inhalte'),
         };
@@ -95,6 +125,30 @@ final class Kinds
                     'help' => 'Gruppen wie „Vorstand“ oder „Presse“ – in Adressbuch-Apps als Gruppen bzw. Kategorien.'],
                 ['name' => 'notiz', 'label' => 'Notiz', 'type' => 'textarea', 'private' => 1, 'since' => 1],
             ],
+            self::CALENDAR => [
+                ['name' => 'titel', 'label' => 'Titel', 'type' => 'text', 'required' => 1, 'in_list' => 1, 'searchable' => 1, 'since' => 1],
+                ['name' => 'beginn', 'label' => 'Beginn', 'type' => 'datetime', 'required' => 1, 'in_list' => 1, 'width' => 'half', 'since' => 1],
+                ['name' => 'ende', 'label' => 'Ende', 'type' => 'datetime', 'width' => 'half', 'since' => 1,
+                    'compare' => [['op' => '>=', 'field' => 'beginn', 'message' => 'Das Ende liegt vor dem Beginn.']]],
+                ['name' => 'ganztaegig', 'label' => 'Ganztägig', 'type' => 'bool', 'width' => 'half', 'since' => 1, 'help' => 'Beginn und Ende dann ohne Uhrzeit.'],
+                ['name' => 'wiederholung', 'label' => 'Wiederholung', 'type' => 'recurrence', 'since' => 1],
+                ['name' => 'kategorie', 'label' => 'Kalender', 'type' => 'multiselect', 'in_list' => 1, 'options' => '', 'since' => 1,
+                    'help' => 'Zum Beispiel „Training“, „Versammlung“ – Besucher filtern danach, Kalender-Apps zeigen sie als Kategorien.'],
+                ['name' => 'ort', 'label' => 'Ort', 'type' => 'text', 'in_list' => 1, 'width' => 'half', 'since' => 1, 'help' => 'Freie Angabe, z. B. „Vereinsheim, Musterstraße 1“.'],
+                ['name' => 'ort_ref', 'label' => 'Ort aus der Liste', 'type' => 'relation', 'target' => '', 'width' => 'half', 'since' => 1,
+                    'help' => 'Ort aus einer Tabelle „Orte“ – Anschrift und Kartenpunkt kommen dann von dort.'],
+                ['name' => 'standort', 'label' => 'Ort (Karte)', 'type' => 'geo', 'since' => 1],
+                ['name' => 'beschreibung', 'label' => 'Beschreibung', 'type' => 'textarea', 'since' => 1,
+                    'help' => 'Kurzer Text, auch für Kalender-Apps. Ausführliches mit Bildern gehört in ein Zusatzfeld „Nur Website“.'],
+                ['name' => self::CANCELLED_FIELD, 'label' => 'Fällt aus', 'type' => 'bool', 'width' => 'half', 'since' => 1,
+                    'help' => 'Der Termin bleibt sichtbar, aber als abgesagt gekennzeichnet (in Kalender-Apps „abgesagt“).'],
+            ],
+            self::PLACES => [
+                ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => 1, 'in_list' => 1, 'searchable' => 1, 'since' => 1],
+                ['name' => 'adresse', 'label' => 'Anschrift', 'type' => 'address', 'since' => 1],
+                ['name' => 'standort', 'label' => 'Ort (Karte)', 'type' => 'geo', 'since' => 1],
+                ['name' => 'hinweise', 'label' => 'Anfahrt und Hinweise', 'type' => 'textarea', 'since' => 1],
+            ],
             default => [],
         };
         return array_values(array_filter($all, fn($f) => (int) $f['since'] <= $version));
@@ -114,7 +168,20 @@ final class Kinds
     /** Auswahlfeld, das ohne Optionen gespeichert werden darf (Listen einer Kontakte-Tabelle) */
     public static function allowsEmptyOptions(string $kind, string $name): bool
     {
-        return $kind === self::CONTACTS && $name === 'listen';
+        return ($kind === self::CONTACTS && $name === 'listen') || ($kind === self::CALENDAR && $name === 'kategorie');
+    }
+
+    /** Verknüpfung, die ohne Zieltabelle gespeichert werden darf (Ort aus der Liste, solange es keine Orte-Tabelle gibt) */
+    public static function allowsEmptyTarget(string $kind, string $name): bool
+    {
+        return $kind === self::CALENDAR && $name === 'ort_ref';
+    }
+
+    /** Erste Tabelle der Art „Orte“ (Ziel für ort_ref neuer Kalender), sonst '' */
+    public static function placesTable(): string
+    {
+        foreach (Tables::content() as $t) if (self::isPlaces($t)) return (string) $t['handle'];
+        return '';
     }
 
     /**
@@ -128,6 +195,11 @@ final class Kinds
         foreach ($fields as $i => $f) {
             if (!is_array($f)) continue;
             $n = Tables::normName((string) (($f['name'] ?? '') ?: ($f['label'] ?? '')));
+            // Kalender: Zusatzfelder (Rich-Text, Bilder, Verknüpfungen …) sind „Nur Website“ – nie in ICS-Datei, Abo oder CalDAV
+            if ($kind === self::CALENDAR && !isset($schema[$n]) && empty($f['legacy']) && !in_array($f['type'] ?? 'text', Tables::LAYOUT, true)
+                && !isset($f['exposure']) && empty($f['private']) && empty($f['website_only'])) {
+                $fields[$i]['exposure'] = ['mode' => 'always', 'web' => 1, 'vcard' => 0, 'ics' => 0];
+            }
             if (!isset($schema[$n]) || isset($seen[$n])) continue;
             $seen[$n] = true;
             if (($f['type'] ?? '') !== $schema[$n]['type']) {
@@ -164,6 +236,19 @@ final class Kinds
             }
             return $out;
         };
+        if ($kind === self::CALENDAR) {
+            $ref = $pick('ort_ref');
+            $ref[0]['target'] = self::placesTable();
+            return [
+                ['label' => 'Termin', 'name' => 'abschnitt_termin', 'type' => 'section'],
+                ...$pick('titel', 'kategorie', 'beginn', 'ende', 'ganztaegig', 'wiederholung'),
+                ['label' => 'Ort', 'name' => 'abschnitt_ort', 'type' => 'section'],
+                ...$pick('ort'), ...$ref, ...$pick('standort'),
+                ['label' => 'Beschreibung', 'name' => 'abschnitt_beschreibung', 'type' => 'section'],
+                ...$pick('beschreibung', self::CANCELLED_FIELD),
+            ];
+        }
+        if ($kind === self::PLACES) return $pick('name', 'adresse', 'standort', 'hinweise');
         if ($kind !== self::CONTACTS) return [];
         return [
             ...$pick(self::PUBLIC_FIELD),

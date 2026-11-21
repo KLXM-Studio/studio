@@ -348,6 +348,7 @@ final class DataForms
         $h = '<form class="dff" method="post" action="' . e($action) . '" data-dff novalidate'
             . ($upload ? ' enctype="multipart/form-data"' : '')
             . ($cond ? ' data-cond="' . e(json_encode($cond, JSON_UNESCAPED_UNICODE)) . '"' : '')
+            . \Core\DatetimePicker::formAttr()   // Datums-/Zeitauswahl: dataform.js lädt js/datetime.mjs nur bei solchen Feldern
             . ' data-success="' . e(!empty($o['server_message']) ? '' : $success) . '" data-failed="' . e(lt('Senden fehlgeschlagen. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.')) . '"'
             . ' data-check="' . e(lt('Bitte prüfen Sie die markierten Felder.')) . '"'
             // Texte der kompakten Fehleranzeige (resources/css/_dataform-errors.css + dataform.js)

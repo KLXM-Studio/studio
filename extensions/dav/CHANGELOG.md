@@ -1,5 +1,23 @@
 # Changelog – Erweiterung „dav“
 
+## 1.6.0 (2026-11-21)
+
+- **Kalender (Tabellenart „calendar“, Core) ohne Zuordnung:** Das Grundschema geht fest auf VEVENT – SUMMARY, DTSTART/DTEND
+  (ganztägig), RRULE/EXDATE, LOCATION (Ort bzw. Ort aus der Liste), GEO, DESCRIPTION, CATEGORIES, STATUS:CANCELLED („Fällt aus“).
+- **Serien mit Einzelterminen:** abweichende Einzeltermine (Core `Series`) gehen als VEVENT mit gleicher UID und RECURRENCE-ID hinaus.
+  In einer App geänderte oder abgesagte Einzeltermine werden zu Einzelterminen im CMS (eigener Eintrag, in Listen ausgeblendet);
+  in der App entfernte Änderungen machen das Vorkommen wieder zum normalen Termin der Serie. Zusatzfelder „Nur Website“ gehen nie
+  an Apps.
+- Inhaltstabellen mit „Als Kalender nutzen“ unverändert (Rohdaten wie bisher).
+
+## 1.5.0 (2026-11-21)
+
+- **Abo-Tokens des Core als Passwort** (`Core\Data\Subscriptions`, Funktion `subscriptions`): Benutzername beliebig (z. B. `abo`),
+  Principal `abo-{id}`, **nur lesen**, nur die gebundene Kontakte-Tabelle (auch ohne „Als Adressbuch nutzen“). Umfang „nur öffentlich“:
+  nur veröffentlichte Kontakte mit „Auf der Website zeigen“ und nur freigegebene Angaben (Ziel vcard); „intern“: wie die Apps der
+  Redaktion. Prüfung, Ablauf, Rate-Limit und Protokoll übernimmt der Core – keine eigene Token-Ablage. Kalender-Tokens gelten nicht.
+- Auf der Seite „Abonnieren“ nennt die Erweiterung den CardDAV-Zugang über den Filter `subscriptions.apps`.
+
 ## 1.4.0 (2026-11-21)
 
 - **Adressbücher (Tabellenart „contacts“, Core) ohne Zuordnung:** Das Grundschema geht fest auf die vCard – N/FN, ORG mit Abteilung,

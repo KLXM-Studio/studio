@@ -32,6 +32,62 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Liste „Letzte Änderungen“ mit „Zurücknehmen“, solange die Felder seitdem nicht erneut geändert wurden.
 - **Barrierefreiheit:** Umgebungsbanner als benannter Bereich, Trenner in Reiterleisten ohne `role=separator`, Netzwerk-Seiten ohne
   doppelten Bereich und mit Kontrast – axe ohne Funde auf allen Einstellungsseiten.
+### Kalender mit Serien (Tabellenart „calendar“), Orte, Vorkommens-Index
+- **Vorkommens-Index** (`Core\Data\Occurrences`, Tabelle `data_occurrences`): alle Termine aller Kalender-Tabellen – auch
+  bestehender Inhaltstabellen mit „Als Kalender nutzen“ – 12 Monate zurück und 24 Monate voraus vorberechnet; Pflege beim
+  Speichern/Löschen und täglich per Cron (`calendar:reindex --all`), Filtern, Sortieren und Kürzen in SQL, Rückfall auf die
+  bisherige Berechnung, wenn der Index nicht passt. Blöcke Kalender/Nächste Termine, Feeds, API lesen ihn ohne Änderung.
+- **Tabellenart Kalender** (`settings.kind = calendar`, Vorlage „Kalender“): Grundschema Titel, Kalender (Kategorien), Beginn,
+  Ende, Ganztägig, Wiederholung, Ort, Ort aus der Liste, Kartenpunkt, Beschreibung, Fällt aus; Kalender-Zuordnung fest, Zusatzfelder
+  „Nur Website“ (nie in ICS-Datei, Abo, CalDAV). **Tabellenart Orte** (Vorlage „Orte“): Name, Anschrift, Kartenpunkt, Anfahrt –
+  Ort aus der Liste liefert LOCATION/GEO, JSON-LD und Ortsangabe der Blöcke.
+- **Serien nach RFC 5545** (`Core\Data\Series`, Logik nach KLXM/scheduler, MIT): abweichende Einzeltermine als eigene Einträge
+  (`_series`, `_recurrence_id`, in Listen ausgeblendet), Ausfälle per Ausnahme (EXDATE) oder „Fällt aus“ (sichtbar, abgesagt),
+  Serien-Dialog „Nur dieser / Dieser und alle folgenden / Alle Termine“ beim Speichern eines Termins aus dem Kalender,
+  Wiederholungs-Editor mit Vorschau der nächsten Termine (Ausnahmen, geänderte und abgesagte Termine), ICS-Export.
+- **ICS** mit RRULE, EXDATE und RECURRENCE-ID je Einzeltermin, `STATUS:CANCELLED`; JSON-LD `EventCancelled`.
+  **dav 1.6.0:** Kalender ohne Zuordnung, Einzeltermine als RECURRENCE-ID, in Apps geänderte Termine werden Einzeltermine.
+- **`data:convert <tabelle> --kind=calendar`** (Probelauf, `--apply`, `--revert`): bestehende Termin-Tabelle an Ort und Stelle,
+  Website, Feed und Blöcke bleiben gleich. Für alle Arten (auch Adressbuch): Felder nach der Umwandlung wie in der Vorlage geordnet
+  (Grundfelder in ihren Abschnitten, eigene Felder mit ihren Abschnitten, leere Abschnitte entfallen, Altfelder am Ende),
+  Grundfelder mit Beschriftung und Pflicht des Grundschemas; `--revert` stellt Reihenfolge, Abschnitte, Beschriftungen und Pflicht
+  wieder her.
+- Tabellen ohne die Art verhalten sich unverändert (praxis: HTML- und Pixelvergleich ohne Abweichung). Selbsttest
+  `calendar:selftest`. Handbuch → Daten → „Kalender mit Serien“; Entwicklerhandbuch → Kalender → „Tabellenart calendar, Serien,
+  Vorkommens-Index“.
+### Kalender und Kontakte per App abonnieren
+- **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche
+  webcal-Adresse des Kalender-Feeds bzw. öffentliche **.vcf-Sammeldatei** der freigegebenen Kontakte (`/vcard/{tabelle}.vcf`, nur
+  Tabellen für die Website), QR-Code (lokal erzeugt) und Anleitung für iPhone/iPad, macOS, Android (ICSx⁵/DAVx⁵), Outlook und
+  Thunderbird – auch im Handbuch.
+- **Abo-Tokens** (`Core\Data\Subscriptions`, Funktion `subscriptions`, Standard **aus**): benannt, an eine Tabelle gebunden, Umfang
+  „nur öffentlich“ oder „inklusive interner Einträge und Angaben“ (Entwürfe, nicht freigegebene Kontakte, private Nummern – Felder
+  „Nur Website“ nie), nur lesen, optional ablaufend, widerrufbar, „zuletzt genutzt“. Gespeichert nur als SHA-256, Klartext einmal im
+  Dialog. Adressen mit Token im Pfad (`/kalender/{tabelle}/abo/{token}.ics`, `/vcard/{tabelle}/abo/{token}.vcf`) – sicher gegen Caches,
+  die Query-Strings ignorieren; Antworten `private, no-store`, `noindex`, `no-referrer`. Gültig nur, solange das anlegende Konto
+  besteht und die Tabelle bearbeiten darf.
+- **Schutz:** Rate-Limit je Token (120 in 15 min) und je IP bei Fehlversuchen (20 in 15 min); Sicherheitsprotokoll `abo-access`
+  (Info) und `abo-token-invalid` (fail2ban-Filter); Tokens erscheinen nie im 404- oder Sicherheitsprotokoll (gekürzt), nie in
+  Fehlermeldungen oder Stacktraces. Token-Adressen brauchen auf Staging-Websites kein Staging-Passwort.
+- **CardDAV mit Abo-Token** (Erweiterung dav 1.5.0): Token als Passwort, nur lesen, nur die gebundene Kontakte-Tabelle; neuer Filter
+  `subscriptions.apps` für weitere Zugänge auf der Seite „Abonnieren“. Selbsttest `subscriptions:selftest`.
+
+### Datums- und Zeitauswahl: barrierefreier Kalender (a11y_datetime)
+- **Statt der Auswahl des Browsers** erweitert der barrierefreie Picker **a11y_datetime** (FriendsOfREDAXO, Fork von flatpickr, MIT,
+  5.3.3) alle Felder `date`, `time` und `datetime` – Verwaltung (Felder aus `Core\Fields`, Datentabellen, Seiten „Online ab/bis“,
+  Mitteilungen planen, Kalender mit „Ganztägig“), Seitenleiste „Eintrag bearbeiten“ auf der Website und Formulare der Datentabellen
+  auf der Website. Progressive Enhancement: die Felder bleiben `<input type="date|time|datetime-local">` mit dem Format des Servers,
+  ohne JavaScript ändert sich nichts. Anzeige TT.MM.JJJJ / HH:MM (Englisch DD/MM/YYYY), Wochenbeginn Montag, Eintippen bleibt
+  möglich, Tastatur (Pfeil nach unten öffnet, Escape schließt), Ansagen und Tagesnamen auf Deutsch, Label, Hinweise, Pflichtfeld und
+  Fehler bleiben verknüpft; Tabellenstruktur (Zeilen per `aria-owns`) und deutsche Beschriftungen ergänzt, wo 5.3.3 sie auslässt.
+- **Website lädt nur bei Bedarf:** `dataform.js` holt `js/datetime.mjs`, den Picker und `css/datetime.css` erst, wenn ein Formular
+  ein Datums- oder Zeitfeld hat; CSP ohne Ausnahme (keine Inline-Stile). Farben aus `--kit-*` bzw. `--adm-*`, hell/dunkel.
+- **Grundeinstellung „Datums- und Zeitauswahl“** (`sys.datetime_picker`): Kalender überall (Standard, auf Telefonen ohne
+  Bildschirmtastatur), nur am Computer, oder immer die Auswahl des Browsers. Kit-Schalter `'datetime_picker' => false` – gesetzt
+  für praxis (eingefrorene Anfrageformulare; Pixelvergleich ohne Abweichung).
+- **Einbindung ohne Fremd-CDN:** a11y_datetime liegt nicht auf npm; `tools/build.mjs` lädt das offizielle Release-Archiv und die
+  Lizenz mit fester SHA-256 (`tools/vendor-releases.json`) nach `public/assets/vendor/a11y_datetime/5.3.3/`, `tools/licenses.mjs`
+  prüft mit. Entwicklerhandbuch → Feldtypen → „Datums- und Zeitauswahl“, Formulare, Build; Handbuch → Grundeinstellungen.
 
 ### Adressbuch (Tabellenart „contacts“) und Freigabe je Feld und Ziel
 - **Tabellenart Adressbuch** (`settings.kind = contacts`, `Core\Data\Kinds`): eine normale Inhaltstabelle (Route, Detailseiten,
@@ -53,6 +109,15 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Visitenkarte), Datenliste, Datensatz-Felder (Kontakt-Knöpfe aus den Mehrfachfeldern), Visitenkarte mit allen freigegebenen
   Angaben und Beschriftungen (`item.X-ABLabel`), JSON-LD mit Adresse. Verknüpfungen auf ein Adressbuch sind Kontakt-Felder
   (Designer: „Adressbücher – Feld Kontakt“); auf der Website erscheinen nur freigegebene Kontakte.
+- **Sichtbarkeit im Formular auf einen Blick** (alle Inhaltstabellen, Verwaltung und Seitenleiste „Eintrag bearbeiten“): an jedem
+  Feld und jeder Angabe dasselbe Merkmal im Feldkopf rechts neben der Beschriftung bzw. in der Zeile – „immer, alle Ziele“ nur als
+  kleine Weltkugel, sonst Weltkugel „Öffentlich“ (bei mehreren Zielen „· Website“) oder Schloss „Intern“; Mehrfachfelder nur mit
+  Merkmal am Feld, wenn es etwas regelt („Ziele: Website, vCard“, „Intern“) – sonst entscheidet allein die Zeile; „Redaktion entscheidet“ und jede
+  Angabe als Menü mit Häkchen je Ziel bzw. Öffentlich / Nur Ort / Intern (ersetzt Häkchen, Pille und Adress-Auswahl; ohne Skript
+  bedienbar, Tastatur, Zustand als Text). Interne Felder grau hinterlegt. Formularkopf „Auf der Website: Name, Funktion, …“ (live)
+  und deutlicher Hinweis „Dieser Eintrag ist nicht auf der Website“ (Kontakt nicht freigegeben, Entwurf). Liste: Spalte „Website“
+  bei Adressbüchern, Symbol je Angabe, Spalten nach Wichtigkeit statt seitlichem Überlaufen, lange Texte auf zwei Zeilen,
+  „Duplizieren“ und Erweiterungs-Aktionen im Zeilenmenü (⋯). Eine Auskunft für alles: `Exposure::reach()`/`webSummary()`.
 - **`data:convert <tabelle> --kind=contacts`:** Umwandlung an Ort und Stelle mit Probelauf (Standard) und Bericht (Feldzuordnung,
   Namensaufteilung, Freigabe-Vorschlag – mobil/privat und „Nie öffentlich“ werden intern, „Redaktion entscheidet“ je Eintrag –,
   betroffene Blöcke und Einstellungen), `--map=quelle:ziel[beschriftung+|-]`, `--apply` (Sicherung, Revision je Eintrag,

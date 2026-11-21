@@ -93,6 +93,8 @@ final class Cron
             'help' => __('Große Videos der Mediathek bekommen eine kleinere Fassung, die auf der Website sofort startet. Ohne ffmpeg wirkungslos.')]);
         self::register('push.send', __('Push-Benachrichtigungen senden'), 'push:send --all', '* * * * *', ['group' => $g, 'timeout' => 300]);
         self::register('ai.jobs', __('KI-Aufträge abarbeiten'), 'ai:jobs --all', '*/5 * * * *', ['group' => $g, 'help' => __('Transkription und Übersetzung von Untertiteln.')]);
+        self::register('calendar.index', __('Kalender: Vorkommens-Index'), 'calendar:reindex --all', '50 3 * * *', ['group' => $g,
+            'help' => __('Termine der nächsten 24 Monate vorberechnen (Serien, Einzeltermine) – Kalender-Blöcke und Feeds lesen sie schneller.')]);
         self::register('sources.sync', __('Externe Quellen abgleichen'), 'sources:sync --all', '*/15 * * * *', ['group' => $g]);
         self::register('chat.digest', __('Chat: Hinweise auf ungelesene Erwähnungen'), 'chat:digest', '*/15 * * * *', ['group' => $g]);
         self::register('tasks.remind', __('Aufgaben: Erinnerung an fällige'), 'tasks:remind --all', '0 7 * * *', ['group' => $g,

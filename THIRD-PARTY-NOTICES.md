@@ -24,7 +24,7 @@ not part of the distribution. **Service**: an online service contacted at runtim
 
 | License | Where | Type |
 |---|---|---|
-| MIT | FriendsOfREDAXO/consent_kit (ported into `extensions/consent_kit`), most PHP packages, Phosphor Icons (also in `extensions/video_tools`), Tabler Icons, UIkit and Tailwind CSS (kit `frameworks`), NativeCSS (parts in `kits/fluid`, kit `native`, also its demo media), editorjs-drag-drop, Editor.js sub-packages, MapLibre sub-packages, qcms, lbuchs/webauthn | Bundled |
+| MIT | FriendsOfREDAXO/consent_kit (ported into `extensions/consent_kit`), most PHP packages, Phosphor Icons (also in `extensions/video_tools`), Tabler Icons, UIkit and Tailwind CSS (kit `frameworks`), NativeCSS (parts in `kits/fluid`, kit `native`, also its demo media), editorjs-drag-drop, Editor.js sub-packages, MapLibre sub-packages, qcms, lbuchs/webauthn, a11y_datetime (fork of flatpickr) | Bundled |
 | MIT OR Apache-2.0 | chillerlan/php-qrcode, @maplibre/mlt | Bundled |
 | Apache-2.0 | Editor.js, Mozilla PDF.js (incl. its JBIG2 wrapper), Apache ECharts | Bundled |
 | BSD-3-Clause | sabre/* (CalDAV/CardDAV), MapLibre GL JS, ZRender (ECharts), pbf, @mapbox/vector-tile, PDFium JBIG2 and Foxit fonts in PDF.js, Adobe CMaps (BSD-style) | Bundled |
@@ -63,7 +63,7 @@ not part of the distribution. **Service**: an online service contacted at runtim
 
 ## 1. Browser assets in `public/assets` (Bundled)
 
-Copied by `tools/build.mjs` / `tools/icons.mjs` from the npm packages in `tools/package.json`. The license texts
+Copied by `tools/build.mjs` / `tools/icons.mjs` from the npm packages in `tools/package.json` (a11y_datetime: pinned release file, `tools/vendor-releases.json`). The license texts
 are written next to the files by the build.
 The graphics editor (Paper.js, fontkit, jsPDF, svg2pdf.js, hyphen) is not part of the core: it is a separate, optional
 extension package with its own `THIRD-PARTY-NOTICES.md`.
@@ -73,6 +73,7 @@ extension package with its own `THIRD-PARTY-NOTICES.md`.
 | Editor.js (`@editorjs/editorjs`), © CodeX | 2.31.7 | Apache-2.0 | `public/assets/vendor/editorjs/editorjs.umd.js` | `LICENSE-editorjs.txt` |
 | – bundled: `@editorjs/caret` 1.1.0, `@editorjs/dom` 1.1.0, `@editorjs/helpers` 1.2.2, `codex-notifier` 1.1.2, `codex-tooltip` 1.0.6 | | MIT | inside `editorjs.umd.js` | `THIRD-PARTY-LICENSES.txt` |
 | editorjs-drag-drop, © 2021 kommitters Open Source | 1.1.16 | MIT | `public/assets/vendor/editorjs/drag-drop.js` | `LICENSE-drag-drop.txt` |
+| a11y_datetime (FriendsOfREDAXO/a11y_datetime, accessible fork of flatpickr), © 2026 Friends of REDAXO; based on flatpickr © 2017 Gregory Petrosyan – date and time picker (`resources/js/_datetime.js`). Not on npm: `tools/build.mjs` downloads the official release archive `dist.zip` of tag v5.3.3 (commit 1048038) and the license from that commit, both pinned by SHA-256 in `tools/vendor-releases.json` | 5.3.3 | MIT | `public/assets/vendor/a11y_datetime/{version}/` (`a11y_datetime.min.js`, `a11y_datetime.min.css`, `l10n/de.min.js` – minified, otherwise unchanged) | `public/assets/vendor/a11y_datetime/LICENSE.txt` |
 | MapLibre GL JS (`maplibre-gl`), © 2023 MapLibre contributors; contains code © 2020 Mapbox (BSD-3-Clause), glfx.js © 2011 Evan Wallace (MIT), d3-color © 2010-2016 Mike Bostock (BSD-3-Clause) | 6.19.0 | BSD-3-Clause | `public/assets/vendor/maplibre/{version}/` (plus the frozen 6.11.2 files directly in `vendor/maplibre/` for pages cached before the switch) | `LICENSE.txt` |
 | – bundled: @mapbox/point-geometry, @maplibre/geojson-vt, @maplibre/maplibre-gl-style-spec, earcut, kdbush, potpack, quickselect, tinyqueue (ISC); @mapbox/tiny-sdf, @mapbox/unitbezier (BSD-2-Clause); @mapbox/vector-tile, pbf (BSD-3-Clause); @maplibre/mlt (MIT OR Apache-2.0); @maplibre/vt-pbf, bidi-js, gl-matrix, murmurhash-js, @mapbox/jsonlint-lines-primitives, json-stringify-pretty-compact and others (MIT) | | see left | inside the MapLibre bundle | `THIRD-PARTY-LICENSES.txt` (generated) |
 | Apache ECharts (`echarts`), © The Apache Software Foundation – diagrams (`Core\Charts`, engine `echarts`), tree-shaken: line, bar, pie, canvas | 6.1.0 | Apache-2.0 | `public/assets/js/charts-echarts.mjs` | `public/assets/vendor/echarts/LICENSE.txt`, `NOTICE.txt` |

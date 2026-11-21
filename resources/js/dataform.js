@@ -29,6 +29,10 @@ document.querySelectorAll('form[data-dff]').forEach(form => {
   let ready;
   groups(form);
   conditions(form, JSON.parse(form.dataset.cond || '{}'));
+  // Datums-/Zeitauswahl (Core\DatetimePicker): Modul erst laden, wenn das Formular ein solches Feld hat
+  if (form.dataset.dt && form.querySelector('input[type=date],input[type=time],input[type=datetime-local]')) {
+    try { const dt = JSON.parse(form.dataset.dt); import(dt.js).then(m => m.enhance(form, dt)).catch(() => {}); } catch {}
+  }
   const prep = () => ready ||= (async () => {
     let token = el._token.value, diff = +(el._difficulty?.value || 0);
     if (!token) {
