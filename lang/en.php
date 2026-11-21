@@ -5,6 +5,8 @@
  * Find untranslated texts: php bin/console i18n:missing en
  */
 return [
+    'Einzelnes Bild groß zeigen' => 'Show a single image large',
+    'Bei genau einem Bild: in voller Inhaltsbreite im Originalformat mit Bildunterschrift statt klein in einer Spalte.' => 'With exactly one image: full content width in its original format with caption instead of small in a column.',
     'Hintergrund der Vorschau: {a}' => 'Preview background: {a}',
     'kariert' => 'checkered',
     '_name' => 'English',
@@ -9190,4 +9192,20 @@ return [
     'neuer Tab' => 'new tab',
     'wählen' => 'select',
     '{n} Websites · Einstellungen der ganzen Installation' => '{n} websites · settings for the whole installation',
+    // Veröffentlichen der Assets (Core\AssetSync)
+    'Assets fehlen: {path} – {cmd}' => 'Assets missing: {path} – {cmd}',
+    'Kopie abgeglichen: {n} Datei(en) aktualisiert, {m} entfernt' => 'Copy synchronised: {n} file(s) updated, {m} removed',
+    'Kopie aktuell' => 'Copy up to date',
+    'Ordner lässt sich nicht anlegen: {dir}' => 'Cannot create folder: {dir}',
+    'Quelle fehlt' => 'Source missing',
+    'Quelle und Ziel sind derselbe Ordner' => 'Source and target are the same folder',
+    'Veraltete Asset-Kopie: {path} ({n} Datei(en) abweichend) – {cmd}' => 'Outdated asset copy: {path} ({n} file(s) differ) – {cmd}',
+    'Verknüpfung nur auf Ordner des Kerns (public/assets)' => 'Links only to core folders (public/assets)',
+    'Veröffentlichte Assets aktuell ({n} Ordner)' => 'Published assets up to date ({n} folders)',
+    'Ziel liegt nicht unter public/assets' => 'Target is not inside public/assets',
+    'alte Kopie durch Verknüpfung auf den Kern ersetzt' => 'old copy replaced by a link to the core',
+    'mit dem Kern verknüpft' => 'linked to the core',
+    'ungültiger Name: {name}' => 'invalid name: {name}',
+    'verknüpft, aktuell' => 'linked, up to date',
+    'übersprungen: {reason}' => 'skipped: {reason}',
 ];

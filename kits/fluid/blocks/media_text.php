@@ -8,6 +8,8 @@ $v = $b->variant() ?: 'auto';
 // Unbekannte Variante (z. B. „morph“ aus einem Kind-Kit, gespeichert vor einem Kit-Wechsel): wie „Bild rechts“
 if (!in_array($v, ['auto', 'right', 'left', 'split', 'overlap'], true)) $v = 'right';
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:3';
+// Bild ausrichten: mitlaufen (Standard für neue Blöcke, Feld-Standard) · oben · mitte – ältere Blöcke ohne Wert bleiben „mitte“ (unverändert)
+$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'center';
 $side = $v;
 // Abwechselnd („auto“, ebenso „split“): Position in einer Folge gleichartiger Blöcke zählen
 $n = 0;
@@ -30,7 +32,7 @@ $body = fluid_head($b, 'mt__head')
   <div class="mt-over__card"><?= $body ?></div>
 </div>
 <?php else: ?>
-<div class="wrap mt mt--<?= e($side) ?><?= in_array($d['split'] ?? 'even', ['text', 'media', 'mediaxl'], true) ? ' mt--s-' . e($d['split']) : '' ?>">
+<div class="wrap mt mt--<?= e($side) ?> mt--va-<?= e($valign) ?><?= in_array($d['split'] ?? 'even', ['text', 'media', 'mediaxl'], true) ? ' mt--s-' . e($d['split']) : '' ?>">
   <div class="mt__text"><?= $body ?></div>
   <?= fluid_image($d['image'] ?? null, '(min-width: 1080px) 600px, 100vw', $ratio, 'mt__media') ?>
 </div>

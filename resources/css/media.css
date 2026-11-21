@@ -28,6 +28,8 @@ a.cms-gallery__link{cursor:zoom-in}
 a.cms-gallery__link:hover img{transform:scale(1.035)}
 a.cms-gallery__link:focus-visible{outline:3px solid var(--_accent);outline-offset:3px}
 .cms-gallery__cap{margin-top:10px;font-size:.9375rem;line-height:1.5;color:var(--cms-muted,inherit)}
+/* Galerie mit genau einem Bild (cms-gallery--single): volle Inhaltsbreite im Originalformat, hohe Bilder höchstens 85 % der Fensterhöhe, dann mittig */
+.cms-gallery--single{max-width:min(100%,calc(85vh * var(--ar,13) / 10));margin-inline:auto}
 .cms-gallery--grid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:var(--_gap)}
 :is(.cms-gallery--grid,.cms-gallery--justified) .cms-gallery__link img{position:absolute;inset:0;height:100%;object-fit:cover}
 .cms-gallery--justified .cms-gallery__link{aspect-ratio:calc(var(--ar) / 10)}

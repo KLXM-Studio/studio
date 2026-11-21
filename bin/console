@@ -74,7 +74,8 @@
  *   kit:install <datei.zip|ordner> [--force]          Kit-Paket installieren (geprüft, nach storage/kits/{name}, Assets veröffentlichen;
  *                                                     --force: hochgeladenes Kit gleichen Namens ersetzen) – enthält PHP-Code!
  *   kit:remove <name>                                 Hochgeladenes Kit entfernen (nicht, solange eine Website es nutzt)
- *   kits:publish [name]                               Fertige Assets der Kit-Pakete (public/) nach public/assets/kits kopieren
+ *   kits:publish [name] [--copy]                      Fertige Assets der Kit-Pakete (public/) nach public/assets/kits kopieren;
+ *                                                     Projekt mit verknüpftem Kern: Kern-Kits verknüpfen (--copy: abgleichen)
  *                                                     (nach composer install bzw. jedem Deploy)
  *   kit:create <name> [--from=starter|basis|…]        Neues Kit als Kopie anlegen (Standard: Start-Kit „starter“),
  *                                                     Präfix/Namen umbenennen; alt: theme:create <name> <vorlage>
@@ -98,7 +99,10 @@
  *   features:release [--dry-run] [--only=features|extensions]
  *                                                     In der Konfiguration festgelegte Funktionen/Erweiterungen an die Verwaltung
  *                                                     übergeben (Administration → Funktionen & Erweiterungen); Sicherung .bak + Diff
- *   extensions:publish                                Öffentliche Dateien der Erweiterungen nach public/assets/ext kopieren
+ *   extensions:publish [--copy]                       Öffentliche Dateien der Erweiterungen nach public/assets/ext abgleichen;
+ *                                                     Projekt mit verknüpftem Kern: Kern-Assets und mitgelieferte Erweiterungen
+ *                                                     verknüpfen (--copy: Kopie mit Prüfsummen-Abgleich)
+ *   assets:selftest                                   Selbsttest Veröffentlichen der Assets (Verknüpfen, Abgleich, Sicherheit)
  *   reseed --force                                    ALLE Inhalte löschen und Startinhalte neu einspielen
  *   pdfjs:cmaps [--remove]                            PDF-Anzeige: Zeichentabellen für chinesische/japanische/koreanische PDFs nachladen (1,6 MB, nicht im Download)
  *   fonts:search <name> [--category=serif]            Google-Fonts-Katalog durchsuchen (Fontsource, nur freie Lizenzen)
@@ -694,6 +698,9 @@ switch ($cmd) {
         // Fertige Assets der Kit-Pakete (Upload, Composer) nach public/assets/kits/{name} kopieren – nach composer install bzw. Deploy
         $pos = array_values(array_filter($args, fn($a) => !str_starts_with($a, '--')));
         $done = Core\KitPackages::publish($pos[0] ?? null);
+        // Projekt-Installation mit verknüpftem Kern: gebaute Assets der Kern-Kits verknüpfen (--copy: abgleichen; Core\AssetSync)
+        $plan = array_values(array_filter(Core\AssetSync::kitPlan(), fn($e) => !isset($pos[0]) || $e['name'] === Core\Kit::clean($pos[0])));
+        foreach (Core\AssetSync::run($plan, Core\Cli::flag($args, 'copy')) as $p => $msg) $done[basename($p)] = $msg;
         foreach ($done as $n => $msg) echo str_pad($n, 14) . ' ' . $msg . "\n";
         if (!$done) echo "Keine Kit-Pakete installiert (Kits unter kits/ baut tools/build.mjs).\n";
         break;
@@ -1934,6 +1941,13 @@ switch ($cmd) {
         }
         break;
 
+    case 'assets:selftest':
+        // Core\AssetSync: Projekt mit eigenem public/ simuliert (veraltete Kopie, Verknüpfen, Abgleich, Sicherheit)
+        $res = Core\AssetSyncSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
     case 'kits:selftest':
         // Vererbung von Kits: Definition zusammenführen, design_defaults, Kette
         $res = Core\KitSelfTest::run();
@@ -2044,23 +2058,12 @@ switch ($cmd) {
         exit(Core\FeatureRelease::run($args, fn(string $l) => print($l . "\n")));
 
     case 'extensions:publish':
-        // Öffentliche Dateien der Erweiterungen nach public/assets/ext/{name} kopieren (auch ohne pnpm auf dem Server; Core\PublicPaths)
-        foreach (Core\Extensions::available() as $n => $m) {
-            $dst = Core\PublicPaths::dir(Core\PublicPaths::EXT, $n);
-            // public/ (fertig gebaut) – sonst assets/ unverändert, aber nur wenn noch nichts veröffentlicht ist (z. B. Composer-Paket
-            // ohne pnpm auf dem Server; Skripte/Stile müssen dafür ohne Bündeln laufen) – ein pnpm-Build wird nie überschrieben
-            $src = $m['dir'] . '/public';
-            if (!is_dir($src) && is_dir($m['dir'] . '/assets') && !is_dir($dst)) $src = $m['dir'] . '/assets';
-            if (!is_dir($src)) continue;
-            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
-            foreach ($it as $f) {
-                $target = $dst . '/' . substr($f->getPathname(), strlen($src) + 1);
-                if ($f->isDir()) { @mkdir($target, 0775, true); continue; }
-                @mkdir(dirname($target), 0775, true);
-                copy($f->getPathname(), $target);
-            }
-            echo Core\Kit::relative($dst) . " aktualisiert.\n";
-        }
+        // Öffentliche Dateien der Erweiterungen nach public/assets/ext/{name} (auch ohne pnpm auf dem Server; Core\AssetSync):
+        // Projekt-Installation mit verknüpftem Kern: Kern-Assets und gebaute Assets der mitgelieferten Erweiterungen als
+        // Verknüpfung auf den Kern (--copy: Kopie mit Prüfsummen-Abgleich); sonst Ordner public/ des Pakets abgleichen
+        $done = Core\AssetSync::run(array_merge(Core\AssetSync::corePlan(), Core\AssetSync::extensionPlan()), Core\Cli::flag($args, 'copy'));
+        foreach ($done as $p => $msg) echo "$p: $msg\n";
+        if (!$done) echo "Nichts zu veröffentlichen.\n";
         break;
 
     default:

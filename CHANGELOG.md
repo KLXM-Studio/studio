@@ -10,6 +10,36 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Veröffentlichte Assets bleiben auf dem Stand des Kerns (`Core\AssetSync`)
+- **Projekt-Installation mit verknüpftem Kern** (`KLXM_ROOT`, eigenes `public/`): `extensions:publish` verknüpft Kern-Assets
+  (`public/assets/css`, `js`, `icons`, `img` …) und die gebauten Assets der mitgelieferten Erweiterungen
+  (`public/assets/ext/{name}`) mit dem Kern-Ordner, `kits:publish` die der Kern-Kits (`public/assets/kits/{name}`). Bisher blieb
+  dort eine alte Kopie liegen (z. B. eine veraltete `consent.js`), obwohl der Kern neuer war. `public/assets/fonts` wird
+  abgeglichen statt verknüpft, installierte Schriften (`fonts/installed`) bleiben im Projekt.
+- **Abgleich per Prüfsumme** für Pakete mit fertigem Ordner `public/` und mit `--copy`: nur geänderte Dateien, Dateien, die es in
+  der Quelle nicht mehr gibt, fallen weg (nur innerhalb des jeweiligen Ordners). Nie kopiert: Verknüpfungen, versteckte Dateien,
+  Server-Code (`.php`, `.phtml`, `.phar`, CGI-Skripte); Ziele nur unter `public/assets`, Verknüpfungen nur in den Kern.
+- **`health`** (technisch) meldet „Veraltete Asset-Kopie: … – php bin/console extensions:publish“ bzw. „Assets fehlen: …“.
+  Selbsttest `assets:selftest`; Entwicklerhandbuch → Installation → Projekt-Installation, Kommandozeile.
+- *EN:* In project installations with a linked core, `extensions:publish` / `kits:publish` now link core assets, built assets of
+  bundled extensions and core kits to the core folder (or, with `--copy`, sync a checksum-compared copy that also removes files
+  gone from the source); stale copies no longer survive core updates. `health` reports outdated or missing asset copies
+  (technical). Self-test `assets:selftest`.
+
+### Blöcke: Text + Bild „Bild ausrichten“, Galerie mit einem Bild
+- **Text + Bild – Bild ausrichten** (neues Feld `valign` in den Kits fluid, native, foto, galerie, modern, nature, essenz):
+  „Mitlaufen“ (Standard für neue Blöcke; bestehende Blöcke ohne Wert bleiben „Mitte“ und damit unverändert), „Oben“, „Mitte“. „Mitlaufen“ stellt das Bild bei langem Text oben neben den
+  Text und hält es beim Scrollen unter dem Kopf sichtbar (`position: sticky`, reines CSS, nur solange Bild und Text nebeneinander
+  stehen; Telefon unverändert gestapelt). Ist der Text kürzer als das Bild, bleibt die Darstellung wie bisher. „Mitte“ entspricht
+  dem früheren Verhalten. Kit praxis unverändert.
+- **Bildergalerie mit genau einem Bild** (neue Option „Einzelnes Bild groß zeigen“, an für neue Blöcke; bestehende unverändert): erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
+  mit Bildunterschrift, Lightbox wie bisher) statt klein in einer Spalte; hohe Bilder höchstens 85 % der Fensterhöhe, mittig.
+  Die Live-Galerie bleibt unverändert. Handbuch → Alle Blöcke, Entwicklerhandbuch → Kits.
+- *EN:* Media + text blocks get “Align image”: “Follow” (default, also for existing blocks), “Top”, “Centre”. “Follow” places the
+  image at the top next to long text and keeps it visible below the header while scrolling (pure CSS sticky, only side by side;
+  short text looks as before). An image gallery with exactly one image now shows it as a single full-width image in its original
+  aspect ratio with caption and lightbox, instead of a small column.
+
 ### Cookie-Einwilligung: „Hinweis nur, wenn nötig“ (consent_kit 1.5.0)
 - **Kein Banner, wenn nur Einbettungen aktiv sind:** Sind ausschließlich Dienste aktiv, die nur über Platzhalter laden (z. B. nur
   YouTube-Videos oder Karten), erscheint beim ersten Besuch kein Hinweis mehr; die Platzhalter holen die Einwilligung am Inhalt

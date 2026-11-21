@@ -1,7 +1,8 @@
 <?php
 /**
  * Bildergalerie (Kern-Block, vom Theme überschreibbar: kits/{name}/blocks/gallery.php).
- * Raster (einheitliches Format mit Zuschnitt), Mosaik (CSS-Spalten) oder bündige Zeilen; Lightbox über js/media.mjs –
+ * Raster (einheitliches Format mit Zuschnitt), Mosaik (CSS-Spalten) oder bündige Zeilen, genau ein Bild als Einzelbild in voller
+ * Inhaltsbreite (figure.cms-gallery--single, Originalformat; Feld single_large, Standard an für neue Blöcke); Lightbox über js/media.mjs –
  * ohne JavaScript führen die Bilder als normale Links zur großen Fassung.
  * @var \Core\Block $b  @var array $d
  */
@@ -20,10 +21,27 @@ $sizes = [
     '5' => '(min-width: 1280px) 240px, (min-width: 860px) 20vw, 50vw',
 ][$cols];
 if ($layout === 'justified') $sizes = '(min-width: 860px) 40vw, 100vw';
+// Genau ein Bild: als Einzelbild in voller Inhaltsbreite im Originalformat (statt klein in einer Spalte), Lightbox wie sonst
+$single = count($items) === 1 && !empty($d['single_large']);   // nur neue bzw. so gewählte Blöcke – ältere ohne Wert unverändert
 ?>
 <div class="<?= e($wrap) ?>">
   <?= MediaBlocks::head($b) ?>
-  <?php if ($items): ?>
+  <?php if ($single):
+      $it = $items[0];
+      $m = $it['m'];
+      $pic = img((int) $m['id'], '(min-width: 1280px) 1280px, 100vw', $it['path'] ? ['path' => $it['path'] . '.image'] : []);
+      $cap = !empty($d['captions']) ? $it['caption'] : '';
+  ?>
+  <figure class="cms-gallery cms-gallery--single cms-gallery__fig <?= e(MediaBlocks::aspectClass($m)) ?>"<?= $lightbox ? ' data-cms-lightbox' : '' ?>>
+    <?php if ($lightbox): ?>
+    <a class="cms-gallery__link"<?= MediaBlocks::lightboxLink($m, $it['caption']) ?>><?= $pic ?><?php if (\Core\Media::alt($m) === ''): ?><span class="sr-only"><?= e(lt('Bild {n} vergrößern', ['n' => 1])) ?></span><?php endif; ?></a>
+    <?php else: ?>
+    <div class="cms-gallery__link"><?= $pic ?></div>
+    <?php endif; ?>
+    <?php if ($cap !== ''): ?><figcaption class="cms-gallery__cap"<?= $it['path'] ? $b->edit($it['path'] . '.caption') : '' ?>><?= emphasis($cap) ?></figcaption><?php endif; ?>
+  </figure>
+  <?= $lightbox ? MediaBlocks::lightbox() . MediaBlocks::script() : '' ?>
+  <?php elseif ($items): ?>
   <ul class="cms-gallery cms-gallery--<?= e($layout) ?> cols-<?= e($cols) ?>" role="list"<?= $lightbox ? ' data-cms-lightbox' : '' ?>>
     <?php foreach ($items as $n => $it):
         $m = $it['m'];
