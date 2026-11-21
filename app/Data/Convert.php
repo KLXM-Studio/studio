@@ -229,7 +229,8 @@ final class Convert
             if (in_array($p['action'], ['keep', 'rename'], true) && isset($schema[$p['to']])) {
                 $f['label'] = $schema[$p['to']]['label'];
                 $f['required'] = !empty($schema[$p['to']]['required']);
-                unset($f['labels']);
+                $f['in_list'] = !empty($schema[$p['to']]['in_list']);
+                unset($f['labels'], $f['legacy']);          // ausgeblendete Spalte einer früheren Umwandlung wird wieder Grundfeld
             }
             if (in_array($p['action'], ['combine', 'cast'], true)) {
                 $f['legacy'] = 1;
@@ -392,7 +393,7 @@ final class Convert
         }
         if ($relabel) $l[] = '  Beschriftung/Pflicht aus dem Grundschema: ' . implode(', ', $relabel);
         if ($plan['kind'] === Kinds::CALENDAR) {
-            $own = array_keys(array_filter($plan['fields'], fn($p) => in_array($p['action'], ['own', 'copy'], true)));
+            $own = array_keys(array_filter($plan['fields'], fn($p, $n) => in_array($p['action'], ['own', 'copy'], true) && empty($by[$n]['legacy']), ARRAY_FILTER_USE_BOTH));
             if ($own) $l[] = '  Eigene Felder werden „Nur Website“ (nie in ICS-Datei, Abo, CalDAV): ' . implode(', ', array_map(fn($n) => $plan['fields'][$n]['action'] === 'copy' ? $plan['fields'][$n]['own_to'] : $plan['fields'][$n]['to'], $own));
         }
         $l[] = '';
@@ -687,6 +688,7 @@ final class Convert
                 if (array_key_exists($k, $f)) $c[$k] = $f[$k]; else unset($c[$k]);
             }
             unset($c['legacy'], $c['system']);
+            if (!empty($f['legacy'])) { $c['legacy'] = 1; $c['in_list'] = 0; }   // schon vorher ausgeblendet (frühere Umwandlung)
             $out[] = $c;
         }
         $restored = array_flip(array_column($out, 'name'));
