@@ -173,8 +173,12 @@
  *   data:selftest [--roundtrip]                       Selbsttest Tabellen-Definition: Rundlauf aller Tabellen, „Felder bearbeiten“ im Editor,
  *                                                     Zweck (Ableitung) und Assistent „Neue Tabelle“ je Zweck (vorübergehende Tabellen);
  *                                                     --roundtrip: nur Rundlauf und Zweck, ändert nichts
- *   data:convert <tabelle> --kind=contacts [--map=quelle:ziel[beschriftung+|-],…] [--apply] | --revert | --drop-legacy
- *                                                     Tabelle an Ort und Stelle in ein Adressbuch umwandeln (Standard: Probelauf mit Bericht)
+ *   data:convert <tabelle> --kind=contacts|calendar [--map=quelle:ziel[beschriftung+|-],…] [--apply] | --revert | --drop-legacy
+ *                                                     Tabelle an Ort und Stelle in ein Adressbuch bzw. einen Kalender mit Serien umwandeln
+ *                                                     (Standard: Probelauf mit Bericht)
+ *   calendar:reindex [<tabelle>…] [--all] [--status]  Vorkommens-Index der Kalender neu aufbauen (Cron täglich) bzw. Stand zeigen
+ *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
+ *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
  *                 [--with-list-page] [--dry-run]     Tabelle aus Vorlage anlegen bzw. ergänzen (wie „Neue Tabelle aus Vorlage“; wiederholbar):
  *                                                     blog, team, contacts (Adressbuch), products, events, jobs (Stellenangebote, Google for Jobs) + Eingang
@@ -1486,6 +1490,24 @@ switch ($cmd) {
             foreach (Core\Data\Convert::apply($t, $plan) as $l) echo "$l\n";
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         break;
+
+    case 'calendar:reindex':
+        // Vorkommens-Index der Kalender (Core\Data\Occurrences) neu aufbauen – täglich per Cron (rollierendes Fenster), nach Importen
+        if (Core\Cli::flag($args, 'all')) exit(Core\Cli::eachSite($cmd, $args));
+        if (in_array('--status', $args, true)) {
+            foreach (Core\Data\Occurrences::status() as $h => $s) echo '  ' . str_pad($h, 24) . ' ' . $s['rows'] . ' Vorkommen · ' . ($s['fresh'] ? 'aktuell' : 'veraltet/fehlt') . ($s['built_at'] ? ' · aufgebaut ' . $s['built_at'] : '') . "\n";
+            break;
+        }
+        $only = array_values(array_filter($args, fn($a) => !str_starts_with($a, '--')));
+        foreach (Core\Data\Occurrences::rebuildAll() as $h => $n) if (!$only || in_array($h, $only, true)) echo '  ✓ ' . site()->key . '/' . $h . ": {$n} Vorkommen\n";
+        break;
+
+    case 'calendar:selftest':
+        // Kalender mit Serien (Core\Data\CalendarSelfTest): Index = Berechnung, Serien, Einzeltermine, Ausfälle, ICS-Rundreise, data:convert
+        $res = Core\Data\CalendarSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
 
     case 'data:template':
         // Tabelle aus Vorlage (Core\Data\Templates::install) – vorhandene Tabelle bleibt, fehlende Teile werden ergänzt

@@ -21,8 +21,14 @@ final class ICal
         $tz = Calendar::tz();
         $events = [];
         $years = [];
+        $series = Kinds::isCalendar($table);
+        $heads = $series ? array_column(array_filter($entries, fn($e) => !Series::isOverride($table, $e)), 'id') : [];
         foreach ($entries as $e) {
-            $lines = self::vevent($table, $e);
+            // Kalender mit Serien: Serienkopf + abweichende Einzeltermine (RECURRENCE-ID); ein Einzeltermin ohne seine Serie in der Liste
+            // (Download eines einzelnen Termins) steht für sich
+            $own = $series && Series::isOverride($table, $e);
+            if ($own && in_array((int) $e[Series::SERIES], $heads, true)) continue;
+            $lines = $series && !$own ? self::series($table, $e, ['public' => true]) : self::vevent($table, $e);
             if (!$lines) continue;
             $events[] = $lines;
             $span = Calendar::span($table, $e);
@@ -59,6 +65,7 @@ final class ICal
     {
         $span = Calendar::span($table, $e);
         if (!$span) return [];
+        $kind = Kinds::isCalendar($table);
         $c = Calendar::config($table);
         $tzid = Calendar::tz()->getName();
         $utc = new DateTimeZone('UTC');
@@ -74,7 +81,12 @@ final class ICal
             if ($span['end'] > $span['start']) $l[] = 'DTEND;TZID=' . $tzid . ':' . $span['end']->format('Ymd\THis');
         }
         $l[] = 'SUMMARY:' . self::text(Entries::title($table, $e));
+        // Abweichender Einzeltermin einer Serie: RECURRENCE-ID = ursprünglicher Beginn (gleicher Werttyp wie DTSTART der Serie)
+        if (!empty($o['rid']) && ($rt = Series::ridTime((string) $o['rid']))) {
+            $l[] = !empty($o['rid_date']) ? 'RECURRENCE-ID;VALUE=DATE:' . $rt->format('Ymd') : 'RECURRENCE-ID;TZID=' . $tzid . ':' . $rt->format('Ymd\THis');
+        }
         $rec = Calendar::recurrence($table, $e);
+        if (!empty($o['exdates_extra']) && $rec['rrule'] !== '') $rec['exdates'] = array_values(array_unique([...$rec['exdates'], ...$o['exdates_extra']]));
         if ($rec['rrule'] !== '') {
             $rule = $rec['rrule'];
             // Ganztägig: UNTIL als DATE (RFC 5545 – gleicher Werttyp wie DTSTART)
@@ -90,7 +102,12 @@ final class ICal
             }
         }
         if ($c['description'] !== '' && ($d = self::plain(Entries::html($table, $e, $c['description']))) !== '') $l[] = 'DESCRIPTION:' . self::text($d);
-        if ($c['location'] !== '' && ($loc = trim((string) ($e[$c['location']] ?? ''))) !== '') {
+        if ($kind) {
+            // Kalender mit Grundschema: Ort (frei) bzw. Ort aus der Liste (Name + Anschrift), Kartenpunkt eigener oder des Ortes
+            [$locText, $geo] = Calendar::place($table, $e);
+            if ($locText !== '') $l[] = 'LOCATION:' . self::text($locText);
+            if ($geo && ($p = \Core\Maps::parse($geo))) $l[] = 'GEO:' . $p[0] . ';' . $p[1];
+        } elseif ($c['location'] !== '' && ($loc = trim((string) ($e[$c['location']] ?? ''))) !== '') {
             if ((Tables::field($table, $c['location'])['type'] ?? '') === 'geo') {
                 if (($p = \Core\Maps::parse($loc))) $l[] = 'GEO:' . $p[0] . ';' . $p[1];
             } else {
@@ -103,10 +120,33 @@ final class ICal
         }
         if (($url = Entries::absUrl($table, $e))) $l[] = 'URL:' . $url;
         if ($span['all_day']) $l[] = 'TRANSP:TRANSPARENT';
-        if (($e['status'] ?? 'published') !== 'published') $l[] = 'STATUS:TENTATIVE';
+        if ($kind && !empty($e[Kinds::CANCELLED_FIELD])) $l[] = 'STATUS:CANCELLED';
+        elseif (($e['status'] ?? 'published') !== 'published') $l[] = 'STATUS:TENTATIVE';
         array_push($l, ...(array) ($o['extra'] ?? []));
         $l[] = 'END:VEVENT';
         return $l;
+    }
+
+    /**
+     * VEVENTs einer Serie (Kalender der Art calendar): Serienkopf mit RRULE/EXDATE, danach je abweichendem Einzeltermin ein VEVENT mit
+     * gleicher UID und RECURRENCE-ID (RFC 5545 §3.8.4.4). $o['public']: öffentliche Ausgabe – Einzeltermine nur veröffentlicht und mit
+     * Freigabe „ics“; nicht veröffentlichte ersetzen das Vorkommen trotzdem (wie auf der Website) und werden zur Ausnahme (EXDATE).
+     * $o['uid']: UID aus CalDAV, $o['extra']: zusätzliche Zeilen des Serienkopfs.
+     */
+    public static function series(array $table, array $head, array $o = []): array
+    {
+        $ovs = Series::isOverride($table, $head) ? [] : Series::overrides($table, (int) $head['id']);
+        $pub = !empty($o['public']);
+        $hidden = [];
+        $out = [];
+        $allDay = (Calendar::span($table, $head)['all_day'] ?? false);
+        foreach ($ovs as $rid => $ov) {
+            if ($pub && ($ov['status'] !== 'published' || (($ov['lang'] ?? null) !== ($head['lang'] ?? null)))) { $hidden[] = substr($rid, 0, 10); continue; }
+            if ($pub) $ov = Exposure::publicEntry($table, $ov, 'ics');
+            array_push($out, ...self::vevent($table, $ov, ['uid' => $o['uid'] ?? Calendar::uid($table, $head), 'rid' => $rid, 'rid_date' => $allDay]));
+        }
+        $first = self::vevent($table, $head, ['uid' => $o['uid'] ?? Calendar::uid($table, $head), 'extra' => (array) ($o['extra'] ?? []), 'exdates_extra' => $hidden]);
+        return $first ? [...$first, ...$out] : [];
     }
 
     /** Text aus HTML/Mehrzeilern: Tags weg, Entities auflösen, Zeilen bereinigen */
