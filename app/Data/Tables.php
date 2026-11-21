@@ -848,6 +848,8 @@ final class Tables
         $t->addIndex(['slug'], $name . '_slug');
         $t->addIndex(['status', 'sort'], $name . '_status');
         if (isset($table['shared'])) $t->addIndex(['origin_site'], $name . '_origin');
+        // Kontakte (Core\Data\Kinds): Sortieren/Suchen nach Nachname (Tabellenliste, Adressbuch-Ansicht)
+        if (Kinds::isContacts($table) && ($nf = self::field($table, 'nachname')) && ($nf['type'] ?? '') === 'text') $t->addIndex(['nachname'], $name . '_nachname');
         foreach ($table['fields'] as $f) {
             if ($f['type'] === 'relation') $t->addIndex([$f['name']], $name . '_' . $f['name']);
         }

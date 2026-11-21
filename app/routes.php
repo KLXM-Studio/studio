@@ -268,6 +268,11 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/einsetzen', [Admin\DataController::class, 'placeSave']);
     $r->post('/admin/data/{handle}/bulk', [Admin\DataController::class, 'bulk']);
     $r->post('/admin/data/{handle}/quick', [Admin\DataController::class, 'quick']);
+    // Adressbuch-Ansicht (Core\Data\AddressBook): Listen zuordnen, vCard-Export – vor /{id}; Menüpunkt „Kontakte“
+    $r->get('/admin/kontakte', [Admin\AddressBookController::class, 'home']);
+    $r->post('/admin/data/{handle}/listen', [Admin\AddressBookController::class, 'assign']);
+    $r->get('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
+    $r->post('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
     // Geteilte Tabellen (Core\Data\Shared): fremde Einträge, Auswahl, Anzeige auf dieser Website – vor /{id}
     $r->get('/admin/data/{handle}/shared', [Admin\DataController::class, 'foreign']);
     $r->post('/admin/data/{handle}/pick', [Admin\DataController::class, 'pick']);

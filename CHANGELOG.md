@@ -10,6 +10,22 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kontakte: Adressbuch-Ansicht wie eine Kontakte-App
+- **Standardansicht für Adressbücher** (Tabellenart „contacts“, `Core\Data\AddressBook`): drei Spalten – links Adressbücher, Listen
+  (Werte von „Listen“) mit Anzahl und die Filter „Alle“, „Nicht auf der Website“, „Ohne Foto“, „Ohne E-Mail“; in der Mitte die Namen
+  A–Z nach Nachname mit Foto/Initialen, Funktion, Buchstaben-Trennern, Sprungleiste und Suche (Name, Funktion, Telefon auch ohne
+  Leerzeichen, E-Mail – serverseitig); rechts die Karte mit Schnellknöpfen (Anrufen, E-Mail, Karte), gruppierten Angaben mit
+  Beschriftung und Merkmal Öffentlich/Intern (`Exposure::reach`), Listen als Etiketten, vCard, Versionen und Bearbeiten.
+  Umschalter „Adressbuch | Tabelle“ (je Konto gemerkt, `users.ui_prefs`); neuer Menüpunkt **Kontakte** (`/admin/kontakte`).
+- **Listen zuordnen** per Ziehen auf eine Liste oder ohne Maus (Auswählen → „Zu Liste hinzufügen/entfernen“), auch an der Karte;
+  „Neue Liste“ mit Recht „Felder ändern“. Jede Änderung über `Entries::save` mit Revision (`POST /admin/data/{tabelle}/listen`,
+  CSRF, Recht `data.edit`).
+- **Export** von Liste, Suche, Auswahl oder einzelnem Kontakt als vCard – alle Angaben oder nur die öffentlichen (Ziel `vcard`,
+  `GET|POST /admin/data/{tabelle}/vcard`); Link „In Apps abonnieren …“.
+- Ohne JavaScript über Links und GET-Parameter bedienbar, mit JavaScript ohne Neuladen (Teile per `?_teil=…`, History API),
+  Tastatur (`/`, ↑/↓, Eingabe), Telefon einspaltig mit Zurück-Navigation. Schnell auch mit einigen tausend Kontakten (Zähler in einer
+  Abfrage, Namen in Abschnitten zu 150, Nachladen beim Scrollen, Index auf Nachname). Selbsttest in `data:selftest`.
+
 ### Einstellungen: verständlich gegliedert, Website-Angaben als eigenes Recht, Versionen
 - **Alle Einstellungsseiten nach einem Muster** (wie E-Mail-Versand und Netzwerk-Bereich): Wichtiges zuerst, Seltenes
   eingeklappt (mit Kurzstand im Kopf), je Gruppe ein Satz zu Geltung und Rückfall, Kennzeichen „Gilt für: diese Website / alle
@@ -55,6 +71,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Tabellen ohne die Art verhalten sich unverändert (praxis: HTML- und Pixelvergleich ohne Abweichung). Selbsttest
   `calendar:selftest`. Handbuch → Daten → „Kalender mit Serien“; Entwicklerhandbuch → Kalender → „Tabellenart calendar, Serien,
   Vorkommens-Index“.
+
 ### Kalender und Kontakte per App abonnieren
 - **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche
   webcal-Adresse des Kalender-Feeds bzw. öffentliche **.vcf-Sammeldatei** der freigegebenen Kontakte (`/vcard/{tabelle}.vcf`, nur
