@@ -8,8 +8,8 @@ $v = $b->variant() ?: 'auto';
 // Unbekannte Variante (z. B. „morph“ aus einem Kind-Kit, gespeichert vor einem Kit-Wechsel): wie „Bild rechts“
 if (!in_array($v, ['auto', 'right', 'left', 'split', 'overlap'], true)) $v = 'right';
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:3';
-// Bild ausrichten: mitlaufen (Standard, auch für ältere Blöcke ohne Wert) · oben · mitte (wie vor 1.0.0)
-$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'follow';
+// Bild ausrichten: mitlaufen (Standard für neue Blöcke, Feld-Standard) · oben · mitte – ältere Blöcke ohne Wert bleiben „mitte“ (unverändert)
+$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'center';
 $side = $v;
 // Abwechselnd („auto“, ebenso „split“): Position in einer Folge gleichartiger Blöcke zählen
 $n = 0;

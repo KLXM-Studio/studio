@@ -2,7 +2,7 @@
 /**
  * Bildergalerie (Kern-Block, vom Theme überschreibbar: kits/{name}/blocks/gallery.php).
  * Raster (einheitliches Format mit Zuschnitt), Mosaik (CSS-Spalten) oder bündige Zeilen, genau ein Bild als Einzelbild in voller
- * Inhaltsbreite (figure.cms-gallery--single, Originalformat); Lightbox über js/media.mjs –
+ * Inhaltsbreite (figure.cms-gallery--single, Originalformat; Feld single_large, Standard an für neue Blöcke); Lightbox über js/media.mjs –
  * ohne JavaScript führen die Bilder als normale Links zur großen Fassung.
  * @var \Core\Block $b  @var array $d
  */
@@ -22,7 +22,7 @@ $sizes = [
 ][$cols];
 if ($layout === 'justified') $sizes = '(min-width: 860px) 40vw, 100vw';
 // Genau ein Bild: als Einzelbild in voller Inhaltsbreite im Originalformat (statt klein in einer Spalte), Lightbox wie sonst
-$single = count($items) === 1;
+$single = count($items) === 1 && !empty($d['single_large']);   // nur neue bzw. so gewählte Blöcke – ältere ohne Wert unverändert
 ?>
 <div class="<?= e($wrap) ?>">
   <?= MediaBlocks::head($b) ?>

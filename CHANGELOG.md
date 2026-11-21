@@ -28,11 +28,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 
 ### Blöcke: Text + Bild „Bild ausrichten“, Galerie mit einem Bild
 - **Text + Bild – Bild ausrichten** (neues Feld `valign` in den Kits fluid, native, foto, galerie, modern, nature, essenz):
-  „Mitlaufen“ (Standard, auch für bestehende Blöcke), „Oben“, „Mitte“. „Mitlaufen“ stellt das Bild bei langem Text oben neben den
+  „Mitlaufen“ (Standard für neue Blöcke; bestehende Blöcke ohne Wert bleiben „Mitte“ und damit unverändert), „Oben“, „Mitte“. „Mitlaufen“ stellt das Bild bei langem Text oben neben den
   Text und hält es beim Scrollen unter dem Kopf sichtbar (`position: sticky`, reines CSS, nur solange Bild und Text nebeneinander
   stehen; Telefon unverändert gestapelt). Ist der Text kürzer als das Bild, bleibt die Darstellung wie bisher. „Mitte“ entspricht
   dem früheren Verhalten. Kit praxis unverändert.
-- **Bildergalerie mit genau einem Bild:** erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
+- **Bildergalerie mit genau einem Bild** (neue Option „Einzelnes Bild groß zeigen“, an für neue Blöcke; bestehende unverändert): erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
   mit Bildunterschrift, Lightbox wie bisher) statt klein in einer Spalte; hohe Bilder höchstens 85 % der Fensterhöhe, mittig.
   Die Live-Galerie bleibt unverändert. Handbuch → Alle Blöcke, Entwicklerhandbuch → Kits.
 - *EN:* Media + text blocks get “Align image”: “Follow” (default, also for existing blocks), “Top”, “Centre”. “Follow” places the

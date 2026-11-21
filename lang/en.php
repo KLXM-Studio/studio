@@ -5,6 +5,8 @@
  * Find untranslated texts: php bin/console i18n:missing en
  */
 return [
+    'Einzelnes Bild groß zeigen' => 'Show a single image large',
+    'Bei genau einem Bild: in voller Inhaltsbreite im Originalformat mit Bildunterschrift statt klein in einer Spalte.' => 'With exactly one image: full content width in its original format with caption instead of small in a column.',
     'Hintergrund der Vorschau: {a}' => 'Preview background: {a}',
     'kariert' => 'checkered',
     '_name' => 'English',

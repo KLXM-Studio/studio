@@ -29,8 +29,8 @@ if (!in_array($v, ['auto', 'right', 'left'], true)) {
 }
 native_mark('@nv-media_text');
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:3';
-// Bild ausrichten: mitlaufen (Standard, auch für ältere Blöcke ohne Wert) · oben · mitte (wie vor 1.0.0)
-$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'follow';
+// Bild ausrichten: mitlaufen (Standard für neue Blöcke, Feld-Standard) · oben · mitte – ältere Blöcke ohne Wert bleiben „mitte“ (unverändert)
+$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'center';
 $side = $v;
 if ($v === 'auto') {
     $n = 0;

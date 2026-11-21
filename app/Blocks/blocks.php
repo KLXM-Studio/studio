@@ -320,6 +320,8 @@ return [
                 ['name' => 'caption', 'label' => 'Bildunterschrift (optional)', 'type' => 'text', 'width' => 'half'],
             ]],
             ['type' => 'heading', 'label' => 'Darstellung', 'collapse' => true, 'summary' => 'Anordnung, Spalten, Bildformat, Lightbox'],
+            ['name' => 'single_large', 'label' => 'Einzelnes Bild groß zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half',
+                'help' => 'Bei genau einem Bild: in voller Inhaltsbreite im Originalformat mit Bildunterschrift statt klein in einer Spalte.'],
             ['name' => 'layout', 'label' => 'Anordnung', 'type' => 'select', 'required' => true, 'default' => 'grid', 'width' => 'half',
                 'options' => ['grid' => 'Raster (gleiches Format)', 'masonry' => 'Mosaik (Originalformat, Spalten)', 'justified' => 'Zeilen (Originalformat, bündig)'],
                 'help' => 'Bei genau einem Bild: Einzelbild in voller Breite im Originalformat.'],

@@ -11,8 +11,8 @@ if ($v === 'auto') {
     $v = $n % 2 ? 'left' : 'right';
 }
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:3';
-// Bild ausrichten: mitlaufen (Standard, auch für ältere Blöcke ohne Wert) · oben · mitte (wie vor 1.0.0)
-$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'follow';
+// Bild ausrichten: mitlaufen (Standard für neue Blöcke, Feld-Standard) · oben · mitte – ältere Blöcke ohne Wert bleiben „mitte“ (unverändert)
+$valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'center';
 $pic = essenz_image(!empty($d['image']) ? (int) $d['image'] : null, '(min-width: 1080px) 560px, 100vw', $ratio, 'mt__media');
 ?>
 <div class="wrap mt mt--<?= e($v) ?> mt--va-<?= e($valign) ?><?= $pic !== '' ? ' mt--has-media' : '' ?>">
