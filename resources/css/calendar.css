@@ -56,6 +56,9 @@
 .cal-aday{display:grid;grid-template-columns:minmax(150px,14em) 1fr;gap:4px 24px;padding:14px 0;border-top:1px solid var(--cal-line)}
 .cal-adate{margin:0;font-size:1rem;line-height:1.4}
 .cal-aday.is-today .cal-adate{color:var(--cal-accent,inherit)}
+/* Kalender mit Serien: „fällt aus“ (Termin bleibt sichtbar, durchgestrichen) */
+.cal-ev--cancelled .cal-link,.cal-ev--cancelled .cal-title,.cal-ev--cancelled .cal-time,.cal-ev--cancelled .cal-upmeta time{text-decoration:line-through}
+.cal-tag{display:inline-block;padding:0 6px;border-radius:4px;border:1px solid currentColor;font-size:.75em;font-weight:700;text-decoration:none;vertical-align:1px;white-space:nowrap}
 .cal-badge{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;background:var(--cal-accent,color-mix(in srgb,currentColor 16%,transparent));color:var(--cal-accent-ink,color-mix(in srgb,Canvas 100%,var(--cal-accent) 0%));font-size:.75rem;vertical-align:1px}
 .cal-alist{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .cal-aev{display:grid;grid-template-columns:8.5em 1fr;gap:4px 16px}
