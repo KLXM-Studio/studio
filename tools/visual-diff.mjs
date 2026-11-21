@@ -33,6 +33,13 @@ if (cmd === 'vorher' || cmd === 'nachher') {
     await page.setViewportSize({ width: w, height: h });
     for (const p of paths) {
       await page.goto(new URL(p, base).href, { waitUntil: 'networkidle' });
+      // Verzögert geladene Bilder (loading="lazy") laden erst beim Scrollen – sonst fehlen sie im ganzseitigen Bild
+      // (z. B. nach cache:clear, wenn Bildvarianten neu erzeugt werden). Bis nach unten scrollen, auf alle Bilder warten.
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.documentElement.scrollHeight; y += innerHeight / 2) { scrollTo(0, y); await new Promise(r => setTimeout(r, 60)); }
+        scrollTo(0, 0);
+        await Promise.all([...document.images].map(i => i.complete ? null : new Promise(r => { i.onload = i.onerror = r; setTimeout(r, 8000); })));
+      });
       await page.waitForTimeout(+(opt.wait || 1000));
       await page.screenshot({ path: path.join(D, `${cmd}-${n}-${p.replace(/\W+/g, '_') || 'home'}.png`), fullPage: true });
     }
