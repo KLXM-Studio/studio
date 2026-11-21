@@ -23,7 +23,8 @@ $sw = function (bool $on, bool $disabled, string $label) {
 ?>
 <header class="adm-head">
   <div><p class="adm-eyebrow"><?= e(__('Administration')) ?> › <?= e(__('Einstellungen')) ?></p><h1><?= e(__('Funktionen & Erweiterungen')) ?></h1>
-    <p class="adm-muted"><?= e(__('{on} von {total} Funktionen und {ext} von {exts} Erweiterungen sind auf dieser Website eingeschaltet.', ['on' => $onCount, 'total' => $total, 'ext' => $extOn, 'exts' => count($exts)])) ?></p></div>
+    <p class="adm-muted"><?= e(__('{on} von {total} Funktionen und {ext} von {exts} Erweiterungen sind auf dieser Website eingeschaltet.', ['on' => $onCount, 'total' => $total, 'ext' => $extOn, 'exts' => count($exts)])) ?>
+      <?= e(__('Die Schalter gelten nur für diese Website; ihre Einstellungen stehen unter System → Einstellungen der Funktionen bzw. in den Grundeinstellungen.')) ?></p></div>
 </header>
 
 <div class="ft-hint" role="note">
