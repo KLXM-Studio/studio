@@ -10,3 +10,7 @@
   .mt--has-media{grid-template-columns:1fr 1fr;gap:var(--n-s-3xl)}
   .mt--left .mt__media{order:-1}
 }
+/* Bild ausrichten (Feld valign): oben bzw. „mitlaufen“ = oben und – nur nebeneinander – sticky unter dem Kopf. Ist der Text
+   kürzer als das Bild, bestimmt das Bild die Zeilenhöhe: sieht aus wie „Mitte“. */
+.mt:is(.mt--va-top,.mt--va-follow) .mt__media{align-self:start}
+@container (min-width:52rem){.mt--has-media.mt--va-follow .mt__media{position:sticky;top:var(--n-s-l)}.hdr-sticky .mt--has-media.mt--va-follow .mt__media{top:6rem}}

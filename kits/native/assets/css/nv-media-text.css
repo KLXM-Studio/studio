@@ -11,4 +11,9 @@
   .nv-mt--s-text .ncss-split-content { flex-grow: 1.4; }
   .nv-mt--s-media .ncss-split-media { flex-grow: 1.4; }
   .nv-mt--s-mediaxl .ncss-split-media { flex-grow: 2; }
+  /* Bild ausrichten (Feld valign von fluid): oben bzw. „mitlaufen“ = oben und – nur nebeneinander – sticky unter dem Kopf */
+  @container ncss-split (min-width: 36rem) {
+    .nv-mt:is(.nv-mt--va-top, .nv-mt--va-follow) .ncss-split-media { align-self: flex-start; }
+    .nv-mt--va-follow .ncss-split-media { position: sticky; top: calc(var(--hdr-h, 4.25rem) + var(--f-s-l)); }   /* Kopf des Kits steht immer */
+  }
 }
