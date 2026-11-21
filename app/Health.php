@@ -74,6 +74,7 @@ final class Health
         $add(\Core\Data\Exposure::health(), self::EDITORIAL);   // Datenschutz: öffentliche Felder, die nach Mobil/Privat aussehen
         $add(\Core\SeoCheck::health(true), self::EDITORIAL);   // Suchmaschinen gesperrt/Domains: Einrichtung, Titel/Beschreibungen: Redaktion
         $add(\Core\KitPackages::health(true), $t);           // Kit-Pakete: Core-Version, Assets technisch; verdeckte Kits Einrichtung
+        $add(\Core\AssetSync::health(), $t);                 // veröffentlichte Assets (public/assets) gleich der Quelle? (Prüfsummen)
         $add(\Core\Fragments::health(true), $t);             // geänderte Kern-Fragmente technisch, ignorierte Kit-Dateien Einrichtung
         $add(\Core\Fonts::health(), self::SETUP);            // Kit-Schriften installiert? (fehlend: Hinweis – fonts:sync)
         $add(\Core\Mail\Accounts::health(), self::SETUP);    // E-Mail-Konten: Netzwerk-Konto, Zwecke mit fehlendem Konto

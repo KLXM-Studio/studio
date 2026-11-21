@@ -10,6 +10,22 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Veröffentlichte Assets bleiben auf dem Stand des Kerns (`Core\AssetSync`)
+- **Projekt-Installation mit verknüpftem Kern** (`KLXM_ROOT`, eigenes `public/`): `extensions:publish` verknüpft Kern-Assets
+  (`public/assets/css`, `js`, `icons`, `img` …) und die gebauten Assets der mitgelieferten Erweiterungen
+  (`public/assets/ext/{name}`) mit dem Kern-Ordner, `kits:publish` die der Kern-Kits (`public/assets/kits/{name}`). Bisher blieb
+  dort eine alte Kopie liegen (z. B. eine veraltete `consent.js`), obwohl der Kern neuer war. `public/assets/fonts` wird
+  abgeglichen statt verknüpft, installierte Schriften (`fonts/installed`) bleiben im Projekt.
+- **Abgleich per Prüfsumme** für Pakete mit fertigem Ordner `public/` und mit `--copy`: nur geänderte Dateien, Dateien, die es in
+  der Quelle nicht mehr gibt, fallen weg (nur innerhalb des jeweiligen Ordners). Nie kopiert: Verknüpfungen, versteckte Dateien,
+  Server-Code (`.php`, `.phtml`, `.phar`, CGI-Skripte); Ziele nur unter `public/assets`, Verknüpfungen nur in den Kern.
+- **`health`** (technisch) meldet „Veraltete Asset-Kopie: … – php bin/console extensions:publish“ bzw. „Assets fehlen: …“.
+  Selbsttest `assets:selftest`; Entwicklerhandbuch → Installation → Projekt-Installation, Kommandozeile.
+- *EN:* In project installations with a linked core, `extensions:publish` / `kits:publish` now link core assets, built assets of
+  bundled extensions and core kits to the core folder (or, with `--copy`, sync a checksum-compared copy that also removes files
+  gone from the source); stale copies no longer survive core updates. `health` reports outdated or missing asset copies
+  (technical). Self-test `assets:selftest`.
+
 ### Cookie-Einwilligung: „Hinweis nur, wenn nötig“ (consent_kit 1.5.0)
 - **Kein Banner, wenn nur Einbettungen aktiv sind:** Sind ausschließlich Dienste aktiv, die nur über Platzhalter laden (z. B. nur
   YouTube-Videos oder Karten), erscheint beim ersten Besuch kein Hinweis mehr; die Platzhalter holen die Einwilligung am Inhalt
