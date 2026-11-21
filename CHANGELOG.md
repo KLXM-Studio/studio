@@ -10,6 +10,19 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kind-Kits: eigenes CSS, Vorschau mit anderem Kit, Zeilenhöhe als Token
+- **`'css' => ['css/marke.css']`** in `theme.php`: Stylesheets eines Kits *zusätzlich* zum CSS des Eltern-Kits (ohne `css/site.css` zu
+  ersetzen oder per `@import` zu bündeln) – wie `'css'` im Kit von REDAXO fluid. Im Layout nach Grund-, Options- und Block-CSS und vor der
+  Design-Datei der Website (Werte aus Verwaltung → Design gewinnen weiter), auf Fehler-, Wartungs- und Offline-Seiten vor `</head>`. Jedes Kit
+  der Kette steuert seine Liste bei (Eltern zuerst); fehlende Dateien fallen weg, `kit:check` meldet sie. `Theme::kitStylesheets()`.
+- **`Theme::withKit($kit, $fn, $werte = null)`:** eine Funktion mit einem anderen Kit als aktivem Kit ausführen (Vorschau, Kit-Designer),
+  optional mit Design-Werten nur für den Aufruf – danach gelten Kit, Design-Zustand, Standardwerte der Kit-Einstellungen und die aktuelle
+  Seite wieder wie vorher, auch bei Fehlern. Die Website wird nicht umgestellt.
+- **Kit fluid: Zeilenhöhe des Fließtexts** als Wert im Style-Editor (`line_height` → `--f-lh`, 1,3–2, Standard 1,62 wie bisher) – Kind-Kits
+  setzen sie per `design_defaults`.
+- **Kit-Pakete:** Kind-Kits (`'extends'`) brauchen keinen Ordner `templates/` mehr (`KitPackages::check` warnt nur bei eigenständigen Kits
+  und meldet ein fehlendes Eltern-Kit); `Kit::meta()` liefert `extends`. Selbsttests in `kits:selftest`.
+
 ### Kalender und Kontakte per App abonnieren
 - **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche
   webcal-Adresse des Kalender-Feeds bzw. öffentliche **.vcf-Sammeldatei** der freigegebenen Kontakte (`/vcard/{tabelle}.vcf`, nur
