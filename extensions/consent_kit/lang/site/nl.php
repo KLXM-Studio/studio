@@ -67,4 +67,6 @@ return [
     '{n} Monate' => '{n} maanden',
     '{n} Stunden' => '{n} uur',
     '{n} Tage' => '{n} dagen',
+    '{title} bei {name} öffnen' => '{title} openen bij {name}',
+    'Inhalt' => 'inhoud',
 ];

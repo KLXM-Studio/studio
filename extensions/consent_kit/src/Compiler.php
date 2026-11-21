@@ -175,8 +175,42 @@ final class Compiler
             'head' => $head['steps'], 'body' => $body['steps'], 'acc' => $accept !== '', 'rev' => trim($code['js_revoke']) !== '',
             'x' => $external, 'hosts' => $csp,
             // nur serverseitig (für /consent/js/…, nicht in der Konfiguration im HTML)
+            '_eo' => self::embedOnlyIssues($s, $found, $code['js_default'], $events !== ''),
             '_chunks' => $chunks, '_accept' => $accept, '_revoke' => trim($code['js_revoke']), 'default' => trim($code['js_default']),
         ];
+    }
+
+    /**
+     * Gründe, warum ein Dienst NICHT als „nur Einbettung mit Platzhalter“ gilt ([] = er gilt so). Bedingungen:
+     * Merkmal gesetzt, nicht Statistik/Marketing, Domains eingebetteter Inhalte vorhanden, kein Consent Mode, keine
+     * Conversion-Ereignisse, kein Code vor der Einwilligung (js_default) und Code (head/body/js_accept) höchstens vom Anbieter
+     * der Einbettung (z. B. embed.js von instagram.com) – solcher Code läuft ohnehin erst nach Einwilligung am Platzhalter.
+     * Rückgabe: Schlüssel (für Tests) => Text der Verwaltung.
+     * @param list<string> $codeHosts  fremde Hosts im Code (https://host)
+     * @return array<string, string>
+     */
+    public static function embedOnlyIssues(array $s, array $codeHosts, string $jsDefault = '', bool $events = false): array
+    {
+        $out = [];
+        if (empty($s['embed_only'])) $out['flag'] = __('nicht als „Nur Einbettung mit Platzhalter“ gekennzeichnet');
+        if (in_array($s['grp'] ?? '', ['statistics', 'marketing'], true)) $out['group'] = __('Gruppe Statistik bzw. Marketing');
+        $embed = array_values(array_filter(array_map(fn($h) => strtolower(trim((string) $h)), (array) ($s['embed_hosts'] ?? []))));
+        if (!$embed) $out['embed'] = __('keine Domains eingebetteter Inhalte (kein Platzhalter möglich)');
+        if (!empty($s['gcm'])) $out['gcm'] = __('Google Consent Mode');
+        if ($events || !empty($s['events'])) $out['events'] = __('Conversion-Ereignisse');
+        if (trim($jsDefault) !== '') $out['default'] = __('Code vor der Einwilligung (JavaScript „Standard“)');
+        $foreign = [];
+        foreach ($codeHosts as $h) {
+            $h = strtolower((string) preg_replace('~^https?://~i', '', (string) $h));
+            $own = false;
+            foreach ($embed as $e) {
+                $base = implode('.', array_slice(explode('.', $e), -2));   // youtube.com, instagram.com, x.com
+                if ($h === $e || $h === $base || str_ends_with($h, '.' . $base)) { $own = true; break; }
+            }
+            if (!$own) $foreign[] = $h;
+        }
+        if ($foreign) $out['code'] = __('Code lädt von {hosts} – nicht vom Anbieter der Einbettung', ['hosts' => implode(', ', array_unique($foreign))]);
+        return $out;
     }
 
     /** Varianten: erst allgemein, dann nur Sprache, dann nur Domain, zuletzt Domain + Sprache – die spezifischste gewinnt */

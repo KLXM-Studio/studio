@@ -50,8 +50,15 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
     {
         $out = [];
         $needed = Consent::needed();
-        $out[] = [$needed ? 'ok' : 'info', $needed ? __('Der Hinweis wird auf der Website angezeigt (mindestens ein einwilligungspflichtiger Dienst ist aktiv).')
-            : __('Kein einwilligungspflichtiger Dienst aktiv – Besucher sehen keinen Hinweis, es wird kein Skript geladen.')];
+        $st = Repository::settings();
+        $req = $needed ? Consent::bannerRequired(Compiler::build('main')) : [];
+        if (!$needed) $out[] = ['info', __('Kein einwilligungspflichtiger Dienst aktiv – Besucher sehen keinen Hinweis, es wird kein Skript geladen.')];
+        elseif (!$req && $st['only_needed']) $out[] = ['ok', __('Kein Hinweis beim Seitenaufruf: Es sind nur Einbettungen mit Platzhalter aktiv („Hinweis nur, wenn nötig“). Die Platzhalter fragen am Inhalt; „Datenschutz-Einstellungen“ im Fußbereich bleibt.')];
+        else {
+            $out[] = ['ok', __('Der Hinweis wird auf der Website angezeigt (mindestens ein einwilligungspflichtiger Dienst ist aktiv).')];
+            if (!$req) $out[] = ['info', __('Der Hinweis beim Seitenaufruf wäre nicht nötig – es sind nur Einbettungen mit Platzhalter aktiv. Einstellungen → „Hinweis nur, wenn nötig“ einschalten, dann fragen nur die Platzhalter.')];
+            elseif ($st['only_needed']) $out[] = ['info', __('Der Hinweis erscheint, weil diese Dienste nicht nur über Platzhalter laden: {names}.', ['names' => implode(', ', $req)])];
+        }
         foreach (['privacy' => __('Datenschutzerklärung'), 'imprint' => __('Impressum')] as $k => $l) {
             [$href] = Consent::legal($k);
             if (!$href) $out[] = ['warn', __('{label} ist nicht verlinkt (Einstellungen → Rechtstexte).', ['label' => $l])];
@@ -59,7 +66,6 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
         foreach (Repository::services(true) as $s) {
             if (!Compiler::isComplete($s)) $out[] = ['warn', __('„{name}“ ist unvollständig (es fehlt eine Angabe) und wird nicht ausgeliefert.', ['name' => $s['name']])];
         }
-        $st = Repository::settings();
         if ($needed && !$st['trigger'] && !$st['footer_link']) $out[] = ['warn', __('Weder schwebende Schaltfläche noch Link im Fußbereich: Besucher müssen ihre Auswahl jederzeit ändern können – bitte eines davon einschalten oder consent_settings_link() im Kit ausgeben.')];
         return $out;
     }
@@ -125,7 +131,7 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
         $data ??= ['skey' => '', 'grp' => 'statistics', 'name' => '', 'provider' => '', 'privacy_url' => '', 'description' => [], 'params' => [], 'param_defs' => [],
             'html_head' => '', 'html_body' => '', 'js_default' => '', 'js_accept' => '', 'js_revoke' => '', 'gcm' => [], 'embed_hosts' => [],
             'csp' => ['script' => [], 'connect' => [], 'img' => [], 'frame' => []], 'items' => [], 'events' => [], 'variants' => [], 'hosts' => [],
-            'preset' => '', 'sources' => [], 'verified' => '', 'note' => [], 'active' => false];
+            'preset' => '', 'sources' => [], 'verified' => '', 'note' => [], 'active' => false, 'embed_only' => false];
         return $this->page('service', ['title' => __('Dienst hinzufügen'), 's' => $data + ['id' => 0], 'domains' => Compiler::domains()]);
     }
 
@@ -133,7 +139,7 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
     {
         $this->guard($r);
         $s = Repository::find((int) $id) ?? throw new HttpException(404);
-        return $this->page('service', ['title' => $s['name'], 's' => $s, 'domains' => Compiler::domains(), 'complete' => Compiler::isComplete($s)]);
+        return $this->page('service', ['title' => $s['name'], 's' => $s, 'domains' => Compiler::domains(), 'complete' => Compiler::isComplete($s), 'eoIssues' => self::embedOnlyIssues($s)]);
     }
 
     /** Formularfelder der Wiederholungen (Fields-API des Kerns: Repeater, Auswahl, Mehrzeilig) */
@@ -247,7 +253,7 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
             'js_default' => (string) ($in['js_default'] ?? ''), 'js_accept' => (string) ($in['js_accept'] ?? ''), 'js_revoke' => (string) ($in['js_revoke'] ?? ''),
             'gcm' => array_values(array_intersect(Repository::GCM_SIGNALS, array_map('strval', (array) ($in['gcm'] ?? [])))),
             'embed_hosts' => $embedHosts, 'csp' => $csp, 'items' => $items['items'], 'events' => Events::normalize($events['events']), 'variants' => $vlist,
-            'hosts' => $hosts, 'active' => !empty($in['active']),
+            'hosts' => $hosts, 'active' => !empty($in['active']), 'embed_only' => !empty($in['embed_only']),
         ];
         if (!$old) {
             $data += ['preset' => (string) ($in['preset'] ?? ''), 'sources' => [], 'verified' => '', 'note' => []];
@@ -268,6 +274,13 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
         }
         $newId = Repository::save($id, $data);
         return $this->back('/admin/consent/service/' . $newId, 'success', __('Dienst gespeichert.'));
+    }
+
+    /** Warum gilt der Dienst nicht als „nur Einbettung mit Platzhalter“? (Hauptdomain, Sprache der Verwaltung) – [] = gilt so */
+    public static function embedOnlyIssues(array $s): array
+    {
+        $c = Compiler::compile($s, 'main', \Core\Lang::default());
+        return $c === null ? [] : $c['_eo'];
     }
 
     public function delete(Request $r, string $id): Response
@@ -303,6 +316,8 @@ final class AdminController extends \Core\Http\Controllers\Admin\AdminController
             ['name' => 'open_mode', 'label' => __('Hinweis beim Seitenaufruf'), 'type' => 'select', 'required' => true, 'default' => 'always',
                 'options' => ['always' => __('Immer, solange keine Entscheidung vorliegt'), 'on_demand' => __('Nur bei Bedarf – wenn auf der Seite ein gesperrter externer Inhalt steht'), 'never' => __('Nie von selbst – nur über Platzhalter, Schaltfläche oder Link')],
                 'help' => __('„Nur bei Bedarf“ passt zu Websites, die nur externe Inhalte (Karten, Videos) einbinden. Dienste mit eigenem Code (Statistik, Pixel, Tag Manager) erzwingen die Abfrage trotzdem – sonst würden sie nie starten. „Nie“ unterdrückt ausnahmslos.')],
+            ['name' => 'only_needed', 'label' => __('Hinweis nur, wenn nötig'), 'type' => 'bool',
+                'help' => __('Sind nur Dienste aktiv, die ausschließlich über Einbettungen mit Platzhalter laden (z. B. YouTube, Vimeo, Karten), erscheint beim Seitenaufruf kein Hinweis: Der Platzhalter fragt am Inhalt („Inhalt einmal laden“, „… immer erlauben“), „Datenschutz-Einstellungen“ im Fußbereich bleibt zum Ansehen und Widerrufen. Sobald ein Dienst mit Skript, Statistik oder Marketing aktiv ist, erscheint der Hinweis wie eingestellt. Standard: an; ausschalten, wenn der Hinweis trotzdem immer erscheinen soll.')],
             ['name' => 'dismiss', 'label' => __('Schließen-Schaltfläche (×): schließt ohne Entscheidung, nichts wird geladen'), 'type' => 'bool'],
             ['name' => 'footer_link', 'label' => __('„Datenschutz-Einstellungen“ im Fußbereich der Website (Rechtliches)'), 'type' => 'bool'],
             ['name' => 'trigger', 'label' => __('Schwebende Schaltfläche zum erneuten Öffnen'), 'type' => 'bool',

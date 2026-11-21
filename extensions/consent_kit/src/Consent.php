@@ -45,6 +45,60 @@ final class Consent
         return false;
     }
 
+    /**
+     * Optionale Dienste der Auslieferung, die den Hinweis beim Seitenaufruf brauchen (nicht „nur Einbettung mit Platzhalter“):
+     * [Schlüssel => Name]. Leer = alle aktiven optionalen Dienste holen ihre Einwilligung am Platzhalter ein.
+     * Dienste ohne Prüfergebnis zählen als „braucht den Hinweis“ (sichere Seite).
+     * @return array<string, string>
+     */
+    public static function bannerRequired(array $b): array
+    {
+        $out = [];
+        foreach ($b['services'] as $k => $c) {
+            if ($c['grp'] !== 'necessary' && ($c['_eo'] ?? ['?' => '']) !== []) $out[(string) $k] = (string) $c['name'];
+        }
+        return $out;
+    }
+
+    /** „Hinweis nur, wenn nötig“ greift für diese Auslieferung: Einstellung an, Dienste aktiv, alle nur über Platzhalter */
+    public static function bannerless(array $b, ?array $settings = null): bool
+    {
+        return self::needed($b) && self::bannerOff($b, $settings ?? Repository::settings());
+    }
+
+    /** Entscheidung ohne Datenbank (Selbsttest): Einstellung an, mindestens ein optionaler Dienst, keiner braucht den Hinweis */
+    public static function bannerOff(array $b, array $settings): bool
+    {
+        if (empty($settings['only_needed'])) return false;
+        $optional = array_filter($b['services'], fn($c) => $c['grp'] !== 'necessary');
+        return $optional !== [] && !self::bannerRequired($b);
+    }
+
+    /** Wäre auf allen Domains der Website kein Hinweis beim Seitenaufruf nötig (unabhängig von der Einstellung)? */
+    public static function bannerAvoidable(): bool
+    {
+        if (!self::enabled()) return false;
+        $any = false;
+        foreach (array_keys(Compiler::domains()) as $d) {
+            $b = Compiler::build((string) $d);
+            if (!self::needed($b)) continue;
+            if (self::bannerRequired($b)) return false;
+            $any = true;
+        }
+        return $any;
+    }
+
+    /** Health (Einrichtung): ruhiger Hinweis, wenn der Hinweis nicht nötig wäre, die Einstellung aber aus ist */
+    public static function health(): array
+    {
+        try {
+            if (!self::enabled() || !empty(Repository::settings()['only_needed']) || !self::bannerAvoidable()) return [];
+        } catch (\Throwable) {
+            return [];
+        }
+        return [__('Cookie-Einwilligung: Der Hinweis beim Seitenaufruf wäre nicht nötig (nur Einbettungen mit Platzhalter aktiv) – Einstellung „Hinweis nur, wenn nötig“') => null];
+    }
+
     // ------------------------------------------------------------------ Website
 
     /** HTML-Filter (vor dem Seiten-Cache): Konfiguration als JSON + ein Skript – nur wenn ein Dienst Einwilligung braucht */
@@ -86,7 +140,7 @@ final class Consent
             if ($pageId && $page && (int) ($page['id'] ?? 0) === $pageId) $quiet = true;
         }
         $groups = array_map(function ($g) {
-            $g['services'] = array_map(fn($c) => array_diff_key($c, array_flip(['_chunks', '_accept', '_revoke', 'default', 'grp'])), $g['services']);
+            $g['services'] = array_map(fn($c) => array_diff_key($c, array_flip(['_chunks', '_accept', '_revoke', '_eo', 'default', 'grp'])), $g['services']);
             return $g;
         }, $b['groups']);
         $dark = (array) (\Core\Design::def()['dark'] ?? []);
@@ -102,6 +156,8 @@ final class Consent
             'openMode' => in_array($s['open_mode'] ?? 'always', ['always', 'on_demand', 'never'], true) ? (string) $s['open_mode'] : 'always',
             'bannerGroups' => (bool) $s['banner_groups'] && in_array($s['layout'], ['modal', 'offcanvas'], true),
             'gpc' => (string) $s['gpc'], 'quiet' => $quiet,
+            // „Hinweis nur, wenn nötig“: nur Einbettungen mit Platzhalter aktiv → kein Hinweis von selbst, Einwilligung am Inhalt
+            'embedOnly' => self::bannerless($b, $s),
             'gcm' => $b['gcm'] ? ['redaction' => (bool) $s['gcm_redaction'], 'passthrough' => (bool) $s['gcm_passthrough'], 'wait' => max(0, (int) $s['gcm_wait'])] : null,
             'def' => $b['default'] !== '',
             'links' => $links, 'embeds' => (object) $b['embeds'],
@@ -241,13 +297,30 @@ final class Consent
         $c = $b['services'][$service] ?? null;
         // Nicht angelegt oder inaktiv: Platzhalter „nicht verfügbar“ ohne Inhalt – Name aus der gleichnamigen Vorlage
         if (!$c) return '<consent-embed service="' . e($service) . '"' . (($p = Presets::get($service)) ? ' name="' . e((string) $p['name']) . '"' : '') . '></consent-embed>';
+        return self::embedMarkup($service, (string) $c['name'], $html, $o);
+    }
+
+    /**
+     * Markup des Platzhalters (ohne Datenbank – auch für den Selbsttest). Der fremde Inhalt steht nur im inerten <template>;
+     * ohne JavaScript bleibt ein Link zum Anbieter (neuer Tab) in <noscript> – aus 'link' oder der Adresse des ersten iframes
+     * (YouTube/Vimeo: Seite des Videos statt des Players).
+     */
+    public static function embedMarkup(string $service, string $name, string $html, array $o = []): string
+    {
         $title = trim((string) ($o['title'] ?? ''));
         $ratio = preg_match('~^\d{1,2}\s*/\s*\d{1,2}$~', (string) ($o['ratio'] ?? '')) ? (string) $o['ratio'] : '16/9';
         $link = trim((string) ($o['link'] ?? ''));
+        if ($link === '' && preg_match('~<iframe\b[^>]*\ssrc\s*=\s*(["\'])(https://[^"\']+)\1~i', $html, $m)) $link = html_entity_decode($m[2], ENT_QUOTES | ENT_HTML5);
+        if ($link !== '' && ($v = \Core\Embeds::parse($link))) $link = \Core\Embeds::watchUrl($v);
+        $safe = $link !== '' ? (string) \Core\Sanitizer::safeHref($link) : '';
+        $noscript = '';
+        if ($safe !== '' && str_starts_with(strtolower($safe), 'https://')) {
+            $noscript = '<noscript><p class="consent-embed-noscript">' . e(lt('Externer Inhalt von {name}', ['name' => $name])) . ': '
+                . '<a href="' . e($safe) . '" rel="noopener" target="_blank">' . e(lt('{title} bei {name} öffnen', ['title' => $title !== '' ? $title : lt('Inhalt'), 'name' => $name]))
+                . ' ' . e(lt('(öffnet in neuem Tab)')) . '</a></p></noscript>';
+        }
         return '<consent-embed service="' . e($service) . '"' . ($title !== '' ? ' label="' . e($title) . '"' : '') . ' ratio="' . e($ratio) . '">'
-            . '<template>' . $html . '</template>'
-            . ($link !== '' && ($safe = \Core\Sanitizer::safeHref($link)) ? '<noscript><a href="' . e($safe) . '" rel="noopener" target="_blank">' . e($title !== '' ? $title : $c['name']) . '</a></noscript>' : '')
-            . '</consent-embed>';
+            . '<template>' . $html . '</template>' . $noscript . '</consent-embed>';
     }
 
     /** Block „Externer Inhalt (mit Einwilligung)“ */
@@ -296,10 +369,12 @@ final class Consent
         if (!self::enabled()) return $out;
         foreach (Compiler::domains() as $d => $label) {
             $b = Compiler::build($d);
-            $out[] = "Domain $label: " . count($b['services']) . ' aktive Dienste' . (self::needed($b) ? ' – Hinweis wird angezeigt' : ' – kein Hinweis (nichts einwilligungspflichtig)');
+            $out[] = "Domain $label: " . count($b['services']) . ' aktive Dienste' . (!self::needed($b) ? ' – kein Hinweis (nichts einwilligungspflichtig)'
+                : (self::bannerless($b) ? ' – kein Hinweis beim Seitenaufruf (nur Einbettungen mit Platzhalter, „Hinweis nur, wenn nötig“)'
+                : ' – Hinweis wird angezeigt' . (($req = self::bannerRequired($b)) ? ' (wegen: ' . implode(', ', $req) . ')' : '')));
             foreach ($b['services'] as $k => $c) {
                 $hosts = array_values(array_unique(array_merge(...array_values($c['hosts']))));
-                $out[] = sprintf('  %-22s %-12s fp=%s  CSP nach Einwilligung: %s', $k, $c['grp'], $c['h'], $hosts ? implode(' ', $hosts) : "nur 'self'");
+                $out[] = sprintf('  %-22s %-12s fp=%s  %s  CSP nach Einwilligung: %s', $k, $c['grp'], $c['h'], ($c['_eo'] ?? ['?']) === [] ? 'Platzhalter' : 'Hinweis   ', $hosts ? implode(' ', $hosts) : "nur 'self'");
             }
         }
         $out[] = 'Protokoll: ' . Log::count() . ' Einträge, Aufbewahrung ' . ((int) Repository::settings()['retention'] ?: '∞') . ' Tage';

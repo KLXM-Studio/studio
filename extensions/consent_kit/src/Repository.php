@@ -53,6 +53,23 @@ final class Repository
         $db->query("CREATE INDEX {$ine}consent_log_cid ON consent_log (consent_id)");
     }
 
+    /**
+     * Schritt 2: Merkmal „nur Einbettung mit Platzhalter“ (embed_only) je Dienst – additiv. Bestehende Dienste aus einer
+     * Vorlage übernehmen den Wert der Vorlage (Presets::embedOnly), eigene Dienste bleiben aus.
+     */
+    public static function migrateEmbedOnly(Database $db): void
+    {
+        $cols = $db->driver === 'mysql'
+            ? array_column($db->fetchAll('SHOW COLUMNS FROM consent_services'), 'Field')
+            : array_column($db->fetchAll('PRAGMA table_info(consent_services)'), 'name');
+        if (!in_array('embed_only', $cols, true)) $db->query('ALTER TABLE consent_services ADD COLUMN embed_only INT NOT NULL DEFAULT 0');
+        foreach ($db->fetchAll("SELECT id, preset FROM consent_services WHERE preset IS NOT NULL AND preset <> ''") as $r) {
+            $p = Presets::get((string) $r['preset']);
+            if ($p && Presets::embedOnly($p)) $db->update('consent_services', ['embed_only' => 1], 'id = ?', [(int) $r['id']]);
+        }
+        self::flush();
+    }
+
     /** Tabelle vorhanden? (vor der ersten Migration bzw. auf Websites ohne Erweiterung) */
     public static function ready(): bool
     {
@@ -111,6 +128,7 @@ final class Repository
         $r['id'] = (int) $r['id'];
         $r['active'] = (bool) $r['active'];
         $r['prio'] = (int) $r['prio'];
+        $r['embed_only'] = (bool) ($r['embed_only'] ?? false);
         foreach (self::CODE_FIELDS as $k) $r[$k] = (string) ($r[$k] ?? '');
         $r['csp'] += ['script' => [], 'connect' => [], 'img' => [], 'frame' => []];
         return $r;
@@ -130,6 +148,7 @@ final class Repository
             if (array_key_exists($k, $data)) $row[$k] = json_encode($data[$k] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         if (array_key_exists('active', $data)) $row['active'] = $data['active'] ? 1 : 0;
+        if (array_key_exists('embed_only', $data) && (int) app()->settings->get('ext.consent_kit.schema', 0) >= 2) $row['embed_only'] = $data['embed_only'] ? 1 : 0;
         if (array_key_exists('prio', $data)) $row['prio'] = (int) $data['prio'];
         $row['updated_at'] = now();
         if ($id > 0) {
@@ -166,6 +185,7 @@ final class Repository
         'theme' => 'site',            // site (folgt dem Dunkelmodus der Website) | light | dark | auto
         'dismiss' => true,            // Schließen-Schaltfläche (×) ohne Entscheidung
         'open_mode' => 'always',      // Hinweis beim Seitenaufruf: always | on_demand (nur bei gesperrtem Inhalt) | never (nur auf Zuruf)
+        'only_needed' => true,        // „Hinweis nur, wenn nötig“: kein Hinweis, solange nur Einbettungen mit Platzhalter aktiv sind (Consent::bannerRequired)
         'trigger' => false,           // schwebende Schaltfläche (Standard aus: „Datenschutz-Einstellungen“ steht im Fußbereich)
         'footer_link' => true,        // „Datenschutz-Einstellungen“ automatisch in der Rechtliches-Zeile der Kits
         'banner_groups' => false,     // Gruppen im Hinweis (nur Dialog/Off-Canvas)

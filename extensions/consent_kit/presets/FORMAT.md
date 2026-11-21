@@ -57,6 +57,7 @@ Every `presets/*.json` file holds a list of service presets. All files are merge
 - `js_revoke`: plain JS run when consent is withdrawn (vendor revoke call).
 - `gcm_signals`: Google Consent Mode v2 consent types this service needs (`ad_storage`, `ad_user_data`, `ad_personalization`, `analytics_storage`, `functionality_storage`, `personalization_storage`, `security_storage`). Only for Google tags.
 - `embed_hosts`: host names (no scheme, no path) whose iframes belong to this service, e.g. `youtube.com`, `youtube-nocookie.com`. Subdomains match automatically.
+- `embed_only` (optional, KLXM Studio): `true` = the service only loads through placeholders (consent at the embed), so it does not need the banner on page load (setting “Banner only when needed”). Omitted: derived – group `media` with `embed_hosts`, no `gcm_signals`, no `events`, empty `js_default`. Other importers ignore the field.
 - `items[].type`: `cookie`, `local_storage`, `session_storage`, `indexed_db`.
 - `items[].name`: exact name; `*` allowed as wildcard (`_ga_*`).
 - `items[].host`: domain that sets the entry if it is a third-party host (e.g. `.youtube.com`), empty string for first-party.

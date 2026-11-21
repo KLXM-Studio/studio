@@ -47,7 +47,8 @@ foreach ($services as $s) $byGroup[$s['grp']][] = $s;
             <?php if ($s['variants']): ?><span class="adm-badge adm-badge--muted"><?= e(__('{n} Varianten', ['n' => count($s['variants'])])) ?></span><?php endif; ?>
             <?php if ($s['gcm']): ?><span class="adm-badge adm-badge--muted" title="<?= e(implode(', ', $s['gcm'])) ?>">Consent Mode</span><?php endif; ?>
             <?php if ($s['events']): ?><span class="adm-badge adm-badge--muted"><?= e(__('{n} Ereignisse', ['n' => count($s['events'])])) ?></span><?php endif; ?>
-            <?php if ($s['embed_hosts']): ?><span class="adm-badge adm-badge--muted"><?= e(__('Einbettung')) ?></span><?php endif; ?>
+            <?php if ($s['embed_hosts'] && !\Klxm\Consent\AdminController::embedOnlyIssues($s)): ?><span class="adm-badge adm-badge--muted" title="<?= e(__('Holt die Einwilligung am Platzhalter ein – braucht keinen Hinweis beim Seitenaufruf')) ?>"><?= e(__('Nur Platzhalter')) ?></span>
+            <?php elseif ($s['embed_hosts']): ?><span class="adm-badge adm-badge--muted"><?= e(__('Einbettung')) ?></span><?php endif; ?>
             <?php if (str_contains(mb_strtolower($s['name']), 'beispiel')): ?><span class="adm-badge adm-badge--draft"><?= e(__('Beispiel')) ?></span><?php endif; ?>
           </div>
         </td>

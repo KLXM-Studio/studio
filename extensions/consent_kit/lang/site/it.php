@@ -67,4 +67,6 @@ return [
     '{n} Monate' => '{n} mesi',
     '{n} Stunden' => '{n} ore',
     '{n} Tage' => '{n} giorni',
+    '{title} bei {name} öffnen' => 'Apri {title} su {name}',
+    'Inhalt' => 'contenuto',
 ];

@@ -67,4 +67,6 @@ return [
     '{n} Monate' => '{n} months',
     '{n} Stunden' => '{n} hours',
     '{n} Tage' => '{n} days',
+    '{title} bei {name} öffnen' => 'Open {title} on {name}',
+    'Inhalt' => 'content',
 ];

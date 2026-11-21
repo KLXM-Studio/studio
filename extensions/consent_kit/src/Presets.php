@@ -53,6 +53,19 @@ final class Presets
         return is_array($d) ? $d : [];
     }
 
+    /**
+     * Läuft die Vorlage nur über Einbettungen mit Platzhalter (Einwilligung am Inhalt)? Ausdrücklich per „embed_only“ in der
+     * Vorlage, sonst abgeleitet: Gruppe „Externe Medien“ mit Domains eingebetteter Inhalte, ohne Consent Mode, ohne
+     * Conversion-Ereignisse und ohne Code vor der Einwilligung (js_default). Ob ein Dienst wirklich so ausgeliefert wird,
+     * prüft Consent::embedOnlyIssues() am fertigen Dienst (u. a. Code nur vom Anbieter der Einbettung).
+     */
+    public static function embedOnly(array $p): bool
+    {
+        if (array_key_exists('embed_only', $p)) return (bool) $p['embed_only'];
+        return ($p['group'] ?? '') === 'media' && !empty($p['embed_hosts']) && empty($p['gcm_signals']) && empty($p['events'])
+            && trim((string) ($p['js_default'] ?? '')) === '';
+    }
+
     /** Vorlage → Daten für Repository::save() (inaktiv, IDs leer) */
     public static function toService(string $key): ?array
     {
@@ -65,7 +78,7 @@ final class Presets
             'html_head' => (string) ($p['html_head'] ?? ''), 'html_body' => (string) ($p['html_body'] ?? ''),
             'js_default' => (string) ($p['js_default'] ?? ''), 'js_accept' => (string) ($p['js_accept'] ?? ''), 'js_revoke' => (string) ($p['js_revoke'] ?? ''),
             'gcm' => array_values(array_intersect((array) ($p['gcm_signals'] ?? []), Repository::GCM_SIGNALS)),
-            'embed_hosts' => array_values((array) ($p['embed_hosts'] ?? [])),
+            'embed_hosts' => array_values((array) ($p['embed_hosts'] ?? [])), 'embed_only' => self::embedOnly($p),
             'csp' => self::cspOf($p),
             'items' => self::items((array) ($p['items'] ?? [])),
             'events' => [], 'variants' => [], 'hosts' => [], 'preset' => $p['key'],
@@ -124,7 +137,7 @@ final class Presets
             'key' => $s['skey'], 'name' => $s['name'], 'group' => $s['grp'], 'provider' => $s['provider'], 'privacy_url' => $s['privacy_url'],
             'description' => $s['description'], 'params' => array_values($defs),
             'html_head' => $s['html_head'], 'html_body' => $s['html_body'], 'js_default' => $s['js_default'], 'js_accept' => $s['js_accept'], 'js_revoke' => $s['js_revoke'],
-            'gcm_signals' => $s['gcm'], 'embed_hosts' => $s['embed_hosts'],
+            'gcm_signals' => $s['gcm'], 'embed_hosts' => $s['embed_hosts'], 'embed_only' => !empty($s['embed_only']),
             'csp' => array_filter($s['csp']),
             'items' => array_map(fn($i) => ['type' => $i['type'], 'name' => $i['name'], 'host' => $i['host'],
                 'duration' => ['value' => (int) $i['value'], 'unit' => $i['unit']], 'purpose' => ['de' => $i['purpose_de'], 'en' => $i['purpose_en']]], $s['items']),
