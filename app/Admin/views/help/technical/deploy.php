@@ -18,7 +18,7 @@ deploy/sync-content.sh default           # Datenbank + Medien einer Website: Liv
   <table class="doc-table">
     <tr><th>Ordner</th><th>Inhalt</th></tr>
     <tr><td><code>public/assets/kits/{kit}/</code></td><td>Gebaute Assets der Kits – Adresse <code>/assets/kits/{kit}/…</code>; bei Kit-Paketen (Upload, Composer) aus deren Ordner <code>public/</code> (<code>kits:publish</code>)</td></tr>
-    <tr><td><code>public/assets/ext/{name}/</code></td><td>Öffentliche Dateien der Erweiterungen (<code>pnpm build</code>, <code>extensions:publish</code>)</td></tr>
+    <tr><td><code>public/assets/ext/{name}/</code></td><td>Öffentliche Dateien der Erweiterungen (<code>pnpm build</code>, <code>extensions:publish</code> – gleicht ab, entfernt alte Dateien; <code>health</code> meldet veraltete Kopien)</td></tr>
     <tr><td><code>public/assets/fonts/installed/</code></td><td>Installierte Schriften – eigener Unterordner, weil <code>public/assets/fonts/</code> die Kern-Schrift Lato enthält</td></tr>
     <tr><td><code>public/media/</code>, <code>public/pools/</code>, <code>public/sites/</code></td><td>Uploads</td></tr>
   </table>
