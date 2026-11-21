@@ -585,7 +585,8 @@ final class SelfTest
         $this->assert(isset(DefaultChanges::rules()['media_text']['valign'], DefaultChanges::rules()['gallery']['single_large']), 'Standardwerte: Regeln der Änderung 2026-11 vorhanden');
         // Neue Blöcke (ohne gespeicherten Wert): Standard der Felddefinition – Galerie „Einzelnes Bild groß“ an
         $g = app()->theme->block('gallery') ? app()->theme->makeBlock(['id' => 'n', 'type' => 'gallery', 'data' => []]) : null;
-        $this->assert($g === null || !empty($g->data['single_large']), 'Standardwerte: neue Galerie bekommt „Einzelnes Bild groß“');
+        $this->assert($g === null || ($g->data['single_size'] ?? '') === 'large', 'Standardwerte: neue Galerie bekommt Einzelbild „groß“');
+        $this->assert((DefaultChanges::rules()['gallery']['single_size'] ?? null) === 'grid', 'Standardwerte: bestehende Galerien bleiben „wie die Galerie“');
         $mt = app()->theme->block('media_text');
         if ($mt && in_array('valign', array_column((array) ($mt['fields'] ?? []), 'name'), true)) {
             $b = app()->theme->makeBlock(['id' => 'n', 'type' => 'media_text', 'data' => []]);

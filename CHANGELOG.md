@@ -32,7 +32,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Text und hält es beim Scrollen unter dem Kopf sichtbar (`position: sticky`, reines CSS, nur solange Bild und Text nebeneinander
   stehen; Telefon unverändert gestapelt). Ist der Text kürzer als das Bild, bleibt die Darstellung wie bisher. „Mitte“ entspricht
   dem früheren Verhalten. Kit praxis unverändert.
-- **Bildergalerie mit genau einem Bild** (neue Option „Einzelnes Bild groß zeigen“, an für neue Blöcke; bestehende unverändert): erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
+- **Bildergalerie mit genau einem Bild** (neue Auswahl „Größe bei nur einem Bild“: wie die Galerie · mittel · groß; neue Blöcke „groß“, bestehende bleiben „wie die Galerie“ und sind änderbar): erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
   mit Bildunterschrift, Lightbox wie bisher) statt klein in einer Spalte; hohe Bilder höchstens 85 % der Fensterhöhe, mittig.
   Die Live-Galerie bleibt unverändert. Handbuch → Alle Blöcke, Entwicklerhandbuch → Kits.
 - **Bestehende Seiten sehen aus wie vorher** (`Core\Blocks\DefaultChanges`): `migrate` – sonst der erste Aufruf nach dem Update –

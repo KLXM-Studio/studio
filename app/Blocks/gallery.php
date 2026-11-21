@@ -2,7 +2,7 @@
 /**
  * Bildergalerie (Kern-Block, vom Theme überschreibbar: kits/{name}/blocks/gallery.php).
  * Raster (einheitliches Format mit Zuschnitt), Mosaik (CSS-Spalten) oder bündige Zeilen, genau ein Bild als Einzelbild in voller
- * Inhaltsbreite (figure.cms-gallery--single, Originalformat; Feld single_large, Standard an für neue Blöcke); Lightbox über js/media.mjs –
+ * Inhaltsbreite (figure.cms-gallery--single, Originalformat; Feld single_size grid|medium|large, Standard groß für neue Blöcke); Lightbox über js/media.mjs –
  * ohne JavaScript führen die Bilder als normale Links zur großen Fassung.
  * @var \Core\Block $b  @var array $d
  */
@@ -22,7 +22,8 @@ $sizes = [
 ][$cols];
 if ($layout === 'justified') $sizes = '(min-width: 860px) 40vw, 100vw';
 // Genau ein Bild: als Einzelbild in voller Inhaltsbreite im Originalformat (statt klein in einer Spalte), Lightbox wie sonst
-$single = count($items) === 1 && !empty($d['single_large']);   // nur neue bzw. so gewählte Blöcke – ältere ohne Wert unverändert
+$singleSize = in_array($d['single_size'] ?? '', ['grid', 'medium', 'large'], true) ? $d['single_size'] : (empty($d['single_large']) ? 'grid' : 'large');
+$single = count($items) === 1 && $singleSize !== 'grid';   // Größe wählt die Redaktion; bestehende Blöcke „grid“ (unverändert)
 ?>
 <div class="<?= e($wrap) ?>">
   <?= MediaBlocks::head($b) ?>
@@ -32,7 +33,7 @@ $single = count($items) === 1 && !empty($d['single_large']);   // nur neue bzw. 
       $pic = img((int) $m['id'], '(min-width: 1280px) 1280px, 100vw', $it['path'] ? ['path' => $it['path'] . '.image'] : []);
       $cap = !empty($d['captions']) ? $it['caption'] : '';
   ?>
-  <figure class="cms-gallery cms-gallery--single cms-gallery__fig <?= e(MediaBlocks::aspectClass($m)) ?>"<?= $lightbox ? ' data-cms-lightbox' : '' ?>>
+  <figure class="cms-gallery cms-gallery--single cms-gallery--single-<?= e($singleSize) ?> cms-gallery__fig <?= e(MediaBlocks::aspectClass($m)) ?>"<?= $lightbox ? ' data-cms-lightbox' : '' ?>>
     <?php if ($lightbox): ?>
     <a class="cms-gallery__link"<?= MediaBlocks::lightboxLink($m, $it['caption']) ?>><?= $pic ?><?php if (\Core\Media::alt($m) === ''): ?><span class="sr-only"><?= e(lt('Bild {n} vergrößern', ['n' => 1])) ?></span><?php endif; ?></a>
     <?php else: ?>

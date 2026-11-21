@@ -33,6 +33,10 @@ final class DefaultChanges
             'media_text' => ['valign' => 'center'],
             'gallery' => ['single_large' => false],
         ],
+        // 1.0.0: Größe eines Einzelbilds wählt die Redaktion (single_size: grid = wie Galerie, medium, large) – bestehende bleiben „grid“
+        '2026-11-gallery-single-size' => [
+            'gallery' => ['single_size' => 'grid'],
+        ],
     ];
     public const SETTING = 'sys.block_defaults';
 
