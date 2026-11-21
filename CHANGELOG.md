@@ -48,12 +48,14 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Angaben und Beschriftungen (`item.X-ABLabel`), JSON-LD mit Adresse. Verknüpfungen auf ein Adressbuch sind Kontakt-Felder
   (Designer: „Adressbücher – Feld Kontakt“); auf der Website erscheinen nur freigegebene Kontakte.
 - **Sichtbarkeit im Formular auf einen Blick** (alle Inhaltstabellen, Verwaltung und Seitenleiste „Eintrag bearbeiten“): an jedem
-  Feld und jeder Angabe dasselbe Merkmal rechts im Feldkopf bzw. in der Zeile – Weltkugel „Öffentlich“ (bei mehreren Zielen
-  „· Website, vCard“) oder Schloss „Intern“, auch bei festen Regeln (immer/nie) sichtbar; „Redaktion entscheidet“ und jede
+  Feld und jeder Angabe dasselbe Merkmal im Feldkopf rechts neben der Beschriftung bzw. in der Zeile – „immer, alle Ziele“ nur als
+  kleine Weltkugel, sonst Weltkugel „Öffentlich“ (bei mehreren Zielen „· Website“) oder Schloss „Intern“; Mehrfachfelder nur mit
+  Merkmal am Feld, wenn es etwas regelt („Ziele: Website, vCard“, „Intern“) – sonst entscheidet allein die Zeile; „Redaktion entscheidet“ und jede
   Angabe als Menü mit Häkchen je Ziel bzw. Öffentlich / Nur Ort / Intern (ersetzt Häkchen, Pille und Adress-Auswahl; ohne Skript
   bedienbar, Tastatur, Zustand als Text). Interne Felder grau hinterlegt. Formularkopf „Auf der Website: Name, Funktion, …“ (live)
   und deutlicher Hinweis „Dieser Eintrag ist nicht auf der Website“ (Kontakt nicht freigegeben, Entwurf). Liste: Spalte „Website“
-  bei Adressbüchern, Symbol je Angabe. Eine Auskunft für alles: `Exposure::reach()`/`webSummary()`.
+  bei Adressbüchern, Symbol je Angabe, Spalten nach Wichtigkeit statt seitlichem Überlaufen, lange Texte auf zwei Zeilen,
+  „Duplizieren“ und Erweiterungs-Aktionen im Zeilenmenü (⋯). Eine Auskunft für alles: `Exposure::reach()`/`webSummary()`.
 - **`data:convert <tabelle> --kind=contacts`:** Umwandlung an Ort und Stelle mit Probelauf (Standard) und Bericht (Feldzuordnung,
   Namensaufteilung, Freigabe-Vorschlag – mobil/privat und „Nie öffentlich“ werden intern, „Redaktion entscheidet“ je Eintrag –,
   betroffene Blöcke und Einstellungen), `--map=quelle:ziel[beschriftung+|-]`, `--apply` (Sicherung, Revision je Eintrag,
