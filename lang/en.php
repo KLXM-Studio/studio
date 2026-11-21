@@ -4881,7 +4881,6 @@ return [
     // Links aus den E-Mails
     'E-Mail-Adresse bestätigen' => 'Confirm email address',
     'Änderung abbrechen' => 'Cancel change',
-    'Dieser Link gilt nicht mehr' => 'This link is no longer valid',
     'Der Link ist abgelaufen, wurde bereits verwendet oder die Änderung wurde abgebrochen.' => 'The link has expired, has already been used, or the change was cancelled.',
     'Möchten Sie Ihre E-Mail-Adresse ändern? Melden Sie sich an und fordern Sie unter „Konto › Anmeldedaten“ einen neuen Link an.' => 'Want to change your email address? Sign in and request a new link under “Account › Sign-in details”.',
     'E-Mail-Adresse geändert' => 'Email address changed',
@@ -5097,7 +5096,6 @@ return [
     'empfohlen für Gesundheitsdaten' => 'recommended for health data',
     'erweiterte Schlüsselverwendung ohne „E-Mail-Schutz“' => 'extended key usage without “E-mail Protection”',
     'gültig bis {date} (noch {n} Tage)' => 'valid until {date} ({n} days left)',
-    'abgelaufen am {date}' => 'expired on {date}',
     'nicht angehängt (zu groß für die E-Mail)' => 'not attached (too large for the email)',
     'nicht angehängt (zu groß für die E-Mail) – liegt verschlüsselt im System' => 'not attached (too large for the email) – stored encrypted in the system',
     'nur RSA-Schlüssel werden unterstützt' => 'only RSA keys are supported',
@@ -7770,7 +7768,6 @@ return [
     'Dorthin wechseln' => 'Go there',
     'Gerade online' => 'Online now',
     '{n} Personen online' => '{n} people online',
-    'Auf der Website ansehen' => 'View on website',
     'Auf der Website bearbeiten' => 'Edit on website',
     'Den jetzigen Stand unter einem Namen sichern, um später zurückzuwechseln.' => 'Save the current state under a name to switch back later.',
     'Eigenes Design' => 'Own design',
