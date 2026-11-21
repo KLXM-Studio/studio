@@ -17,6 +17,29 @@ $visTag = function (array $e) use ($t): string {
     $on = \Core\Data\Exposure::reach($t, null, $e)['targets'] !== [];
     return '<span class="dt-vis' . ($on ? ' is-public' : '') . '">' . icon($on ? 'globe' : 'lock') . ' ' . e($on ? __('Öffentlich') : __('Intern')) . '</span>';
 };
+// Zeilenmenü (⋯): Duplizieren und Aktionen von Erweiterungen (Core\Slots) – Popover (ohne Skript bedienbar), _rowmenu.js setzt es an den Knopf
+$rowMenu = function (array $e) use ($t, &$base, &$extOrigin, &$extTbl): string {
+    $title = Entries::title($t, $e);
+    $items = '';
+    if (!(Tables::isShared($t) && \Core\Data\Shared::isForeign($t, $e)) && !isset($extOrigin[$e['id']])) {
+        $items .= '<button type="submit" form="dt-dup" class="dt-rowmenu__item" formaction="' . e(url($base . '/' . $e['id'] . '/duplicate')) . '" title="' . e(__('Kopie als Entwurf anlegen')) . '">'
+            . icon('copy') . ' ' . e(__('Duplizieren')) . '</button>';
+    }
+    if ($extTbl['row']) foreach (\Core\Extensions::rowActions($extTbl['row'], (int) $e['id']) as $xa) {
+        $items .= '<a class="dt-rowmenu__item" href="' . e(url($xa['href'])) . '" data-slot="' . e((string) ($xa['extension'] ?? '')) . '">' . e($xa['label']) . '</a>';
+    }
+    if ($items === '') return '';
+    $id = 'dt-menu-' . (int) $e['id'];
+    return '<button type="button" class="dt-rowmenu" popovertarget="' . $id . '" aria-label="' . e(__('Weitere Aktionen: {title}', ['title' => $title])) . '" title="' . e(__('Weitere Aktionen')) . '">'
+        . icon('dots-three') . '</button><div class="dt-rowmenu__pop" id="' . $id . '" popover role="menu" aria-label="' . e($title) . '">' . $items . '</div>';
+};
+// Lange Texte in Spalten: zwei Zeilen, voller Text im Tooltip
+$clamp = function (string $html): string {
+    $plain = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags(str_ireplace(['<br>', '<br/>', '<br />'], ' ', $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+    return $plain === '' ? '' : '<span class="dt-clamp" title="' . e($plain) . '">' . $html . '</span>';
+};
+// Spalten nach Wichtigkeit: schmale Liste blendet zuerst „Geändert“, dann die hinteren Felder aus (admin.css, Container-Abfrage)
+$prio = fn(int $i) => min(5, $i + 2);
 $multiCell = function (array $c, array $e) use ($t): string {
     $items = \Core\Combo::items($e[$c['name']] ?? null);
     $h = '';
@@ -24,7 +47,7 @@ $multiCell = function (array $c, array $e) use ($t): string {
         $r = \Core\Data\Exposure::reach($t, $c, $e, $i);
         $on = $r['targets'] !== [];
         $h .= '<li' . ($on ? ' class="is-public"' : '') . ' title="' . e(\Core\Data\Exposure::reachText($r, [])) . '">' . icon($on ? 'globe' : 'lock')
-            . '<span class="adm-sr">' . e(\Core\Data\Exposure::reachText($r, [])) . ': </span>' . e(mb_strimwidth(\Core\Combo::itemText($c['type'], $i), 0, 40, '…')) . '</li>';
+            . '<span class="adm-sr">' . e(\Core\Data\Exposure::reachText($r, [])) . ': </span><span title="' . e(\Core\Combo::itemText($c['type'], $i)) . '">' . e(\Core\Combo::itemText($c['type'], $i)) . '</span></li>';
     }
     if (count($items) > 3) $h .= '<li class="adm-muted">+' . (count($items) - 3) . '</li>';
     return $h !== '' ? '<ul class="dt-items">' . $h . '</ul>' : '';
@@ -122,10 +145,10 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <th class="dt-c-check"><input type="checkbox" data-checkall aria-label="Alle auswählen"></th>
       <?php if ($manual): ?><th class="dt-c-grip"><span class="sr-only">Reihenfolge</span></th><?php endif; ?>
       <th scope="col"><?= $sortLink($t['settings']['title_field'] ?: 'id', Tables::field($t, $t['settings']['title_field'])['label'] ?? 'Titel') ?></th>
-      <?php if ($perEntry): ?><th scope="col"><?= $sortLink(\Core\Data\Kinds::PUBLIC_FIELD, __('Website')) ?></th><?php endif; ?>
-      <?php foreach ($cols as $c): ?><th scope="col"><?= $sortLink($c['name'], $c['label']) ?></th><?php endforeach; ?>
+      <?php if ($perEntry): ?><th scope="col" data-prio="1"><?= $sortLink(\Core\Data\Kinds::PUBLIC_FIELD, __('Website')) ?></th><?php endif; ?>
+      <?php foreach ($cols as $ci => $c): ?><th scope="col" data-prio="<?= $prio($ci) ?>"><?= $sortLink($c['name'], $c['label']) ?></th><?php endforeach; ?>
       <?php if ($t['settings']['workflow']): ?><th scope="col"><?= $sortLink('status', 'Status') ?></th><?php endif; ?>
-      <th scope="col"><?= $sortLink('updated_at', 'Geändert') ?></th>
+      <th scope="col" data-prio="5"><?= $sortLink('updated_at', 'Geändert') ?></th>
     </tr></thead>
     <tbody data-rows>
     <?php foreach ($rows as $e): $url = Entries::url($t, $e); ?>
@@ -138,13 +161,12 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
           <?php if (!empty($shared) && !empty($e['suggest'])): $sp = $ownerPicks[$e['id']] ?? null; ?><small class="sh-pick sh-pick--<?= e($sp ?? 'suggested') ?>"><?= e(match ($sp) { 'visible' => __('übernommen'), 'featured' => __('hervorgehoben'), 'rejected' => __('abgelehnt'), 'hidden' => __('ausgeblendet'), default => __('vorgeschlagen') }) ?></small><?php endif; ?>
           <?php if (isset($extOrigin[$e['id']])): ?><small class="src-badge" title="<?= e(__('Aus der externen Quelle „{name}“ – nur lesbar', ['name' => $extOrigin[$e['id']]['name']])) ?>"><?= icon('plugs-connected') ?> <?= e(__('aus Quelle')) ?></small><?php endif; ?>
           <?php if ($url): ?><a class="dt-view" href="<?= e($url) ?>" target="_blank" rel="noopener" aria-label="Auf der Website ansehen">↗</a><?php endif; ?>
-          <?php if (!(!empty($shared) && \Core\Data\Shared::isForeign($t, $e)) && !isset($extOrigin[$e['id']])): // Duplizieren (Kopie als Entwurf) ?><button type="submit" form="dt-dup" class="dt-rowact dt-rowact--dup" formaction="<?= e(url($base . '/' . $e['id'] . '/duplicate')) ?>" aria-label="<?= e(__('Duplizieren') . ': ' . Entries::title($t, $e)) ?>" title="<?= e(__('Kopie als Entwurf anlegen')) ?>"><?= e(__('Duplizieren')) ?></button><?php endif; ?>
-          <?php if ($extTbl['row']): foreach (\Core\Extensions::rowActions($extTbl['row'], (int) $e['id']) as $xa): ?><a class="dt-rowact" href="<?= e(url($xa['href'])) ?>" aria-label="<?= e($xa['label'] . ': ' . Entries::title($t, $e)) ?>"><?= e($xa['label']) ?></a><?php endforeach; endif; ?>
+          <?= $rowMenu($e) ?>
         </div></td>
-        <?php if ($perEntry): ?><td class="dt-c-vis" data-label="<?= e(__('Website')) ?>"><?= $visTag($e) ?></td><?php endif; ?>
-        <?php foreach ($cols as $c): ?><td data-label="<?= e($c['label']) ?>"><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>'))) ?></td><?php endforeach; ?>
+        <?php if ($perEntry): ?><td class="dt-c-vis" data-prio="1" data-label="<?= e(__('Website')) ?>"><?= $visTag($e) ?></td><?php endif; ?>
+        <?php foreach ($cols as $ci => $c): ?><td data-prio="<?= $prio($ci) ?>" data-label="<?= e($c['label']) ?>"><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : $clamp(strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>')))) ?></td><?php endforeach; ?>
         <?php if ($t['settings']['workflow']): ?><td class="dt-c-status" data-label="Status"><?= $statusCell($e) ?></td><?php endif; ?>
-        <td class="adm-muted dt-c-date" data-label="Geändert"><?= e(\Core\Format::admin()->date(strtotime((string) ($e['updated_at'] ?: $e['created_at'])))) ?></td>
+        <td class="adm-muted dt-c-date" data-prio="5" data-label="Geändert"><?= e(\Core\Format::admin()->date(strtotime((string) ($e['updated_at'] ?: $e['created_at'])))) ?></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

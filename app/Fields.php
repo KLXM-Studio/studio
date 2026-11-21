@@ -339,33 +339,46 @@ final class Fields
 
     /**
      * Merkmal „Öffentlich“/„Intern“ am Feld ('expose' => ['field' => Felddefinition der Tabelle, 'targets' => Ziele der Tabelle,
-     * 'labels' => [ziel => Text]], gesetzt von Core\Data\Entries::formSchema): immer an derselben Stelle rechts im Feldkopf –
-     * Weltkugel „Öffentlich“ (bei mehreren Zielen „· Website, vCard“) bzw. Schloss „Intern“. Was gilt, sagt allein
-     * Exposure::fieldReach(). Feste Regeln (immer/nie, Tabellen-Designer) nur als Hinweis; „Redaktion entscheidet“ als Menü
-     * (<details>, ohne Skript bedienbar) mit einem Häkchen je Ziel, gesendet als {prefix}[_exposure][feld][ziel]. Interne
-     * Felder sind getönt (admin.css .f-exp); resources/js/_exposure.js hält Text und Zusammenfassung im Formularkopf aktuell.
+     * 'labels' => [ziel => Text]], gesetzt von Core\Data\Entries::formSchema) – im Feldkopf rechts neben der Beschriftung (in
+     * derselben Zeile; nur bei sehr schmalen Feldern darunter). Was gilt, sagt allein Exposure::fieldReach():
+     *  - immer, alle Ziele: nur ein kleines Weltkugel-Symbol (Text als Tooltip und für Screenreader) – der Formularkopf zählt
+     *    diese Felder ohnehin auf,
+     *  - immer mit weniger Zielen, nie: Merkmal mit Text („Öffentlich · Website“, Schloss „Intern“), nicht umschaltbar,
+     *  - Redaktion entscheidet: Menü (<details>, ohne Skript bedienbar) mit einem Häkchen je Ziel → {prefix}[_exposure][feld][ziel].
+     * Mehrfachfelder (Core\Combo::MULTI): Die Zeile ist der Ort der Entscheidung je Angabe. Ein Merkmal am Feld gibt es nur, wenn
+     * das Feld selbst etwas regelt – „Ziele: Website, vCard“ (weniger Ziele bzw. Redaktion entscheidet) oder „Intern“ (nie).
+     * Interne Felder sind getönt (admin.css .f-exp); resources/js/_exposure.js hält Text und Zusammenfassung aktuell.
      */
     private static function renderExpose(array $f, array $values, string $prefix, string $field): string
     {
         $x = (array) $f['expose'];
         $n = (string) $f['name'];
+        $tf = (array) ($x['field'] ?? $f);
         $tg = array_values((array) ($x['targets'] ?? ['web']));
         $label = (string) ($f['label'] ?? $n);
-        $r = \Core\Data\Exposure::fieldReach((array) ($x['field'] ?? $f), $values, $tg);
+        $r = \Core\Data\Exposure::fieldReach($tf, $values, $tg);
         $on = $r['targets'] !== [];
+        $multi = \Core\Combo::isMulti((string) ($tf['type'] ?? ''));
+        $all = $r['mode'] === 'always' && $on && $r['targets'] === $tg;   // immer, alle Ziele der Tabelle
         $sr = '<span class="adm-sr">' . e(__('„{label}“:', ['label' => $label])) . ' </span>';
         $cls = 'f-exp' . (($f['width'] ?? '') === 'half' ? ' f--half' : '');
-        $attrs = ' data-expose data-exp-label="' . e(\Core\Data\Tables::label((array) ($x['field'] ?? $f))) . '"'
-            . (\Core\Combo::isMulti((string) (($x['field'] ?? $f)['type'] ?? '')) ? ' data-exp-multi' : '');
-        // Platz für das Merkmal im Feldkopf (Beschriftung bricht vorher um): s = „Intern“/„Öffentlich“, m/l = mit Kurzform der Ziele
-        $w = !$r['fixed'] ? (count($tg) > 1 ? 'l' : 'm') : (mb_strlen(\Core\Data\Exposure::reachText($r, $tg)) > 12 ? (mb_strlen(\Core\Data\Exposure::reachText($r, $tg)) > 22 ? 'l' : 'm') : 's');
-        $attrs .= ' data-exp-w="' . $w . '"';
+        $attrs = ' data-expose data-exp-label="' . e(\Core\Data\Tables::label($tf)) . '"' . ($multi ? ' data-exp-multi' : '');
+        $shorts = fn(array $k) => implode(', ', array_map([\Core\Data\Exposure::class, 'targetShort'], $k));
         if ($r['fixed']) {
-            $why = $r['mode'] === 'never' ? __('Festgelegt in den Feldern der Tabelle: nie öffentlich.')
+            $attrs .= ' data-web="' . (in_array('web', $r['targets'], true) ? '1' : '0') . '"';
+            if ($all && $multi) return '<div class="' . $cls . ' f-exp--fixed is-public"' . $attrs . '>' . $field . '</div>';   // Zeilen entscheiden
+            $why = $r['mode'] === 'never' ? ($multi ? __('Festgelegt in den Feldern der Tabelle: nie öffentlich – auch freigegebene Angaben nicht.') : __('Festgelegt in den Feldern der Tabelle: nie öffentlich.'))
                 : ($on ? __('Festgelegt in den Feldern der Tabelle: immer öffentlich.') : __('Festgelegt in den Feldern der Tabelle: nicht auf der Website.'));
-            return '<div class="' . $cls . ' f-exp--fixed ' . ($on ? 'is-public' : 'is-internal') . '"' . $attrs . ' data-web="' . (in_array('web', $r['targets'], true) ? '1' : '0') . '">'
-                . '<span class="f-exp__mark"><span class="f-exp__tag" title="' . e($why) . '">' . icon($on ? 'globe' : 'lock') . $sr
-                . '<span>' . e(\Core\Data\Exposure::reachText($r, $tg)) . '</span><span class="adm-sr"> – ' . e($why) . '</span></span></span>' . $field . '</div>';
+            if ($all) {
+                // dezent: nur das Symbol (Text als Tooltip und für Screenreader)
+                $text = \Core\Data\Exposure::reachText($r, $tg);
+                $mark = '<span class="f-exp__mark f-exp__mark--quiet" title="' . e($text . ' – ' . $why) . '">' . icon('globe') . $sr . '<span class="adm-sr">' . e($text) . ' – ' . e($why) . '</span></span>';
+                return '<div class="' . $cls . ' f-exp--fixed f-exp--quiet is-public"' . $attrs . ' data-exp-w="q">' . self::exposeInHead($field, $mark) . '</div>';
+            }
+            $text = $multi && $on ? __('Ziele: {targets}', ['targets' => $shorts($r['targets'])]) : \Core\Data\Exposure::reachText($r, $tg);
+            $mark = '<span class="f-exp__mark"><span class="f-exp__tag" title="' . e($why) . '">' . icon($on ? 'globe' : 'lock') . $sr
+                . '<span>' . e($text) . '</span><span class="adm-sr"> – ' . e($why) . '</span></span></span>';
+            return '<div class="' . $cls . ' f-exp--fixed ' . ($on ? 'is-public' : 'is-internal') . '"' . $attrs . ' data-exp-w="' . self::exposeWidth($text) . '">' . self::exposeInHead($field, $mark) . '</div>';
         }
         $boxes = '';
         foreach ($tg as $k) {
@@ -374,15 +387,42 @@ final class Fields
                 . (in_array($k, $r['targets'], true) ? ' checked' : '') . ' data-expose-target="' . e((string) $k) . '" data-short="' . e(\Core\Data\Exposure::targetShort((string) $k)) . '"> <span>'
                 . e((string) ($x['labels'][$k] ?? $k)) . '</span></label>';
         }
-        // Zustand ohne Skript: CSS (:has) zeigt „Öffentlich“ bzw. „Intern“ je nach Häkchen; das Skript ergänzt die Kurzform der Ziele
-        $short = count($tg) > 1 && $on ? ' · ' . implode(', ', array_map([\Core\Data\Exposure::class, 'targetShort'], $r['targets'])) : '';
-        return '<div class="' . $cls . ' f-exp--editor"' . $attrs . (count($tg) > 1 ? ' data-exp-short' : '') . '>'
-            . '<details class="f-exp__mark f-exp__menu"><summary class="f-exp__btn" title="' . e(__('Freigabe dieses Feldes für diesen Eintrag ändern')) . '">'
+        // Zustand ohne Skript: CSS (:has) zeigt „Öffentlich“ bzw. „Intern“ je nach Häkchen; das Skript hält die Kurzform der Ziele aktuell
+        $word = $multi ? __('Ziele') : __('Öffentlich');
+        $sep = $multi ? ': ' : ' · ';
+        $short = (count($tg) > 1 || $multi) && $on ? $sep . $shorts($r['targets']) : '';
+        $mark = '<details class="f-exp__mark f-exp__menu"><summary class="f-exp__btn" title="' . e($multi ? __('Ziele der öffentlichen Angaben für diesen Eintrag ändern') : __('Freigabe dieses Feldes für diesen Eintrag ändern')) . '">'
             . '<span class="f-exp__ico f-exp__ico--on">' . icon('globe') . '</span><span class="f-exp__ico f-exp__ico--off">' . icon('lock') . '</span>' . $sr
-            . '<span class="f-exp__on">' . e(__('Öffentlich')) . '<span data-exp-to>' . e($short) . '</span></span><span class="f-exp__off">' . e(__('Intern')) . '</span>'
+            . '<span class="f-exp__on">' . e($word) . '<span data-exp-to data-sep="' . e($sep) . '">' . e($short) . '</span></span><span class="f-exp__off">' . e(__('Intern')) . '</span>'
             . '<span class="f-exp__caret" aria-hidden="true">' . icon('caret-down') . '</span></summary>'
-            . '<fieldset class="f-exp__pop"><legend>' . e(__('„{label}“ erscheint in', ['label' => $label])) . '</legend>' . $boxes
-            . '<p class="f-help">' . e(__('Ohne Häkchen bleibt die Angabe intern.')) . '</p></fieldset></details>' . $field . '</div>';
+            . '<fieldset class="f-exp__pop"><legend>' . e($multi ? __('Öffentliche Angaben aus „{label}“ erscheinen in', ['label' => $label]) : __('„{label}“ erscheint in', ['label' => $label])) . '</legend>' . $boxes
+            . '<p class="f-help">' . e($multi ? __('Welche Angaben öffentlich sind, legen Sie in jeder Zeile fest.') : __('Ohne Häkchen bleibt die Angabe intern.')) . '</p></fieldset></details>';
+        return '<div class="' . $cls . ' f-exp--editor"' . $attrs . (count($tg) > 1 || $multi ? ' data-exp-short data-exp-w="l"' : ' data-exp-w="m"') . '>' . self::exposeInHead($field, $mark) . '</div>';
+    }
+
+    /** Platzbedarf des Merkmals (Container-Abfrage in admin.css: wann es unter die Beschriftung rückt) */
+    private static function exposeWidth(string $text): string
+    {
+        $l = mb_strlen($text);
+        return $l > 22 ? 'l' : ($l > 12 ? 'm' : 's');
+    }
+
+    /**
+     * Merkmal in den Feldkopf setzen: direkt hinter die Beschriftung (<label>, Ja/Nein-Feld, Kopf von Wiederholern und Blöcken),
+     * damit es in derselben Zeile steht (Raster in admin.css). Felder mit <legend> (Mehrfachauswahl) bekommen es oben rechts.
+     */
+    private static function exposeInHead(string $field, string $mark): string
+    {
+        if (!str_starts_with($field, '<fieldset')) {
+            $pos = [];
+            if (($p = strpos($field, '</label>')) !== false) $pos[] = $p + 8;
+            if (preg_match('~<span class="f-label">(?:[^<]|<span class="req"[^>]*>\*</span>)*</span>~', $field, $m, PREG_OFFSET_CAPTURE)) $pos[] = $m[0][1] + strlen($m[0][0]);
+            if ($pos) {
+                $at = min($pos);
+                return substr($field, 0, $at) . $mark . substr($field, $at);
+            }
+        }
+        return str_replace('class="f-exp__mark', 'class="f-exp__mark f-exp__mark--abs', $mark) . $field;
     }
 
     /**
