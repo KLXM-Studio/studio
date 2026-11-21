@@ -142,7 +142,7 @@ final class Generator
 
     // ================================================================== Seiten-Generator
 
-    private const PAGE_SKIP = ['data_list', 'data_fields', 'data_form', 'calendar', 'upcoming', 'map', 'gallery', 'slideshow', 'contact', 'hours', 'doctors', 'downloads', 'embed'];
+    private const PAGE_SKIP = ['data_list', 'data_fields', 'data_form', 'calendar', 'upcoming', 'event_actions', 'map', 'gallery', 'slideshow', 'contact', 'hours', 'doctors', 'downloads', 'embed'];
     private const PAGE_TYPES = ['text', 'textarea', 'richtext', 'inline', 'select', 'repeater'];
 
     /** Blöcke, die der Seiten-Generator füllen darf: freigegeben (Features::allowsBlock), mit Textfeldern, ohne dynamische Inhalte */

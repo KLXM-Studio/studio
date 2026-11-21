@@ -55,10 +55,11 @@
     <tbody>
       <tr><td>Einladung, Passwort vergessen, E-Mail-Änderung</td><td>Konto &amp; Sicherheit</td><td>die Person selbst – auch bei Test-Umleitung</td><td>„Antworten an“ des Kontos</td></tr>
       <tr><td>Mails an Netzwerk-Konten (nur in Netzwerken)</td><td>E-Mail-Konto des Netzwerks, ohne dieses das Konto der Website</td><td>die Netzwerk-Administration</td><td>Netzwerk-Konto</td></tr>
-      <tr><td>Neue Anfrage, neuer Eintrag, Zustellung fehlgeschlagen</td><td>Benachrichtigungen an die Redaktion</td><td>„Benachrichtigung an“ der Tabelle, sonst „Empfänger für Benachrichtigungen“</td><td>Konto</td></tr>
+      <tr><td>Neue Anfrage, neuer Eintrag</td><td>Benachrichtigungen an die Redaktion</td><td>„Benachrichtigung an“ der Tabelle, sonst „Empfänger für Benachrichtigungen“</td><td>Konto</td></tr>
       <tr><td>Zustellung von Anfragen per E-Mail (mit Inhalt)</td><td>Benachrichtigungen an die Redaktion</td><td>Zustellung der Tabelle (ggf. je Feldwert)</td><td>E-Mail-Feld der Anfrage</td></tr>
       <tr><td>Eingangsbestätigung</td><td>Nachrichten an Besucher</td><td>Adresse aus dem Formular</td><td>Konto</td></tr>
-      <tr><td>Integrität, Freigaben, Support, Chat</td><td>Benachrichtigungen an die Redaktion</td><td>Konten mit allen Rechten, Freigebende, Support-Team, erwähnte Person</td><td>Konto</td></tr>
+      <tr><td>Systemmeldungen: Integrität, Sicherung, Geplante Aufgaben, Zustellung fehlgeschlagen u. a.</td><td>Benachrichtigungen an die Redaktion (im Netzwerk: Netzwerk-Konto)</td><td>nach <a href="#systemmeldungen">Systemmeldungen</a> – Agentur, bestimmte Adressen oder alle Admins</td><td>Konto</td></tr>
+      <tr><td>Freigaben, Support, Chat</td><td>Benachrichtigungen an die Redaktion</td><td>Freigebende, Support-Team, erwähnte Person</td><td>Konto</td></tr>
       <tr><td>Newsletter (Erweiterung)</td><td>Newsletter bzw. Zweck der Erweiterung</td><td>Verteiler</td><td>Konto bzw. Verteiler</td></tr>
     </tbody>
   </table>
@@ -112,7 +113,16 @@
     <li><b>Dateien</b> (nur, wer die ganze Installation verwaltet): geänderter oder neuer Programmcode, geänderte <code>.htaccess</code> oder Konfiguration, ausführbare Dateien in Medien- oder Datenordnern und als Bild getarnter PHP-Code.</li>
     <li><b>Datenbank dieser Website</b>: Trigger und Views, neue Tabellen, neue Konten mit allen Rechten, neue API-Schlüssel und Skript-Code in Seiten oder Einstellungen.</li>
   </ul>
-  <p><b>Fehler</b> sollten Sie immer prüfen; <b>Hinweise</b> sind oft gewollt (z. B. eine neue Erweiterung legt Tabellen an). War alles gewollt – ein Update, eine neue Erweiterung, ein neues Administrator-Konto –, übernehmen Sie den Stand mit <b>Als bekannt übernehmen</b>. Neue Fehler meldet die Prüfung einmal per E-Mail an alle Konten mit allen Rechten; das lässt sich auf der Seite abschalten. Die Health-Prüfung (Übersicht) zeigt das Ergebnis ebenfalls.</p>
+  <p><b>Fehler</b> sollten Sie immer prüfen; <b>Hinweise</b> sind oft gewollt (z. B. eine neue Erweiterung legt Tabellen an). War alles gewollt – ein Update, eine neue Erweiterung, ein neues Administrator-Konto –, übernehmen Sie den Stand mit <b>Als bekannt übernehmen</b>. Neue Fehler meldet die Prüfung einmal per E-Mail an die Empfänger der <a href="#systemmeldungen">Systemmeldungen</a> (ohne Einstellung: alle Konten mit allen Rechten); das lässt sich auf der Seite abschalten. Die Health-Prüfung (Übersicht) zeigt das Ergebnis ebenfalls.</p>
+
+  <h3 id="systemmeldungen">Systemmeldungen: wer bekommt technische Warnungen?</h3>
+  <p>Unter <b>Grundeinstellungen → Systemmeldungen</b> (nur, wer die Installation verwaltet; mit mehreren Websites unter Netzwerk → Systemmeldungen) legen Sie fest, wer Warnungen zu Integrität, Sicherheit, Sicherung, Geplanten Aufgaben, technischen Fehlern, Updates/Lebensende und Mail-Zustellproblemen bekommt:</p>
+  <ul>
+    <li><b>Automatisch</b> (Standard): Agentur-Kontakt, falls eingetragen – sonst die bestimmten Adressen – sonst die Agentur-Konten (Agentur-Zugang per OpenID Connect) – sonst wie bisher alle Konten mit allen Rechten.</li>
+    <li><b>Agentur bevorzugt</b>: nur die Agentur; die Admins der Kundin bzw. des Kunden bekommen keine technischen Warnungen, außer Sie setzen den Haken „zusätzlich informieren“.</li>
+    <li><b>Bestimmte Adressen</b> bzw. <b>Alle Admins</b> (bisheriges Verhalten).</li>
+  </ul>
+  <p>Je Kategorie lässt sich die Meldung abwählen oder umleiten und um Adressen ergänzen; <b>Wirksam</b> zeigt die Empfänger, <b>Test</b> schickt eine Testnachricht an sie. Ohne Einstellung bleibt das bisherige Verhalten – soll die Agentur die Meldungen bekommen, tragen Sie ihre Adresse ein.</p>
 
   <h3 id="warnungen">Warnpunkte im Menü</h3>
   <p>Ein oranger Punkt an einem Menüpunkt der Einrichtung weist auf etwas Wichtiges hin – derzeit die <b>aktive Testumgebung</b> oder einen <b>fehlenden Schlüssel</b> für verschlüsselte Anfragen. Ist die Gruppe zugeklappt, zeigt sie den Punkt mit; beim Darüberfahren steht der Grund daneben. Erledigt man die Sache, verschwindet der Punkt.</p>

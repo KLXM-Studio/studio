@@ -186,7 +186,8 @@
  *                                                     (Standard: Probelauf mit Bericht)
  *   calendar:reindex [<tabelle>…] [--all] [--status]  Vorkommens-Index der Kalender neu aufbauen (Cron täglich) bzw. Stand zeigen
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
- *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics
+ *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
+ *                                                     Termin-Aktionen (In den Kalender, Vorkommen, Fremd-Links)
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
  *                 [--with-list-page] [--dry-run]     Tabelle aus Vorlage anlegen bzw. ergänzen (wie „Neue Tabelle aus Vorlage“; wiederholbar):
  *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), jobs (Stellenangebote, Google for Jobs) + Eingang
@@ -232,6 +233,8 @@
  *   live:selftest                                     Selbsttest der Live-Aktualisierung (Versionen, signierte Abos, Live-Blöcke)
  *   presence:selftest                                 Selbsttest der Präsenz (melden, auflisten, ablaufen, abmelden; sicherer Netzwerk-Zielpfad)
  *   mail:selftest                                     Selbsttest der E-Mail-Konten (Zwecke, Netzwerk-Konto, Versandwege, Absender)
+ *   alerts:show | alerts:selftest                     Systemmeldungen (Core\Mail\Alerts): wer welche technische Warnung bekommt | Selbsttest
+ *                                                     (Rangfolge, Agentur bevorzugt, Rückfall, Einzelinstallation/Netzwerk, keine Mail an Kunden)
  *   impersonate:selftest                              Selbsttest „Als Rolle/Person arbeiten“ (Regeln, Sperren, Zeitlimit)
  *   vcard:selftest                                    Selbsttest der Visitenkarten /vcard.vcf (Aufbau, Maskierung, Faltung, CRLF, Bild)
  *   subscriptions:selftest                            Selbsttest „Abonnieren per App“ (Abo-Token: Hash, Umfang öffentlich/intern, Ablauf, Widerruf, Rate-Limit, keine Tokens in Protokollen)
@@ -1521,6 +1524,8 @@ switch ($cmd) {
     case 'calendar:selftest':
         // Kalender mit Serien (Core\Data\CalendarSelfTest): Index = Berechnung, Serien, Einzeltermine, Ausfälle, ICS-Rundreise, data:convert
         $res = Core\Data\CalendarSelfTest::run();
+        $eva = Core\Data\EventActionsSelfTest::run();   // Termin-Aktionen (In den Kalender, Abonnieren, Fremd-Links, Vorkommen)
+        $res = ['ok' => $res['ok'] + $eva['ok'], 'fails' => [...$res['fails'], ...$eva['fails']]];
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);
@@ -1675,6 +1680,19 @@ switch ($cmd) {
     case 'impersonate:selftest':
         // Ansicht als Rolle/Person (Core\Impersonation): wer darf wen, wirksames Konto, Sperren, Zeitlimit
         $res = Core\Impersonation::selftest();
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'alerts:show':
+        // Systemmeldungen (Core\Mail\Alerts): wirksame Empfänger je Kategorie
+        foreach (Core\Mail\Alerts::overview() as $a) {
+            echo str_pad($a['label'], 26) . ' → ' . ($a['to'] ? implode(', ', $a['to']) : '–') . '  (' . $a['via_text'] . ($a['fallback'] ? ', Rückfall' : '') . ")\n";
+        }
+        break;
+
+    case 'alerts:selftest':
+        $res = Core\Mail\AlertsSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);
 

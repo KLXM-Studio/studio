@@ -282,6 +282,12 @@ final class StructuredData
         if (!$type || !Data\Exposure::visible($table, $e)) return null;   // Kontakte ohne Freigabe: keine strukturierten Daten
         $e = Data\Exposure::publicEntry($table, $e);                // private Felder nie in strukturierten Daten
         if ($type === 'Event' && Calendar::enabled($table) && ($span = Calendar::span($table, $e))) {
+            // Serie mit ?vorkommen=…: dieses Vorkommen (abgesagt → EventCancelled)
+            if (($occ = Data\EventActions::current($table, $e))) return self::event($table, $e, $occ['start'], $occ['end'], (bool) $occ['all_day'], (bool) $occ['cancelled']);
+            // Serien: nächster stattfindender Termin wie bei den Termin-Aktionen (verschobene Einzeltermine, Ausfälle berücksichtigt)
+            if (Data\EventActions::isSeries($table, $e) && ($n = Data\EventActions::next($table, $e, new \DateTimeImmutable('now', Calendar::tz()), null, true))) {
+                return self::event($table, $e, $n['start'], $n['end'], (bool) $n['all_day']);
+            }
             // Wiederkehrende Termine: nächster Termin ab heute
             $next = Calendar::occurrences($table, new \DateTimeImmutable('today'), new \DateTimeImmutable('+1 year'), ['ids' => [(int) $e['id']], 'limit' => 1, 'status' => $e['status'] === 'published' ? 'published' : 'all'])[0] ?? null;
             return $next ? self::event($table, $e, $next['start'], $next['end'], (bool) $next['all_day']) : self::event($table, $e, $span['start'], $span['end'], $span['all_day']);

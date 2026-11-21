@@ -87,6 +87,11 @@ final class Seo
         $title = strip_emphasis(Data\Entries::title($table, $entry));
         // Kalender-Tabellen: Datum im Titel („Schießtraining am 14.03.2027“), sonst haben Termine gleichen Namens denselben <title>
         $dated = Data\Calendar::titleWithDate($table, $entry, $title);
+        // Serie mit ?vorkommen=… (Data\EventActions::current): Datum dieses Vorkommens im Titel. Canonical bleibt die Seite der Serie
+        // ohne Parameter (unten) – Suchmaschinen sehen je Serie eine Seite statt einer pro Vorkommen.
+        if (!empty(Data\Calendar::config($table)['title_date']) && ($occ = Data\EventActions::current($table, $entry))) {
+            $dated = Data\Calendar::titleFor($title, $occ, Lang::valid((string) ($entry['lang'] ?? '')) ? (string) $entry['lang'] : Lang::current());
+        }
         $seo['title'] = self::withSuffix($dated, $suffix);
         if ($table['settings']['description_field'] !== '') {
             $d = Data\Entries::text($table, $entry, $table['settings']['description_field']);

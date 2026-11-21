@@ -527,7 +527,8 @@ final class Integrity
 
     /**
      * Neue Fehler per E-Mail melden – je Fund nur einmal (Merkliste in storage/integrity/notified.json bzw. je Website).
-     * Empfänger: Konten mit allen Rechten der aktuellen Website (bei Dateien: der Website, auf der die Prüfung läuft).
+     * Empfänger: Systemmeldungen, Kategorie „Integrität“ (Core\Mail\Alerts) – Dateien als Meldung der Installation, Datenbank als
+     * Meldung der Website (Rückfall: deren Administration ohne Netzwerk-Konten). Der Schalter der Website gilt nur für ihre Datenbank.
      */
     public static function notify(array $result, string $scope): int
     {
@@ -538,11 +539,7 @@ final class Integrity
         $new = array_values(array_filter($errors, fn($x) => !in_array($x['kind'] . '|' . $x['path'], $old, true)));
         self::write($file, $keys);
         $multi = Sites::multi();
-        // Dateien der Installation (mehrere Websites): immer an „Systemmeldungen an“ des Netzwerks (Core\Network\SystemMail) –
-        // der Schalter der Website gilt dort nur für ihre Datenbank
         if (!$new || (!($multi && $scope === 'files') && !app()->settings->get('sys.integrity_mail', true))) return 0;
-        $to = self::recipients($scope);
-        if (!$to) return 0;
         $host = (string) (parse_url((string) (app()->settings->get('sys.site_url') ?: (app()->config->get('url') ?? '')), PHP_URL_HOST) ?: site()->key);
         $lines = array_map(fn($x) => '- ' . $x['text'], array_slice($new, 0, 30));
         $net = $multi && $scope === 'files';
@@ -552,35 +549,13 @@ final class Integrity
             . "\n\n" . $where . ' ' . __('War es eine gewollte Änderung (Update, neue Erweiterung, neues Konto), dort „Als bekannt übernehmen“.')
             . "\n\n" . ($net ? Network\Network::siteLink(Network\Network::siteKey(), '/admin/network/integritaet') : admin_url_abs('/admin/system/integritaet'));
         $subject = $net ? __('Sicherheitshinweis: unerwartete Änderungen an den Dateien der Installation') : __('Sicherheitshinweis: unerwartete Änderungen auf {host}', ['host' => $host]);
-        if ($net) return Network\SystemMail::send($subject, $text, $to) ? count($new) : 0;
-        Mailer::send($subject, $text, $to);
-        return count($new);
+        return Mail\Alerts::send('integrity', $subject, $text, ['scope' => $scope === 'files' ? 'install' : 'site']) ? count($new) : 0;
     }
 
-    /**
-     * Empfänger der Hinweise. Einzelinstallation: alle Konten mit allen Rechten (wie bisher). Mehrere Websites: Dateien an
-     * „Systemmeldungen an“ (Core\Network\SystemMail); Datenbank an die Administration der Website ohne Netzwerk-Konten
-     * (Schatten-Konten der Netzwerk-Administration bekommen keine Kunden-Mails) – hat die Website keine eigene, an „Systemmeldungen an“.
-     * @return list<string>
-     */
+    /** Empfänger der Hinweise (Core\Mail\Alerts, Kategorie „Integrität“): files = Installation, db = diese Website @return list<string> */
     public static function recipients(string $scope): array
     {
-        if (!Sites::multi()) return array_values(self::scanDb()['admins']);
-        if ($scope === 'files') return Network\SystemMail::recipients(array_values(self::scanDb()['admins']));
-        $own = array_values(array_map(fn($u) => (string) $u['email'], array_filter(self::adminRows(), fn($u) => ($u['role'] ?? '') !== 'network' && empty($u['network_uid']))));
-        return $own ?: Network\SystemMail::recipients();
-    }
-
-    /** Aktive Konten mit allen Rechten dieser Website (mit Rolle und Netzwerk-Kennung) @return list<array> */
-    private static function adminRows(): array
-    {
-        $adminRoles = array_keys(array_filter(Permissions::roles(), fn($r) => in_array('*', (array) $r['permissions'], true)));
-        $adminRoles[] = 'network';
-        try {
-            return app()->db->fetchAll('SELECT id, email, role, network_uid FROM users WHERE disabled = 0 AND role IN (' . implode(',', array_fill(0, count($adminRoles), '?')) . ')', $adminRoles);
-        } catch (\Throwable) {
-            return [];
-        }
+        return Mail\Alerts::recipients('integrity', ['scope' => $scope === 'files' ? 'install' : 'site']);
     }
 
     /** Selbsttest: Vergleich, Sperrzonen, Signatur – in einem Spielordner, ohne die echte Installation zu berühren */

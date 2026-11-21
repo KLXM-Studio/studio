@@ -12,7 +12,7 @@ use Core\Sites;
  * Netzwerk-Bereich der Verwaltung (/admin/network/…): eigener Bereich mit dunklem Kopf „NETZWERK“, eigener Seitenleiste und
  * Umschalter Netzwerk ↔ Website – nur in Installationen mit mehreren Websites (Sites::multi()), nur auf der Netzwerk-Website,
  * nur für Netzwerk-Konten (Rolle network). Alles, was für die ganze Installation gilt (Geplante Aufgaben, Sicherung außer Haus,
- * Kits, Schriften, Branding, Dateien-Integrität, geteilte Medien/Daten, KI-Verbindungen, Netzwerk-Domain, Adresse der Verwaltung,
+ * Kits, Schriften, Branding, Dateien-Integrität, Systemmeldungen, geteilte Medien/Daten, KI-Verbindungen, Netzwerk-Domain, Adresse der Verwaltung,
  * Agentur-Zugang per OpenID Connect, Netzwerk-Konten, E-Mail des Netzwerks), liegt dort – die Verwaltung einer Website zeigt nur
  * Website-Eigenes.
  *
@@ -29,6 +29,7 @@ final class Area
         '/admin/system/kits' => '/admin/network/kits',
         '/admin/system/fonts' => '/admin/network/schriften',
         '/admin/system/branding' => '/admin/network/branding',
+        '/admin/system/meldungen' => '/admin/network/meldungen',
     ];
 
     /** Umgezogene Reiter einer Seite (Sprungmarke bzw. deren Präfix → Adresse im Netzwerk-Bereich) – nur für Netzwerk-Konten */
@@ -39,7 +40,7 @@ final class Area
     ];
 
     /** Seiten des Netzwerk-Bereichs mit eigenem Controller (Routen in app/routes.php vor /admin/network/{section}) */
-    public const PAGES = ['aufgaben', 'sicherung', 'kits', 'schriften', 'branding', 'integritaet'];
+    public const PAGES = ['aufgaben', 'sicherung', 'kits', 'schriften', 'branding', 'integritaet', 'meldungen'];
 
     /** Gibt es den Netzwerk-Bereich? Nur mit mehreren Websites – Einzelinstallationen behalten alles in den Grundeinstellungen */
     public static function active(): bool
@@ -140,6 +141,7 @@ final class Area
                 \Core\Cron::canManage() ? ['aufgaben', '/admin/network/aufgaben', __('Geplante Aufgaben'), 'clock-countdown', \Core\Cron::running() ? '' : __('Cronjob läuft nicht')] : null,
                 ['sicherung', '/admin/network/sicherung', __('Sicherung außer Haus'), 'cloud-arrow-up', $bk],
                 ['integritaet', '/admin/network/integritaet', __('Integrität der Dateien'), 'shield-check', $igWarn],
+                ['meldungen', '/admin/network/meldungen', __('Systemmeldungen'), 'bell-ringing', ''],
                 ['speicher', '/admin/network/speicher', __('Speicher'), 'hard-drives', ''],
                 ['protokoll', '/admin/network/protokoll', __('Protokoll'), 'clock-counter-clockwise', ''],
             ]))],

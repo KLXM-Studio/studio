@@ -897,6 +897,8 @@ final class Entries
         if ($name === '_when') {
             // Kalender: Zeitraum des Termins + Wiederholung, z. B. „Mo., 05.10.2026, 09:00–11:00 Uhr · Wöchentlich am Montag“
             if (!Calendar::enabled($table) || !($span = Calendar::span($table, $e))) return '';
+            // Detailseite einer Serie mit ?vorkommen=…: Datum dieses Vorkommens (Core\Data\EventActions::current)
+            if (($occ = EventActions::current($table, $e))) $span = ['start' => $occ['start'], 'end' => $occ['end'], 'all_day' => $occ['all_day'], 'has_end' => $occ['has_end']];
             $rec = Calendar::recurrence($table, $e);
             return e(Calendar::when($span + ['recurring' => false], $o['date_style'] ?? 'short') . ($rec['rrule'] !== '' ? ' · ' . Calendar::describe($rec) : ''));
         }

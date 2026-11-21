@@ -99,6 +99,30 @@ return [
                 'options' => ['' => 'Ganz zeigen auf heller Fläche (Logos)', 'cover' => 'Fläche füllen (Fotos, Porträts)']],
             ['name' => 'back_label', 'label' => 'Zurück-Link (optional)', 'type' => 'text', 'width' => 'half', 'placeholder' => 'z. B. Alle Beiträge'],
             ['name' => 'back_link', 'label' => 'Zurück zu', 'type' => 'link'],
+            // Termin-Aktionen (Core\Data\EventActions) unter dem Kopf – nur bei Kalender-Tabellen
+            ['name' => 'event_actions', 'label' => 'Termin-Aktionen zeigen (Kalender-Tabellen)', 'type' => 'bool', 'default' => true, 'show_if' => ['layout' => ['head']],
+                'help' => '„In den Kalender“ (.ics-Datei) und „Abonnieren“ unter dem Kopf – nur bei Tabellen mit Kalender und öffentlichem Feed. Vergangene Termine zeigen einen Hinweis, abgesagte „fällt aus“.'],
+            ['name' => 'event_links', 'label' => 'Links zu Kalender-Diensten', 'type' => 'select', 'default' => '', 'show_if' => ['layout' => ['head']],
+                'options' => ['' => 'Wie in den Grundeinstellungen (Standard: keine)', 'none' => 'Keine', 'google' => 'Google Kalender', 'outlook' => 'Outlook.com', 'both' => 'Google Kalender und Outlook.com'],
+                'help' => 'Reine Links ohne Skript: Erst beim Klick öffnet sich die Seite des Anbieters, der dann Titel, Zeit, Ort und Beschreibung des Termins erhält.'],
+        ],
+    ],
+    'event_actions' => [
+        'label' => 'Termin-Aktionen', 'icon' => 'calendar-plus', 'group' => 'Daten',
+        'context' => 'detail',   // Blockauswahl: nur in Detailseiten-Vorlagen (Core\Blocks\Picker::fits)
+        'description' => '„In den Kalender“ und „Abonnieren“ für den aufgerufenen Termin – für Detailseiten-Vorlagen von Kalender-Tabellen.',
+        'nestable' => true,   // in einer Spalte des Blocks „Layout“ erlaubt (Core\Layout)
+        'help' => 'Für die Detailseite eines Termins: Knopf „In den Kalender“ (.ics-Datei, bei Serien genau dieser bzw. der nächste Termin), „Abonnieren“ (alle Termine der Tabelle) und auf Wunsch Links zu Google Kalender und Outlook.com. Vergangene Termine zeigen einen Hinweis (bei Serien den nächsten Termin), abgesagte „fällt aus“.',
+        'fields' => [
+            ['name' => 'title', 'label' => 'Überschrift (optional)', 'type' => 'text', 'placeholder' => 'z. B. Termin merken'],
+            ['name' => 'table', 'label' => 'Tabelle', 'type' => 'datatable', 'help' => 'Leer = Tabelle des aufgerufenen Eintrags.'],
+            ['name' => 'show_when', 'label' => 'Datum und Uhrzeit zeigen', 'type' => 'select', 'default' => 'auto', 'required' => true, 'width' => 'half',
+                'options' => ['auto' => 'Nur bei Serien (welcher Termin)', 'always' => 'Immer', 'never' => 'Nie']],
+            ['name' => 'subscribe', 'label' => '„Abonnieren“ zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half',
+                'help' => 'Adresse des öffentlichen Feeds der Tabelle (webcal) – Kalender-Apps holen neue Termine selbst.'],
+            ['name' => 'external', 'label' => 'Links zu Kalender-Diensten', 'type' => 'select', 'default' => '',
+                'options' => ['' => 'Wie in den Grundeinstellungen (Standard: keine)', 'none' => 'Keine', 'google' => 'Google Kalender', 'outlook' => 'Outlook.com', 'both' => 'Google Kalender und Outlook.com'],
+                'help' => 'Reine Links ohne Skript: Erst beim Klick öffnet sich die Seite des Anbieters, der dann Titel, Zeit, Ort und Beschreibung des Termins erhält. Für die ganze Website: Grundeinstellungen → Karten & externe Quellen.'],
         ],
     ],
     'entry_blocks' => [

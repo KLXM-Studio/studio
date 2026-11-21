@@ -18,7 +18,7 @@ namespace Core;
 final class KitTest
 {
     /** Typen, die als Abschnitt nichts Eigenes zeigen oder einen Eintrag brauchen */
-    private const SKIP = ['entry_nav', 'entry_blocks', 'data_fields', 'not_found'];
+    private const SKIP = ['entry_nav', 'entry_blocks', 'data_fields', 'event_actions', 'not_found'];
 
     /**
      * Beispiel-Blöcke für das Kit: ['blocks' => [...], 'untested' => [Typen des Kits ohne Beispiel auf der Website]]
