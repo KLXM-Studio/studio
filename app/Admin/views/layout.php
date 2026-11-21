@@ -159,6 +159,8 @@ if ($user && ($req = app()->request)) {
   <?php endif; ?>
   <?php if ($netArea): $netCur = \Core\Network\Area::current($reqPath); // Seitenleiste des Netzwerk-Bereichs (Core\Network\Area::nav) ?>
   <nav id="adm-mainnav" class="adm-netnav" aria-label="<?= e(__('Netzwerk')) ?>">
+    <?php // Neue Website: fester Knopf oben in der Netzwerk-Seitenleiste (nicht auf jeder Netzwerk-Seite im Kopf) ?>
+    <p class="adm-netnew"><a class="adm-btn adm-btn--small adm-netnew__btn" href="<?= e(url('/admin/network/neu')) ?>"<?= ($netCur ?? '') === 'neu' ? ' aria-current="page"' : '' ?>><?= icon('plus') ?> <?= e(__('Neue Website')) ?></a></p>
     <?php foreach (\Core\Network\Area::nav() as $gi => $g): if (!$g['items']) continue; ?>
     <?php if ($g['label'] !== ''): ?><p class="adm-side__label" id="adm-netgrp-<?= (int) $gi ?>"><?= e($g['label']) ?></p><?php endif; ?>
     <ul<?= $g['label'] !== '' ? ' aria-labelledby="adm-netgrp-' . (int) $gi . '"' : '' ?>>

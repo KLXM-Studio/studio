@@ -9,3 +9,8 @@
 
 /* Seiten mit zwei Hüllen (Grundeinstellungen ↔ Netzwerk): ohne eigene Bereichsleiste volle Breite */
 .adm--netarea .adm-tabs-form--side.us-shell{display:block}
+
+/* Netzwerk-Seitenleiste: Knopf „Neue Website“ oben */
+.adm-netnew{margin:0 0 12px;padding:0 12px}
+.adm-netnew__btn{width:100%;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);color:#fff}
+.adm-netnew__btn:hover,.adm-netnew__btn[aria-current]{background:rgba(255,255,255,.16)}

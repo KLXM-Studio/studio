@@ -1,7 +1,7 @@
 <?php
 /**
  * Netzwerk: Bereichsleiste (Websites · Administratoren · E-Mail · Geteilt · Protokoll) – je Bereich eine eigene Adresse
- * (/admin/network/{bereich}, NetworkController::SECTIONS), Inhalt in network/_{bereich}.php. „Neue Website“ als Knopf oben.
+ * (/admin/network/{bereich}, NetworkController::SECTIONS), Inhalt in network/_{bereich}.php. „Neue Website“ als Knopf in der Übersicht und oben in der Netzwerk-Seitenleiste.
  * Websites: „Braucht Aufmerksamkeit“ (alle Hinweise als Liste) und ruhige Karten (Core\Network\Stats, SiteIcon); Stile in
  * resources/css/network.css, Filter/Suche/Ansicht in resources/js/_network.js.
  * @var string $section  ''|administratoren|email|neu|geteilt|protokoll
@@ -59,7 +59,7 @@ $oldHash = ['konten' => 'administratoren', 'net-invite' => 'administratoren', 'n
     <?php if ($section === ''): ?><p class="adm-muted"><?= e(__('„Öffnen“ meldet Sie mit Ihrem Netzwerk-Konto in der Verwaltung der jeweiligen Website an.')) ?></p><?php endif; ?></div>
   <div class="adm-head__actions">
     <?php if ($section === ''): ?><a class="adm-btn adm-btn--ghost adm-btn--small" href="<?= e(url('/admin/network?refresh=1')) ?>" title="<?= e(__('Stand: {time}', ['time' => date('H:i:s', $oldest)])) ?>"><?= icon('arrows-clockwise') ?> <?= e(__('Aktualisieren')) ?></a><?php endif; ?>
-    <?php if ($section !== 'neu'): ?><a class="adm-btn adm-btn--primary adm-btn--small" href="<?= e($secUrl('neu')) ?>"><?= icon('plus') ?> <?= e(__('Neue Website')) ?></a><?php endif; ?>
+    <?php if ($section === ''): // nur in der Übersicht „Alle Websites“; sonst über die Seitenleiste ?><a class="adm-btn adm-btn--primary adm-btn--small" href="<?= e($secUrl('neu')) ?>"><?= icon('plus') ?> <?= e(__('Neue Website')) ?></a><?php endif; ?>
   </div>
 </header>
 <?php
