@@ -10,6 +10,30 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kalender mit Serien (Tabellenart „calendar“), Orte, Vorkommens-Index
+- **Vorkommens-Index** (`Core\Data\Occurrences`, Tabelle `data_occurrences`): alle Termine aller Kalender-Tabellen – auch
+  bestehender Inhaltstabellen mit „Als Kalender nutzen“ – 12 Monate zurück und 24 Monate voraus vorberechnet; Pflege beim
+  Speichern/Löschen und täglich per Cron (`calendar:reindex --all`), Filtern, Sortieren und Kürzen in SQL, Rückfall auf die
+  bisherige Berechnung, wenn der Index nicht passt. Blöcke Kalender/Nächste Termine, Feeds, API lesen ihn ohne Änderung.
+- **Tabellenart Kalender** (`settings.kind = calendar`, Vorlage „Kalender“): Grundschema Titel, Kalender (Kategorien), Beginn,
+  Ende, Ganztägig, Wiederholung, Ort, Ort aus der Liste, Kartenpunkt, Beschreibung, Fällt aus; Kalender-Zuordnung fest, Zusatzfelder
+  „Nur Website“ (nie in ICS-Datei, Abo, CalDAV). **Tabellenart Orte** (Vorlage „Orte“): Name, Anschrift, Kartenpunkt, Anfahrt –
+  Ort aus der Liste liefert LOCATION/GEO, JSON-LD und Ortsangabe der Blöcke.
+- **Serien nach RFC 5545** (`Core\Data\Series`, Logik nach KLXM/scheduler, MIT): abweichende Einzeltermine als eigene Einträge
+  (`_series`, `_recurrence_id`, in Listen ausgeblendet), Ausfälle per Ausnahme (EXDATE) oder „Fällt aus“ (sichtbar, abgesagt),
+  Serien-Dialog „Nur dieser / Dieser und alle folgenden / Alle Termine“ beim Speichern eines Termins aus dem Kalender,
+  Wiederholungs-Editor mit Vorschau der nächsten Termine (Ausnahmen, geänderte und abgesagte Termine), ICS-Export.
+- **ICS** mit RRULE, EXDATE und RECURRENCE-ID je Einzeltermin, `STATUS:CANCELLED`; JSON-LD `EventCancelled`.
+  **dav 1.5.0:** Kalender ohne Zuordnung, Einzeltermine als RECURRENCE-ID, in Apps geänderte Termine werden Einzeltermine.
+- **`data:convert <tabelle> --kind=calendar`** (Probelauf, `--apply`, `--revert`): bestehende Termin-Tabelle an Ort und Stelle,
+  Website, Feed und Blöcke bleiben gleich. Für alle Arten (auch Adressbuch): Felder nach der Umwandlung wie in der Vorlage geordnet
+  (Grundfelder in ihren Abschnitten, eigene Felder mit ihren Abschnitten, leere Abschnitte entfallen, Altfelder am Ende),
+  Grundfelder mit Beschriftung und Pflicht des Grundschemas; `--revert` stellt Reihenfolge, Abschnitte, Beschriftungen und Pflicht
+  wieder her.
+- Tabellen ohne die Art verhalten sich unverändert (praxis: HTML- und Pixelvergleich ohne Abweichung). Selbsttest
+  `calendar:selftest`. Handbuch → Daten → „Kalender mit Serien“; Entwicklerhandbuch → Kalender → „Tabellenart calendar, Serien,
+  Vorkommens-Index“.
+
 ### Adressbuch (Tabellenart „contacts“) und Freigabe je Feld und Ziel
 - **Tabellenart Adressbuch** (`settings.kind = contacts`, `Core\Data\Kinds`): eine normale Inhaltstabelle (Route, Detailseiten,
   Revisionen, Workflow, geteilte Tabellen, Suche, API, Blöcke) mit festem, versioniertem Grundschema (`settings.kind_version`, nur
