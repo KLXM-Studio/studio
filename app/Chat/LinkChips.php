@@ -79,7 +79,7 @@ final class LinkChips
         $area = explode('/', trim(substr($route, 6), '/'))[0] ?? '';
         $label = match ($area) {
             '' => __('Übersicht'), 'pages' => __('Seiten'), 'settings' => app()->theme->settingsTitle(), 'media' => __('Medien'), 'data' => __('Daten'),
-            'requests' => __('Anfragen'), 'support' => __('Support'), 'ai' => \Core\AI\Assist::brand(), 'system' => __('Grundeinstellungen'),
+            'requests' => __('Eingang'), 'support' => __('Support'), 'ai' => \Core\AI\Assist::brand(), 'system' => __('Grundeinstellungen'),
             'design' => __('Design'), 'users' => __('Benutzer & Rollen'), 'hilfe' => __('Handbuch & Hilfe'), 'chat' => __('Chat'), 'account' => __('Konto'),
             default => null,
         };

@@ -15,7 +15,7 @@ import { initGeo } from './_geo.js';
 import { conditions } from './_conditions.js';
 import { initSecCount } from './_fsec.js';
 import { initExposure } from './_exposure.js';
-import { initRowMenus } from './_rowmenu.js';   // Eintragslisten: Zeilenmenü (⋯) an den Knopf setzen   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
+import { initRowMenus, openMenu } from './_rowmenu.js';   // Eintragslisten: Zeilenmenü (⋯) an den Knopf setzen   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
 import { initDateOnly } from './_dateonly.js';   // Datum/Uhrzeit nur als Datum bei „ganztägig“ (Core\Fields 'date_only_if')
 import { initDatetime, watchDatetime } from './_datetime.js';   // Datums-/Zeitauswahl a11y_datetime statt der des Browsers (Progressive Enhancement)
 import { initIban } from './_iban.js';
@@ -832,13 +832,16 @@ const paintStatus = (btn, st, title) => {
 // ------------------------------------------------------------ Daten: Einträge (Sammelaktionen, Reihenfolge ziehen)
 const entries = $('[data-entries]');
 if (entries) {
-  const endpoint = entries.dataset.entries, bulk = $('[data-bulk]', entries);
-  const checked = () => $$('[data-check]:checked', entries).map(c => +c.value);
-  const upd = () => { const n = checked().length; bulk.hidden = !n; $('[data-selcount]', entries).textContent = `${n} ausgewählt`; };
+  // Auswahl, Zähler und Leiste: _rowmenu.js ([data-rm-select]); hier nur die Aktionen der Leiste
+  const endpoint = entries.dataset.entries;
+  const checked = () => $$('[data-rm-check]:checked', entries).map(c => +c.value);
   const post = body => fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-Token': csrf() }, body: JSON.stringify(body) }).then(r => r.json());
-  entries.addEventListener('change', e => {
-    if (e.target.matches('[data-checkall]')) $$('[data-check]', entries).forEach(c => { c.checked = e.target.checked; });
-    upd();
+  // Exportieren (vCard/ICS) der gewählten Einträge: Download über ?ids[]=…
+  entries.addEventListener('click', e => {
+    const b = e.target.closest('[data-bulk-export]'); if (!b) return;
+    const u = new URL(b.dataset.bulkExport, location.href);
+    checked().forEach(id => u.searchParams.append('ids[]', id));
+    location.href = u.href;
   });
   // Status je Zeile: Online ⇄ Offline (Recht data.publish; Rückfrage nur beim Offline-Nehmen)
   const live = $('[data-entries-msg]', entries);
@@ -864,7 +867,8 @@ if (entries) {
   entries.addEventListener('click', async e => {
     const b = e.target.closest('[data-bulk-action]'); if (!b) return;
     const ids = checked();
-    if (b.dataset.bulkAction === 'delete' && !(await bar_.ask({ title: `${ids.length} Einträge endgültig löschen?`, ok: t('Löschen') }))) return;
+    if (b.dataset.bulkAction === 'delete' && !(await bar_.ask({ title: t('{n} Einträge endgültig löschen?', { n: ids.length }), ok: t('Löschen') }))) return;
+    if (b.dataset.bulkAction === 'draft' && !(await bar_.ask({ title: t('{n} Einträge offline nehmen?', { n: ids.length }), body: t('Besucher sehen sie dann nicht mehr; der Inhalt bleibt erhalten.'), ok: t('Offline nehmen'), danger: true }))) return;
     await post({ action: b.dataset.bulkAction, ids }); location.reload();
   });
   // Zeile anklicken = bearbeiten (außer auf Links/Checkboxen)
@@ -937,7 +941,7 @@ if (pt) {
     if (e.target.closest('[data-status-toggle]')) { select(n); toggleStatus(n); return; }
     if (e.target.closest('[data-toggle]')) { setExp(n, n.getAttribute('aria-expanded') !== 'true'); return; }
     if (e.target.closest('[data-menu]')) return;
-    if (e.target.closest('[data-more]')) { select(n); const r = e.target.getBoundingClientRect(); menu(n, r.left - 160, r.bottom + 4); return; }
+    if (e.target.closest('[data-more]')) { e.preventDefault(); select(n); menu(n, 0, 0, e.target.closest('[data-more]')); return; }
     if (e.target.closest('.pt-title')) { e.preventDefault(); }
     select(n); tree.focus();
   });
@@ -1071,67 +1075,62 @@ if (pt) {
   });
   tree.addEventListener('dragend', () => { drag?.classList.remove('is-drag'); drag = null; clear(); });
 
-  // Kontextmenü
-  let mEl = null;
-  const closeMenu = () => { mEl?.remove(); mEl = null; };
-  const menu = (n, x, y) => {
-    closeMenu();
-    const home = n.dataset.home === '1', id = n.dataset.id;
+  // Kontextmenü (⋯, Rechtsklick, Umschalt+F10): Zeilenmenü wie in allen Listen (_rowmenu.js openMenu – Reihenfolge und Symbole fest)
+  const versions = id => {   // Versionen: Vorlage-Knopf mit den Angaben für versions.mjs, je Seite die ID einsetzen
+    const tpl = $('[data-pt-versions]', pt); if (!tpl) return;
+    const b = tpl.cloneNode(true); b.hidden = false; b.removeAttribute('data-pt-versions');
+    b.dataset.versions = b.dataset.versions.replace('__ID__', id); b.className = 'sr-only';
+    pt.append(b); b.click(); b.remove();
+  };
+  const menu = (n, x, y, anchor = null) => {
+    const home = n.dataset.home === '1', id = n.dataset.id, mv = moves(n);
+    const menuBox = $(':scope > .pt-row [data-menu]', n);
+    const abs = new URL(n.dataset.url, location.href).href;
     const items = [
-      ['Inhalte bearbeiten', () => open(n)],
-      ['Seiteneinstellungen …', () => { location.href = `${base}/${id}`; }],
-      ['Ansehen ↗', () => window.open(n.dataset.url, '_blank', 'noopener')],
-      [t('Vorschau'), () => { n.click(); d.dispatchEvent(new CustomEvent('ptpv:open', { detail: n })); }],
-      ['-'],
-      ['Neue Unterseite …', () => { location.href = `${base}/new?parent=${id}&lang=${pt.dataset.lang}`; }],
-      // Verschieben ohne Ziehen (auch per Tastatur: Alt + Pfeiltasten)
-      ...(() => { const mv = moves(n), l = [[t('Nach oben verschieben'), mv.up, 'Alt+↑'], [t('Nach unten verschieben'), mv.down, 'Alt+↓'], [t('Einrücken (Unterseite der vorigen)'), mv.indent, 'Alt+→'], [t('Ausrücken (eine Ebene höher)'), mv.outdent, 'Alt+←']].filter(x => x[1]);
-        return l.length ? [['-'], ...l.map(([lbl, fn, k]) => [lbl, fn, false, k])] : []; })(),
-      ...Object.entries(JSON.parse(pt.dataset.languages || '{}')).filter(([code]) => code !== pt.dataset.lang).map(([code, label]) =>
-        [(n.dataset.langs || '').split(',').includes(code) ? `${label}: Übersetzung öffnen` : `Übersetzung anlegen: ${label}`, async () => {
-          const res = await post(`${base}/${id}/translate`, { lang: code });
-          if (res.ok) location.href = res.url; else alert(res.error);
-        }]),
-      ...(home ? [] : [['Duplizieren', async () => { await post(`${base}/${id}/duplicate`); location.reload(); }]]),
-      // Indexierung (Core\Indexing): wie „Nicht in Suchmaschinen / Sitemap aufnehmen“ in den Seiteneinstellungen
-      ...(home ? [] : [[n.dataset.noindex === '1' ? t('Indexieren erlauben') : t('Nicht indexieren'), async () => {
-        const res = await post(`${base}/${id}/noindex`);
-        if (res.ok) location.reload(); else statusFlash(pt, 'error', res.error || t('Das hat nicht geklappt.'));
-      }]]),
-      // Seitenvorlagen (Core\PageTemplates): nur für die Administration
-      ...(pt.dataset.canTemplates === '1' && !home ? [[t('Als Vorlage speichern'), async () => {
+      { key: 'open', label: t('Inhalte bearbeiten'), run: () => open(n) },
+      { key: 'settings', label: t('Seiteneinstellungen …'), href: `${base}/${id}` },
+      { key: 'view', label: t('Ansehen'), href: n.dataset.url, target: '_blank' },
+      { key: 'preview', label: t('Vorschau'), run: () => { n.click(); d.dispatchEvent(new CustomEvent('ptpv:open', { detail: n })); } },
+      { key: 'child', label: t('Neue Unterseite …'), href: `${base}/new?parent=${id}&lang=${pt.dataset.lang}` },
+      ...(home ? [] : [{ key: 'duplicate', label: t('Duplizieren'), run: async () => { await post(`${base}/${id}/duplicate`); location.reload(); } }]),
+      ...(pt.dataset.canTemplates === '1' && !home ? [{ key: 'duplicate', icon: 'stamp', label: t('Als Vorlage speichern'), run: async () => {
         const res = await post(`${base}/${id}/template`);
         if (res.ok) location.href = res.url; else statusFlash(pt, 'error', res.error || t('Das hat nicht geklappt.'));
-      }]] : []),
-      ...(n.dataset.dirty === '1' && n.dataset.state === 'online' ? [['Änderungen veröffentlichen', async () => {
+      } }] : []),
+      // Verschieben ohne Ziehen (auch per Tastatur: Alt + Pfeiltasten)
+      ...[[t('Nach oben verschieben'), mv.up, 'Alt+↑', 'Alt+ArrowUp', 'arrow-up'], [t('Nach unten verschieben'), mv.down, 'Alt+↓', 'Alt+ArrowDown', 'arrow-down'],
+        [t('Einrücken (Unterseite der vorigen)'), mv.indent, 'Alt+→', 'Alt+ArrowRight', 'arrow-right'], [t('Ausrücken (eine Ebene höher)'), mv.outdent, 'Alt+←', 'Alt+ArrowLeft', 'arrow-left']]
+        .filter(x => x[1]).map(([label, run, keys, aria, icon], i) => ({ key: 'move', label, run, keys, aria, icon, sep: i === 0 })),
+      // Im Menü an/aus (wie der Schalter der Zeile) und Indexierung (Core\Indexing)
+      ...(menuBox ? [{ key: 'menu', label: menuBox.checked ? t('Nicht im Menü zeigen') : t('Im Menü zeigen'), sep: true, run: () => { menuBox.checked = !menuBox.checked; menuBox.dispatchEvent(new Event('change', { bubbles: true })); } }] : []),
+      ...(home ? [] : [{ key: 'menu', icon: 'magnifying-glass', label: n.dataset.noindex === '1' ? t('Indexieren erlauben') : t('Nicht indexieren'), run: async () => {
+        const res = await post(`${base}/${id}/noindex`);
+        if (res.ok) location.reload(); else statusFlash(pt, 'error', res.error || t('Das hat nicht geklappt.'));
+      } }]),
+      ...(n.dataset.dirty === '1' && n.dataset.state === 'online' ? [{ key: 'publish', label: t('Änderungen veröffentlichen'), run: async () => {
         const res = await post(`${base}/${id}/publish`);
         if (!res.ok) { statusFlash(pt, 'error', res.error || t('Status konnte nicht geändert werden.')); return; }
         location.reload();
-      }]] : []),
+      } }] : []),
       // Online ⇄ Offline (wie der Status-Knopf der Zeile)
-      ...($(':scope > .pt-row [data-status-toggle]', n) ? [[t(STATUS_ACT[n.dataset.state] || 'Veröffentlichen'), () => toggleStatus(n)]] : []),
+      ...($(':scope > .pt-row [data-status-toggle]', n) ? [{ key: 'publish', icon: n.dataset.state === 'online' ? 'eye-slash' : 'globe', label: t(STATUS_ACT[n.dataset.state] || 'Veröffentlichen'), run: () => toggleStatus(n) }] : []),
+      { key: 'versions', label: t('Versionen'), run: () => versions(id) },
+      { key: 'copy', label: t('Link kopieren'), run: () => navigator.clipboard?.writeText(abs).then(() => toast(t('Link kopiert'), 'ok'), () => prompt(t('Link kopieren'), abs)) },
+      ...Object.entries(JSON.parse(pt.dataset.languages || '{}')).filter(([code]) => code !== pt.dataset.lang).map(([code, label]) =>
+        ({ key: 'export', icon: 'translate', label: (n.dataset.langs || '').split(',').includes(code) ? t('{lang}: Übersetzung öffnen', { lang: label }) : t('Übersetzung anlegen: {lang}', { lang: label }), run: async () => {
+          const res = await post(`${base}/${id}/translate`, { lang: code });
+          if (res.ok) location.href = res.url; else statusFlash(pt, 'error', res.error || t('Das hat nicht geklappt.'));
+        } })),
+      ...(pt.dataset.tasks ? [{ key: 'task', label: t('Aufgabe anlegen'), href: `${pt.dataset.tasks}?link=page:${id}&back=${encodeURIComponent('/admin/pages')}` }] : []),
       // Erweiterungen (Extension::pageList): [Beschriftung, Adresse]
-      ...(n.dataset.extActions ? [['-'], ...JSON.parse(n.dataset.extActions).map(([l, href]) => [l, () => { location.href = href; }])] : []),
-      ...(home ? [] : [['-'], ['Löschen …', async () => {
+      ...(n.dataset.extActions ? JSON.parse(n.dataset.extActions).map(([label, href]) => ({ key: 'ext', label, href })) : []),
+      ...(home ? [] : [{ key: 'delete', label: t('Löschen …'), run: async () => {
         const kids = $$('.pt-node', n).length;
-        if (!(await bar_.ask({ title: `„${n.dataset.title}“ löschen?${kids ? `\n\n${kids} Unterseite(n) rücken eine Ebene nach oben.` : ''}`, ok: t('Löschen') }))) return;
+        if (!(await bar_.ask({ title: t('„{title}“ löschen?', { title: n.dataset.title }) + (kids ? '\n\n' + t('{n} Unterseite(n) rücken eine Ebene nach oben.', { n: kids }) : ''), ok: t('Löschen') }))) return;
         await post(`${base}/${id}/delete`); location.reload();
-      }, true]]),
+      } }]),
     ];
-    mEl = d.createElement('div'); mEl.className = 'fx-menu'; mEl.setAttribute('role', 'menu');
-    mEl.innerHTML = items.map(([l, , danger, key], i) => l === '-' ? '<hr>' : `<button type="button" role="menuitem" data-i="${i}"${danger ? ' class="is-danger"' : ''}${key ? ` aria-keyshortcuts="${key.replace('↑', 'ArrowUp').replace('↓', 'ArrowDown').replace('→', 'ArrowRight').replace('←', 'ArrowLeft')}"` : ''}>${esc(l)}${key ? ` <kbd class="fx-menu-key" aria-hidden="true">${esc(key)}</kbd>` : ''}</button>`).join('');
-    d.body.append(mEl);
-    const r = mEl.getBoundingClientRect();
-    mEl.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px'; mEl.style.top = Math.min(y, innerHeight - r.height - 8) + 'px';
-    mEl.addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { closeMenu(); items[+b.dataset.i][1](); } });
-    mEl.addEventListener('keydown', e => {
-      const bs = $$('button', mEl), i = bs.indexOf(d.activeElement);
-      if (e.key === 'ArrowDown') { e.preventDefault(); bs[(i + 1) % bs.length].focus(); }
-      if (e.key === 'ArrowUp') { e.preventDefault(); bs[(i - 1 + bs.length) % bs.length].focus(); }
-      if (e.key === 'Escape') { closeMenu(); tree.focus(); }
-    });
-    $('button', mEl).focus();
-    setTimeout(() => d.addEventListener('pointerdown', ev => { if (mEl && !mEl.contains(ev.target)) closeMenu(); }, { once: true }));
+    openMenu({ items, title: n.dataset.title, ...(anchor ? { anchor } : { x, y }), back: tree });
   };
 }
 

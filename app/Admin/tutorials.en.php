@@ -142,7 +142,7 @@ return [
             'goal' => 'You read incoming online requests (e.g. prescription or callback requests) and mark who takes care of them.',
             'prerequisites' => ['Permission “read online requests”.', 'The secret key (e.g. in your password manager).'],
             'steps' => [
-                'New online requests are counted next to “Anfragen” in the menu.',
+                'New online requests are counted next to “Eingang” (inbox) in the menu.',
                 'On the left the inboxes, e.g. prescription requests, with “Neu” (new), “In Bearbeitung” (in progress) and “Erledigt” (done). Contents are stored encrypted.',
                 'Paste the secret key from your password manager and click “Entschlüsseln” (decrypt).',
                 'The details are now readable – in the list and in the detail view on the right. After reloading everything is locked again.',

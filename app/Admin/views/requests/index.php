@@ -13,13 +13,13 @@
  */
 use Core\Data\Inbox;
 
-$title = __('Anfragen');
+$title = __('Eingang');
 $qs = fn(array $p) => url('/admin/requests') . '?' . http_build_query(array_filter($p + ['table' => $t['handle'] ?? null, 'status' => $status ?? null], fn($v) => $v !== null && $v !== ''));
 $userNames = array_column($users ?? [], null, 'id');
 $fmt = \Core\Format::admin();
 ?>
 <?php if (!$tables): ?>
-<header class="adm-head"><div><p class="adm-eyebrow"><?= e(__('Online-Services')) ?></p><h1><?= e(__('Anfragen')) ?></h1></div></header>
+<header class="adm-head"><div><p class="adm-eyebrow"><?= e(__('Online-Services')) ?></p><h1><?= e(__('Eingang')) ?></h1></div></header>
 <div class="adm-card">
   <p><?= e(__('Es gibt noch keine Eingangs-Tabelle, die Sie lesen dürfen.')) ?></p>
   <?php if (can('data.schema')): ?><p><a class="adm-btn adm-btn--primary" href="<?= e(url('/admin/data/new')) ?>"><?= e(__('Eingang anlegen')) ?></a></p><?php endif; ?>
@@ -47,7 +47,7 @@ $summary = function (?array $data) use ($t): array {
 $pill = fn(string $st) => '<span class="rq-pill rq-pill--' . e((string) ($statuses[$st]['tone'] ?? '')) . '" data-rq-pill>' . e(Inbox::statusLabel($st, $t)) . '</span>';
 $boxTitle = $status === 'alle' ? __('Alle') : Inbox::statusLabel($status, $t);
 ?>
-<h1 class="adm-sr"><?= e(__('Anfragen')) ?> – <?= e($t['name']) ?></h1>
+<h1 class="adm-sr"><?= e(__('Eingang')) ?> – <?= e($t['name']) ?></h1>
 
 <?php if (!$keyReady): ?>
 <p class="adm-flash adm-flash--error" role="note"><?= e(__('Es ist kein öffentlicher Schlüssel hinterlegt – die Formulare nehmen keine Anfragen an.')) ?> <a href="<?= e(url('/admin/system#keys')) ?>"><?= e(__('Schlüssel erzeugen')) ?></a></p>
@@ -106,7 +106,7 @@ $boxTitle = $status === 'alle' ? __('Alle') : Inbox::statusLabel($status, $t);
       <?php if (!$rows): ?>
       <p class="rq-none"><?= e(__('Keine Anfragen in dieser Ansicht.')) ?></p>
       <?php else: ?>
-      <ul class="rq-rows" data-rq-list aria-label="<?= e(__('Anfragen')) ?>">
+      <ul class="rq-rows" data-rq-list aria-label="<?= e(__('Eingang')) ?>">
         <?php foreach ($rows as $row): $id = (int) $row['id']; $data = $decrypted[$id] ?? null; [$name, $ex] = $summary($data); $on = $id === $selId;
           $au = $row['assignee'] ? ($userNames[$row['assignee']] ?? null) : null; $auName = $au ? ($au['name'] ?: $au['email']) : ($row['assignee'] ? '#' . $row['assignee'] : '');
           $search = mb_strtolower(implode(' ', [$row['ref'], \Core\Format::admin()->date(strtotime((string) $row['created_at'])), $auName, Inbox::statusLabel($row['status'], $t), $data ? implode(' ', array_column($data['fields'], 'value')) : ''])); ?>

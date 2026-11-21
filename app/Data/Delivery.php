@@ -405,7 +405,7 @@ final class Delivery
         if (Lang::multi() && Lang::current() !== $lang) $meta[__('Sprache der Anfrage')] = strtoupper(Lang::current());
         $footer = $mode === 'mail'
             ? __('Diese Anfrage ist nicht auf der Website gespeichert – diese E-Mail ist das einzige Exemplar. Bitte gemäß Ihren Aufbewahrungspflichten archivieren.')
-            : __('Die Anfrage liegt zusätzlich verschlüsselt im Verwaltungsbereich (Anfragen) und wird dort nach der eingestellten Frist gelöscht.');
+            : __('Die Anfrage liegt zusätzlich verschlüsselt im Verwaltungsbereich (Eingang) und wird dort nach der eingestellten Frist gelöscht.');
         if ($test) $footer = __('TESTNACHRICHT mit erfundenen Angaben („Testmail senden“ in der Verwaltung) – bitte nicht archivieren.') . ' ' . $footer;
 
         $text = $form . ' – ' . __('Vorgangsnummer') . ' ' . $ref . "\n" . str_repeat('=', 60) . "\n";
@@ -658,7 +658,7 @@ final class Delivery
         \Core\Mail\Alerts::once('mail', 'mail:' . site()->key . ':' . $t['handle'] . ':' . (int) $stored, $subject . ': ' . $t['name'],
             __('Guten Tag,') . "\n\n" . __('eine Anfrage in „{table}“ (Vorgangsnummer {ref}) konnte nicht per E-Mail zugestellt werden.', ['table' => $t['name'], 'ref' => $ref]) . "\n"
             . __('Grund: {reason}', ['reason' => $reason]) . "\n\n"
-            . ($stored ? __('Die Anfrage wurde stattdessen verschlüsselt im System gesichert und ist unter „Anfragen“ mit dem Schlüssel lesbar:') . "\n" . admin_url_abs('/admin/requests?table=' . $t['handle'])
+            . ($stored ? __('Die Anfrage wurde stattdessen verschlüsselt im System gesichert und ist im „Eingang“ mit dem Schlüssel lesbar:') . "\n" . admin_url_abs('/admin/requests?table=' . $t['handle'])
                 : __('Die Anfrage konnte auch nicht gesichert werden. Bitte die Einstellungen prüfen:') . "\n" . admin_url_abs('/admin/data/' . $t['handle'] . '/schema'))
             . "\n\n" . __('Diese E-Mail enthält aus Datenschutzgründen keine Inhalte.') . ' ' . __('Weitere Fehler dieser Tabelle in der nächsten Stunde stehen nur unter „Anfragen“.') . "\n",
             ['scope' => 'site', 'fallback' => $to], 3600);

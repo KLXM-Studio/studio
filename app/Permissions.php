@@ -40,7 +40,7 @@ final class Permissions
                 // Externe Quellen (Core\Sources) – zusätzlich Funktion „sources“ der Website
                 'sources.manage' => __('Externe Quellen einrichten und abrufen (Feeds, APIs, OpenImmo)'),
             ],
-            __('Anfragen') => [
+            __('Eingang') => [
                 'requests.read' => __('Online-Anfragen lesen (mit Schlüssel)'),
                 'requests.manage' => __('Anfragen erledigen und löschen'),
             ],

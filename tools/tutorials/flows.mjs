@@ -260,7 +260,7 @@ add({
   async run(t, s) {
     const read = 'main article.rq-read:visible';
     await t.goto('/admin');
-    await t.step('Neue Online-Anfragen zeigt die Zahl neben „Anfragen“ im Menü.', 'New online requests are counted next to “Anfragen” in the menu.');
+    await t.step('Neue Online-Anfragen zeigt die Zahl neben „Eingang“ im Menü.', 'New online requests are counted next to “Eingang” (inbox) in the menu.');
     await t.click('#adm-mainnav a[href$="/admin/requests"]', { after: 1200 });
     await t.step('Links die Eingänge, z. B. Rezeptanfragen, mit „Neu“, „In Bearbeitung“ und „Erledigt“. Die Inhalte sind verschlüsselt gespeichert.', 'On the left the inboxes, e.g. prescription requests, with “Neu” (new), “In Bearbeitung” (in progress) and “Erledigt” (done). Contents are stored encrypted.');
     await t.ring('nav[aria-label="Postfächer"]', 1600).catch(() => {});
@@ -1233,7 +1233,7 @@ add({
     await t.step('Oben links „Menü öffnen“ – das Menü kommt als Schublade von links.', 'Top left “Menü öffnen” (open menu) – the menu slides in from the left.');
     await t.click('.adm-top__menu', { after: 1400 });
     t.poster();
-    await t.step('„Daten“, „Medien“, „Anfragen“ … wie am Computer. Favoriten stehen ganz oben.', '“Daten”, “Medien”, “Anfragen” … just like on a computer. Favourites are at the top.');
+    await t.step('„Daten“, „Medien“, „Eingang“ … wie am Computer. Favoriten stehen ganz oben.', '“Daten”, “Medien”, “Eingang” … just like on a computer. Favourites are at the top.');
     await t.click('#adm-mainnav a[href$="/admin/data"]', { after: 1600 });
     await t.step('Die Lupe oben rechts öffnet die Suche – Seiten, Einträge, Medien und Einstellungen.', 'The magnifier at the top right opens search – pages, entries, media and settings.');
     await t.click('.adm-top__search', { after: 600 });

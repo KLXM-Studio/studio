@@ -78,7 +78,7 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
 <header class="adm-head">
   <div><p class="adm-eyebrow"><a href="<?= e(url('/admin/data')) ?>">Daten</a><?= $isNew ? '' : ' · <a href="' . e(url('/admin/requests?table=' . $table['handle'])) . '">' . e($table['name']) . '</a>' ?> · <?= e(__('Eingang (verschlüsselt)')) ?></p>
     <h1><?= $isNew ? e(__('Neuer Eingang')) : 'Felder &amp; Einstellungen' ?></h1></div>
-  <?php if (!$isNew): ?><a class="adm-btn adm-btn--ghost" href="<?= e(url('/admin/requests?table=' . $table['handle'])) ?>"><?= e(__('Zu den Anfragen')) ?></a><?php endif; ?>
+  <?php if (!$isNew): ?><a class="adm-btn adm-btn--ghost" href="<?= e(url('/admin/requests?table=' . $table['handle'])) ?>"><?= e(__('Zum Eingang')) ?></a><?php endif; ?>
 </header>
 <?php else: // Tabelle und „Zu den Einträgen“ stehen in der Daten-Navigation (data/_nav.php) ?>
 <header class="adm-head dt-head">

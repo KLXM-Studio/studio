@@ -3,6 +3,7 @@ import { toast as sharedToast } from './_toast.js';
 import { drill } from './_drill.js';
 import { layerBox, inPath, topInset } from './_shadow.js';
 import { ico } from './_icons.js';
+import { openMenu } from './_rowmenu.js';   // Zeilenmenü wie in allen Listen (Reihenfolge, Symbole, Telefon als Blatt)
 import { esc, csrf } from './_html.js';
 import { ask } from './_bar.js';   // gestaltete Rückfrage statt window.confirm()
 import { captionsPanel, initCaptionsQueue } from './_captions.js';   // Untertitel & Transkripte (Video/Audio)
@@ -1065,6 +1066,12 @@ class Finder {
       const next = ids[Math.max(0, Math.min(ids.length - 1, i + step))];
       if (e.shiftKey) { this.selectRange(this.anchor ?? next, next); } else if (!this.opts.multi) { this.sel = new Set([next]); this.anchor = next; }
       this.active = next; this.syncSel();
+    } else if ((e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) && this.active) {
+      // Menü per Tastatur – wie in allen Listen (Umschalt+F10 / Menütaste)
+      e.preventDefault();
+      if (!this.sel.has(this.active)) { this.sel = new Set([this.active]); this.syncSel(); }
+      const el = this.$items.querySelector(`[data-id="${this.active}"]`), r = el?.getBoundingClientRect();
+      this.contextMenu(r ? r.left + 16 : 40, r ? r.top + Math.min(r.height, 40) : 40);
     } else if (e.key === ' ') { e.preventDefault(); if (this.active) this.quickLook(this.active); }
     else if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); this.sel = new Set(ids); this.syncSel(); }
     else if ((e.key === 'Backspace' || e.key === 'Delete') && this.sel.size && this.mode === 'library' && !this.ro) { e.preventDefault(); this.deleteSel(); }
@@ -1104,45 +1111,38 @@ class Finder {
   }
 
   // ---------------------------------------------------------- Kontextmenü
-  menu(x, y, entries) {
+  /** Menü: [Beschriftung, Aktion, gefährlich?, Schlüssel (RowMenu-Reihenfolge), Symbol] oder ['-'] – dieselbe Gestalt wie alle Zeilenmenüs */
+  menu(x, y, entries, o = {}) {
     this.closeMenu();
-    const m = d.createElement('div');
-    m.className = 'fx-menu'; m.setAttribute('role', 'menu');
-    m.innerHTML = entries.map(([l, , danger], i) => l === '-' ? '<hr>' : `<button type="button" role="menuitem" data-i="${i}"${danger ? ' class="is-danger"' : ''}>${esc(l)}</button>`).join('');
+    let sep = false;
+    const items = [];
+    for (const [l, run, danger, key, icon] of entries) {
+      if (l === '-') { sep = items.length > 0; continue; }
+      items.push({ label: l, run, danger: !!danger, key: key || (danger ? 'delete' : 'ext'), icon: icon || (key || danger ? '' : false), sep });
+      sep = false;
+    }
     // Im Auswahldialog (modal) ins <dialog> selbst – außerhalb wäre das Menü inert
-    (this.root.closest('dialog') || box()).append(m);
-    const r = m.getBoundingClientRect();
-    m.style.left = Math.min(x, innerWidth - r.width - 8) + 'px'; m.style.top = Math.min(y, innerHeight - r.height - 8) + 'px';
-    m.addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { this.closeMenu(); entries[+b.dataset.i][1](); } });
-    m.addEventListener('keydown', e => {
-      const bs = $$('button', m), i = bs.indexOf(m.getRootNode().activeElement);   // auch im Shadow DOM
-      if (e.key === 'ArrowDown') { e.preventDefault(); bs[(i + 1) % bs.length].focus(); }
-      if (e.key === 'ArrowUp') { e.preventDefault(); bs[(i - 1 + bs.length) % bs.length].focus(); }
-      if (e.key === 'Escape') { this.closeMenu(); this.$items.focus(); }
-    });
-    $('button', m)?.focus();
-    this._menu = m;
-    setTimeout(() => d.addEventListener('pointerdown', this._off = ev => { if (!inPath(ev, m)) this.closeMenu(); }));
+    this._menu = openMenu({ items, title: o.title || '', x, y, root: this.root.closest('dialog') || box(), back: this.$items });
   }
-  closeMenu() { this._menu?.remove(); this._menu = null; if (this._off) d.removeEventListener('pointerdown', this._off); }
+  closeMenu() { try { this._menu?.hidePopover(); } catch { /* schon zu */ } this._menu = null; }
   contextMenu(x, y) {
     const ids = [...this.sel], one = ids.length === 1 ? this.byId(ids[0]) : null;
     const e = [];
-    if (this.mode === 'pick' && one) e.push(['Auswählen', () => this.opts.onPick?.(one)]);
+    if (this.mode === 'pick' && one) e.push(['Auswählen', () => this.opts.onPick?.(one), false, 'open', 'check']);
     if (this.ro) {
-      if (one) e.push(['Quick Look', () => this.quickLook(one.id)], ['Original öffnen', () => open(one.kind === 'pdf' ? one.viewer : one.url, '_blank', 'noopener')]);
+      if (one) e.push(['Quick Look', () => this.quickLook(one.id), false, 'preview'], ['Original öffnen', () => open(one.kind === 'pdf' ? one.viewer : one.url, '_blank', 'noopener'), false, 'view'], [t('Link kopieren'), () => this.copyLink(one), false, 'copy']);
       if (e.length) this.menu(x, y, e);
       return;
     }
-    if (one) e.push(['Bearbeiten …', () => this.edit(one.id)], ['Quick Look', () => this.quickLook(one.id)]);
-    if (one?.kind === 'image' && !one.svg) e.push(['Zuschneiden …', () => crop(one, Object.keys(this.meta.ratios)[0], () => this.load())]);
-    if (one?.kind === 'image' && !one.editable) e.push([t('Bild bearbeiten …'), () => this.editImage(one)]);
+    if (one) e.push(['Bearbeiten …', () => this.edit(one.id), false, 'open'], ['Quick Look', () => this.quickLook(one.id), false, 'preview']);
+    if (one?.kind === 'image' && !one.svg) e.push(['Zuschneiden …', () => crop(one, Object.keys(this.meta.ratios)[0], () => this.load()), false, 'open', 'crop']);
+    if (one?.kind === 'image' && !one.editable) e.push([t('Bild bearbeiten …'), () => this.editImage(one), false, 'open', 'image']);
     // Erweiterungen: „Bearbeiten mit …“ (Hook edit, z. B. im Grafik-Editor)
-    for (const a of this.editActions(one)) if (a.menu !== false) e.push([a.menuLabel || a.label, () => { try { a.run(this, one, {}); } catch (ex) { console.error(ex); toast(ex.message); } }]);
-    if (one) e.push(['Datei ersetzen …', () => this.replace(one)], ['Original öffnen', () => open(one.kind === 'pdf' ? one.viewer : one.url, '_blank', 'noopener')]);
-    if (ids.length > 1 && this.meta.zip) e.push([t('Als ZIP herunterladen'), () => { location.href = this.zipUrl(ids); }]);
-    if (this.src.type === 'trash') e.push([t('Wiederherstellen'), async () => { await api.bulk({ ids, action: 'restore' }); this.sel.clear(); toast(t('Wiederhergestellt')); this.load(); }]);
-    if (this.src.type === 'collection') e.push(['Aus Sammlung entfernen', async () => { await api.bulk({ ids, action: 'uncollect', collection: +this.src.value }); this.load(); }]);
+    for (const a of this.editActions(one)) if (a.menu !== false) e.push([a.menuLabel || a.label, () => { try { a.run(this, one, {}); } catch (ex) { console.error(ex); toast(ex.message); } }, false, 'open', 'puzzle-piece']);
+    if (one) e.push(['Datei ersetzen …', () => this.replace(one), false, 'open', 'arrows-clockwise'], ['Original öffnen', () => open(one.kind === 'pdf' ? one.viewer : one.url, '_blank', 'noopener'), false, 'view'], [t('Link kopieren'), () => this.copyLink(one), false, 'copy']);
+    if (ids.length > 1 && this.meta.zip) e.push([t('Als ZIP herunterladen'), () => { location.href = this.zipUrl(ids); }, false, 'export', 'download-simple']);
+    if (this.src.type === 'trash') e.push([t('Wiederherstellen'), async () => { await api.bulk({ ids, action: 'restore' }); this.sel.clear(); toast(t('Wiederhergestellt')); this.load(); }, false, 'move', 'arrow-counter-clockwise']);
+    if (this.src.type === 'collection') e.push(['Aus Sammlung entfernen', async () => { await api.bulk({ ids, action: 'uncollect', collection: +this.src.value }); this.load(); }, false, 'move', 'x']);
     // Vorhandene Dateien der Website in einen geteilten Pool verschieben (Verwendungen bleiben erhalten)
     if (!this.pool && this.meta.can_share && ids.length) for (const p of (this.meta.pools || []).filter(p => p.edit)) {
       e.push([`In „${p.label}“ verschieben (${p.protected ? 'geschützt' : 'geteilt'}) …`, async () => {
@@ -1151,7 +1151,7 @@ class Finder {
           : 'Die Dateien stehen dann allen Websites zur Verfügung, die diesen Pool nutzen. Bisherige Verwendungen auf dieser Website bleiben erhalten; ändern dürfen sie danach nur Personen mit dem Recht „Geteilte Medien pflegen“.') }))) return;
         try { const r = await api.share(ids, p.key); toast(`${r.shared} ${r.shared === 1 ? 'Datei' : 'Dateien'} geteilt`); this.sel.clear(); this.load(); }
         catch (ex) { toast(ex.message); }
-      }]);
+      }, false, 'move', 'folder-open']);
     }
     // Zwischen Pools verschieben: Verweise aller Websites wandern mit – auf den Seiten ändert sich nichts
     const here = (this.meta.pools || []).find(p => p.key === this.pool);
@@ -1163,12 +1163,17 @@ class Finder {
         if (!(await ask({ ok: 'Verschieben', danger: p.protected !== here.protected, title: `${ids.length > 1 ? ids.length + ' Dateien' : '„' + (one?.display || '') + '“'} von „${here.label}“ nach „${p.label}“ verschieben?\n\nAlle Verwendungen auf allen Websites bleiben erhalten und zeigen auf die neue Stelle.` + vis }))) return;
         try { const r = await api.movePool(ids, p.key); toast(`${r.moved} ${r.moved === 1 ? 'Datei' : 'Dateien'} verschoben` + (r.errors?.length ? ' – ' + r.errors[0] : '')); this.sel.clear(); this.load(); }
         catch (ex) { toast(ex.message); }
-      }]);
+      }, false, 'move', 'folder-open']);
     }
     const extra = hook('menu', this, ids, one).flat();   // Erweiterungen (z. B. Video-Werkzeuge)
     if (extra.length) e.push(['-'], ...extra);
-    if (this.mode === 'library') e.push(['-'], [ids.length > 1 ? `${ids.length} Dateien löschen` : 'Löschen', () => this.deleteSel(), true]);
-    this.menu(x, y, e);
+    if (this.mode === 'library') e.push(['-'], [ids.length > 1 ? t('{n} Dateien löschen', { n: ids.length }) : t('Löschen'), () => this.deleteSel(), true, 'delete']);
+    this.menu(x, y, e, { title: one ? one.display : t('{n} Dateien', { n: ids.length }) });
+  }
+  /** Link kopieren: öffentliche Adresse der Datei (PDF: Betrachter) */
+  copyLink(m) {
+    const u = new URL(m.kind === 'pdf' && m.viewer ? m.viewer : m.url, location.href).href;
+    (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast(t('Link kopiert')), () => prompt(t('Link kopieren'), u));
   }
 
   // ---------------------------------------------------------- Quick Look

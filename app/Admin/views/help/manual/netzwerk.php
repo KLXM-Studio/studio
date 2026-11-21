@@ -11,7 +11,7 @@
   <h3 id="netzwerk-was-wo">Was liegt wo?</h3>
   <table class="doc-table">
     <tr><th>Netzwerk-Bereich (ganze Installation)</th><th>Verwaltung jeder Website (nur diese Website)</th></tr>
-    <tr><td><b>Websites</b> – Übersicht, neue Website, Name, Domains, Wartung, Testumgebung, Sicherung je Website</td><td>Übersicht, Seiten, Entwürfe, Medien, Daten, Anfragen, KI, Chat, Mitteilungen</td></tr>
+    <tr><td><b>Websites</b> – Übersicht, neue Website, Name, Domains, Wartung, Testumgebung, Sicherung je Website</td><td>Übersicht, Seiten, Entwürfe, Medien, Daten, Eingang, KI, Chat, Mitteilungen</td></tr>
     <tr><td><b>Administratoren</b> – Netzwerk-Konten, Einladungen, Sperren, 2FA zurücksetzen</td><td>Benutzer &amp; Rollen der Website (Netzwerk-Konten erscheinen dort nur als Zeile „wird im Netzwerk verwaltet“)</td></tr>
     <tr><td><b>Anmeldung &amp; Domain</b> – Anmelde-Richtlinie der Netzwerk-Konten, Netzwerk-Domain, Adresse der Verwaltung, Agentur-Zugang per OpenID Connect</td><td>Benutzer &amp; Rollen → Sicherheit: Zwei-Faktor-Regeln und ein eigener Anmelde-Anbieter für die Redaktion der Website</td></tr>
     <tr><td><b>E-Mail</b> – Netzwerk-Konto (Absender der Installation), Kurzfassung der Systemmeldungen, Übersicht aller Websites</td><td>Grundeinstellungen → E-Mail-Versand: Konten, Absender je Zweck, Empfänger, Test und Umleitung, Impressum</td></tr>

@@ -17,21 +17,9 @@ $visTag = function (array $e) use ($t): string {
     $on = \Core\Data\Exposure::reach($t, null, $e)['targets'] !== [];
     return '<span class="dt-vis' . ($on ? ' is-public' : '') . '">' . icon($on ? 'globe' : 'lock') . ' ' . e($on ? __('Öffentlich') : __('Intern')) . '</span>';
 };
-// Zeilenmenü (⋯): Duplizieren und Aktionen von Erweiterungen (Core\Slots) – Popover (ohne Skript bedienbar), _rowmenu.js setzt es an den Knopf
-$rowMenu = function (array $e) use ($t, &$base, &$extOrigin, &$extTbl): string {
-    $title = Entries::title($t, $e);
-    $items = '';
-    if (!(Tables::isShared($t) && \Core\Data\Shared::isForeign($t, $e)) && !isset($extOrigin[$e['id']])) {
-        $items .= '<button type="submit" form="dt-dup" class="dt-rowmenu__item" formaction="' . e(url($base . '/' . $e['id'] . '/duplicate')) . '" title="' . e(__('Kopie als Entwurf anlegen')) . '">'
-            . icon('copy') . ' ' . e(__('Duplizieren')) . '</button>';
-    }
-    if ($extTbl['row']) foreach (\Core\Extensions::rowActions($extTbl['row'], (int) $e['id']) as $xa) {
-        $items .= '<a class="dt-rowmenu__item" href="' . e(url($xa['href'])) . '" data-slot="' . e((string) ($xa['extension'] ?? '')) . '">' . e($xa['label']) . '</a>';
-    }
-    if ($items === '') return '';
-    $id = 'dt-menu-' . (int) $e['id'];
-    return '<button type="button" class="dt-rowmenu" popovertarget="' . $id . '" aria-label="' . e(__('Weitere Aktionen: {title}', ['title' => $title])) . '" title="' . e(__('Weitere Aktionen')) . '">'
-        . icon('dots-three') . '</button><div class="dt-rowmenu__pop" id="' . $id . '" popover role="menu" aria-label="' . e($title) . '">' . $items . '</div>';
+// Zeilenmenü (Core\RowMenu): ⋯, Rechtsklick und Umschalt+F10 – dieselben Aktionen wie in allen Listen; Rechte prüft forEntry()
+$rowMenu = function (array $e) use ($t, &$extOrigin, &$extTbl): string {
+    return \Core\RowMenu::render('dt-menu-' . (int) $e['id'], Entries::title($t, $e), \Core\RowMenu::forEntry($t, $e, ['row' => $extTbl['row'], 'readonly' => isset($extOrigin[$e['id']])]));
 };
 // Lange Texte in Spalten: zwei Zeilen, voller Text im Tooltip
 $clamp = function (string $html): string {
@@ -116,8 +104,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
   </div>
 </header>
 
-<form id="dt-dup" method="post" action="<?= e(url($base)) ?>" hidden><?= csrf_field() ?></form>
-<div class="dt-list" data-entries="<?= e(url($base . '/bulk')) ?>"<?= ($pl = \Core\Http\Controllers\Admin\PresenceController::listAttrs('entry', $t['handle'] . ':')) ? ' data-presence-list' . $pl : '' ?>>
+<div class="dt-list" data-entries="<?= e(url($base . '/bulk')) ?>"<?= \Core\RowMenu::selectAttrs() ?><?= ($pl = \Core\Http\Controllers\Admin\PresenceController::listAttrs('entry', $t['handle'] . ':')) ? ' data-presence-list' . $pl : '' ?>>
   <div class="dt-bar">
     <?php if ($multi): ?><nav class="fx-seg dt-seg" aria-label="Sprache"><?php foreach (\Core\Lang::all() as $code => $label): ?><a href="<?= e(url($base) . '?lang=' . $code) ?>"<?= $code === $lang ? ' aria-current="true"' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav><?php endif; ?>
     <nav class="fx-seg dt-seg" aria-label="Status">
@@ -130,12 +117,16 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <input type="search" name="q" value="<?= e($q) ?>" placeholder="Suchen" aria-label="Einträge durchsuchen">
       <?php if ($status !== 'all'): ?><input type="hidden" name="status" value="<?= e($status) ?>"><?php endif; ?>
     </form>
-    <span class="dt-bulk" hidden data-bulk>
-      <strong data-selcount></strong>
-      <?php if ($t['settings']['workflow'] && can('data.publish', $t['handle'])): ?><button type="button" class="adm-btn adm-btn--small" data-bulk-action="publish">Online stellen</button>
-      <button type="button" class="adm-btn adm-btn--small" data-bulk-action="draft">Auf Entwurf</button><?php endif; ?>
-      <?php if (can('data.delete', $t['handle'])): ?><button type="button" class="adm-btn adm-btn--small adm-btn--danger-text adm-btn--ghost" data-bulk-action="delete">Löschen</button><?php endif; ?>
-    </span>
+    <?php // Mehrfachauswahl (Core\RowMenu::bar): dieselben Aktionen und Symbole wie im Zeilenmenü, für alle gewählten
+    $bulkItems = [];
+    if ($t['settings']['workflow'] && can('data.publish', $t['handle'])) {
+        $bulkItems[] = ['key' => 'publish', 'label' => __('Online stellen'), 'attrs' => ['data-bulk-action' => 'publish']];
+        $bulkItems[] = ['key' => 'publish', 'icon' => 'eye-slash', 'label' => __('Offline nehmen'), 'attrs' => ['data-bulk-action' => 'draft']];
+    }
+    if (\Core\Data\AddressBook::enabled($t) && can('data.edit', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('vCard exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/vcard')]];
+    elseif (\Core\Data\Calendar::enabled($t) && can('data.edit', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('ICS exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/kalender.ics')]];
+    if (can('data.delete', $t['handle'])) $bulkItems[] = ['key' => 'delete', 'label' => __('Löschen'), 'attrs' => ['data-bulk-action' => 'delete']];
+    echo \Core\RowMenu::bar($bulkItems, ['class' => 'dt-bulk']); ?>
   </div>
 
   <?php if (!empty($cal)): ?>
@@ -149,7 +140,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
   <?php else: ?>
   <table class="dt-table<?= $manual ? ' is-sortable' : '' ?>">
     <thead><tr>
-      <th class="dt-c-check"><input type="checkbox" data-checkall aria-label="Alle auswählen"></th>
+      <th class="dt-c-check"><input type="checkbox" data-checkall data-rm-checkall aria-label="<?= e(__('Alle auswählen')) ?>"></th>
       <?php if ($manual): ?><th class="dt-c-grip"><span class="sr-only">Reihenfolge</span></th><?php endif; ?>
       <th scope="col"><?= $sortLink($t['settings']['title_field'] ?: 'id', Tables::field($t, $t['settings']['title_field'])['label'] ?? 'Titel') ?></th>
       <?php if ($perEntry): ?><th scope="col" data-prio="1"><?= $sortLink(\Core\Data\Kinds::PUBLIC_FIELD, __('Website')) ?></th><?php endif; ?>
@@ -159,8 +150,8 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     </tr></thead>
     <tbody data-rows>
     <?php foreach ($rows as $e): $url = Entries::url($t, $e); ?>
-      <tr data-id="<?= (int) $e['id'] ?>"<?= $manual ? ' draggable="true"' : '' ?>>
-        <td class="dt-c-check"><input type="checkbox" data-check value="<?= (int) $e['id'] ?>" aria-label="<?= e(Entries::title($t, $e)) ?> auswählen"></td>
+      <tr data-id="<?= (int) $e['id'] ?>"<?= \Core\RowMenu::host('dt-menu-' . (int) $e['id']) ?><?= $manual ? ' draggable="true"' : '' ?>>
+        <td class="dt-c-check"><input type="checkbox" data-check data-rm-check value="<?= (int) $e['id'] ?>" aria-label="<?= e(Entries::title($t, $e)) ?> auswählen"></td>
         <?php if ($manual): ?><td class="dt-c-grip" aria-hidden="true">⋮⋮</td><?php endif; ?>
         <td class="dt-c-title"><div class="dt-c-title__in" data-presence-slot>
           <?php if ($img && !empty($e[$img]) && ($m = \Core\Media::find((int) $e[$img]))): ?><img src="<?= e(\Core\Media::url($m, 480)) ?>" alt="" class="dt-thumb<?= $listImg === 'large' ? ' dt-thumb--l' : '' ?>" loading="lazy"><?php elseif ($listImg !== 'none'): ?><span class="dt-thumb dt-thumb--ph<?= $listImg === 'large' ? ' dt-thumb--l' : '' ?>" aria-hidden="true"><?= icon($t['icon']) ?></span><?php endif; ?>

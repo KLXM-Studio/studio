@@ -10,6 +10,29 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Verwaltung: ein Zeilenmenü für alle Listen
+- **Einheitliches Zeilenmenü** (`Core\RowMenu`, `resources/js/_rowmenu.js`) in Datenlisten, Kalender (Termin im Raster), Adressbuch
+  (Namen und Karte), Seitenbaum, Medien und Entwürfen: Knopf „⋯“, dasselbe Menü per Rechtsklick am Mauszeiger und per Tastatur
+  (Umschalt+F10, Menütaste), ARIA `menu`/`menuitem`, Pfeiltasten, Pos1/Ende, Anfangsbuchstabe, Esc/Tab, Fokus zurück; auf dem
+  Telefon als Blatt von unten. Feste Reihenfolge und Symbole: Bearbeiten · Ansehen/Vorschau · Duplizieren · Verschieben/Zuordnen ·
+  Veröffentlichen/Offline nehmen · Versionen · Link kopieren · Exportieren (vCard bzw. ICS je Eintrag) · Aufgabe anlegen ·
+  Erweiterungen · Löschen (rot, Rückfrage). Rechte je Aktion; ohne JavaScript Popover mit Links und Formularen (CSRF), im Seitenbaum
+  führt „⋯“ dann zu den Seiteneinstellungen.
+- **Mehrfachauswahl einheitlich** (`RowMenu::bar`): Häkchen, Leiste mit Anzahl und denselben Aktionen (Datenlisten zusätzlich
+  „Exportieren“, Adressbuch mit Listen und vCard); Rechtsklick auf eine gewählte Zeile bietet die Aktionen für alle gewählten.
+- Neu: `GET /admin/data/{tabelle}/kalender.ics?ids[]=…` (einzelne bzw. gewählte Termine), Filter `rowmenu.actions` für
+  Erweiterungen, Selbsttest `rowmenu:selftest`, Handbuch „Arbeiten in Listen“, Entwicklerhandbuch → Oberfläche → Zeilenmenü.
+- Adressbuch: Buchstaben-Trenner verdecken beim Scrollen und Springen keinen Namen mehr; Merkmal der Angaben wieder
+  „Öffentlich · Website, vCard“ (wie `Exposure::reachText`); Initialen ohne Foto ruhig in der Akzentfarbe der Verwaltung.
+
+### Verwaltung: Menüpunkt „Anfragen“ heißt „Eingang“
+- Der Bereich mit den verschlüsselten Eingangs-Tabellen heißt jetzt **„Eingang“** (EN „Inbox“), weil Websites selbst
+  Datentabellen namens „Anfragen“ anlegen. Geändert sind nur Beschriftungen (Menü, Seitentitel, Verweise, Funktion,
+  Rechte-Gruppe, Befehlspalette – findet auch „eingang“, „inbox“, „anfragen“, Übersicht, Handbuch, Tutorials). Route
+  `/admin/requests`, Rechte `requests.*`, Funktion `requests` und Dashboard-Schlüssel bleiben; einzelne Einsendungen
+  heißen weiter „Anfrage“, die Vorlage bzw. der Zweck „Anfragen“ beim Anlegen einer Tabelle ebenso. Handbuch-Anker
+  `#anfragen` bleibt, `#eingang` kommt hinzu.
+
 ### Kontakte: Adressbuch-Ansicht wie eine Kontakte-App
 - **Standardansicht für Adressbücher** (Tabellenart „contacts“, `Core\Data\AddressBook`): drei Spalten – links Adressbücher, Listen
   (Werte von „Listen“) mit Anzahl und die Filter „Alle“, „Nicht auf der Website“, „Ohne Foto“, „Ohne E-Mail“; in der Mitte die Namen
