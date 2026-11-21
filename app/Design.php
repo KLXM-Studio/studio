@@ -42,6 +42,22 @@ final class Design
     /** Bereits ausgegebene <link rel="preload"> dieser Anfrage (keine Doppelten aus Kit-Layout und design_head) */
     private static array $preloaded = [];
 
+    /**
+     * Zustand dieser Anfrage (gespeicherte Werte, Vorschau-Werte, ausgegebene Preloads) lesen bzw. wiederherstellen – für
+     * Theme::withKit(): Werte eines anderen Kits dürfen nicht in den Zwischenspeicher des aktiven Kits geraten und umgekehrt.
+     * @internal
+     */
+    public static function state(?array $restore = null): array
+    {
+        $now = ['values' => self::$values, 'override' => self::$override, 'preloaded' => self::$preloaded];
+        if ($restore !== null) {
+            self::$values = $restore['values'] ?? null;
+            self::$override = $restore['override'] ?? null;
+            self::$preloaded = (array) ($restore['preloaded'] ?? []);
+        }
+        return $now;
+    }
+
     public static function def(): array
     {
         return (array) (app()->theme->def['design'] ?? []);

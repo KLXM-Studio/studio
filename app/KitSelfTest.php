@@ -72,6 +72,26 @@ final class KitSelfTest
             }
             $eq('fluid: Dateien der Liste option_css vorhanden', $missing, []);
         }
+        // Theme::withKit: anderes Kit nur für die Dauer eines Aufrufs (Vorschau), danach alles wie vorher – auch bei Fehlern
+        $other = '';
+        foreach (array_keys(Kit::all()) as $k) if ($k !== app()->theme->name && Kit::definitionFile(Kit::dir($k)) !== null) { $other = (string) $k; break; }
+        if ($other !== '') {
+            $before = [app()->theme->name, Design::values(), app()->currentPage];
+            $inside = Theme::withKit($other, fn(Theme $t) => [app()->theme->name, $t->name]);
+            $eq('withKit: im Aufruf das andere Kit', $inside, [$other, $other]);
+            $eq('withKit: danach Kit und Design-Werte wie vorher', [app()->theme->name, Design::values(), app()->currentPage], $before);
+            $first = array_key_first(array_filter(Theme::withKit($other, fn() => Design::tokens()), fn($t) => ($t['type'] ?? '') === 'range'));
+            if ($first !== null) {
+                $probe = Theme::withKit($other, fn() => Design::get((string) $first), [(string) $first => -99999]);
+                $eq('withKit: Werte nur für den Aufruf (begrenzt), danach kein Override', [is_numeric($probe), Design::values()], [true, $before[1]]);
+            }
+            try {
+                Theme::withKit($other, function () { app()->currentPage = ['id' => -1]; throw new \RuntimeException('x'); });
+            } catch (\RuntimeException) {
+            }
+            $eq('withKit: nach Fehler wiederhergestellt', [app()->theme->name, app()->currentPage], [$before[0], $before[2]]);
+            $eq('withKit: Theme-Objekt geht ebenso', Theme::withKit(app()->theme, fn(Theme $t) => $t === app()->theme), true);
+        }
         return ['ok' => $ok, 'fails' => $fails];
     }
 }

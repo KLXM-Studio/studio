@@ -227,6 +227,36 @@ final class Theme
     }
 
     /**
+     * $fn mit einem anderen Kit als aktivem Kit ausführen (app()->theme), ohne die Website umzustellen – für Vorschauen (Kit-Designer,
+     * Kit-Auswahl). Optional mit Design-Werten nur für diesen Aufruf ($values → Design::override). Danach gelten wieder Kit, Design-Zustand
+     * (gespeicherte Werte, Vorschau-Werte) und app()->currentPage von vorher – auch bei Fehlern. Gespeicherte Design-Werte des anderen
+     * Kits liest Design::values() wie üblich aus design.{kit}; nichts wird geschrieben. Die Standardwerte der Kit-Einstellungen, die ein
+     * neu erzeugtes Kit registriert, gelten nur während des Aufrufs.
+     * @template T
+     * @param callable(Theme): T $fn  bekommt das Kit
+     * @return T
+     */
+    public static function withKit(string|self $kit, callable $fn, ?array $values = null): mixed
+    {
+        $app = app();
+        $saved = $app->theme;
+        $page = $app->currentPage;
+        $defaults = $app->settings->defaultsState();
+        $theme = $kit instanceof self ? $kit : ($kit === $saved->name ? $saved : new self($kit));
+        $state = Design::state(['values' => null, 'override' => null, 'preloaded' => []]);
+        $app->theme = $theme;
+        try {
+            if ($values !== null) Design::override($values);
+            return $fn($theme);
+        } finally {
+            $app->theme = $saved;
+            $app->currentPage = $page;
+            $app->settings->defaultsState($defaults);
+            Design::state($state);
+        }
+    }
+
+    /**
      * Downloads-Block der Kits (Felder source manual|collection, collection, files[…file]): Sammlung und Dateiliste nur je nach
      * „Quelle“ zeigen, Sammlung mit allen Dateien (nicht nur Bildern) wählen, „Dateien auswählen …“ legt je Datei eine Zeile an.
      * Zentral, damit alle Kits es haben, ohne ihre theme.php zu ändern; eigene Angaben des Kits gehen vor.
