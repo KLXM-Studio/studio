@@ -1,5 +1,23 @@
 # Changelog – Erweiterung „consent_kit“
 
+## 1.5.0 (2026-11-21)
+
+- **Neu: „Hinweis nur, wenn nötig“** (Einstellungen → Darstellung, `only_needed`). Sind nur Dienste aktiv, die ausschließlich
+  über Einbettungen mit Platzhalter laden (z. B. nur YouTube), erscheint beim Seitenaufruf kein Hinweis mehr; die Platzhalter
+  holen die Einwilligung am Inhalt ein („einmal laden“, „… immer erlauben“), „Datenschutz-Einstellungen“ im Fußbereich bleibt.
+  Mit Statistik, Marketing, Skripten oder einem Dienst ohne Platzhalter erscheint der Hinweis wie bisher.
+- **Verhaltensänderung: Standard an – auch für bestehende Websites.** Websites, auf denen nur Einbettungen aktiv sind, zeigen
+  nach dem Update keinen Hinweis beim ersten Besuch mehr. Wer ihn trotzdem will: Einstellung ausschalten (dann meldet
+  `health` einen ruhigen Hinweis, dass er nicht nötig wäre).
+- **Merkmal „Nur Einbettung mit Platzhalter“** je Dienst (Spalte `embed_only`, Migration 2, additiv): aus Vorlagen abgeleitet
+  (Externe Medien: YouTube, Vimeo, Karten, Instagram, Facebook, X, TikTok, Spotify, SoundCloud, Podigee, Microsoft Forms),
+  für eigene Dienste im Formular; Vorlagen-Feld `embed_only` (optional, `presets/FORMAT.md`). Bestehende Dienste aus solchen
+  Vorlagen erhalten das Merkmal bei der Migration. Gründe, warum ein Dienst nicht zählt, stehen im Formular.
+- Platzhalter ohne JavaScript: Link zum Anbieter in neuem Tab, auch ohne `link`-Option (aus der iframe-Adresse; YouTube/Vimeo:
+  Seite des Videos).
+- Dienste-Seite: Status nennt, ob und warum der Hinweis erscheint; Marke „Nur Platzhalter“. `consent:status` zeigt je Dienst
+  „Platzhalter“/„Hinweis“. Neuer Selbsttest `consent:selftest`.
+
 ## 1.4.0 (2026-11-21)
 
 - **Namensraum umbenannt:** `MyCms\Consent\…` heißt jetzt `Klxm\Consent\…` (wie `Klxm\Members`, `Klxm\Motion`) – der Altname „MyCms“

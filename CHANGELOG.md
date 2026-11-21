@@ -10,6 +10,22 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Cookie-Einwilligung: „Hinweis nur, wenn nötig“ (consent_kit 1.5.0)
+- **Kein Banner, wenn nur Einbettungen aktiv sind:** Sind ausschließlich Dienste aktiv, die nur über Platzhalter laden (z. B. nur
+  YouTube-Videos oder Karten), erscheint beim ersten Besuch kein Hinweis mehr; die Platzhalter holen die Einwilligung am Inhalt
+  ein („einmal laden“, „… immer erlauben“), „Datenschutz-Einstellungen“ im Fußbereich bleibt. Mit Statistik, Marketing oder
+  eigenen Skripten erscheint der Hinweis wie bisher; die Dienste-Seite nennt den Auslöser.
+- **Verhaltensänderung:** Einstellung `only_needed` ist standardmäßig an – auch auf bestehenden Websites. Wer den Hinweis immer
+  zeigen will, schaltet sie unter Cookie-Einwilligung → Einstellungen ab (`health` meldet dann ruhig „wäre nicht nötig“).
+- Merkmal „Nur Einbettung mit Platzhalter“ je Dienst (aus Vorlagen abgeleitet, eigene Dienste im Formular), Prüfung am fertigen
+  Dienst (kein Tracking, kein Consent Mode, kein Code vor der Einwilligung, Code nur vom Anbieter der Einbettung).
+- Vor der Einwilligung keine Anfrage an YouTube, Google oder ytimg (Vorschaubild vom eigenen Server); ohne JavaScript ein Link
+  zum Anbieter in neuem Tab. Selbsttest `consent:selftest`. Handbuch → Cookie-Einwilligung; keine Rechtsberatung.
+- *EN:* Cookie consent “Banner only when needed” (on by default, also for existing sites – behaviour change): if only services
+  that load exclusively through placeholder embeds are active (e.g. only YouTube), no banner appears on first visit; the
+  placeholders ask for consent at the content, “Privacy settings” in the footer remains. Per-service flag “Embed with placeholder
+  only”, nothing is requested from YouTube/Google/ytimg before consent, no-JS link to the provider, self-test `consent:selftest`.
+
 ### Kontakte: Adressbuch-Ansicht wie eine Kontakte-App
 - **Standardansicht für Adressbücher** (Tabellenart „contacts“, `Core\Data\AddressBook`): drei Spalten – links Adressbücher, Listen
   (Werte von „Listen“) mit Anzahl und die Filter „Alle“, „Nicht auf der Website“, „Ohne Foto“, „Ohne E-Mail“; in der Mitte die Namen

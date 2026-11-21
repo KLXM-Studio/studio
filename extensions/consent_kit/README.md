@@ -117,6 +117,39 @@ Bringt ein optionaler Dienst eigenen Code mit (HTML im head/body, JS nach Einwil
 Hinweis bei „Nur bei Bedarf“ trotzdem – sonst würde der Dienst nie starten. Die Einstellungsseite nennt solche Dienste.
 GPC und „für diese Sitzung geschlossen“ haben Vorrang; die Vorschau im Design zeigt den Hinweis immer.
 
+## Hinweis nur, wenn nötig
+
+Einstellungen → Darstellung → **Hinweis nur, wenn nötig** (`only_needed`, Standard **an**): Sind auf einer Domain nur
+optionale Dienste aktiv, die ausschließlich über Einbettungen mit Platzhalter laden, erscheint beim Seitenaufruf **kein**
+Hinweis – unabhängig von „Hinweis beim Seitenaufruf“. Die Einwilligung holt der Platzhalter am Inhalt ein
+(`<consent-embed>`: „Inhalt einmal laden“, „{Dienst} immer erlauben“; Video-Block: „{Anbieter}-Video laden“, „künftig
+direkt laden“). „Datenschutz-Einstellungen“ im Fußbereich bleibt zum Ansehen und Widerrufen. Sobald ein Dienst aktiv ist,
+der nicht so eingeordnet ist, erscheint der Hinweis wie bisher; Dienste-Seite und `consent:status` nennen den Auslöser.
+
+**Merkmal je Dienst** „Nur Einbettung mit Platzhalter“ (Spalte `embed_only`, Formular → Allgemein). Vorlagen leiten es ab
+(Gruppe „Externe Medien“, Domains eingebetteter Inhalte, kein Consent Mode, keine Ereignisse, kein `js_default`) oder setzen
+`"embed_only": true|false` ausdrücklich – mitgeliefert: YouTube, Vimeo, Google Maps, OpenStreetMap, Spotify, SoundCloud,
+Instagram, Facebook, X, TikTok, Podigee, Microsoft Forms. Ob ein Dienst wirklich zählt, prüft `Compiler::embedOnlyIssues()`
+am fertigen Dienst: Merkmal gesetzt, nicht Statistik/Marketing, Domains eingebetteter Inhalte vorhanden, kein Consent Mode,
+keine Ereignisse, kein Code vor der Einwilligung, Code (head/body/js_accept) höchstens von Hosts des Einbettungs-Anbieters
+(z. B. `embed.js` von instagram.com – läuft ohnehin erst nach Einwilligung am Platzhalter). Unklar → Hinweis (sichere Seite).
+
+**Was technisch passiert** (Selbsttest `consent:selftest`, Browser-Mitschnitt beim ersten Besuch):
+
+- Ohne Einwilligung lädt die Seite nichts von YouTube, Google, ytimg oder anderen Anbietern. Der fremde Inhalt steht nur im
+  inerten `<template>` des Platzhalters; das Vorschaubild des Video-Blocks kommt vom eigenen Server (einmal serverseitig
+  geholt, `Core\Embeds`), der Platzhalter von `<consent-embed>` zeigt kein Bild.
+- Es entsteht kein Cookie und kein Speichereintrag, bis Besucher am Platzhalter handeln; „… immer erlauben“ speichert
+  `cms_consent` und protokolliert die Entscheidung (Aktion `embed`), „einmal laden“ speichert nichts.
+- Ohne JavaScript bleibt ein Link zum Anbieter (neuer Tab): `<noscript>` im Platzhalter (aus `link` bzw. der iframe-Adresse,
+  YouTube/Vimeo: Seite des Videos), im Video-Block „Auf … ansehen“.
+- Bestehende Websites: Die Einstellung ist nach dem Update an. Wer den Hinweis trotzdem immer zeigen will, schaltet sie ab;
+  ist sie aus, obwohl nichts den Hinweis braucht, meldet `health` (Einrichtung) einen ruhigen Hinweis.
+
+Keine Rechtsberatung: Die Erweiterung beschreibt, was technisch geschieht (kein Zugriff auf Endgeräte und keine
+Übertragung an Anbieter vor der Handlung am Platzhalter). Ob das für eine Website genügt – § 25 TDDDG, Art. 6/7 DSGVO,
+Datenschutzerklärung – klären im Zweifel Datenschutzbeauftragte oder Rechtsberatung.
+
 ## Sprachen
 
 Texte auf der Website: Deutsch, Englisch, Niederländisch, Italienisch, Französisch, Spanisch (`lang/site/*.php`, im Kit
