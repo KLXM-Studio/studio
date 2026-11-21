@@ -17,6 +17,8 @@ final class ICal
     /**
      * Kompletter Kalender (VCALENDAR) mit allen übergebenen Einträgen – öffentliche Ausgabe: ohne „Nie öffentlich“-Felder (Exposure).
      * $o['internal'] = true (Abo-Token mit Umfang „intern“, Core\Data\Subscriptions): wie CalDAV alles außer „Nur Website“-Feldern.
+     * $o['single'] = true: jeder Eintrag als einzelnes VEVENT ohne Serien-Auflösung (ein Vorkommen einer Serie, Core\Data\EventActions),
+     * dazu optional $o['uid'] und $o['url'] (Adresse der Detailseite mit ?vorkommen=).
      */
     public static function calendar(array $table, array $entries, array $o = []): string
     {
@@ -33,7 +35,8 @@ final class ICal
             // (Download eines einzelnen Termins) steht für sich
             $own = $series && Series::isOverride($table, $e);
             if ($own && in_array((int) $e[Series::SERIES], $heads, true)) continue;
-            $lines = $series && !$own ? self::series($table, $e, ['public' => true]) : self::vevent($table, $e);
+            $lines = !empty($o['single']) ? self::vevent($table, $e, array_filter(['uid' => $o['uid'] ?? null, 'url' => $o['url'] ?? null]))
+                : ($series && !$own ? self::series($table, $e, ['public' => true]) : self::vevent($table, $e));
             if (!$lines) continue;
             $events[] = $lines;
             $span = Calendar::span($table, $e);
@@ -64,7 +67,7 @@ final class ICal
 
     /**
      * VEVENT-Zeilen eines Eintrags (ungefaltet). $o['uid'] überschreibt die UID (z. B. aus CalDAV),
-     * $o['extra'] = zusätzliche Zeilen vor END:VEVENT.
+     * $o['extra'] = zusätzliche Zeilen vor END:VEVENT, $o['url'] = Adresse statt der Detailseite des Eintrags.
      */
     public static function vevent(array $table, array $e, array $o = []): array
     {
@@ -123,7 +126,7 @@ final class ICal
             $cats = array_filter(array_map(fn($k) => Tables::optionLabel($f, (string) $k), (array) ($e[$c['category']] ?? [])), fn($x) => $x !== '');
             if ($cats) $l[] = 'CATEGORIES:' . implode(',', array_map([self::class, 'text'], $cats));
         }
-        if (($url = Entries::absUrl($table, $e))) $l[] = 'URL:' . $url;
+        if (($url = $o['url'] ?? Entries::absUrl($table, $e))) $l[] = 'URL:' . $url;
         if ($span['all_day']) $l[] = 'TRANSP:TRANSPARENT';
         if ($kind && !empty($e[Kinds::CANCELLED_FIELD])) $l[] = 'STATUS:CANCELLED';
         elseif (($e['status'] ?? 'published') !== 'published') $l[] = 'STATUS:TENTATIVE';

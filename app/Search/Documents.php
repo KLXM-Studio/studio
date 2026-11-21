@@ -27,7 +27,7 @@ use Core\Pages;
 final class Documents
 {
     /** Blöcke, deren Inhalt dynamisch ist oder anderswo indexiert wird */
-    private const SKIP_BLOCKS = ['data_list', 'data_fields', 'data_form', 'calendar', 'upcoming', 'map', 'gallery', 'slideshow', 'stack_cards'];
+    private const SKIP_BLOCKS = ['data_list', 'data_fields', 'data_form', 'calendar', 'upcoming', 'event_actions', 'map', 'gallery', 'slideshow', 'stack_cards'];
     private const HEADING = '~^(title|titel|heading|headline|ueberschrift|title_strong|title_light|subtitle|untertitel|q|frage|question)$~';
     private const TEXT_TYPES = ['text', 'textarea', 'richtext', 'inline'];
 

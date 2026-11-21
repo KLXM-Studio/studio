@@ -5,6 +5,7 @@ namespace Core\Http\Controllers;
 
 use Core\Data\Calendar;
 use Core\Data\Entries;
+use Core\Data\EventActions;
 use Core\Data\ICal;
 use Core\Data\Tables;
 use Core\Features;
@@ -16,7 +17,8 @@ use Core\Lang;
 /**
  * Öffentliche iCal-Dateien (nur veröffentlichte Einträge, nur Tabellen mit Kalender und aktivem Feed):
  *   GET /kalender/{handle}.ics            Feed zum Abonnieren (?lang=en für eine weitere Sprache)
- *   GET /kalender/{handle}/{slug}.ics     einzelner Termin zum Herunterladen
+ *   GET /kalender/{handle}/{slug}.ics     einzelner Termin zum Herunterladen (Serie: ganze Serie; ?vorkommen=JJJJMMTTTHHMM: nur dieses
+ *                                         Vorkommen bzw. sein abweichender Einzeltermin – Core\Data\EventActions, unbekannt → 404)
  */
 final class CalendarController
 {
@@ -44,6 +46,14 @@ final class CalendarController
         $t = $this->table($r, $handle);
         $e = Entries::bySlug($t, $slug, true, Lang::current(), 'site') ?? throw new HttpException(404);
         if (!Calendar::span($t, $e)) throw new HttpException(404);
+        $key = is_string($k = $r->query['vorkommen'] ?? null) ? $k : '';
+        if ($key !== '') {
+            if (!EventActions::isSeries($t, $e)) throw new HttpException(404);
+            [$one, $uid] = EventActions::icsOccurrence($t, $e, $key) ?? throw new HttpException(404);
+            $url = ($u = Entries::absUrl($t, $e)) ? $u . '?vorkommen=' . rawurlencode($key) : null;
+            return $this->ics(ICal::calendar($t, [$one], ['publish' => true, 'name' => Entries::title($t, $e), 'single' => true, 'uid' => $uid, 'url' => $url]),
+                $t['handle'] . '-' . $e['slug'] . '-' . $key . '.ics', true);
+        }
         return $this->ics(ICal::calendar($t, [$e], ['publish' => true, 'name' => Entries::title($t, $e)]), $t['handle'] . '-' . $e['slug'] . '.ics', true);
     }
 

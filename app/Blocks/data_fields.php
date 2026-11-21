@@ -5,6 +5,7 @@
  * Darstellungen: head, prose, dl, image – dazu „profile“ (Bild/Logo eingepasst auf einer Kachel, Titel als H1, Auswahlfelder
  * als Etiketten dl-chip dl-tone-1…5, übrige Felder als Einleitung) und „contact“ (Kontaktkarte: Textfelder als Adresse –
  * eine Postleitzahl steht mit der folgenden Zeile zusammen –, Telefon/E-Mail/Web als Links mit Symbol, Ort als Karte).
+ * „Kopf“ bei Kalender-Tabellen: Termin-Aktionen unter dem Titel (Fragment event-actions; event_actions = false schaltet ab, event_links = Fremd-Links).
  * @var \Core\Block $b  @var array $d
  */
 use Core\Data\Entries;
@@ -53,6 +54,9 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
     } ?>
     <?php if ($meta): ?><p class="df-meta"><?= implode('<span class="df-sep" aria-hidden="true"> · </span>', $meta) ?></p><?php endif; ?>
     <?php if (in_array('_title', $fields, true)): $ea = entry_edit_attr($t, $e, '_title'); ?><h1 class="h2 df-title"><?= $ea !== '' ? '<span' . $ea . '>' . e(Entries::title($t, $e)) . '</span>' : e(Entries::title($t, $e)) ?><span class="dot">.</span></h1><?php endif; ?>
+    <?php // Termin-Aktionen bei Kalender-Tabellen (Core\Data\EventActions): „In den Kalender“, „Abonnieren“ – abschaltbar im Block
+    if (($d['event_actions'] ?? true) !== false && \Core\Data\Calendar::enabled($t)) echo fragment('event-actions', ['table' => $t, 'entry' => $e,
+        'options' => ['external' => (string) ($d['event_links'] ?? ''), 'class' => 'df-eva', 'when' => in_array('_when', $fields, true) ? 'unkeyed' : 'auto']]);   // _when im Kopf zeigt schon das Datum des Vorkommens ?>
     <?php if ($img && ($pic = Entries::html($t, $e, $img, ['ratio' => $ratio, 'sizes' => '(min-width: 1280px) 1200px, 100vw']))): ?>
       <div class="df-img ratio-<?= e(str_replace(':', '-', $ratio)) ?>"><?= $pic ?></div>
     <?php endif; ?>

@@ -146,6 +146,12 @@ final class SystemSchema
                     'help' => __('Manche Praxen oder Behörden verlangen das auch ohne Drittanbieter. Spart außerdem Daten (MapLibre ≈ 800 KB).')],
                 ['name' => 'sys.map_radius', 'label' => __('Kartengebiet je Ort (km)'), 'type' => 'number', 'default' => 25, 'width' => 'half',
                     'help' => __('Detailkacheln liefert der Server nur in diesem Umkreis um Orte, die auf der Website als Karte vorkommen – so taugt er nicht als kostenloser Kachelserver für andere.')],
+                // Termin-Aktionen (Core\Data\EventActions): reine Links zu Kalender-Diensten – Standard aus, Blöcke können abweichen
+                ['type' => 'heading', 'label' => __('Termine: Links zu Kalender-Diensten'),
+                    'lead' => __('„In den Kalender“ und „Abonnieren“ auf Termin-Detailseiten kommen immer vom eigenen Server. Zusätzlich lassen sich reine Links zu Google Kalender und Outlook.com zeigen: ohne Skript und ohne Kontakt beim Laden der Seite – erst beim Klick öffnet sich die Seite des Anbieters, der dann Titel, Zeit, Ort und Beschreibung des Termins erhält.')],
+                ['name' => 'sys.calendar_links', 'label' => __('Links auf Termin-Detailseiten'), 'type' => 'multiselect', 'default' => [],
+                    'options' => ['google' => __('Google Kalender'), 'outlook' => 'Outlook.com'],
+                    'help' => __('Nichts angehakt = keine Links zu Anbietern (Standard). Die Blöcke „Termin-Aktionen“ und „Datensatz-Felder“ können abweichen.')],
                 ['type' => 'heading', 'label' => __('Zwischenspeicher'), 'collapse' => true, 'summary' => __('höchstens {n} MB', ['n' => (int) app()->settings->get('sys.proxy_cache_mb', 500)]),
                     'lead' => __('Externe Inhalte liegen unter /storage/cache/proxy (außerhalb des öffentlichen Ordners). Ist die Größe erreicht, fallen die ältesten Dateien weg.')],
                 ['name' => 'sys.proxy_cache_mb', 'label' => __('Maximale Größe (MB)'), 'type' => 'number', 'default' => 500, 'width' => 'half'],

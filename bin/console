@@ -185,7 +185,8 @@
  *                                                     (Standard: Probelauf mit Bericht)
  *   calendar:reindex [<tabelle>…] [--all] [--status]  Vorkommens-Index der Kalender neu aufbauen (Cron täglich) bzw. Stand zeigen
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
- *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics
+ *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
+ *                                                     Termin-Aktionen (In den Kalender, Vorkommen, Fremd-Links)
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
  *                 [--with-list-page] [--dry-run]     Tabelle aus Vorlage anlegen bzw. ergänzen (wie „Neue Tabelle aus Vorlage“; wiederholbar):
  *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), jobs (Stellenangebote, Google for Jobs) + Eingang
@@ -1522,6 +1523,8 @@ switch ($cmd) {
     case 'calendar:selftest':
         // Kalender mit Serien (Core\Data\CalendarSelfTest): Index = Berechnung, Serien, Einzeltermine, Ausfälle, ICS-Rundreise, data:convert
         $res = Core\Data\CalendarSelfTest::run();
+        $eva = Core\Data\EventActionsSelfTest::run();   // Termin-Aktionen (In den Kalender, Abonnieren, Fremd-Links, Vorkommen)
+        $res = ['ok' => $res['ok'] + $eva['ok'], 'fails' => [...$res['fails'], ...$eva['fails']]];
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

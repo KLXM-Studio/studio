@@ -61,7 +61,7 @@ foreach ($occ as $o) {
 $hTag = !empty($d['title']) ? 'h3' : 'h2';
 $dTag = $hTag === 'h3' ? 'h4' : 'h3';
 $qs = fn(string $mon, ?string $k = null) => '?' . http_build_query(array_filter(['monat' => $mon, 'kategorie' => $k ?? $cat], fn($v) => $v !== null && $v !== '')) . '#' . $b->domId();
-$link = fn(array $o) => !empty($d['link_detail']) ? Entries::href($t, $o['entry']) : null;
+$link = fn(array $o) => !empty($d['link_detail']) ? \Core\Data\EventActions::href($t, $o) : null;   // Serien: ?vorkommen=…
 $monthId = $b->domId() . '-monat';
 $event = function (array $o, bool $withLoc) use ($t, $c, $link) {
     $url = $link($o);

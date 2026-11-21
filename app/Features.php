@@ -314,7 +314,7 @@ final class Features
         if (str_starts_with($type, 'cblk_') && !self::on('blocks.custom', false)) return false;
         if (in_array($type, ['data_list', 'data_fields'], true) && !self::on('data', false)) return false;
         if ($type === 'map' && !self::on('maps', false)) return false;
-        if (in_array($type, ['calendar', 'upcoming'], true) && !self::on('calendar', false)) return false;
+        if (in_array($type, ['calendar', 'upcoming', 'event_actions'], true) && !self::on('calendar', false)) return false;
         if ($type === 'glossary' && !self::on('glossary', false)) return false;
         if ($type === 'push_subscribe' && !self::on('push', false)) return false;
         // Formular-Block: für Inhaltstabellen (forms.data) oder Eingangs-Tabellen (requests)

@@ -72,6 +72,21 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   `calendar:selftest`. Handbuch → Daten → „Kalender mit Serien“; Entwicklerhandbuch → Kalender → „Tabellenart calendar, Serien,
   Vorkommens-Index“.
 
+### Kalender: „In den Kalender“ auf Termin-Detailseiten (Termin-Aktionen)
+- **Block „Termin-Aktionen“** (`event_actions`, nur Detailseiten-Vorlagen) und automatisch im Kopf von „Datensatz-Felder“ bei
+  Kalender-Tabellen (im Block abschaltbar): **In den Kalender** (.ics-Datei des Termins) und **Abonnieren** (webcal-Adresse des
+  öffentlichen Feeds); Fragment `event-actions` (vom Kit überschreibbar), Stile `css/event-actions.css` (`--eva-*`).
+- **Serien:** genau ein Termin – das Vorkommen aus `?vorkommen=JJJJMMTTTHHMM`, sonst der nächste stattfindende (ein abgesagter
+  davor als Hinweis); `GET /kalender/{tabelle}/{slug}.ics?vorkommen=…` liefert ein VEVENT ohne RRULE mit eigener UID, geänderte
+  Einzeltermine mit ihren Werten. Vergangen: Hinweis „vorbei“ statt Knopf (Serie: Link zum nächsten Termin), abgesagt: „fällt aus“.
+- **Google Kalender / Outlook.com** als reine Links (kein Skript, `rel="noopener noreferrer"`, Hinweis „öffnet Google“), Zeiten in
+  UTC, ganztägig als Datum; **Standard aus** – Grundeinstellungen → Karten & externe Quellen (`sys.calendar_links`) oder je Block.
+- **Links auf Vorkommen:** „Kalender“ und „Nächste Termine“ verlinken Serien-Vorkommen mit `?vorkommen=…`; die Detailseite zeigt
+  dann dieses Datum (Termin-Feld, Seitentitel „… am 08.12.2026“, JSON-LD). `canonical` bleibt die Serienseite ohne Parameter,
+  die Sitemap nennt nur sie – keine Seite pro Vorkommen im Index. JSON-LD einer Serie ohne Parameter: nächster stattfindender Termin.
+- Ort und Beschreibung nur aus Feldern mit Freigabe für die Kalender-Datei (`ics`); Seiten-Cache gilt bis zum Ende des Termins.
+  Selbsttest in `calendar:selftest`.
+
 ### Kalender und Kontakte per App abonnieren
 - **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche
   webcal-Adresse des Kalender-Feeds bzw. öffentliche **.vcf-Sammeldatei** der freigegebenen Kontakte (`/vcard/{tabelle}.vcf`, nur
