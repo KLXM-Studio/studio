@@ -302,6 +302,9 @@ return [
                 ...$buttons,
                 ['name' => 'image', 'label' => 'Bild', 'type' => 'media', 'width' => 'half', 'help' => 'Min. 1200 px breit.'],
                 ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => '4:3', 'width' => 'half', 'options' => $ratios],
+                ['name' => 'valign', 'label' => 'Bild ausrichten', 'type' => 'select', 'required' => true, 'default' => 'follow', 'width' => 'half', 'variants' => ['auto', 'right', 'left'],
+                    'options' => ['follow' => 'Mitlaufen', 'top' => 'Oben', 'center' => 'Mitte'],
+                    'help' => '„Mitlaufen“: Bei langem Text steht das Bild oben und bleibt beim Scrollen neben dem Text sichtbar; bei kurzem Text wie bisher mittig. Auf dem Telefon stehen Bild und Text untereinander.'],
             ],
         ],
         'features' => [

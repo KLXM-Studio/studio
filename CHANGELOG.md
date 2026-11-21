@@ -26,6 +26,20 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   gone from the source); stale copies no longer survive core updates. `health` reports outdated or missing asset copies
   (technical). Self-test `assets:selftest`.
 
+### Blöcke: Text + Bild „Bild ausrichten“, Galerie mit einem Bild
+- **Text + Bild – Bild ausrichten** (neues Feld `valign` in den Kits fluid, native, foto, galerie, modern, nature, essenz):
+  „Mitlaufen“ (Standard, auch für bestehende Blöcke), „Oben“, „Mitte“. „Mitlaufen“ stellt das Bild bei langem Text oben neben den
+  Text und hält es beim Scrollen unter dem Kopf sichtbar (`position: sticky`, reines CSS, nur solange Bild und Text nebeneinander
+  stehen; Telefon unverändert gestapelt). Ist der Text kürzer als das Bild, bleibt die Darstellung wie bisher. „Mitte“ entspricht
+  dem früheren Verhalten. Kit praxis unverändert.
+- **Bildergalerie mit genau einem Bild:** erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
+  mit Bildunterschrift, Lightbox wie bisher) statt klein in einer Spalte; hohe Bilder höchstens 85 % der Fensterhöhe, mittig.
+  Die Live-Galerie bleibt unverändert. Handbuch → Alle Blöcke, Entwicklerhandbuch → Kits.
+- *EN:* Media + text blocks get “Align image”: “Follow” (default, also for existing blocks), “Top”, “Centre”. “Follow” places the
+  image at the top next to long text and keeps it visible below the header while scrolling (pure CSS sticky, only side by side;
+  short text looks as before). An image gallery with exactly one image now shows it as a single full-width image in its original
+  aspect ratio with caption and lightbox, instead of a small column.
+
 ### Cookie-Einwilligung: „Hinweis nur, wenn nötig“ (consent_kit 1.5.0)
 - **Kein Banner, wenn nur Einbettungen aktiv sind:** Sind ausschließlich Dienste aktiv, die nur über Platzhalter laden (z. B. nur
   YouTube-Videos oder Karten), erscheint beim ersten Besuch kein Hinweis mehr; die Platzhalter holen die Einwilligung am Inhalt

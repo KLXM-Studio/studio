@@ -27,6 +27,8 @@ a.cms-gallery__link{cursor:zoom-in}
 a.cms-gallery__link:hover img{scale:1.035}
 a.cms-gallery__link:focus-visible{outline:3px solid var(--_accent);outline-offset:3px}
 .cms-gallery__cap{margin-top:.6rem;color:var(--e-muted);font-size:var(--e-t-1);line-height:1.45}
+/* Galerie mit genau einem Bild (cms-gallery--single): volle Inhaltsbreite im Originalformat, hohe Bilder höchstens 85 % der Fensterhöhe, dann mittig */
+.cms-gallery--single{max-width:min(100%,calc(85vh * var(--ar,13) / 10));margin-inline:auto}
 .cms-gallery--grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--_min)),1fr));gap:var(--_gap)}
 :is(.cms-gallery--grid,.cms-gallery--justified) .cms-gallery__link img{position:absolute;inset:0;height:100%;object-fit:cover}
 .cms-gallery--masonry{columns:var(--_min);column-gap:var(--_gap)}
