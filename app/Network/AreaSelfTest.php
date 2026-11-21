@@ -13,7 +13,7 @@ use Core\Testing\Check;
 
 /**
  * php bin/console network:selftest [--site=key] – Netzwerk-Bereich (Core\Network\Area): Umleitungen alter Adressen, Rücksprünge,
- * Routen der umgezogenen Seiten, Zugriff (Netzwerk-Konto vs. Administration einer Website), Systemmeldungen (Core\Network\SystemMail).
+ * Routen der umgezogenen Seiten, Zugriff (Netzwerk-Konto vs. Administration einer Website), Einbindung der Systemmeldungen (Core\Mail\Alerts).
  * Mit mehreren Websites prüft er den Netzwerk-Fall, sonst die Einzelinstallation (alles bleibt am alten Platz). Angemeldete Konten
  * werden nur im Speicher vorgetäuscht – keine Änderung an Datenbank oder Sitzung.
  */
@@ -87,13 +87,14 @@ final class AreaSelfTest
             // ---------------------------------------------------------- Systemmeldungen
             $eq('Adressen lesen', SystemMail::parse(' A@example.org, b@example.org;a@example.org kaputt'), [['a@example.org', 'b@example.org'], ['kaputt']]);
             $eq('Ungültige Adresse wird abgelehnt', SystemMail::save('kein-mail') !== null, true);
-            $rec = SystemMail::recipients(['alt@example.org']);
-            $eq('Empfänger nie leer, solange es einen Rückfall gibt', $rec !== [], true);
-            if (!SystemMail::configured() && !$multi) $eq('Einzelinstallation: bisherige Empfänger', $rec, ['alt@example.org']);
+            // Wer welche Meldung bekommt, prüft alerts:selftest (Core\Mail\Alerts); hier nur die Einbindung in den Netzwerk-Bereich
+            $eq('Systemmeldungen: Seite ' . ($multi ? 'im Netzwerk-Bereich' : 'in den Grundeinstellungen'), \Core\Mail\Alerts::page(), $multi ? '/admin/network/meldungen' : '/admin/system/meldungen');
+            $eq('Systemmeldungen: Rücksprung', Area::path('/admin/system/meldungen#al-cron'), $multi ? '/admin/network/meldungen#al-cron' : '/admin/system/meldungen#al-cron');
+            $eq('Systemmeldungen: Speichern und Test haben Routen', [$router->match('POST', '/admin/system/meldungen') !== null, $router->match('POST', '/admin/system/meldungen/test/cron') !== null], [true, true]);
             if ($multi) {
                 $mine = array_map('strtolower', array_column(app()->db->fetchAll("SELECT email FROM users WHERE role = 'network' OR network_uid IS NOT NULL"), 'email'));
                 $db = \Core\Integrity::recipients('db');
-                $eq('Integrität (Datenbank): keine Netzwerk-/Schatten-Konten, außer als Rückfall', array_values(array_intersect($db, $mine)) === [] || $db === SystemMail::recipients(), true);
+                $eq('Integrität (Datenbank): keine Netzwerk-/Schatten-Konten, außer als Rückfall oder Agentur', array_values(array_intersect($db, $mine)) === [] || $db === \Core\Mail\Alerts::recipients('integrity') || \Core\Mail\Alerts::resolve('integrity', ['scope' => 'site'])['via'] !== 'admins', true);
             }
         } finally {
             self::as($keep);
