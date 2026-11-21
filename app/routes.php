@@ -187,6 +187,7 @@ return function (Router $r): void {
 
     $r->get('/admin/settings', [Admin\SettingsController::class, 'edit']);
     $r->post('/admin/settings', [Admin\SettingsController::class, 'save']);
+    $r->post('/admin/settings/undo/{id}', [Admin\SettingsController::class, 'undo']);   // Version zurücknehmen (Core\SettingsRevisions)
     $r->post('/admin/api/settings-preview', [Admin\SettingsController::class, 'preview']);
     $r->get('/admin/design', [Admin\DesignController::class, 'edit']);
     $r->post('/admin/design', [Admin\DesignController::class, 'save']);
@@ -290,6 +291,7 @@ return function (Router $r): void {
     $r->post('/admin/funktionen/erweiterung', [Admin\FeaturesController::class, 'extension']);
     $r->post('/admin/funktionen/freigabe', [Admin\FeaturesController::class, 'delegate']);
     $r->get('/admin/system', [Admin\SystemController::class, 'edit']);
+    $r->post('/admin/system/undo/{id}', [Admin\SystemController::class, 'undo']);   // Version der Grundeinstellungen zurücknehmen
     $r->post('/admin/system', [Admin\SystemController::class, 'save']);
     $r->post('/admin/system/testmail', [Admin\SystemController::class, 'testMail']);
     $r->post('/admin/system/keys', [Admin\SystemController::class, 'generateKeys']);

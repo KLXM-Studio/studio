@@ -3,8 +3,9 @@
 use Core\Fields;
 ?>
 <header class="adm-head">
-  <div><p class="adm-eyebrow"><?= e(__('Administration')) ?> › <?= e(__('Einstellungen')) ?></p><h1>Grundeinstellungen</h1>
-    <p class="adm-muted">Technische Einstellungen: Website, E-Mail-Versand (Symfony Mailer), Spamschutz und Verschlüsselung.</p></div>
+  <div><p class="adm-eyebrow"><?= e(__('Administration')) ?> › <?= e(__('Einstellungen')) ?></p><h1><?= e(__('Grundeinstellungen')) ?></h1>
+    <p class="adm-muted"><?= e(__('Technik dieser Website: Kit, Wartung, Suchmaschinen, E-Mail-Versand, Spamschutz, Verschlüsselung und mehr. Name, Kontakt, Logo und Rechtstexte stehen unter Website → {title}.', ['title' => app()->theme->settingsTitle()])) ?>
+      <?= \Core\Sites::multi() ? e(__('Alles hier gilt nur für diese Website; was für alle Websites gilt, stellt die Netzwerk-Administration ein.')) : '' ?></p></div>
 </header>
 
 <?php if ($newSecret): ?>
@@ -67,7 +68,7 @@ use Core\Fields;
       // Impressum für E-Mails (Core\Mail\Imprint): weder Text noch Impressum-Seite → deutlicher Hinweis oben im Reiter
       if (\Core\Mail\Imprint::missing()): ?><p class="adm-flash adm-flash--error" id="mail-imprint-missing" role="status"><?= e(__('E-Mails dieser Website enthalten derzeit kein Impressum: Bitte unten „Impressum in jeder E-Mail“ ausfüllen oder unter Einstellungen → Recht eine Impressum-Seite festlegen. Bis dahin ist der Newsletter-Versand gesperrt.')) ?> <a href="#f-f-sys-mail-imprint"><?= e(__('Zum Feld')) ?></a></p><?php endif;
       $std = array_values(\Core\Mail\Accounts::STANDARD_KEYS);
-      $stdFields = array_values(array_filter($gFields, fn($f) => in_array($f['name'] ?? '', $std, true) || (($f['type'] ?? '') === 'heading' && ($f['label'] ?? '') === 'Konto „Standard“')));
+      $stdFields = array_values(array_filter($gFields, fn($f) => in_array($f['name'] ?? '', $std, true) || (($f['type'] ?? '') === 'heading' && ($f['label'] ?? '') === __('Konto „Standard“'))));
       $gFields = array_values(array_filter($gFields, fn($f) => !in_array($f, $stdFields, true)));
       // Gruppen 1–5 mit allen übrigen Feldern (Empfänger, Test und Umleitung, Impressum) rendert system/_mail.php selbst
       echo \Core\Theme::capture(ROOT . '/app/Admin/views/system/_mail.php', ['stdFields' => $stdFields, 'values' => $values, 'errors' => $errors, 'fields' => $gFields, 'user' => $user]);
@@ -196,6 +197,23 @@ use Core\Fields;
       </div></div>
       <p class="set-group__note">Schalter: <?= \Core\Features::canView() ? '<a href="' . e(url('/admin/funktionen')) . '">Administration → Funktionen &amp; Erweiterungen</a>' : 'Administration → Funktionen &amp; Erweiterungen (Haupt-Admin bzw. Agentur)' ?>. Werte aus <code><?= e(site()->isDefault() && !isset(\Core\Sites::all()['default']['features']) ? 'config/config.local.php' : 'config/sites/' . site()->key . '.php') ?></code> (<code>preset</code>, <code>features</code>, <code>blocks</code>, <code>extensions</code>) gehen vor und sind dort gesperrt.<?= \Core\Features::integrator() ? ' Sie sind als Integrator eingetragen und sehen alles.' : '' ?></p>
     </section>
+    <?php $revisions = $revisions ?? []; if ($revisions): // Letzte Änderungen der Grundeinstellungen (Core\SettingsRevisions), Zurücknehmen über eigene Formulare unten
+      $sysFields = array_column(array_filter(\Core\SystemSchema::fields(), fn($f) => isset($f['name'])), null, 'name'); ?>
+    <section class="set-group" id="aenderungen">
+      <h3 class="set-group__title"><?= e(__('Letzte Änderungen')) ?></h3>
+      <p class="set-group__lead"><?= e(__('Jede Änderung lässt sich zurücknehmen, solange die Felder seitdem nicht erneut geändert wurden. Passwörter werden nie gespeichert.')) ?></p>
+      <div class="set-list"><ul class="st-rev__list">
+        <?php foreach ($revisions as $rv): ?>
+        <li class="st-rev__item">
+          <span class="st-rev__when"><?= e(\Core\Format::admin()->datetime(strtotime($rv['created_at']))) ?> · <?= e((string) ($rv['user_name'] ?? '–')) ?></span>
+          <span class="st-rev__what"><?php foreach (array_slice($rv['changes'], 0, 4) as $i => $c): $fd = $sysFields[(string) $c['k']] ?? []; ?><?= $i ? ' · ' : '' ?><strong><?= e((string) ($fd['label'] ?? $c['k'])) ?></strong>: <del><?= e(\Core\SettingsRevisions::display($c['b'], $fd)) ?></del> → <ins><?= e(\Core\SettingsRevisions::display($c['a'], $fd)) ?></ins><?php endforeach; ?><?= count($rv['changes']) > 4 ? ' · ' . e(__('und {n} weitere', ['n' => count($rv['changes']) - 4])) : '' ?></span>
+          <?php if ($rv['undone']): ?><span class="adm-badge adm-badge--muted"><?= e(__('zurückgenommen')) ?></span>
+          <?php elseif ($rv['channel'] !== 'undo'): ?><button class="adm-btn adm-btn--small adm-btn--ghost" type="submit" form="undo-<?= (int) $rv['id'] ?>"><?= e(__('Zurücknehmen')) ?></button><?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+      </ul></div>
+    </section>
+    <?php endif; ?>
     <?php $exts = \Core\Extensions::available(); if ($exts): ?>
     <section class="set-group">
       <h3 class="set-group__title">Erweiterungen</h3>
@@ -222,6 +240,7 @@ use Core\Fields;
 <form id="pool-del-<?= e($pk) ?>" method="post" action="<?= e(url('/admin/system/pools/' . $pk . '/delete')) ?>"><?= csrf_field() ?></form>
 <?php endforeach; endif; ?>
 <form id="cache" method="post" action="<?= e(url('/admin/system/cache')) ?>"><?= csrf_field() ?></form>
+<?php foreach ($revisions ?? [] as $rv): if (!$rv['undone'] && $rv['channel'] !== 'undo'): ?><form id="undo-<?= (int) $rv['id'] ?>" method="post" action="<?= e(url('/admin/system/undo/' . $rv['id'])) ?>"><?= csrf_field() ?></form><?php endif; endforeach; ?>
 <form id="push-keys" method="post" action="<?= e(url('/admin/system/push/keys')) ?>"><?= csrf_field() ?></form>
 <form id="push-test" method="post" action="<?= e(url('/admin/account/push/test')) ?>"><?= csrf_field() ?><input type="hidden" name="back" value="system"></form>
 <?= \Core\Theme::capture(ROOT . '/app/Admin/views/system/_search.php', ['part' => 'forms']) ?><?= \Core\Theme::capture(ROOT . '/app/Admin/views/system/_ai.php', ['part' => 'forms']) ?>

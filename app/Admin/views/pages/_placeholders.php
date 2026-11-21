@@ -18,7 +18,7 @@ $backend ??= false;
 $hTag = in_array($hTag ?? 'h3', ['h3', 'h4'], true) ? $hTag ?? 'h3' : 'h3';
 $groups = [];
 foreach ($hits as $h) $groups[(($h['entry'] ?? '') !== '' ? 'e:' . $h['entry'] . ':' : 'p:') . $h['id']][] = $h;
-$canOk = can('pages.edit') || can('settings.edit') || can('system.manage');
+$canOk = can('pages.edit') || can('settings.info') || can('system.manage');
 ?>
 <div class="ph-list">
   <?php foreach ($groups as $pid => $list): $page = $list[0]; ?>

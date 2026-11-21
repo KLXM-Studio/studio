@@ -79,7 +79,7 @@ final class Toolbar
         $b = [
             'kind' => $kind, 'editing' => $editing, 'live' => $live, 'page' => $page, 'hasPage' => $hasPage,
             'canEditPages' => can('pages.edit'), 'canPublish' => can('pages.publish'), 'canManage' => can('pages.manage'),
-            'canSettings' => can('settings.edit'), 'settingsTitle' => app()->theme->settingsTitle(),
+            'canSettings' => \Core\SiteSettings::canView(), 'settingsTitle' => \Core\SiteSettings::title(),
             'ai' => \Core\AI\Assist::client(), 'aiBrand' => \Core\AI\Assist::brand(),
             'help' => url('/admin/hilfe') . '#' . ($kind === 'page' ? 'bearbeiten' : 'daten'),
             'origin' => null, 'site' => '', 'others' => [],

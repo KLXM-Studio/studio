@@ -160,7 +160,7 @@ final class EditorController extends AdminController
     {
         $this->auth($r);
         // Seitenauswahl (Feldtyp „pages“) auch in Grundeinstellungen und Glossar
-        if (!can('pages.edit') && !can('data.edit') && !can('settings.edit') && !can('system.manage') && !can('data.schema')) throw new HttpException(403);
+        if (!can('pages.edit') && !can('data.edit') && !can('settings.info') && !can('system.manage') && !can('data.schema')) throw new HttpException(403);
         if (($v = $r->str('describe')) !== '') {
             return Response::json(\Core\Links::describe($v));
         }
