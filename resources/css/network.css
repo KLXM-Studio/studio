@@ -210,6 +210,7 @@ a.net-card__host:focus-visible{outline:2px solid var(--adm-a);outline-offset:2px
 .net-log__detail{display:block;color:var(--adm-t2);font-size:12.5px;overflow-wrap:anywhere}
 .net-log__row small{font-size:12px}
 .net-clihint{margin-top:16px;font-size:13px}
+.net-clihint > summary.adm-link{color:var(--adm-a-ink);padding:4px 0}   /* .adm-link ist für die dunkle Leiste gedacht – auf der Karte Kontrast (axe) */
 
 @media (max-width:600px){
   .net-att__row{grid-template-columns:24px minmax(0,1fr) auto;grid-template-areas:"ico site act" "msg msg msg"}
