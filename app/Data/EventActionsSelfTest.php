@@ -142,6 +142,33 @@ final class EventActionsSelfTest
             $eq('Serie: unbekanntes Vorkommen → nächster Termin', [$a['state'], $a['keyed'], $a['key']], ['open', false, '20270112T1900']);
             $a = EventActions::forEntry($t, $head, ['now' => $d('2028-01-01 12:00'), 'key' => '']);
             $eq('Serie beendet: vorbei, kein nächster Termin', [$a['state'], $a['next'], $a['ics']], ['past', null, null]);
+            // Links aus „Kalender“/„Nächste Termine“: Serien-Vorkommen mit ?vorkommen=, Einzeltermine und einfache Termine ohne
+            $occs = Calendar::compute($t, $d('2027-01-01'), $d('2027-01-27'), ['status' => 'published']);
+            $hrefs = [];
+            foreach ($occs as $o) $hrefs[$o['start']->format('Y-m-d') . (empty($o['series']) ? '' : (!empty($o['override']) ? ' ov' : ' s'))] = (string) EventActions::href($t, $o);
+            $base = (string) Entries::href($t, $head);
+            $eq('Links: Vorkommen mit ?vorkommen=, Einzeltermin eigene Seite', [$hrefs['2027-01-19 s'] ?? null, isset($hrefs['2027-01-12 ov']) && !str_contains($hrefs['2027-01-12 ov'], '?')],
+                [$base . '?vorkommen=20270119T1900', true]);
+            // Detailseite mit ?vorkommen=: Datum des Vorkommens in „Termin“ (_when), nur für den Eintrag der Seite und gültige Schlüssel
+            $prevReq = app()->request;
+            $prevEntry = app()->entry;
+            try {
+                app()->entry = ['table' => $t, 'entry' => $head];
+                app()->request = new \Core\Http\Request('GET', '/x', ['vorkommen' => '20270119T1900'], [], [], []);
+                $occ = EventActions::current($t, $head);
+                $eq('Vorkommen der Seite', [$occ ? $occ['start']->format('Y-m-d H:i') : null, str_starts_with(Entries::html($t, $head, '_when'), e(Calendar::when($occ ?? ['start' => $now, 'end' => $now, 'all_day' => false, 'has_end' => false])))],
+                    ['2027-01-19 19:00', true]);
+                $eq('Seitentitel mit Datum des Vorkommens', Calendar::titleFor('Übungsabend', $occ, 'de') !== 'Übungsabend', true);
+                $other = $save(['titel' => 'Anderer', 'beginn' => '2027-01-20 10:00']);
+                $eq('nur für den Eintrag der Seite', EventActions::current($t, $other), null);
+                app()->request = new \Core\Http\Request('GET', '/x', ['vorkommen' => '20270120T1900'], [], [], []);
+                $eq('unbekanntes Vorkommen: Seite wie ohne Parameter', [EventActions::current($t, $head), str_starts_with(Entries::html($t, $head, '_when'), e(Calendar::when(Calendar::span($t, $head) ?? [])))], [null, true]);
+                app()->request = new \Core\Http\Request('GET', '/x', ['vorkommen' => ['x']], [], [], []);
+                $eq('Parameter kein Text', EventActions::requestKey(), '');
+            } finally {
+                app()->request = $prevReq;
+                app()->entry = $prevEntry;
+            }
             // .ics eines Vorkommens: ohne RRULE, eigene UID, Zeit des Vorkommens; Einzeltermin mit seinen Werten
             [$one, $uid] = EventActions::icsOccurrence($t, $head, '20270119T1900') ?? [[], ''];
             $ics = ICal::calendar($t, [$one], ['publish' => true, 'single' => true, 'uid' => $uid]);

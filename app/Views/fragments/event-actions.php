@@ -5,7 +5,8 @@
  * Vergangen: Hinweis statt Knopf (Serie: nächster Termin), abgesagt: „fällt aus“. Stile: css/event-actions.css (Variablen --eva-*).
  * Klassen: .eva (+ $class) · .eva-when · .eva-list · .eva-act (--ics, --sub, --ext) · .eva-state (--past, --cancelled) · .eva-next
  * @var array $table  @var array $entry  @var array $options  subscribe (bool), external ('' | none | google | outlook | both),
- *      when (auto | always | never: Datum des Vorkommens zeigen – auto: nur bei Serien), class
+ *      when (auto | always | never | unkeyed: Datum des Vorkommens zeigen – auto: nur bei Serien, unkeyed: nur bei Serien ohne ?vorkommen=,
+ *      wenn der Kopf das Datum schon zeigt), class
  */
 use Core\Data\EventActions;
 
@@ -20,7 +21,7 @@ if ($open && !$a['ics'] && !$a['webcal'] && !$a['links']) {
     return;
 }
 app()->theme->markUsed('event_actions');   // Stile css/event-actions.css (Theme::conditionalCss) – auch aus „Datensatz-Felder“
-$showWhen = $a['when'] !== '' && ($o['when'] === 'always' || ($o['when'] === 'auto' && $a['series']));
+$showWhen = $a['when'] !== '' && ($o['when'] === 'always' || ($o['when'] === 'auto' && $a['series']) || ($o['when'] === 'unkeyed' && $a['series'] && !$a['keyed']));
 $hint = ['google' => lt('öffnet Google'), 'outlook' => lt('öffnet Microsoft')];
 ?>
 <div class="eva eva--<?= e($a['state']) ?><?= $o['class'] !== '' ? ' ' . e((string) $o['class']) : '' ?>">

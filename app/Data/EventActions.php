@@ -57,7 +57,7 @@ final class EventActions
     {
         if (!Calendar::enabled($t)) return null;
         $now = $o['now'] ?? new DateTimeImmutable('now', Calendar::tz());
-        $key = (string) ($o['key'] ?? (app()->request?->query['vorkommen'] ?? ''));
+        $key = (string) ($o['key'] ?? self::requestKey());
         $series = self::isSeries($t, $e);
         $occ = self::resolve($t, $e, $series ? $key : '', $now);
         $feed = !empty(Calendar::config($t)['feed']);
@@ -89,6 +89,41 @@ final class EventActions
         }
         if ($out['state'] === 'cancelled' && $occ && $occ['end'] > $now) $out['until'] = $occ['end']->getTimestamp();
         return $out;
+    }
+
+    /** Vorkommens-Schlüssel aus der Adresse (?vorkommen=JJJJMMTTTHHMM), sonst '' */
+    public static function requestKey(): string
+    {
+        $k = app()->request?->query['vorkommen'] ?? null;
+        return is_string($k) && Series::ridFromKey($k) !== null ? $k : '';
+    }
+
+    /**
+     * Vorkommen, das die aufgerufene Detailseite zeigt: nur für den Eintrag der Seite (app()->entry), nur Serien, nur mit gültigem
+     * ?vorkommen= (Ausnahme/unbekannt → null). Für „Termin“ (_when), Seitentitel und JSON-LD der Detailseite.
+     */
+    public static function current(array $t, array $e): ?array
+    {
+        static $memo = [];
+        $key = self::requestKey();
+        $ctx = app()->entry;
+        if ($key === '' || !$ctx || ($ctx['table']['handle'] ?? '') !== ($t['handle'] ?? null) || (int) ($ctx['entry']['id'] ?? 0) !== (int) ($e['id'] ?? -1)) return null;
+        $m = ($t['handle'] ?? '') . ':' . (int) $e['id'] . ':' . $key;
+        if (!array_key_exists($m, $memo)) {
+            $memo[$m] = Calendar::enabled($t) && self::isSeries($t, $e) ? self::at($t, $e, (string) Series::ridFromKey($key)) : null;
+        }
+        return $memo[$m];
+    }
+
+    /**
+     * Link eines Vorkommens aus den Blöcken „Kalender“ und „Nächste Termine“: Serien-Vorkommen → Detailseite der Serie mit
+     * ?vorkommen=JJJJMMTTTHHMM, abweichende Einzeltermine und einzelne Termine → ihre eigene Detailseite.
+     */
+    public static function href(array $t, array $o): ?string
+    {
+        $href = Entries::href($t, $o['entry']);
+        if ($href === null || empty($o['series']) || !empty($o['override']) || ($o['rid'] ?? '') === '' || str_contains($href, '://')) return $href;
+        return $href . '?vorkommen=' . rawurlencode(Calendar::ridKey((string) $o['rid']));
     }
 
     /** Wiederkehrender Termin (Wiederholung gesetzt, kein abweichender Einzeltermin)? */

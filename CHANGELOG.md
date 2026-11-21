@@ -81,6 +81,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Einzeltermine mit ihren Werten. Vergangen: Hinweis „vorbei“ statt Knopf (Serie: Link zum nächsten Termin), abgesagt: „fällt aus“.
 - **Google Kalender / Outlook.com** als reine Links (kein Skript, `rel="noopener noreferrer"`, Hinweis „öffnet Google“), Zeiten in
   UTC, ganztägig als Datum; **Standard aus** – Grundeinstellungen → Karten & externe Quellen (`sys.calendar_links`) oder je Block.
+- **Links auf Vorkommen:** „Kalender“ und „Nächste Termine“ verlinken Serien-Vorkommen mit `?vorkommen=…`; die Detailseite zeigt
+  dann dieses Datum (Termin-Feld, Seitentitel „… am 08.12.2026“, JSON-LD). `canonical` bleibt die Serienseite ohne Parameter,
+  die Sitemap nennt nur sie – keine Seite pro Vorkommen im Index. JSON-LD einer Serie ohne Parameter: nächster stattfindender Termin.
 - Ort und Beschreibung nur aus Feldern mit Freigabe für die Kalender-Datei (`ics`); Seiten-Cache gilt bis zum Ende des Termins.
   Selbsttest in `calendar:selftest`.
 
