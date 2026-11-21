@@ -25,7 +25,7 @@ $hint = ['google' => lt('öffnet Google'), 'outlook' => lt('öffnet Microsoft')]
 ?>
 <div class="eva eva--<?= e($a['state']) ?><?= $o['class'] !== '' ? ' ' . e((string) $o['class']) : '' ?>">
   <?php if ($a['skipped'] !== null): ?><p class="eva-state eva-state--cancelled" role="note"><?= icon('prohibit') ?><span><?= e(lt('Der Termin am {date} fällt aus.', ['date' => $a['skipped']])) ?></span></p><?php endif; ?>
-  <?php if ($showWhen && $open): ?><p class="eva-when"><?= e($a['keyed'] ? lt('Termin') : lt('Nächster Termin')) ?>: <strong><?= e($a['when']) ?></strong></p><?php endif; ?>
+  <?php if ($showWhen && $open): ?><p class="eva-when"><?= e($a['keyed'] || !$a['series'] ? lt('Termin') : lt('Nächster Termin')) ?>: <strong><?= e($a['when']) ?></strong></p><?php endif; ?>
   <?php if ($a['state'] === 'past'): ?>
   <p class="eva-state eva-state--past" role="note"><?= icon('clock-counter-clockwise') ?><span><?= e($showWhen ? lt('Der Termin am {date} ist vorbei.', ['date' => $a['when']]) : lt('Dieser Termin ist vorbei.')) ?></span></p>
   <?php elseif ($a['state'] === 'cancelled'): ?>
