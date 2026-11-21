@@ -21,7 +21,9 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
       $subs = [];
       $shared = \Core\Data\Tables::isShared($t);
       if ($on) {
-          if ($edit) $subs[] = [url($base) . '?view=list', $shared ? __('Eigene') : __('Liste'), $cur === 'list'];
+          // Kontakte (Core\Data\AddressBook): Adressbuch-Ansicht neben der Tabelle
+          if ($edit && \Core\Data\AddressBook::enabled($t)) $subs[] = [url($base) . '?view=book', __('Adressbuch'), false];
+          if ($edit) $subs[] = [url($base) . '?view=list', $shared ? __('Eigene') : (\Core\Data\AddressBook::enabled($t) ? __('Tabelle') : __('Liste')), $cur === 'list'];
           if ($edit && \Core\Data\Calendar::enabled($t)) $subs[] = [url($base) . '?view=calendar', __('Kalender'), $cur === 'calendar'];
           if ($shared && $edit) {
               // Geteilte Tabelle: fremde Einträge, Vorschläge (nur Eigentümer), Anzeige auf dieser Website
