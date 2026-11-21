@@ -161,13 +161,20 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Rechte:** Installationsseiten mit mehreren Websites nur für Rolle `network` (`Permissions::installationAdmin()`); die
   Administration einer Website – auch der Netzwerk-Website – verwaltet nur ihre Website. Netzwerk-Konten behalten überall die
   vollen Website-Rechte; in der Benutzerliste einer Website erscheinen sie schreibgeschützt („wird im Netzwerk verwaltet“).
-- **Systemmeldungen an** (`Core\Network\SystemMail`, Netzwerk → E-Mail): Empfänger für Integrität der Dateien, fehlgeschlagene
-  Sicherung außer Haus und Fehler in Geplanten Aufgaben (je Fehlerserie einmal); leer = aktive Netzwerk-Konten. Integritäts-Hinweise
-  zur Datenbank einer Website gehen an deren Administration, nicht an Schatten-Konten der Netzwerk-Administration.
+- **Systemmeldungen – wer bekommt technische Warnungen** (`Core\Mail\Alerts`, Netzwerk → Systemmeldungen bzw. bei
+  Einzelinstallation Grundeinstellungen → Systemmeldungen): eine Regel für Integrität (Dateien und Datenbank), Sicherheit,
+  Sicherung, Geplante Aufgaben, technische Fehler, Updates/Lebensende und Mail-Zustellprobleme. Modus **Automatisch** (Agentur-Kontakt
+  → bestimmte Adressen → Agentur-Konten aus dem Agentur-Zugang per OpenID Connect → bisheriges Verhalten), **Agentur bevorzugt**
+  (Kunden-Admins bekommen nur Redaktionelles, außer „zusätzlich informieren“), **Bestimmte Adressen**, **Alle (Netzwerk-)Admins**.
+  Feld „Agentur – Kontakt für technische Meldungen“ (Vorschlag aus den Agentur-Konten), je Kategorie abwählen/umleiten/ergänzen,
+  wirksame Empfänger und Testversand je Kategorie, sichtbar auch in der E-Mail-Übersicht („Integrität → …“). Alle Versandstellen
+  (Integrität, Sicherung außer Haus, Geplante Aufgaben, Zustellung fehlgeschlagen) nutzen die Regel; eine Fehlerserie = eine Mail,
+  Zustellprobleme höchstens stündlich je Tabelle; Versand über `Core\Mailer` mit Impressum. Ohne Einstellung bleibt das bisherige
+  Verhalten – für „Agentur bevorzugt“ die Agentur-Adresse eintragen. `alerts:show`, `alerts:selftest`.
   `health` meldet einen Fehler, wenn mehrere Websites kein Netzwerk-Konto für E-Mail haben.
 - **E-Mail-Einstellungen in Gruppen:** Grundeinstellungen → E-Mail-Versand mit 1 Versandweg und Konten, 2 Absender je Zweck (verständliche
   Namen, wirksamer Absender darunter), 3 Empfänger, 4 Test und Umleitung (Testnachricht an der Gruppe), 5 Impressum – jede Gruppe
-  mit Geltung und Rückfall; Netzwerk → E-Mail ebenso (Netzwerk-Konto, Systemmeldungen an, alle Websites).
+  mit Geltung und Rückfall; Netzwerk → E-Mail ebenso (Netzwerk-Konto, Kurzfassung der Systemmeldungen, alle Websites).
 - `Data\Delivery::transport()` prüft die TLS-Eignung am Konto, über das die Zustellung wirklich geht (Zweck „Redaktion“), statt am
   Konto „Standard“. Selbsttest `network:selftest`. Handbuch → „Netzwerk-Verwaltung“, Entwicklerhandbuch → Netzwerk-Administration →
   „Netzwerk-Bereich“ und „Systemmeldungen“.

@@ -90,7 +90,7 @@ return function (Router $r): void {
     $r->get('/admin/network/schriften', [Admin\FontsController::class, 'index']);
     $r->get('/admin/network/branding', [Admin\BrandingController::class, 'index']);
     $r->get('/admin/network/integritaet', [Admin\IntegrityController::class, 'index']);
-    $r->post('/admin/network/system-mail', [Admin\NetworkController::class, 'systemMail']);   // „Systemmeldungen an“ (Core\Network\SystemMail)
+    $r->get('/admin/network/meldungen', [Admin\AlertsController::class, 'index']);   // Systemmeldungen (Core\Mail\Alerts)
     $r->get('/admin/network/{section}', [Admin\NetworkController::class, 'section']);   // Bereiche (NetworkController::SECTIONS)
     $r->post('/admin/network/open', [Admin\NetworkController::class, 'open']);
     $r->post('/admin/network/mail', [Admin\MailAccountsController::class, 'network']);        // E-Mail-Konto des Netzwerks (Core\Mail\Accounts)
@@ -320,6 +320,10 @@ return function (Router $r): void {
     // Geplante Aufgaben (Core\Cron): ein Cronjob für die Installation, Zeitpläne, Warteschlange, Protokoll
     $r->get('/admin/system/aufgaben', [Admin\CronController::class, 'index']);
     $r->get('/admin/system/integritaet', [Admin\IntegrityController::class, 'index']);
+    // Systemmeldungen: wer technische Warnungen bekommt (Core\Mail\Alerts) – im Netzwerk unter /admin/network/meldungen
+    $r->get('/admin/system/meldungen', [Admin\AlertsController::class, 'index']);
+    $r->post('/admin/system/meldungen', [Admin\AlertsController::class, 'save']);
+    $r->post('/admin/system/meldungen/test/{cat}', [Admin\AlertsController::class, 'test']);
     $r->post('/admin/system/integritaet/check', [Admin\IntegrityController::class, 'check']);
     $r->post('/admin/system/integritaet/settings', [Admin\IntegrityController::class, 'settings']);
     $r->post('/admin/system/integritaet/accept/{what}', [Admin\IntegrityController::class, 'accept']);

@@ -240,17 +240,16 @@ final class Offsite
     }
 
     /**
-     * Systemmeldung (Core\Network\SystemMail, „Systemmeldungen an“): einmal je Fehlerserie eines Ziels, nach dem nächsten
+     * Systemmeldung (Core\Mail\Alerts, Kategorie „Sicherung“): einmal je Fehlerserie eines Ziels, nach dem nächsten
      * erfolgreichen Lauf wieder scharf. Fehler beim Melden halten die Sicherung nicht auf.
      */
     private static function notice(string $id, ?string $error, string $label): void
     {
         try {
-            if ($error === null) { \Core\Network\SystemMail::clear('backup:' . $id); return; }
-            \Core\Network\SystemMail::once('backup:' . $id, __('Sicherung außer Haus fehlgeschlagen: {label}', ['label' => $label]),
+            if ($error === null) { \Core\Mail\Alerts::clear('backup:' . $id); return; }
+            \Core\Mail\Alerts::once('backup', 'backup:' . $id, __('Sicherung außer Haus fehlgeschlagen: {label}', ['label' => $label]),
                 __('Die Sicherung außer Haus an „{label}“ ist fehlgeschlagen:', ['label' => $label]) . "\n\n" . mb_strimwidth($error, 0, 500, '…')
-                . "\n\n" . __('Bitte prüfen: Verwaltung → {where} → Sicherung außer Haus. Nach der nächsten erfolgreichen Sicherung kommt bei einem neuen Fehler wieder eine Meldung.', ['where' => \Core\Sites::multi() ? __('Netzwerk') : __('Grundeinstellungen')]),
-                \Core\Integrity::recipients('files'));
+                . "\n\n" . __('Bitte prüfen: Verwaltung → {where} → Sicherung außer Haus. Nach der nächsten erfolgreichen Sicherung kommt bei einem neuen Fehler wieder eine Meldung.', ['where' => \Core\Sites::multi() ? __('Netzwerk') : __('Grundeinstellungen')]));
         } catch (\Throwable $e) {
             error_log('[offsite] Systemmeldung: ' . $e->getMessage());
         }

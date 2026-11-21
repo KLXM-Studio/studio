@@ -29,6 +29,7 @@ if (can('system.manage')) {
     $ig = \Core\Integrity::health();
     $sub['integritaet'] = [url('/admin/system/integritaet'), __('Integrität'), 'shield-check', in_array(false, $ig, true) ? __('Unerwartete Änderungen gefunden') : ''];
 }
+if (!$netMoved && \Core\Permissions::installationAdmin()) $sub['meldungen'] = [url('/admin/system/meldungen'), __('Systemmeldungen'), 'bell-ringing', ''];
 if (can('system.manage')) $sub['ueberwachung'] = [url('/admin/system/ueberwachung'), __('Überwachung'), 'heartbeat', ''];
 if (!$netMoved && can('system.manage') && \Core\Permissions::installationAdmin()) {
     $bkState = \Core\Backup\Offsite::state();

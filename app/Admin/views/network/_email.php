@@ -1,12 +1,10 @@
 <?php
 /**
  * Netzwerk → E-Mail (Teil von network/index.php, Variablen von dort): drei Gruppen, jede mit einem Satz zu Geltung und Rückfall –
- * 1 Netzwerk-Konto (Absender der Installation, Core\Mail\Accounts), 2 Systemmeldungen an (Core\Network\SystemMail),
+ * 1 Netzwerk-Konto (Absender der Installation, Core\Mail\Accounts), 2 Systemmeldungen (Kurzfassung, Core\Mail\Alerts),
  * 3 welche Adresse gilt wofür auf allen Websites (Core\Mail\Overview::sites).
  */
 $nm = \Core\Mail\Accounts::network(); $nmErr = $mailErrors ?? []; $nmDraft = $mailDraft ?? null;
-$sysTo = \Core\Network\SystemMail::configured();
-$sysAdmins = \Core\Network\SystemMail::networkAdmins();
 $numTitle = fn(string $n, string $t, string $id) => '<h2 class="set-group__title mg-title" id="' . e($id) . '"><span class="mg-num" aria-hidden="true">' . e($n) . '</span>' . e($t) . '</h2>';
 ?>
   <p class="mg-scope"><strong><?= e(__('Gilt für alle Websites dieser Installation.')) ?></strong> <?= e(__('Felder mit * braucht der Versand. Konten, Absender je Zweck, Empfänger und Impressum einer Website stellt die Website selbst ein.')) ?></p>
@@ -41,18 +39,14 @@ $numTitle = fn(string $n, string $t, string $id) => '<h2 class="set-group__title
   </section>
 
   <section class="adm-card mg-card" id="systemmeldungen" aria-labelledby="net-sys-h">
-    <?= $numTitle('2', __('Systemmeldungen an'), 'net-sys-h') ?>
-    <p class="mg-lead"><?= e(__('Wer Meldungen der ganzen Installation bekommt: unerwartete Änderungen an den Dateien (Integrität), fehlgeschlagene Sicherung außer Haus und Fehler in Geplanten Aufgaben – je Fehler einmal. Leer: alle aktiven Netzwerk-Konten. Hinweise zur Datenbank einer Website gehen an deren Administration.')) ?></p>
-    <form method="post" action="<?= e(url('/admin/network/system-mail')) ?>">
-      <?= csrf_field() ?>
-      <div class="f">
-        <label for="net-sys-to"><?= e(__('Systemmeldungen an')) ?></label>
-        <input id="net-sys-to" name="system_to" type="text" autocomplete="off" value="<?= e(implode(', ', $sysTo)) ?>" placeholder="<?= e($sysAdmins ? __('leer: {list}', ['list' => implode(', ', $sysAdmins)]) : 'technik@example.org') ?>" aria-describedby="net-sys-help">
-        <p class="f-help" id="net-sys-help"><?= e(__('Mehrere Adressen mit Komma trennen, höchstens {n}. Gesendet über das Netzwerk-Konto.', ['n' => \Core\Network\SystemMail::MAX])) ?>
-          <span class="mg-eff"><?= e(__('Wirksam:')) ?> <strong><?= e(implode(', ', \Core\Network\SystemMail::recipients()) ?: __('– niemand')) ?></strong><?= !$sysTo && $sysAdmins ? ' – ' . e(__('Netzwerk-Konten, weil nichts eingetragen ist')) : '' ?></span></p>
-      </div>
-      <div class="adm-form-actions"><button class="adm-btn adm-btn--primary adm-btn--small"><?= e(__('Speichern')) ?></button></div>
-    </form>
+    <?= $numTitle('2', __('Systemmeldungen'), 'net-sys-h') ?>
+    <p class="mg-lead"><?= e(__('Wer technische Warnungen der Installation bekommt (Integrität, Sicherheit, Sicherung, Geplante Aufgaben, technische Fehler, Updates, Zustellprobleme) – mit „Agentur bevorzugt“ die Agentur statt der Admins der Websites. Gesendet über das Netzwerk-Konto.')) ?></p>
+    <ul class="mo-rules">
+      <?php foreach (\Core\Mail\Alerts::overview() as $al): ?>
+      <li><strong><?= e($al['label']) ?></strong> → <?= e($al['to'] ? implode(', ', $al['to']) : ($al['via'] === 'off' ? __('– aus') : __('– niemand'))) ?> <span class="adm-muted">(<?= e($al['via_text']) ?>)</span></li>
+      <?php endforeach; ?>
+    </ul>
+    <p><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/network/meldungen')) ?>"><?= e(__('Systemmeldungen einstellen')) ?></a></p>
   </section>
   <?php // Welche Adresse gilt wofür – alle Websites (Core\Mail\Overview::sites, dieselbe Rangfolge wie beim Versand) ?>
   <?php $moSites = \Core\Mail\Overview::sites(); $moWho = fn(array $a) => $a['from'] !== '' ? trim(($a['from_name'] !== '' ? $a['from_name'] . ' ' : '') . '<' . $a['from'] . '>') : __('kein Absender');

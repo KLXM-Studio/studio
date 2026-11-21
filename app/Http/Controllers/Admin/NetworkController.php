@@ -363,15 +363,6 @@ final class NetworkController extends AdminController
         return $this->back('/admin/network/anmeldung#net-auth', 'success', __('Anmelde-Richtlinie der Netzwerk-Konten gespeichert.'));
     }
 
-    /** „Systemmeldungen an“ (Core\Network\SystemMail): Empfänger für Meldungen der ganzen Installation */
-    public function systemMail(Request $r): Response
-    {
-        $user = $this->network($r);
-        if ($err = \Core\Network\SystemMail::save($r->str('system_to'))) return $this->back('/admin/network/email#systemmeldungen', 'error', $err);
-        Network::log('mail.system-to', null, (string) $user['email'], implode(', ', \Core\Network\SystemMail::configured()) ?: '–');
-        return $this->back('/admin/network/email#systemmeldungen', 'success', __('Empfänger für Systemmeldungen gespeichert.'));
-    }
-
     public function accountAction(Request $r, string $id, string $action): Response
     {
         $user = $this->network($r);
