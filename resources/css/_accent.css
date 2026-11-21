@@ -39,13 +39,15 @@ html.adm-ui[data-accent=orange][data-theme=dark]{--adm-a:#B75C1D;--adm-a-d:#984A
 html.adm-ui[data-accent=graphit]{--adm-a:#3D434D;--adm-a-d:#2E333B;--adm-a-ink:#3D434D;--adm-accent-bg:#E6E8EB;--adm-a-rgb:61 67 77;--adm-hover:rgb(61 67 77 / .06);--adm-press:rgb(61 67 77 / .11);--adm-info-line:rgb(61 67 77 / .28);--acc-side:#2A2D33;--acc-side-a:#C3C8D1;--acc-mark:#9FE0C8}
 @media (prefers-color-scheme: dark){html.adm-ui[data-accent=graphit]:not([data-theme=light]){--adm-a:#6E7684;--adm-a-d:#5A606C;--adm-a-ink:#C3C8D1;--adm-accent-bg:#2A2D33;--adm-a-rgb:110 118 132;--adm-hover:rgba(255,255,255,.06);--adm-press:rgba(255,255,255,.11);--adm-info-line:rgb(110 118 132 / .45)}}
 html.adm-ui[data-accent=graphit][data-theme=dark]{--adm-a:#6E7684;--adm-a-d:#5A606C;--adm-a-ink:#C3C8D1;--adm-accent-bg:#2A2D33;--adm-a-rgb:110 118 132;--adm-hover:rgba(255,255,255,.06);--adm-press:rgba(255,255,255,.11);--adm-info-line:rgb(110 118 132 / .45)}
-/* Seitenleiste: Symbole und Markierung des aktiven Punkts in der Akzentfarbe; „mitfärben“: Leiste (und Kopfleiste
-   auf schmalen Bildschirmen) in einem dunklen Ton der Vorlage – Text bleibt ≥ 11:1 */
+/* Seitenleiste: Symbole und Markierung des aktiven Punkts in der Akzentfarbe; „mitfärben“: Leiste und Kopfleiste der Website
+   (_topbar.css, --tb-site; die des Netzwerks bleibt Petrol) in einem dunklen Ton der Vorlage – Text bleibt ≥ 11:1 */
 html.adm-ui[data-accent] .adm-side{--adm-a:var(--acc-side-a);--adm-mint:var(--acc-mark)}
-html.adm-ui[data-accent][data-side=tint] :is(.adm-side,.adm-top){background-color:var(--acc-side)}
+html.adm-ui[data-accent][data-side=tint] .adm-side{background-color:var(--acc-side)}
+html.adm-ui[data-accent][data-side=tint]{--tb-site:var(--acc-side)}
 /* Dunkelmodus: getönte Seitenleiste tiefer (wie --adm-nav) */
-@media (prefers-color-scheme: dark){html.adm-ui[data-accent][data-side=tint]:not([data-theme=light]) :is(.adm-side,.adm-top){background-color:color-mix(in srgb,var(--acc-side) 68%,#000)}}
-html.adm-ui[data-accent][data-side=tint][data-theme=dark] :is(.adm-side,.adm-top){background-color:color-mix(in srgb,var(--acc-side) 68%,#000)}
+@media (prefers-color-scheme: dark){html.adm-ui[data-accent][data-side=tint]:not([data-theme=light]) .adm-side{background-color:color-mix(in srgb,var(--acc-side) 68%,#000)}html.adm-ui[data-accent][data-side=tint]:not([data-theme=light]){--tb-site:color-mix(in srgb,var(--acc-side) 68%,#000)}}
+html.adm-ui[data-accent][data-side=tint][data-theme=dark] .adm-side{background-color:color-mix(in srgb,var(--acc-side) 68%,#000)}
+html.adm-ui[data-accent][data-side=tint][data-theme=dark]{--tb-site:color-mix(in srgb,var(--acc-side) 68%,#000)}
 /* Bereichsmodus (Daten, Medien, Anfragen, Support, Mitteilungen, KLXM AI): Bereichsfarben haben Vorrang – die Leiste bleibt dort
    neutral wie im Standard, sonst färbt der Akzent die Bereichstönung um (z. B. Daten bordeaux statt Petrol) */
 html.adm-ui[data-accent][data-side=tint] .is-drill:not(.is-drill-nav) .adm-side[data-area]{background-color:var(--adm-nav)}

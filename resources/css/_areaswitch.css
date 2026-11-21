@@ -1,0 +1,90 @@
+/* ==========================================================================
+   Umschalter Netzwerk ↔ Website (app/Admin/views/_areaswitch.php, resources/js/_areaswitch.js) und Popover-Menüs der
+   Verwaltung (.adm-pop): Top Layer (popover), darf über die Kopfleiste hinausragen; Telefon (≤ 600 px) als Blatt von unten.
+   Eigene Tokens --pop-* auf der Wurzel – unabhängig vom dunklen Grund der Kopf- und Seitenleiste.
+   Kontraste (WCAG AA): --pop-t2 auf --pop-bg hell 7,4:1, dunkel 8,1:1.
+   ========================================================================== */
+html.adm-ui{--pop-bg:#FFFFFF;--pop-ink:#1B2130;--pop-t2:#4A5263;--pop-line:#E1E4EA;--pop-hover:#EEF1F6;--pop-cur:#E6ECF7;--pop-acc:#314164;--pop-mark:#DCE6FA;--pop-field:#F4F6F9;--pop-shadow:0 18px 48px rgba(16,22,36,.22),0 2px 6px rgba(16,22,36,.08)}
+@media (prefers-color-scheme: dark){html.adm-ui:not([data-theme=light]){--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC;--pop-line:#363A46;--pop-hover:#2A2E39;--pop-cur:#2F3749;--pop-acc:#B4C4E8;--pop-mark:#3A4A6E;--pop-field:#262A33;--pop-shadow:0 18px 48px rgba(0,0,0,.55)}}
+html.adm-ui[data-theme=dark]{--pop-bg:#1E2129;--pop-ink:#F2F4F8;--pop-t2:#B4BCCC;--pop-line:#363A46;--pop-hover:#2A2E39;--pop-cur:#2F3749;--pop-acc:#B4C4E8;--pop-mark:#3A4A6E;--pop-field:#262A33;--pop-shadow:0 18px 48px rgba(0,0,0,.55)}
+
+/* Knopf links in der Kopfleiste – auf dunklem Grund */
+.adm-sw{min-width:0}
+.adm-sw__btn{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:7px 10px 7px 8px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.06);color:#F4F6FA;font:inherit;text-align:left;cursor:pointer}
+.adm-sw__btn:hover{background:rgba(255,255,255,.11)}
+.adm-sw__btn[aria-expanded=true]{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22)}
+.adm-sw__btn:focus-visible{outline:2px solid #EDE9E3;outline-offset:2px}
+.adm-sw__tile{width:28px;height:28px;border-radius:7px;object-fit:contain;flex:none}
+.adm-sw__tile--net{display:grid;place-items:center;background:rgba(255,255,255,.14);color:#F4F6FA}
+.adm-sw__tile--net .ico{width:17px;height:17px}
+.adm-sw__txt{display:grid;min-width:0;line-height:1.25}
+.adm-sw__eyebrow{font-size:13px;font-weight:700;font-variant:all-small-caps;letter-spacing:.1em;color:#C3CBDA}
+.adm-sw__name{font-size:14px;font-weight:700;color:#FFFFFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-sw__chev{display:grid;place-items:center;color:#C3CBDA}
+.adm-sw__chev .ico{width:14px;height:14px;transition:transform .15s}
+.adm-sw__btn[aria-expanded=true] .adm-sw__chev .ico{transform:rotate(180deg)}
+
+/* Popover (gemeinsam für Umschalter, Favoriten, Seitenbaum, Konto, Quellen-Auswahl) */
+.adm-pop{position:fixed;inset:auto;margin:0;width:min(380px,calc(100vw - 24px));max-height:min(72vh,600px);overflow:auto;overscroll-behavior:contain;padding:6px;border:1px solid var(--pop-line);border-radius:12px;background:var(--pop-bg);color:var(--pop-ink);box-shadow:var(--pop-shadow);font:400 14px/1.4 var(--adm-font);color-scheme:light dark}
+.adm-pop:popover-open{display:block}
+.adm-pop--menu{width:240px}
+.adm-pop--tree{width:min(340px,calc(100vw - 24px))}
+.adm-pop :focus-visible{outline:2px solid var(--pop-acc);outline-offset:-2px}
+.adm-pop__head{display:none;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 8px}
+.adm-pop__head strong{font-size:15px}
+.adm-pop__head a{color:var(--pop-acc);font-size:13px;font-weight:600}
+.adm-pop--end .adm-pop__head,.adm-pop--tree .adm-pop__head{display:flex}
+.adm-pop__sep{height:1px;margin:4px 6px;background:var(--pop-line)}
+.adm-pop__count{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--pop-cur);color:var(--pop-ink)!important;font-weight:700}
+.adm-pop__item kbd{margin-left:auto}
+.adm-pop__x{display:none;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:none;color:var(--pop-ink);cursor:pointer}
+.adm-pop__x .ico{width:18px;height:18px}
+.adm-pop__filter{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;padding:0 10px;border:1px solid var(--pop-line);border-radius:8px;background:var(--pop-field);color:var(--pop-t2)}
+.adm-pop__filter .ico{width:16px;height:16px;flex:none}
+.adm-pop__filter input{flex:1;min-width:0;height:36px;border:0;background:none;color:var(--pop-ink);font:inherit;outline:0}
+.adm-pop__none{margin:8px 10px;color:var(--pop-t2);font-size:13px}
+.adm-pop form{margin:0}
+.adm-pop__item{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:7px 10px;border:0;border-radius:8px;background:none;color:var(--pop-ink);font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+.adm-pop__item .ico{width:17px;height:17px;flex:none;color:var(--pop-t2)}
+.adm-pop__item span{flex:1;min-width:0;overflow-wrap:anywhere}
+.adm-pop__item small{color:var(--pop-t2);font-size:12px}
+.adm-pop__item kbd{font:600 11px var(--adm-mono,monospace);color:var(--pop-t2);padding:1px 5px;border:1px solid var(--pop-line);border-radius:4px}
+.adm-pop__item:hover,.adm-pop__item:focus-visible{background:var(--pop-hover)}
+.adm-pop__item[aria-current=page],.adm-pop__item[aria-checked=true]{background:var(--pop-cur);font-weight:700}
+.adm-pop__item--act{color:var(--pop-acc);font-weight:600;border-bottom:1px solid var(--pop-line);border-radius:8px 8px 0 0;margin-bottom:4px}
+.adm-pop__item--d1{padding-left:28px}.adm-pop__item--d2{padding-left:46px}.adm-pop__item--d3,.adm-pop__item--d4{padding-left:64px}
+.adm-pop__me{display:flex;align-items:center;gap:10px;padding:8px 10px 10px;margin-bottom:4px;border-bottom:1px solid var(--pop-line)}
+.adm-pop__me span{display:grid;min-width:0}
+.adm-pop__me small{color:var(--pop-t2);font-size:12px;overflow-wrap:anywhere}
+
+/* Liste des Umschalters */
+.adm-sw__pop{width:min(400px,calc(100vw - 24px))}
+.adm-sw__menu{display:grid;gap:1px}
+.adm-sw__group{display:grid;gap:1px;margin-top:4px;padding-top:4px;border-top:1px solid var(--pop-line)}
+.adm-sw__h{margin:6px 10px 4px;font-size:13px;font-weight:700;font-variant:all-small-caps;letter-spacing:.1em;color:var(--pop-t2)}
+.adm-sw__item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:none;color:var(--pop-ink);font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+.adm-sw__item:hover,.adm-sw__item:focus-visible{background:var(--pop-hover)}
+.adm-sw__item[aria-current=page]{background:var(--pop-cur)}
+.adm-sw__ico{width:28px;height:28px;border-radius:7px;object-fit:contain}
+.adm-sw__ico--net{display:grid;place-items:center;background:var(--pop-acc);color:var(--pop-bg)}
+.adm-sw__ico--net .ico{width:16px;height:16px}
+.adm-sw__t{display:grid;min-width:0;line-height:1.3}
+.adm-sw__n{font-weight:600;overflow-wrap:anywhere}
+.adm-sw__t small{color:var(--pop-t2);font-size:12px;overflow-wrap:anywhere}
+.adm-sw__t code{font:500 11.5px var(--adm-mono,monospace);color:var(--pop-t2)}
+.adm-sw__cur{display:grid;place-items:center;color:var(--pop-acc)}
+.adm-sw__cur .ico{width:18px;height:18px}
+.adm-sw__tag{font-size:11px;font-weight:600;color:var(--pop-t2);padding:2px 7px;border:1px solid var(--pop-line);border-radius:999px;white-space:nowrap}
+.adm-sw__item[hidden],.adm-pop__item[hidden]{display:none}
+
+/* Telefon: Blatt von unten */
+@media (max-width:600px){
+  .adm-pop,.adm-pop--menu,.adm-pop--tree,.adm-sw__pop{inset:auto 0 0 0!important;width:100%;max-width:none;max-height:85dvh;border-radius:16px 16px 0 0;border-width:1px 0 0;padding:6px 8px max(12px,env(safe-area-inset-bottom))}
+  .adm-pop::backdrop{background:rgba(10,14,22,.45)}
+  .adm-pop__head{display:flex}
+  .adm-pop__x{display:grid}
+  .adm-pop__item,.adm-sw__item{min-height:48px}
+}
+@media (prefers-reduced-motion:reduce){.adm-sw__chev .ico{transition:none}}
+.adm-pop .adm-pop__filter input:focus-visible{outline:0}
+.adm-pop__filter:focus-within{border-color:var(--pop-acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--pop-acc) 30%,transparent)}

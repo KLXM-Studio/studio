@@ -16,7 +16,7 @@
   </ol>
   <h3>Problem melden</h3>
   <ol class="doc-steps">
-    <li>Links unten in der Seitenleiste auf <b>Problem melden</b> klicken (oder <kbd>⌘</kbd> <kbd>K</kbd> → „Problem melden“). Die Seite, auf der Sie gerade waren, wird als Kontext mitgenommen.</li>
+    <li>Oben rechts auf Ihr Profilbild → <b>Problem melden</b> klicken (oder <kbd>⌘</kbd> <kbd>K</kbd> → „Problem melden“). Die Seite, auf der Sie gerade waren, wird als Kontext mitgenommen.</li>
     <li>Wählen Sie <b>Frage</b>, <b>Fehler</b> oder <b>Wunsch</b>, geben Sie einen kurzen Titel ein und beschreiben Sie, was passiert ist und was Sie erwartet hätten. Während Sie schreiben, schlägt die Seite rechts passende Artikel und bereits beantwortete Fragen vor – oft ist die Lösung schon da.</li>
     <li>Optional <b>Bildschirmfotos</b> anhängen: Datei wählen, in den Bereich ziehen oder ein kopiertes Bildschirmfoto mit <kbd>Strg</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd> in die Beschreibung einfügen. Nur Bilder, höchstens 5 × 8 MB.</li>
     <li><b>Dringend</b> nur wählen, wenn die Website nicht erreichbar ist, Formulare nicht ankommen oder etwas Wichtiges falsch online ist.</li>

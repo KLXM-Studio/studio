@@ -85,7 +85,7 @@ final class Toolbar
             'origin' => null, 'site' => '', 'others' => [],
             'netSites' => self::netSites(),
             'langs' => self::langs($page, $kind, $editing),
-            // Konto unten im Menü ⋯: Avatar, Name, Rolle, Abmelden – wie unten in der Seitenleiste der Verwaltung
+            // Konto unten im Menü ⋯: Avatar, Name, Rolle, Abmelden – wie im Konto-Menü der Kopfleiste der Verwaltung
             'me' => app()->auth->user(), 'meRole' => (string) (app()->auth->role()['name'] ?? ''),
         ];
 

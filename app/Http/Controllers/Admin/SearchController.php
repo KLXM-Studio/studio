@@ -12,8 +12,11 @@ use Core\Pages;
 use Core\SystemSchema;
 
 /**
- * Übergreifende Suche (Spotlight, ⌘K): Aktionen, Seiten, Datensätze, Medien, Einstellungen, Hilfe.
- * Ohne Suchbegriff: Aktionen und zuletzt geänderte Inhalte.
+ * Übergreifende Suche (Suche in der Kopfleiste und Befehlspalette ⌘K): Aktionen, Seiten, Datensätze, Medien, Einstellungen, Hilfe.
+ * Ohne Suchbegriff: Favoriten, zuletzt bearbeitet (Seiten und Einträge), Aktionen.
+ * Quelle (?scope=…, Kürzel in der Kopfleiste): f Favoriten · c Befehle (Aktionen, Einstellungen & Hilfe) · p Seiten · d Daten ·
+ * k Kontakte (Adressbuch-Tabellen) · t Termine (Kalender-Tabellen) · m Medien – leer = alles. Jede Gruppe trägt ihre Quelle ('scope').
+ * Nur, was die Person öffnen darf: Seiten mit pages.edit, Einträge mit data.edit je Tabelle, Medien mit media.upload.
  */
 final class SearchController extends AdminController
 {
@@ -22,8 +25,12 @@ final class SearchController extends AdminController
         $user = $this->auth($r);
         $q = trim(mb_substr($r->str('q'), 0, 80));
         $isAdmin = in_array($user['role'], ['admin', 'network'], true);
-        $match = fn(string ...$hay) => $q === '' || self::score($q, implode(' ', $hay)) > 0;
+        $want = in_array($w = $r->str('scope'), self::SCOPES, true) ? $w : '';
+        $in = fn(string $sc): bool => $want === '' || $want === $sc;
         $groups = [];
+        $tables = array_values(array_filter(Tables::content(), fn($t) => can('data.edit', $t['handle'])));
+        // Quelle einer Datentabelle: Kontakte (Adressbuch) bzw. Termine (Kalender), sonst Daten
+        $tScope = fn(array $t): string => \Core\Data\AddressBook::enabled($t) ? 'k' : (\Core\Data\Calendar::enabled($t) ? 't' : 'd');
 
         // Favoriten des Benutzers zuerst (Core\Favorites)
         $items = [];
@@ -33,11 +40,29 @@ final class SearchController extends AdminController
             $items[] = ['title' => $f['title'], 'sub' => __('Favorit'), 'url' => url($f['url']), 'icon' => 'star',
                 'glyph' => $f['icon'] !== '' ? $f['icon'] : null, 's' => $q === '' ? 1000 - $i : $s];
         }
-        if ($items) $groups[] = ['label' => __('Favoriten'), 'items' => self::top($items, $q === '' ? 8 : 6)];
+        if ($items && $in('f')) $groups[] = ['label' => __('Favoriten'), 'scope' => 'f', 'items' => self::top($items, $want === 'f' ? 30 : ($q === '' ? 8 : 6))];
+
+        // Zuletzt bearbeitet (ohne Suchbegriff): Seiten und Einträge nach Änderungszeit, gemischt
+        if ($q === '' && $want === '') {
+            $recent = [];
+            if (can('pages.edit')) {
+                foreach (Pages::flat(false) as $p) {
+                    $recent[] = ['title' => $p['title'], 'sub' => __('Seite') . ' · ' . \Core\Format::admin()->relative((string) $p['updated_at']),
+                        'url' => Pages::url($p) . '?edit=1', 'icon' => $p['is_home'] ? 'home' : 'page', 'alt' => url('/admin/pages/' . $p['id']), 's' => strtotime((string) $p['updated_at'])];
+                }
+            }
+            foreach ($tables as $t) {
+                foreach (Entries::query($t, ['status' => 'all', 'sort' => 'updated_at', 'dir' => 'desc', 'limit' => 3]) as $e) {
+                    $recent[] = ['title' => Entries::title($t, $e), 'sub' => $t['singular'] . ' · ' . \Core\Format::admin()->relative((string) ($e['updated_at'] ?? '')),
+                        'url' => url('/admin/data/' . $t['handle'] . '/' . $e['id']), 'icon' => 'table', 'glyph' => $t['icon'], 'alt' => Entries::url($t, $e), 's' => strtotime((string) ($e['updated_at'] ?? ''))];
+                }
+            }
+            if ($recent) $groups[] = ['label' => __('Zuletzt bearbeitet'), 'scope' => 'r', 'items' => self::top($recent, 6)];
+        }
 
         // Assistent-Chat (Core\AI\Assistant): „Assistent fragen …“ – öffnet das Chat-Fenster mit dem Suchtext (resources/js/_assistant.js)
-        if (\Core\AI\Assistant::available() && ($q === '' || mb_strlen($q) >= 3)) {
-            $groups[] = ['label' => \Core\AI\Assist::brand(), 'items' => [[
+        if (\Core\AI\Assistant::available() && ($q === '' || mb_strlen($q) >= 3) && $in('c')) {
+            $groups[] = ['label' => \Core\AI\Assist::brand(), 'scope' => 'c', 'items' => [[
                 'title' => $q === '' ? __('Assistent fragen …') : __('Assistent fragen: „{q}“', ['q' => $q]), 'sub' => __('Antwort aus Handbuch und Hilfe, Aktionen mit Bestätigung'),
                 'url' => url('/admin/ai/assistent') . ($q !== '' ? '?q=' . rawurlencode($q) : ''), 'ico' => \Core\Icons::resolve('chat-teardrop-dots'), 'cmd' => 'assistant', 'q' => $q,
             ]]];
@@ -53,7 +78,7 @@ final class SearchController extends AdminController
             [__('Handbuch'), __('Hilfe & Anleitungen'), '/admin/hilfe', 'help', 'hilfe handbuch anleitung'],
             ...(\Core\Guide::exists() ? [[__('Projekt-Hinweise'), __('Hinweise zu diesem Projekt'), '/admin/hilfe#projekt', 'lightbulb', 'projekt hinweise agentur anleitung kit']] : []),
         ];
-        foreach (Tables::content() as $t) {
+        foreach ($tables as $t) {
             $actions[] = [__('Neu: {name}', ['name' => $t['singular']]), $t['name'], '/admin/data/' . $t['handle'] . '/new', 'plus', 'neu anlegen ' . $t['name'] . ' ' . $t['singular']];
         }
         // Eingangs-Tabellen: nur der Name (Inhalte sind verschlüsselt und werden nie durchsucht)
@@ -149,7 +174,7 @@ final class SearchController extends AdminController
                 $s = self::score($q, $t) * 3 + self::score($q, $t . ' ' . $kw);
                 if ($s > 0) $hits[] = ['title' => $t, 'sub' => $sub, 'url' => url($href), 'icon' => $icon, 's' => $s];
             }
-            if ($hits) $groups[] = ['label' => __('Einstellungen & Hilfe'), 'items' => self::top($hits, 6)];
+            if ($hits && $in('c')) $groups[] = ['label' => __('Einstellungen & Hilfe'), 'scope' => 'c', 'items' => self::top($hits, $want === 'c' ? 12 : 6)];
         }
         $items = [];
         foreach ($actions as [$t, $sub, $href, $icon, $kw]) {
@@ -157,11 +182,11 @@ final class SearchController extends AdminController
                 $items[] = ['title' => $t, 'sub' => $sub, 'url' => str_starts_with($href, '/admin') ? url($href) : $href, 'icon' => $icon, 's' => self::score($q, $t . ' ' . $kw)];
             }
         }
-        $groups[] = ['label' => __('Aktionen'), 'items' => self::top($items, $q === '' ? 6 : 5)];
+        if ($in('c')) $groups[] = ['label' => __('Aktionen'), 'scope' => 'c', 'items' => self::top($items, $want === 'c' ? 20 : ($q === '' ? 6 : 5))];
 
         // Seiten
         $items = [];
-        foreach (Pages::flat(true) as $p) {
+        foreach ($in('p') && can('pages.edit') && ($q !== '' || $want === 'p') ? Pages::flat(true) : [] as $p) {
             $hay = $p['title'] . ' ' . $p['path'] . ' ' . $p['meta_description'];
             if ($q !== '') {
                 $hay .= ' ' . strip_tags((string) $p['content_draft']);
@@ -174,26 +199,28 @@ final class SearchController extends AdminController
                 'url' => $tpl ? url('/admin/pages') : Pages::url($p) . '?edit=1', 'icon' => $p['is_home'] ? 'home' : 'page',
                 'alt' => $tpl ? null : url('/admin/pages/' . $p['id']), 's' => $s ?: strtotime((string) $p['updated_at'])];
         }
-        $groups[] = ['label' => __('Seiten'), 'items' => self::top($items, $q === '' ? 4 : 8)];
+        $groups[] = ['label' => __('Seiten'), 'scope' => 'p', 'items' => self::top($items, $want === 'p' ? 20 : 8)];
 
         // Datensätze aller Inhaltstabellen (Eingangs-Tabellen nie)
-        foreach (Tables::content() as $t) {
-            $rows = Entries::query($t, $q === '' ? ['status' => 'all', 'sort' => 'updated_at', 'dir' => 'desc', 'limit' => 3] : ['status' => 'all', 'q' => $q, 'limit' => 6]);
+        foreach ($tables as $t) {
+            $ts = $tScope($t);
+            if (!$in($ts) || ($q === '' && $want === '')) continue;   // ohne Suchbegriff stehen Einträge unter „Zuletzt bearbeitet“
+            $rows = Entries::query($t, $q === '' ? ['status' => 'all', 'sort' => 'updated_at', 'dir' => 'desc', 'limit' => $want !== '' ? 8 : 3] : ['status' => 'all', 'q' => $q, 'limit' => $want !== '' ? 12 : 6]);
             $items = array_map(fn($e) => ['title' => Entries::title($t, $e), 'sub' => $t['singular'] . ($e['status'] === 'draft' ? __(' · Entwurf') : ''),
                 'url' => url('/admin/data/' . $t['handle'] . '/' . $e['id']), 'icon' => 'table', 'glyph' => $t['icon'],
                 'alt' => Entries::url($t, $e)], $rows);
-            if ($items) $groups[] = ['label' => $t['name'], 'items' => $items];
+            if ($items) $groups[] = ['label' => $t['name'], 'scope' => $ts, 'items' => $items];
         }
 
         // Medien
-        $media = $q === '' ? array_slice(Media::all(), 0, 4) : array_slice(Media::all(['q' => $q]), 0, 6);
-        $groups[] = ['label' => __('Medien'), 'items' => array_map(fn($m) => [
+        $media = !$in('m') || !can('media.upload') ? [] : ($q === '' ? array_slice(Media::all(), 0, $want === 'm' ? 12 : 4) : array_slice(Media::all(['q' => $q]), 0, $want === 'm' ? 12 : 6));
+        $groups[] = ['label' => __('Medien'), 'scope' => 'm', 'items' => array_map(fn($m) => [
             'title' => Media::displayName($m), 'sub' => Media::typeLabel($m['mime']) . ' · ' . Media::humanSize((int) $m['size']),
             'url' => url('/admin/media') . '#m' . $m['id'], 'icon' => str_starts_with($m['mime'], 'image/') ? 'image' : 'file',
             'thumb' => str_starts_with($m['mime'], 'image/') ? Media::url($m, 480) : null, 'alt' => Media::url($m)], $media)];
 
         // Einstellungen (Feldnamen) – nur mit Suchbegriff
-        if ($q !== '') {
+        if ($q !== '' && $in('c')) {
             $items = [];
             foreach (app()->theme->settingsGroups() as $g) {
                 foreach ($g['fields'] as $f) {
@@ -211,22 +238,22 @@ final class SearchController extends AdminController
                     }
                 }
             }
-            $groups[] = ['label' => __('Einstellungen'), 'items' => self::top($items, 6)];
+            $groups[] = ['label' => __('Einstellungen'), 'scope' => 'c', 'items' => self::top($items, 6)];
         }
 
         // Hinweise zu diesem Projekt (Core\Guide) – Titel und Text, nur mit Suchbegriff
-        if ($q !== '') {
+        if ($q !== '' && $in('c')) {
             $items = [];
             foreach (\Core\Guide::notes() as $n) {
                 $s = self::score($q, $n['title']) * 2 + self::score($q, $n['title'] . ' ' . \Core\Guide::plain($n));
                 if ($s) $items[] = ['title' => $n['title'], 'sub' => __('Hinweis zum Projekt'), 'url' => \Core\Guide::url($n), 'icon' => 'lightbulb', 's' => $s];
             }
-            $groups[] = ['label' => __('Projekt-Hinweise'), 'items' => self::top($items, 4)];
+            $groups[] = ['label' => __('Projekt-Hinweise'), 'scope' => 'c', 'items' => self::top($items, 4)];
         }
 
         // Support & Wissensdatenbank (Core\Support): „Problem melden“, Wissensartikel, beantwortete Fragen
         try {
-            array_push($groups, ...\Core\Support\Support::spotlight($q, self::score(...)));
+            if ($in('c')) foreach (\Core\Support\Support::spotlight($q, self::score(...)) as $sg) $groups[] = $sg + ['scope' => 'c'];
         } catch (\Throwable $e) {
             error_log('[support] spotlight: ' . $e->getMessage());
         }
@@ -240,7 +267,7 @@ final class SearchController extends AdminController
                 if ($i['ico'] !== null && isset($i['glyph']) && \Core\Icons::resolve((string) $i['glyph']) !== null) $i['glyph'] = null;
             }
         }
-        return Response::json(['q' => $q, 'groups' => $groups]);
+        return Response::json(['q' => $q, 'scope' => $want, 'groups' => $groups]);
     }
 
     /** Einfache Trefferbewertung: alle Wörter enthalten, Wortanfang zählt mehr */
@@ -257,6 +284,9 @@ final class SearchController extends AdminController
         $limiter->hit('geocode');
         return Response::json(['results' => \Core\Maps::geocode($q)]);
     }
+
+    /** Quellen der Suche (?scope=…) – siehe Klassenkommentar */
+    public const SCOPES = ['f', 'c', 'p', 'd', 'k', 't', 'm'];
 
     private static function score(string $q, string $hay): int
     {

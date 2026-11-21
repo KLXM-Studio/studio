@@ -22,7 +22,7 @@ $siteUrl = url(\Core\Lang::prefix(\Core\Lang::default()) . '/');
     <div>
       <p class="wlc__eyebrow"><?= e(__('Willkommen bei KLXM Studio')) ?></p>
       <h2 id="wlc-h" class="wlc__title" tabindex="-1" autofocus><?= e(__('Schön, dass Sie da sind, {name}!', ['name' => $first])) ?></h2>
-      <p class="wlc__lead"><?= e(__('Ihre Website ist eingerichtet. Mit diesen Schritten wird sie startklar – in beliebiger Reihenfolge, jederzeit wieder hier unter Hilfe & Support → Erste Schritte.')) ?></p>
+      <p class="wlc__lead"><?= e(__('Ihre Website ist eingerichtet. Mit diesen Schritten wird sie startklar – in beliebiger Reihenfolge, jederzeit wieder über Ihr Profilbild oben rechts → Erste Schritte.')) ?></p>
     </div>
     <figure class="wlc__ring" style="--wlc-p:<?= round($pct, 3) ?>;--wlc-c:<?= round($circ, 2) ?>">
       <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="wlc__ring-bg" cx="32" cy="32" r="<?= $r ?>"/><circle class="wlc__ring-fg" cx="32" cy="32" r="<?= $r ?>"/></svg>

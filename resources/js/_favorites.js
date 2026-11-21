@@ -3,8 +3,9 @@
  * - Stern neben der H1 jeder Verwaltungsseite bzw. in der Werkzeugleiste ganzseitiger Ansichten ([data-fav-slot], z. B. Mediathek;
  *   ohne beides: kleiner Stern oben rechts) – merkt Adresse inkl. #Hash
  *   (Reiter der Einstellungen, geöffnete Datei der Mediathek #m123, Kapitel im Handbuch)
- * - Abschnitt „Favoriten“ in der Seitenleiste (views/layout.php): aufklappbar (je Benutzer in localStorage gemerkt),
- *   „Bearbeiten“: umbenennen, entfernen, ziehen oder Alt+↑/↓ zum Sortieren
+ * - Abschnitt „Favoriten“ im Stern-Menü der Kopfleiste (views/_topbar.php): „Bearbeiten“: umbenennen, entfernen, ziehen oder
+ *   Alt+↑/↓ zum Sortieren. Meldet Änderungen als Ereignis 'adm:favorites' ({ favs, here }) – die Kopfleiste zeigt damit den
+ *   Stern gefüllt; neue Liste von außen (z. B. ⌘D in der Suche): 'adm:favorites-set' mit der Liste als detail
  * Hash-Änderungen ohne hashchange (history.replaceState) melden Module mit document.dispatchEvent(new Event('adm:location')).
  */
 import { t } from './_i18n.js';
@@ -127,6 +128,7 @@ export function initFavorites(csrf) {
     const label = on ? t('Aus Favoriten entfernen') : t('Zu Favoriten hinzufügen');
     star.setAttribute('aria-label', label);
     star.title = label;
+    d.dispatchEvent(new CustomEvent('adm:favorites', { detail: { favs, here: on } }));
   }
 
   // ---------------------------------------------------------- Liste
@@ -200,8 +202,12 @@ export function initFavorites(csrf) {
     box.classList.toggle('is-collapsed', !open);
     if (remember) store.set(openKey, open ? null : '1');
   }
-  toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
-  if (store.get(openKey) === '1') setOpen(false, false);
+  // Im Stern-Menü der Kopfleiste immer offen; früher in der Seitenleiste gemerktes Zuklappen gilt dort nicht
+  if (!box.closest('[popover]')) {
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    if (store.get(openKey) === '1') setOpen(false, false);
+  }
+  d.addEventListener('adm:favorites-set', e => { if (Array.isArray(e.detail)) { favs = e.detail; render(); } });
 
   // ---------------------------------------------------------- Bearbeiten
   const link = $('[data-fav-edit]', box);

@@ -5,10 +5,13 @@ $dataOk = $user && (can('data.schema') || array_filter(\Core\Data\Tables::conten
 $inboxes = $user && can('requests.read') ? \Core\Data\Inbox::readable() : [];
 // Netzwerk-Administration (Core\Network): „Netzwerk“ auf der Netzwerk-Website, „Website wechseln“ auf allen anderen
 $netUser = $user && \Core\Network\Network::isNetworkUser($user);
-// Netzwerk-Bereich (Core\Network\Area, mehrere Websites): eigener Kopf „NETZWERK“, eigene Seitenleiste; der Weg dorthin ist der
-// Umschalter Netzwerk ↔ Website oben in der Seitenleiste. Einzelinstallation: „Netzwerk“ bleibt Menüpunkt wie bisher.
+// Netzwerk-Bereich (Core\Network\Area, mehrere Websites): eigene Seitenleiste, Kopfleiste in Petrol; der Weg dorthin ist der
+// Umschalter Netzwerk ↔ Website links in der Kopfleiste (_areaswitch.php). Einzelinstallation: „Netzwerk“ bleibt Menüpunkt wie bisher.
 $netMulti = $netUser && \Core\Network\Area::active();
 $netArea = $user && \Core\Network\Area::here();
+// Kopfleiste (_topbar.php): Testumgebung und „Ansicht als Rolle/Person“ (Core\Impersonation) stehen dort statt in Streifen
+$tbEnv = environment() !== 'production' ? environment() : '';
+$tbImp = $user ? (app()->auth->user()['_imp'] ?? null) : null;
 $nav = array_values(array_filter([
     ['/admin/network', __('Netzwerk'), 'network', $netUser && !$netMulti && \Core\Network\Network::isNetworkSite()],
     ['/admin', __('Übersicht'), 'dashboard', true],
@@ -22,7 +25,7 @@ $nav = array_values(array_filter([
     ['/admin/kontakte', __('Kontakte'), 'contacts', $user && \Core\Data\AddressBook::tables()],
     // Glossar (Core\Glossary) ist eine Einstellungsseite (Core\AdminPages, kind settings): Sammelseite „Einstellungen“ und an der Tabelle „glossar“
     ['/admin/requests', __('Eingang'), 'requests', (bool) $inboxes || ($user && can('requests.read') && can('data.schema') && \Core\Data\Inbox::available())],
-    // Support & Wissensdatenbank: im Abschnitt „Hilfe & Support“ unten in der Seitenleiste
+    // Support & Wissensdatenbank: im Konto-Menü der Kopfleiste (views/_topbar.php)
     // Chat zwischen Benutzern (Core\Chat, optional) – öffnet mit JavaScript die Schublade (resources/js/userchat.js)
     ['/admin/chat', __('Chat'), 'chat', $user && \Core\Chat\Chat::canUse()],
     // Mitteilungen (Core\Push, Funktion „push“): verfassen, Verlauf, Kanäle, Statistik
@@ -127,12 +130,12 @@ if ($user && ($req = app()->request)) {
 <?= $user ? \Core\Extensions::adminHead((string) ($view ?? '')) /* CSS/JS aktiver Erweiterungen für diese Ansicht (Extension::adminAssets) – nach admin.js */ : '' ?>
 </head>
 <?php $drill = $user && !empty($drill) ? $drill : ''; ?>
-<body class="adm<?= $user ? '' : ' adm--bare ' . \Core\AuthScreen::bodyClass() ?><?= $netArea ? ' adm--netarea' : '' ?><?= $drill ? ' is-drill' : '' ?>" data-max-vars="<?= (int) ini_get('max_input_vars') ?>"<?= $user && \Core\Http\Controllers\Admin\PresenceController::on() ? ' data-online-endpoint="' . e(url('/admin/api/online')) . '"' : '' ?>>
+<body class="adm<?= $user ? '' : ' adm--bare ' . \Core\AuthScreen::bodyClass() ?><?= $user ? ' adm--tb' : '' ?><?= $netArea ? ' adm--netarea' : '' ?><?= $drill ? ' is-drill' : '' ?>" data-max-vars="<?= (int) ini_get('max_input_vars') ?>"<?= $user && \Core\Http\Controllers\Admin\PresenceController::on() ? ' data-online-endpoint="' . e(url('/admin/api/online')) . '"' : '' ?>>
 <?= $user ? '' : \Core\AuthScreen::sky() ?>
 <?php if (environment() === 'production' && ($mr = \Core\Mailer::testRedirect())): // Test-Umleitung aktiv – nicht vergessen ?><div class="adm-env adm-env--mail" role="region" aria-label="<?= e(__('E-Mail-Test')) ?>"><?= e(__('E-MAIL-TEST')) ?> · <?= e(__('Alle E-Mails gehen an {to} statt an die eigentlichen Empfänger.', ['to' => implode(', ', $mr)])) ?> <?php if (can('system.manage')): ?><a href="<?= e(url('/admin/system#mail')) ?>"><?= e(__('Ausschalten')) ?></a><?php endif; ?></div><?php endif; ?>
-<?php if (environment() !== 'production'): ?><div class="adm-env adm-env--<?= e(environment()) ?>" role="region" aria-label="<?= e(__('Testumgebung')) ?>"><?= e(strtoupper(environment())) ?> · <?= e(__('Testumgebung – Änderungen hier gehen nicht auf die Live-Website. E-Mails werden umgeleitet, Suchmaschinen ausgesperrt.')) ?></div><?php endif; ?>
+<?php if (environment() !== 'production' && !$user): ?><div class="adm-env adm-env--<?= e(environment()) ?>" role="region" aria-label="<?= e(__('Testumgebung')) ?>"><?= e(strtoupper(environment())) ?> · <?= e(__('Testumgebung – Änderungen hier gehen nicht auf die Live-Website. E-Mails werden umgeleitet, Suchmaschinen ausgesperrt.')) ?></div><?php endif; ?>
 <?php if ($user):
-  // Schmale Bildschirme (≤ 900 px): schlanke Kopfleiste, Seitenleiste als Schublade (resources/js/_drawer.js; ohne JavaScript per #adm-side)
+  // Titel des Bereichs (Präsenz „wer arbeitet wo“)
   $areaTitle = (string) ($drillTitle ?? '');
   if ($areaTitle === '') foreach ($adminNav as [$h, $l, $k]) if ($isCur($k, $h)) { $areaTitle = (string) $l; break; }
   if ($areaTitle === '') foreach ($nav as [, $l, $k]) if ($isCur($k)) { $areaTitle = (string) $l; break; }
@@ -141,96 +144,12 @@ if ($user && ($req = app()->request)) {
   // „online“ melden (Core\Presence::ONLINE): Ort = Titel des Bereichs, Pfad der Anfrage
   if ($user) \Core\Http\Controllers\Admin\PresenceController::seen($areaTitle, (string) (app()->request?->path ?? '/admin'));
 ?>
-<header class="adm-top">
-  <a class="adm-top__menu" href="#adm-side" aria-label="<?= e(__('Menü öffnen')) ?>" data-drawer-open><?= icon('list') ?></a>
-  <a class="adm-top__title" href="<?= e(url($netArea ? '/admin/network' : '/admin')) ?>"><small><?= e($netArea ? __('NETZWERK') : admin_brand()[0]) ?></small><span><?= e($areaTitle) ?></span></a>
-  <button type="button" class="adm-top__search" data-spotlight aria-label="<?= e(__('Suchen')) ?>"><?= icon('magnifying-glass') ?></button>
-</header>
+<?php include __DIR__ . '/_topbar.php'; // Kopfleiste über dem Inhalt: Umschalter, Suche, Favoriten, Konto (Netzwerk-Konten: Umschalter Netzwerk ↔ Website) ?>
 <aside class="adm-side" id="adm-side" aria-label="<?= e(__('Menü')) ?>">
   <a class="adm-side__close" href="#main" aria-label="<?= e(__('Menü schließen')) ?>" data-drawer-close><?= icon('x') ?></a>
   <div class="adm-brand-row">
-  <?php if ($netArea): // Netzwerk-Bereich: Kennzeichen statt Marke der Website ?>
-  <a class="adm-brand adm-brand--netarea" href="<?= e(url('/admin/network')) ?>" data-search-endpoint="<?= e(url('/admin/api/search')) ?>"><span class="adm-netbadge"><?= icon('network') ?><?= e(__('NETZWERK')) ?></span><small><?= e(__('{n} Websites · ganze Installation', ['n' => count(\Core\Sites::all())])) ?></small></a>
-  <?php elseif ($netUser): // Netzwerk-Konten: der Website-Name steht im Umschalter darunter – hier kein doppelter Titel ?>
-  <a class="adm-brand adm-brand--net" href="<?= e(url('/admin')) ?>" data-search-endpoint="<?= e(url('/admin/api/search')) ?>"><small><?= e(__('Verwaltung')) ?></small></a>
-  <?php else: ?>
-  <a class="adm-brand" href="<?= e(url('/admin')) ?>" data-search-endpoint="<?= e(url('/admin/api/search')) ?>"><?php [$b1, $b2] = admin_brand(); ?><span><?= e($b1) ?><i>.</i></span><small><?= e(trim($b2 . ' · ' . __('Verwaltung'), ' ·')) ?></small></a>
-  <?php endif; ?>
+  <a class="adm-brand" href="<?= e(url($netArea ? '/admin/network' : '/admin')) ?>" data-search-endpoint="<?= e(url('/admin/api/search')) ?>"><?php [$b1, $b2] = admin_brand(); ?><span><?= e($b1) ?><i>.</i></span><small><?= e(trim($b2 . ' · ' . __('Verwaltung'), ' ·')) ?></small></a>
   </div>
-  <?php // Suchen als Zeile im Stil der Seitenleiste (Lupe, Text, ⌘K) – daneben der Assistent, wenn KI aktiv ist ?>
-  <div class="adm-find">
-    <button type="button" class="adm-find__search" data-spotlight aria-keyshortcuts="Meta+K Control+K"><?= icon('magnifying-glass') ?><span><?= e(__('Suchen')) ?></span><kbd aria-hidden="true" data-kbd>⌘K</kbd></button>
-    <?php if (\Core\AI\Assistant::available()): // Assistent (KLXM AI) – nur wenn KI aktiv; öffnet das Chat-Fenster (resources/js/_assistant.js) ?>
-    <a class="adm-find__ai" href="<?= e(url('/admin/ai/assistent')) ?>" data-assistant aria-keyshortcuts="Alt+Shift+K" title="<?= e(__('Assistent fragen')) ?> (⌥⇧K)" aria-label="<?= e(__('Assistent fragen')) ?>"><?= icon('chat-teardrop-dots') ?></a>
-    <?php endif; ?>
-    <?php // Bereiche mit eigenem Menü (Drill-down) blenden Favoriten/Netzwerk aus – dieser Knopf holt sie zurück (_drill.js) ?>
-    <button type="button" class="adm-find__ai adm-drill-peek" data-drill-peek hidden aria-expanded="false" aria-controls="adm-fav" title="<?= e($netUser ? __('Favoriten & Website wechseln') : __('Favoriten')) ?>" aria-label="<?= e($netUser ? __('Favoriten & Website wechseln') : __('Favoriten')) ?>"><?= icon('star') ?></button>
-  </div>
-  <?php if ($netMulti): // Umschalter Netzwerk ↔ Website (Core\Network\Area): zwei Felder, das aktive hervorgehoben; Website wechseln per Einmal-Anmeldung ?>
-  <?php $onNetSite = \Core\Network\Network::isNetworkSite(); ?>
-  <div class="adm-areaswitch" role="group" aria-label="<?= e(__('Bereich wechseln')) ?>">
-    <?php if ($onNetSite): ?>
-    <a class="adm-areaswitch__net" href="<?= e(url('/admin/network')) ?>"<?= $netArea ? ' aria-current="page"' : '' ?>><?= icon('network') ?><span><?= e(__('Netzwerk')) ?></span></a>
-    <?php else: ?>
-    <form method="post" action="<?= e(url('/admin/network/open')) ?>"><?= csrf_field() ?><button type="submit" name="site" value="<?= e(\Core\Network\Network::siteKey()) ?>" class="adm-areaswitch__net"><?= icon('network') ?><span><?= e(__('Netzwerk')) ?></span></button></form>
-    <?php endif; ?>
-    <details class="adm-netswitch adm-areaswitch__site<?= $netArea ? '' : ' is-current' ?>">
-      <summary><span class="adm-netswitch__eyebrow"><?= e(__('Website')) ?></span><span class="adm-netswitch__cur"><?= e($netArea ? __('Website wählen') : site()->label()) ?></span><span class="adm-netswitch__chev" aria-hidden="true"></span><span class="adm-sr"> – <?= e(__('Website wechseln')) ?></span></summary>
-      <form method="post" action="<?= e(url('/admin/network/open')) ?>" class="adm-netswitch__menu">
-        <?= csrf_field() ?>
-        <p class="adm-netswitch__h"><?= e(__('Verwaltung einer Website öffnen')) ?></p>
-        <?php foreach (\Core\Sites::all() as $sk => $sc): $st = new \Core\Site($sk, $sc); $sIco = \Core\Network\SiteIcon::for($sk, \Core\Network\Stats::cached($sk)); $sLabel = $sk === 'default' && empty($sc['label']) ? __('Hauptwebsite') : $st->label(); ?>
-        <?php if ($sk === site()->key): // diese Website: einfacher Link (keine Einmal-Anmeldung nötig) ?>
-        <a href="<?= e(url('/admin')) ?>"<?= $netArea ? '' : ' aria-current="page"' ?>><span class="adm-netswitch__site"><img class="adm-netswitch__ico" src="<?= e($sIco['src']) ?>" width="16" height="16" alt="" loading="lazy" decoding="async"><?= e($sLabel) ?></span><small><?= e($netArea ? __('diese') : __('geöffnet')) ?></small></a>
-        <?php else: ?>
-        <button type="submit" name="site" value="<?= e($sk) ?>"><span class="adm-netswitch__site"><img class="adm-netswitch__ico" src="<?= e($sIco['src']) ?>" width="16" height="16" alt="" loading="lazy" decoding="async"><?= e($sLabel) ?></span><small><?= e($sk) ?></small></button>
-        <?php endif; ?>
-        <?php endforeach; ?>
-      </form>
-    </details>
-  </div>
-  <?php elseif ($netUser): // Einzelinstallation: Website wechseln (immer für Netzwerk-Konten, auch auf der Netzwerk-Website): Einmal-Anmeldung per Netzwerk-Token (ohne JavaScript) ?>
-  <details class="adm-netswitch">
-    <summary><?php // Für Netzwerk-Konten ersetzt der Umschalter den Titel der Marke ?><span class="adm-netswitch__eyebrow"><?= e(__('Netzwerk')) ?></span><span class="adm-netswitch__cur"><?= e(site()->label()) ?></span><span class="adm-netswitch__chev" aria-hidden="true"></span><span class="adm-sr"> – <?= e(__('Website wechseln')) ?></span></summary>
-    <form method="post" action="<?= e(url('/admin/network/open')) ?>" class="adm-netswitch__menu">
-      <?= csrf_field() ?>
-      <p class="adm-netswitch__h"><?= e(__('Website wechseln')) ?></p>
-      <?php if (\Core\Network\Network::isNetworkSite()): ?>
-      <a href="<?= e(url('/admin/network')) ?>" class="is-home"><span class="adm-netswitch__site"><?= icon('network', ['class' => 'adm-netswitch__ico']) ?><?= e(__('Alle Websites')) ?></span><small><?= e(__('Netzwerk')) ?></small></a>
-      <?php else: ?>
-      <button type="submit" name="site" value="<?= e(\Core\Network\Network::siteKey()) ?>" class="is-home"><span class="adm-netswitch__site"><?= icon('network', ['class' => 'adm-netswitch__ico']) ?><?= e(__('Alle Websites')) ?></span><small><?= e(__('Netzwerk')) ?></small></button>
-      <?php endif; ?>
-      <?php foreach (\Core\Sites::all() as $sk => $sc): if ($sk === site()->key) continue; $st = new \Core\Site($sk, $sc); ?>
-      <?php $sIco = \Core\Network\SiteIcon::for($sk, \Core\Network\Stats::cached($sk)); // App-Icon wie in der Netzwerk-Übersicht ?>
-      <button type="submit" name="site" value="<?= e($sk) ?>"><span class="adm-netswitch__site"><img class="adm-netswitch__ico" src="<?= e($sIco['src']) ?>" width="16" height="16" alt="" loading="lazy" decoding="async"><?= e($sk === 'default' && empty($sc['label']) ? __('Hauptwebsite') : $st->label()) ?></span><small><?= e($sk) ?></small></button>
-      <?php endforeach; ?>
-    </form>
-  </details>
-  <?php if (!\Core\Network\Network::isNetworkSite()): // Netzwerk von jeder Website aus erreichbar (auf der Netzwerk-Website steht es in der Hauptnavigation) ?>
-  <form method="post" action="<?= e(url('/admin/network/open')) ?>" class="adm-netlink"><?= csrf_field() ?>
-    <button type="submit" name="site" value="<?= e(\Core\Network\Network::siteKey()) ?>"><?= \Core\Icons::nav('network', 'adm-nav__ico') ?><span><?= e(__('Netzwerk')) ?></span><small><?= e(__('Alle Websites')) ?></small></button>
-  </form>
-  <?php endif; ?>
-  <?php endif; ?>
-  <?php // Favoriten: immer sichtbar (auch im Drill-down), aufklappbar, bearbeitbar – resources/js/_favorites.js ?>
-  <section class="adm-fav<?= $favs ? '' : ' is-empty' ?>" id="adm-fav" aria-labelledby="adm-fav-h" data-fav-endpoint="<?= e(url('/admin/api/favorites')) ?>"
-    data-fav-here="<?= e($favHere) ?>" data-fav-title="<?= e($favTitle) ?>" data-fav-icon="<?= e($favIcon) ?>" data-fav-ico="<?= e((string) \Core\Icons::resolve($favIcon)) ?>" data-fav-user="<?= (int) $user['id'] ?>" data-fav-max="<?= \Core\Favorites::MAX ?>">
-    <div class="adm-fav__head">
-      <h2 class="adm-fav__h" id="adm-fav-h"><button type="button" class="adm-fav__toggle" aria-expanded="true" aria-controls="adm-fav-body"><span class="adm-fav__chev" aria-hidden="true"></span><?= e(__('Favoriten')) ?></button></h2>
-      <a class="adm-fav__edit" href="<?= e(url('/admin/account#favoriten')) ?>" data-fav-edit><?= e(__('Bearbeiten')) ?></a>
-    </div>
-    <div class="adm-fav__body" id="adm-fav-body">
-      <nav aria-labelledby="adm-fav-h">
-        <ul class="adm-fav__list" data-fav-list>
-          <?php foreach ($favs as $f): $favSvg = \Core\Icons::render($f['icon'] ?: 'fav', ['class' => 'adm-fav__ico']); ?>
-          <li data-url="<?= e($f['url']) ?>"><a href="<?= e(url($f['url'])) ?>"<?= $f['url'] === $favHere ? ' aria-current="page"' : '' ?>><?= $favSvg ?><span><?= e($f['title']) ?></span></a></li>
-          <?php endforeach; ?>
-        </ul>
-      </nav>
-      <p class="adm-fav__empty" data-fav-empty<?= $favs ? ' hidden' : '' ?>><?= e(__('Noch keine Favoriten. Mit dem Stern ☆ oben auf jeder Seite merken Sie sich Seiten, Tabellen, Einträge oder Einstellungen – sie erscheinen dann hier.')) ?></p>
-    </div>
-    <script type="application/json" id="adm-fav-data"><?= json_encode(array_map(fn($f) => $f + ['href' => url($f['url']), 'ico' => \Core\Icons::resolve($f['icon'] ?: 'fav')], $favs), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
-  </section>
   <?php if ($drill): // Bereichsnavigation (z. B. Daten) ersetzt die Hauptnavigation – resources/js/_drill.js; ohne JavaScript führt „Hauptmenü“ zur Übersicht ?>
   <div class="adm-drill" data-drill-area="<?= e(['review' => 'ai', 'assistant' => 'ai'][$section] ?? $section) ?>" data-drill-back="<?= e(__('Zurück zu {name}', ['name' => $drillTitle ?? ''])) ?>" data-drill-title="<?= e($drillTitle ?? '') ?>">
     <a class="adm-drill__back" href="<?= e(url('/admin')) ?>"><span aria-hidden="true">‹</span> <?= e(__('Hauptmenü')) ?></a>
@@ -284,48 +203,9 @@ if ($user && ($req = app()->request)) {
     <?php endif; ?>
   </nav>
   <?php endif; ?>
-  <div class="adm-side__foot">
-    <?php // Hilfe: Handbuch, Assistent, Problem melden – zusammengeklappt; offen auf Hilfeseiten, Zustand merkt sich der Browser (admin.js) ?>
-    <details class="adm-helpbox" data-helpbox<?= in_array($section, ['help', 'support'], true) ? ' open' : '' ?>>
-      <summary class="adm-helpbox__sum"><?= icon('question', ['class' => 'adm-help-link__ico']) ?><span><?= e(__('Hilfe & Support')) ?></span><?php if ($supportN): ?><span class="adm-count"><?= $supportN ?><span class="sr-only"> <?= e(__('ungelesen')) ?></span></span><?php endif; ?><span class="adm-helpbox__chev" aria-hidden="true"></span></summary>
-      <div class="adm-helpbox__body">
-      <?php if (\Core\Support\Support::canRead()): // Support & Wissensdatenbank (Core\Support) – zentral für alle Websites ?>
-      <a class="adm-help-link<?= $section === 'support' && $view !== 'support/new' ? ' is-current' : '' ?>" href="<?= e(url('/admin/support')) ?>"><?= icon('lifebuoy', ['class' => 'adm-help-link__ico']) ?> <?= e(__('Support')) ?><?php if ($supportN): ?> <span class="adm-count"><?= $supportN ?><span class="sr-only"> <?= e(__('ungelesen')) ?></span></span><?php endif; ?></a>
-      <?php endif; ?>
-      <a class="adm-help-link<?= $section === 'help' ? ' is-current' : '' ?>" href="<?= e(url('/admin/hilfe')) ?>"><?= icon('question', ['class' => 'adm-help-link__ico']) ?> <?= e(__('Handbuch & Hilfe')) ?></a>
-      <?php if (can('system.manage')): // Begrüßungsfenster erneut öffnen (Core\Welcome) ?>
-      <a class="adm-help-link" href="<?= e(url('/admin') . '?' . \Core\Welcome::QUERY . '=1') ?>"><?= icon('list-checks', ['class' => 'adm-help-link__ico']) ?> <?= e(__('Erste Schritte')) ?></a>
-      <?php endif; ?>
-      <?php if (\Core\Guide::exists()): // Hinweise zu diesem Projekt (Core\Guide) – nur wenn Kit oder Website welche mitbringen ?>
-      <a class="adm-help-link" href="<?= e(url('/admin/hilfe')) ?>#projekt"><?= icon('lightbulb', ['class' => 'adm-help-link__ico']) ?> <?= e(__('Projekt-Hinweise')) ?></a>
-      <?php endif; ?>
-      <?php if (\Core\AI\Assistant::available()): // Assistent-Chat (Core\AI\Assistant) – öffnet das Chat-Fenster, ohne JavaScript die Seite im KI-Bereich ?>
-      <a class="adm-help-link adm-help-link--assistant" href="<?= e(url('/admin/ai/assistent')) ?>" data-assistant aria-keyshortcuts="Alt+Shift+K"><?= icon('chat-teardrop-dots', ['class' => 'adm-help-link__ico']) ?> <?= e(__('Assistent fragen')) ?></a>
-      <?php endif; ?>
-      <?php if (\Core\Support\Support::canReport()): // Problem melden (Core\Support) – überall erreichbar, nimmt die aktuelle Seite als Kontext mit ?>
-      <a class="adm-help-link adm-help-link--report<?= $view === 'support/new' ? ' is-current' : '' ?>" href="<?= e(url('/admin/support/neu')) ?>" data-support-report><?= icon('warning', ['class' => 'adm-help-link__ico']) ?> <?= e(__('Problem melden')) ?></a>
-      <?php endif; ?>
-      </div>
-    </details>
-    <div class="adm-me-row">
-      <a class="adm-me" href="<?= e(url('/admin/account')) ?>"><?= \Core\Avatar::html($user, 'adm-ava adm-ava--m') ?><span class="adm-me__t"><?= e($user['name'] ?: $user['email']) ?><small><?= e(app()->auth->role()["name"] ?? $user["role"]) ?> · <?= e(__("Konto")) ?></small></span></a>
-      <form method="post" action="<?= e(url('/admin/logout')) ?>"><?= csrf_field() ?><button class="adm-me-out" type="submit" title="<?= e(__('Abmelden')) ?>"><?= icon('sign-out') ?><span class="adm-sr"><?= e(__('Abmelden')) ?></span></button></form>
-    </div>
-  </div>
 </aside>
 <?php endif; ?>
 <main class="adm-main" id="main">
-  <?php if ($netArea): // Kopf des Netzwerk-Bereichs: unverwechselbar, unabhängig vom Branding der Netzwerk-Website ?>
-  <div class="adm-netbar" role="note"><span class="adm-netbadge"><?= icon('network') ?><?= e(__('NETZWERK')) ?></span><span class="adm-netbar__t"><?= e(__('Einstellungen für die ganze Installation – gelten für alle {n} Websites.', ['n' => count(\Core\Sites::all())])) ?></span></div>
-  <?php endif; ?>
-  <?php if (!empty(($impU = app()->auth->user())['_imp'])): $imp = $impU['_imp']; // Ansicht als Rolle/Person (Core\Impersonation) ?>
-  <div class="adm-imp" role="status">
-    <span class="adm-imp__ico" aria-hidden="true"><?= icon('user-circle') ?></span>
-    <span class="adm-imp__t"><?= e($imp['mode'] === 'role' ? __('Sie sehen die Verwaltung mit den Rechten der Rolle „{name}“.', ['name' => $imp['label']]) : __('Sie arbeiten als {name} – Änderungen werden unter diesem Namen gespeichert.', ['name' => $imp['label']])) ?>
-      <small><?= e(__('Bis {time} · Konto, Benutzer und Grundeinstellungen sind gesperrt.', ['time' => \Core\Format::admin()->time((int) $imp['until'])])) ?></small></span>
-    <form method="post" action="<?= e(url('/admin/impersonate/stop')) ?>"><?= csrf_field() ?><button class="adm-btn adm-btn--small"><?= e(__('Zurück zu meinem Konto')) ?></button></form>
-  </div>
-  <?php endif; ?>
   <?php if ($hubPage): // Rückweg von einer Einstellungs-/Statistikseite zur Sammelseite (und zur Datentabelle, falls sie dazugehört) ?>
   <nav class="adm-backbar" aria-label="<?= e(__('Zurück')) ?>">
     <a href="<?= e(url($hubKind === 'stats' ? \Core\AdminPages::STATS : \Core\AdminPages::HUB)) ?>"><span aria-hidden="true">←</span> <?= e($hubKind === 'stats' ? __('Statistiken') : __('Einstellungen der Funktionen')) ?></a>

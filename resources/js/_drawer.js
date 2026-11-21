@@ -11,7 +11,7 @@ const d = document, html = d.documentElement, body = d.body;
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 
 export function initDrawer() {
-  const side = d.getElementById('adm-side'), top = d.querySelector('.adm-top');
+  const side = d.getElementById('adm-side'), top = d.querySelector('.adm-tb');
   if (!side || !top) return;
   const mq = matchMedia('(max-width:900px)');
   // Link → Knopf (ohne JavaScript bleibt der Anker-Link mit :target)

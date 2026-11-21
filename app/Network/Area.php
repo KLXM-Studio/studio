@@ -9,8 +9,8 @@ use Core\Http\Request;
 use Core\Sites;
 
 /**
- * Netzwerk-Bereich der Verwaltung (/admin/network/…): eigener Bereich mit dunklem Kopf „NETZWERK“, eigener Seitenleiste und
- * Umschalter Netzwerk ↔ Website – nur in Installationen mit mehreren Websites (Sites::multi()), nur auf der Netzwerk-Website,
+ * Netzwerk-Bereich der Verwaltung (/admin/network/…): eigener Bereich mit Kopfleiste in Petrol, eigener Seitenleiste und
+ * Umschalter Netzwerk ↔ Website (links in der Kopfleiste, app/Admin/views/_areaswitch.php) – nur in Installationen mit mehreren Websites (Sites::multi()), nur auf der Netzwerk-Website,
  * nur für Netzwerk-Konten (Rolle network). Alles, was für die ganze Installation gilt (Geplante Aufgaben, Sicherung außer Haus,
  * Kits, Schriften, Branding, Dateien-Integrität, Systemmeldungen, geteilte Medien/Daten, KI-Verbindungen, Netzwerk-Domain, Adresse der Verwaltung,
  * Agentur-Zugang per OpenID Connect, Netzwerk-Konten, E-Mail des Netzwerks), liegt dort – die Verwaltung einer Website zeigt nur
@@ -147,6 +147,35 @@ final class Area
             ]))],
         ];
         return $groups;
+    }
+
+    /**
+     * Einträge des Umschalters Netzwerk ↔ Website: alle Websites mit Namen aus den Website-Einstellungen (Kennzahlen der
+     * Netzwerk-Übersicht, Core\Network\Stats – Name des Betreibers bzw. der Website, sonst eigener Name bzw. Domain), erster
+     * Domain, App-Icon bzw. Buchstaben-Kachel. Sortiert: Netzwerk-Website zuerst, dann nach Namen.
+     * @return list<array{key: string, name: string, host: string, icon: string, current: bool, network: bool}>
+     */
+    public static function switcher(): array
+    {
+        $out = [];
+        foreach (Sites::all() as $key => $cfg) {
+            $key = (string) $key;
+            // Kennzahlen aus dem Zwischenspeicher der Netzwerk-Übersicht; fehlen sie, einmal erheben (danach gecacht)
+            $st = Stats::cached($key);
+            if ($st === null || !array_key_exists('site_name', $st)) $st = Stats::site($key, true);
+            $site = new \Core\Site($key, $cfg);
+            // Eigener Name (Netzwerk-Übersicht → Name ändern) gilt, außer er ist nur eine Domain – dann der Name aus den Website-Einstellungen
+            $own = trim((string) ($cfg['label'] ?? ''));
+            $sn = trim((string) ($st['site_name'] ?? ''));
+            $name = $own !== '' && !in_array(strtolower($own), $site->hosts(), true) ? $own : ($sn !== '' ? $sn : trim((string) ($st['label'] ?? '')));
+            if ($name === '') $name = $key === \Core\Site::DEFAULT && empty($cfg['label']) ? __('Hauptwebsite') : $site->label();
+            $host = (string) ($site->hosts()[0] ?? '');
+            if ($host === '') $host = (string) preg_replace('~^https?://~', '', Network::siteUrl($key));
+            $out[] = ['key' => $key, 'name' => $name, 'host' => $host, 'icon' => SiteIcon::for($key, $st)['src'],
+                'current' => $key === site()->key, 'network' => $key === Network::siteKey()];
+        }
+        usort($out, fn($a, $b) => [$b['network'], mb_strtolower($a['name'])] <=> [$a['network'], mb_strtolower($b['name'])]);
+        return $out;
     }
 
     /** Aktueller Punkt der Seitenleiste zur Adresse */

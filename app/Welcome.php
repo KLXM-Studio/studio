@@ -8,7 +8,7 @@ namespace Core;
 /**
  * Begrüßungsfenster der Verwaltung („Willkommen“ + nächste Schritte, app/Admin/views/_welcome-modal.php): erscheint einmal je
  * Konto automatisch, sobald der Erststart erledigt ist (Core\Onboarding) – für alle, die die Grundeinstellungen pflegen dürfen –
- * und lässt sich jederzeit über Hilfe & Support → „Erste Schritte“ wieder öffnen (?erste-schritte=1).
+ * und lässt sich jederzeit über das Konto-Menü der Kopfleiste → „Erste Schritte“ wieder öffnen (?erste-schritte=1).
  * Gemerkt wird das in users.ui_prefs (JSON, Schlüssel „welcome“) – serverseitig beim Anzeigen, damit es auch ohne JavaScript gilt.
  */
 final class Welcome
