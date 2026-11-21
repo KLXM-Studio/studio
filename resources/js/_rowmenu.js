@@ -73,11 +73,42 @@ function close(pop) {
   try { pop.hidePopover(); } catch { /* schon zu */ }
 }
 
+
+/**
+ * Kontextmenü am Mauszeiger: als „manual“-Popover öffnen. Bei „auto“ schließt der Browser es beim Loslassen der rechten
+ * Maustaste wieder (der Klick begann vor dem Menü, also „außerhalb“). Geschlossen wird dann selbst: Klick daneben, Escape,
+ * Scrollen, Fensterwechsel.
+ */
+function asContext(pop) {
+  if (pop.getAttribute('popover') !== 'manual') { pop._wasAuto = true; pop.setAttribute('popover', 'manual'); }
+  pop._manual = true;
+  const away = e => { if (!pop.contains(e.target)) close(pop); };
+  const esc = e => { if (e.key === 'Escape') { e.preventDefault(); close(pop); } };
+  const off = () => close(pop);
+  setTimeout(() => {   // erst nach dem Loslassen der rechten Taste
+    document.addEventListener('pointerdown', away, true);
+    document.addEventListener('keydown', esc, true);
+    window.addEventListener('scroll', off, { capture: true, once: true });
+    window.addEventListener('blur', off, { once: true });
+  });
+  pop.addEventListener('toggle', function done(e) {
+    if (e.newState !== 'closed') return;
+    pop.removeEventListener('toggle', done);
+    document.removeEventListener('pointerdown', away, true);
+    document.removeEventListener('keydown', esc, true);
+    window.removeEventListener('scroll', off, { capture: true });
+    window.removeEventListener('blur', off);
+    pop._manual = false;
+    if (pop._wasAuto) { pop._wasAuto = false; pop.setAttribute('popover', 'auto'); }
+  });
+}
+
 /** Menü vom Server öffnen – an einer Stelle (Rechtsklick) oder am Knopf */
 export function openPop(pop, at = null) {
   if (!pop) return;
   pop._at = at;
   if (pop.matches(':popover-open')) { place(pop, at); items(pop)[0]?.focus(); return; }
+  if (at && at.x != null) asContext(pop);
   try { pop.showPopover(); } catch { /* kein Popover-API: Server-Fallback bleibt */ }
 }
 
@@ -116,6 +147,7 @@ export function openMenu({ items: list, title = '', x = null, y = null, anchor =
   });
   host.append(pop);
   pop._at = x != null ? { x, y } : { anchor };
+  if (x != null) asContext(pop);
   try { pop.showPopover(); } catch { pop.classList.add('is-open'); place(pop, pop._at); items(pop)[0]?.focus(); }
   return pop;
 }

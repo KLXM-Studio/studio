@@ -3879,9 +3879,9 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
   @container dtlist (max-width:860px){.dt-table [data-prio="3"]{display:none}}
 }
 /* Zeilenmenü (Core\RowMenu, resources/js/_rowmenu.js): ⋯-Knopf, Popover-Menü, Telefon als Blatt, Mehrfachauswahl-Leiste */
-.rm-btn{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;margin:0;padding:0;border:0;border-radius:6px;background:none;color:var(--adm-t2);cursor:pointer}
+.rm-btn{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;margin:0;padding:0;border:1px solid var(--adm-line);border-radius:8px;background:var(--adm-surface,transparent);color:var(--adm-ink);cursor:pointer}
 .rm-btn:hover,.rm-btn:focus-visible,.rm-btn:has(+.rm-pop:popover-open){background:var(--adm-hover);color:var(--adm-ink)}
-.rm-btn .ico{width:18px;height:18px}
+.rm-btn .ico{width:20px;height:20px}
 .rm-pop{min-width:200px;max-width:min(340px,calc(100vw - 16px));margin:auto;padding:5px;border:1px solid var(--adm-line);border-radius:10px;background:var(--adm-card,#fff);color:var(--adm-ink);box-shadow:0 12px 32px rgba(0,0,0,.2);font:400 13px var(--adm-font)}
 .rm-pop:popover-open,.rm-pop.is-open{display:grid;gap:1px}
 .rm-pop[data-placed]{position:fixed;inset:auto;margin:0}
