@@ -389,17 +389,16 @@ final class Cron
     }
 
     /**
-     * Systemmeldung bei Fehler bzw. Zeitüberschreitung einer Aufgabe (Core\Network\SystemMail, „Systemmeldungen an“): einmal je
+     * Systemmeldung bei Fehler bzw. Zeitüberschreitung einer Aufgabe (Core\Mail\Alerts, Kategorie „Geplante Aufgaben“): einmal je
      * Fehlerserie, nach dem nächsten erfolgreichen Lauf wieder scharf.
      */
     private static function notice(string $key, string $label, string $status, string $out): void
     {
         try {
-            if ($status === 'ok') { Network\SystemMail::clear('cron:' . $key); return; }
-            Network\SystemMail::once('cron:' . $key, __('Geplante Aufgabe fehlgeschlagen: {name}', ['name' => $label]),
+            if ($status === 'ok') { Mail\Alerts::clear('cron:' . $key); return; }
+            Mail\Alerts::once('cron', 'cron:' . $key, __('Geplante Aufgabe fehlgeschlagen: {name}', ['name' => $label]),
                 __('Die geplante Aufgabe „{name}“ ist fehlgeschlagen ({status}).', ['name' => $label, 'status' => $status === 'timeout' ? __('Zeitlimit überschritten') : __('Fehler')])
-                . "\n\n" . mb_substr($out, -1500) . "\n\n" . __('Protokoll: Verwaltung → {where} → Geplante Aufgaben. Nach dem nächsten erfolgreichen Lauf kommt bei einem neuen Fehler wieder eine Meldung.', ['where' => Sites::multi() ? __('Netzwerk') : __('Grundeinstellungen')]),
-                Integrity::recipients('files'));
+                . "\n\n" . mb_substr($out, -1500) . "\n\n" . __('Protokoll: Verwaltung → {where} → Geplante Aufgaben. Nach dem nächsten erfolgreichen Lauf kommt bei einem neuen Fehler wieder eine Meldung.', ['where' => Sites::multi() ? __('Netzwerk') : __('Grundeinstellungen')]));
         } catch (\Throwable $e) {
             error_log('[cron] Systemmeldung: ' . $e->getMessage());
         }

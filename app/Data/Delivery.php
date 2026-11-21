@@ -650,15 +650,18 @@ final class Delivery
             error_log('[inbox] Hinweis nicht gespeichert: ' . $e->getMessage());
         }
         error_log('[inbox] Zustellung per E-Mail fehlgeschlagen: ' . $t['handle'] . ' ' . $ref . ' – ' . $reason . ($stored ? ' (verschlüsselt gesichert)' : ' (NICHT gesichert)'));
+        // Systemmeldung „Mail-Zustellprobleme“ (Core\Mail\Alerts): Rückfall wie bisher die Benachrichtigungsadresse der Tabelle bzw.
+        // die Empfänger aus den Grundeinstellungen; eine Serie (Tabelle + Ergebnis) = eine Mail je Stunde, der Rest steht unter „Anfragen“
         $notify = (string) ($t['settings']['form']['notify'] ?? '');
-        $to = $notify !== '' ? array_map('trim', explode(',', $notify)) : null;
+        $to = array_map('trim', explode(',', $notify !== '' ? $notify : (string) app()->settings->get('sys.mail_to', '')));
         $subject = $stored ? __('Zustellung fehlgeschlagen – Anfrage verschlüsselt gesichert') : __('Zustellung fehlgeschlagen – Anfrage NICHT gesichert');
-        Mailer::send($subject . ': ' . $t['name'],
+        \Core\Mail\Alerts::once('mail', 'mail:' . site()->key . ':' . $t['handle'] . ':' . (int) $stored, $subject . ': ' . $t['name'],
             __('Guten Tag,') . "\n\n" . __('eine Anfrage in „{table}“ (Vorgangsnummer {ref}) konnte nicht per E-Mail zugestellt werden.', ['table' => $t['name'], 'ref' => $ref]) . "\n"
             . __('Grund: {reason}', ['reason' => $reason]) . "\n\n"
             . ($stored ? __('Die Anfrage wurde stattdessen verschlüsselt im System gesichert und ist unter „Anfragen“ mit dem Schlüssel lesbar:') . "\n" . admin_url_abs('/admin/requests?table=' . $t['handle'])
                 : __('Die Anfrage konnte auch nicht gesichert werden. Bitte die Einstellungen prüfen:') . "\n" . admin_url_abs('/admin/data/' . $t['handle'] . '/schema'))
-            . "\n\n" . __('Diese E-Mail enthält aus Datenschutzgründen keine Inhalte.') . "\n", $to);
+            . "\n\n" . __('Diese E-Mail enthält aus Datenschutzgründen keine Inhalte.') . ' ' . __('Weitere Fehler dieser Tabelle in der nächsten Stunde stehen nur unter „Anfragen“.') . "\n",
+            ['scope' => 'site', 'fallback' => $to], 3600);
     }
 
     /** Offene Hinweise (optional nur für bestimmte Tabellen) */
