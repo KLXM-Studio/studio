@@ -132,17 +132,29 @@
   <p>Im Tabellen-Designer legen Sie an jedem Feld unter <b>Sichtbarkeit</b> fest, wo eine Angabe öffentlich erscheint – getrennt für drei Ziele:</p>
   <ul>
     <li><b>Website</b> – Blöcke, Detailseite, Angaben für Suchmaschinen, Website-Suche und KI-Chat, RSS,</li>
-    <li><b>Visitenkarte (vCard)</b> – „Kontakt speichern“ auf der Website,</li>
-    <li><b>Kalender (ICS)</b> – Kalender-Datei, Kalender-Abo und „Termin speichern“.</li>
+    <li><b>Kontakt speichern (vCard)</b> – die Visitenkarte zum Herunterladen auf der Website,</li>
+    <li><b>Kalender-Datei (ICS)</b> – Kalender-Datei, Kalender-Abo und „Termin speichern“.</li>
   </ul>
-  <p>Drei Möglichkeiten: <b>Immer öffentlich</b> (in den angehakten Zielen – so verhalten sich alle Felder, für die Sie nichts einstellen), <b>Redaktion entscheidet je Eintrag</b> und <b>Nie öffentlich</b> (wie oben). Bei „Redaktion entscheidet“ legen die Häkchen den Standard für neue Einträge fest; im Eintrag steht dann direkt unter dem Feld ein kleiner Schalter mit Weltkugel („Öffentlich“ bzw. „Intern“). Ein Klick öffnet die Ziele – so steht z. B. die Mobilnummer der Vorsitzenden in ihrer Visitenkarte, aber nicht auf der Website. Bestehende Einträge behalten den Standard, bis Sie den Schalter ändern.</p>
+  <p>Drei Möglichkeiten: <b>Immer öffentlich</b> (in den angehakten Zielen – so verhalten sich alle Felder, für die Sie nichts einstellen), <b>Redaktion entscheidet je Eintrag</b> und <b>Nie öffentlich</b> (wie oben). Bei „Redaktion entscheidet“ legen die Häkchen den Standard für neue Einträge fest; im Eintrag ist das Merkmal rechts im Feldkopf dann ein Menü („Öffentlich“ bzw. „Intern“, siehe unten). Ein Klick öffnet die Ziele – so steht z. B. die Mobilnummer der Vorsitzenden in ihrer Visitenkarte, aber nicht auf der Website. Bestehende Einträge behalten den Standard, bis Sie den Schalter ändern.</p>
   <p>Beispiele: Mobilnummer „Redaktion entscheidet“ (Website aus, Visitenkarte an); interne Notiz „Nie öffentlich“; „Vita“ oder „Über mich“ „Immer öffentlich“ nur mit Haken bei Website – solche Felder erscheinen auf der Detailseite, gehen aber nie in Visitenkarten, Kalender-Dateien oder Adressbuch- und Kalender-Apps. In der Verwaltung, über die Schnittstelle und in den Apps der Redaktion sehen Berechtigte alle übrigen Angaben weiter.</p>
+
+  <h3 id="oeffentlich-erkennen">Auf einen Blick: Was ist öffentlich?</h3>
+  <p>Im Formular eines Eintrags – in der Verwaltung und in der Seitenleiste „Eintrag bearbeiten“ auf der Website – trägt <b>jedes Feld und jede einzelne Angabe dasselbe Merkmal</b>, immer an derselben Stelle: rechts im Feldkopf bzw. rechts in der Zeile einer Nummer, E-Mail-Adresse oder Anschrift.</p>
+  <ul>
+    <li><b>Weltkugel „Öffentlich“</b> (grün) – die Angabe erscheint auf der Website. Haben Visitenkarte oder Kalender-Datei für die Tabelle eine Bedeutung, steht dahinter, wohin genau: „Öffentlich · Website, vCard“.</li>
+    <li><b>Schloss „Intern“</b> (grau) – die Angabe sieht nur die Redaktion. Interne Felder sind zusätzlich leicht grau hinterlegt, damit niemand aus Versehen Privates in ein öffentliches Feld schreibt.</li>
+    <li><b>Nur Ort</b> – bei Adressen: auf der Website steht nur der Ort, ohne Straße und Postleitzahl.</li>
+  </ul>
+  <p>Ist das Feld im Tabellen-Designer auf „Immer öffentlich“ oder „Nie öffentlich“ festgelegt, ist das Merkmal ein reiner Hinweis (der Mauszeiger darauf nennt den Grund). Bei „Redaktion entscheidet“ und bei jeder Angabe in Telefon, E-Mail, Adresse und Web öffnet ein Klick (oder Eingabetaste/Leertaste) ein kleines Menü: Häkchen für <b>Website</b>, <b>Kontakt speichern (vCard)</b> und <b>Kalender-Datei (ICS)</b> bzw. die Wahl <b>Öffentlich / Nur Ort / Intern</b>. Escape oder ein Klick daneben schließt das Menü.</p>
+  <p>Oben im Formular fasst ein Kasten zusammen, was die Website von diesem Eintrag zeigt, z. B. <b>„Auf der Website: Anzeigename, Funktion, Telefon (Geschäftsstelle), E-Mail (Arbeit), Adresse (Geschäftsstelle, nur Ort)“</b>. Die Liste ändert sich beim Tippen und Umschalten mit. Ist „Auf der Website zeigen“ aus oder der Eintrag ein Entwurf, wird der Kasten gelb und sagt deutlich: <b>„Dieser Eintrag ist nicht auf der Website.“</b> – darunter steht, was erscheinen würde.</p>
+  <p><i>Bild: Formular eines Kontakts. Oben der grüne Kasten „Auf der Website: …“, darunter die Felder, jedes rechts oben mit der Pille „Öffentlich · Website, vCard“; bei Telefon zwei Zeilen – „Geschäftsstelle“ mit grüner Weltkugel „Öffentlich“, „Mobil“ grau hinterlegt mit Schloss „Intern“; Geburtstag und Notiz grau mit „Intern“.</i></p>
+  <p>Auch die Liste der Einträge zeigt es: Adressbücher haben eine Spalte <b>Website</b> („Öffentlich“ bzw. „Intern“), und in Spalten mit Telefon, E-Mail, Adresse oder Web steht vor jeder Angabe die Weltkugel oder das Schloss.</p>
 
   <h3 id="adressbuch">Adressbuch: Kontakte mit Telefon, E-Mail und Freigabe</h3>
   <p>Für Ansprechpersonen, Vorstand, Mitglieder oder Partner gibt es die Vorlage <b>Adressbuch</b> (Daten → Neue Tabelle). Sie bringt feste Grundfelder mit, wie Sie sie aus Kontakte-Apps kennen: Titel, Vor- und Nachname, Funktion, Organisation, Foto, <b>Telefon, E-Mail, Adresse und Web</b> – jeweils beliebig oft mit Beschriftung (Mobil, Geschäftsstelle, Arbeit, Privat … oder eine eigene) –, Geburtstag, Listen (z. B. „Vorstand“, „Presse“) und Notiz. Eigene Felder ergänzen Sie wie gewohnt; die Grundfelder lassen sich umbenennen, aber nicht löschen.</p>
   <ul>
     <li><b>Auf der Website zeigen:</b> Nur Kontakte mit diesem Haken erscheinen auf der Website – neue Kontakte sind zuerst intern.</li>
-    <li><b>Freigabe je Angabe:</b> Jede Nummer, E-Mail-Adresse und Anschrift hat ihren eigenen Schalter „Öffentlich“ (bei Adressen auch „Nur Ort öffentlich“). Die Dienstnummer kann auf der Website stehen, die Mobilnummer bleibt intern.</li>
+    <li><b>Freigabe je Angabe:</b> Jede Nummer, E-Mail-Adresse und Anschrift hat rechts in ihrer Zeile dasselbe Merkmal wie die Felder – „Öffentlich“ oder „Intern“, bei Adressen zusätzlich „Nur Ort“. Die Dienstnummer kann auf der Website stehen, die Mobilnummer bleibt intern.</li>
     <li><b>Überall von selbst:</b> Die Blöcke „Personen“, „Datenliste“ und „Datensatz-Felder“, die Detailseite und „Kontakt speichern“ nutzen das Adressbuch ohne weitere Einstellung – mit Name, Funktion, Foto und den freigegebenen Angaben.</li>
     <li><b>Für die Website:</b> Felder, die nur auf der Website erscheinen (z. B. „Vita“), stehen im Eintrag im Abschnitt „Für die Website“.</li>
     <li><b>Kontakt-Feld:</b> In anderen Tabellen verknüpfen Sie Einträge mit Kontakten über ein Feld „Verknüpfung“ mit einer Tabelle aus der Gruppe „Adressbücher“.</li>
@@ -268,6 +280,24 @@
   <p>Je Tabelle (Administration → Einstellungen → „Kalender &amp; Kontakte in Apps“): <b>Nur veröffentlichte Einträge</b> hält Entwürfe und geplante Einträge aus den Apps heraus – sie erscheinen dort erst, wenn sie online sind. Bei Adressbüchern ohne Feld „Firma“ steht der Name Ihrer Organisation aus den Website-Einstellungen als Firma in jedem Kontakt; Sie können einen anderen Namen eintragen oder die Angabe abschalten. Ist nur der ganze Name zugeordnet, trennt das CMS Vor- und Nachname selbst (Titel wie „Dr.“ und Namenszusätze wie „von“ werden erkannt), damit die App richtig sortiert. Formatierte Texte kommen in der App als einfacher Text an, Redaktionsnotizen bleiben im CMS.</p>
   <p><b>Neue Kontakte aus Apps:</b> Bei Adressbüchern mit Detailseite schlägt die Einstellung „Neue Einträge aus Apps“ <b>als Entwurf</b> vor – so erscheint ein Kontakt, den jemand am Telefon anlegt, nicht von selbst auf der Website. Wer das will, stellt „sofort online“ ein; einmal gespeicherte Einstellungen bleiben, wie sie sind. Felder mit „Nie öffentlich“ sind in den Apps sichtbar.</p>
   <?php endif; ?>
+
+  <h3 id="abonnieren">Kalender und Kontakte abonnieren</h3>
+  <p>Kalender- und Kontakte-Tabellen haben unter <b>Daten → Tabelle → Abonnieren</b> eine eigene Seite (Recht „Einträge bearbeiten“). Dort finden Sie:</p>
+  <ul>
+    <li><b>Öffentlich abonnieren:</b> beim Kalender die webcal-Adresse des öffentlichen Feeds (dieselbe wie „Kalender abonnieren“ auf der Website – nur veröffentlichte Termine und nur Angaben, die für „Kalender (ICS)“ freigegeben sind). Bei Kontakten eine <b>.vcf-Datei</b> mit allen Kontakten, die „Auf der Website zeigen“, und nur deren freigegebenen Angaben – nur bei Tabellen für die Website, nicht bei internen Listen oder geschützten Bereichen.</li>
+    <li><b>Abo-Tokens:</b> eine eigene, geheime Adresse je Gerät oder Person. Sie geben einen Namen (z. B. „iPhone Vorstand“), wählen den <b>Umfang</b> – <i>nur öffentlich</i> oder <i>inklusive interner Einträge und Angaben</i> (Entwürfe, nicht freigegebene Kontakte, private Telefonnummern) – und optional ein Ablaufdatum. Felder „Nur Website“ (z. B. Vita) gehen nie an Apps. Abos sind immer <b>nur lesend</b>: Änderungen in der App kommen nicht zurück.</li>
+    <li><b>Adresse, QR-Code und Anleitung</b> erscheinen nach dem Anlegen in einem Fenster – <b>nur dieses eine Mal</b>. Gespeichert wird nur ein Hash; ist die Adresse verloren, widerrufen Sie das Abo und legen ein neues an. In der Liste sehen Sie, wann ein Abo zuletzt genutzt wurde, und können es jederzeit <b>widerrufen</b>.</li>
+  </ul>
+  <p><b>So geht es in den Apps:</b></p>
+  <ul>
+    <li><b>iPhone/iPad:</b> QR-Code mit der Kamera scannen oder die webcal-Adresse antippen → „Abonnieren“. Von Hand: Einstellungen → Apps → Kalender → Accounts → Account hinzufügen → Andere → „Kalenderabo hinzufügen“. Kontakte mit CardDAV: Einstellungen → Apps → Kontakte → Accounts → Andere → „CardDAV-Account hinzufügen“.</li>
+    <li><b>macOS:</b> Kalender → Ablage → „Neues Kalenderabonnement …“; Kontakte → Einstellungen → Accounts → „Anderer Kontakte-Account …“ → CardDAV.</li>
+    <li><b>Android:</b> Kalender mit ICSx⁵, Kontakte mit DAVx⁵ („Mit URL und Benutzername anmelden“). Google Kalender („Per URL“) ruft die Adresse von Googles Servern ab – für Abos mit internen Einträgen besser ICSx⁵.</li>
+    <li><b>Outlook:</b> Kalender → „Kalender hinzufügen“ → „Aus dem Internet abonnieren“ (https-Adresse). Für Kontakte kennt Outlook kein Abo – die .vcf-Datei einmalig importieren.</li>
+    <li><b>Thunderbird:</b> „Neuer Kalender“ → „Im Netzwerk“ → https-Adresse; Adressbuch → „CardDAV-Adressbuch hinzufügen“.</li>
+  </ul>
+  <p>Ist die Erweiterung <b>CalDAV/CardDAV</b> aktiv, gleichen Adressbuch-Apps Kontakte mit dem Abo-Token laufend ab: Server-Adresse der Website mit <code>/dav/</code>, Benutzername <code>abo</code>, Passwort = Abo-Token. Ohne die Erweiterung gibt es die .vcf-Datei (ein Stand zum Importieren).</p>
+  <div class="doc-note"><p>Abos mit Token gehören zur Funktion <b>„Kalender und Kontakte per App abonnieren“</b> (Funktionen &amp; Erweiterungen), die standardmäßig aus ist. Ein Abo endet auch, wenn das Konto, das es angelegt hat, gelöscht oder gesperrt wird oder das Recht auf die Tabelle verliert. Wer eine Token-Adresse hat, kann mitlesen – bei „intern“ auch interne Angaben. Geben Sie solche Adressen nur an Berechtigte weiter.</p></div>
 
   <h3 id="geteilt">Geteilte Tabellen (mehrere Websites)</h3>
   <p>Manche Tabellen tragen in der Daten-Navigation den Hinweis <b>geteilt</b>. Sie gehören zu mehreren Websites derselben Installation – zum Beispiel Neuigkeiten oder Termine, die eine Dachorganisation und ihre Mitglieder gemeinsam nutzen. Die Felder legt die Website fest, der die Tabelle gehört; jede Website pflegt <b>nur ihre eigenen Einträge</b>.</p>

@@ -13,7 +13,8 @@ import { openSpotlight } from './_spotlight.js';
 import { t } from './_i18n.js';
 import { initGeo } from './_geo.js';
 import { conditions } from './_conditions.js';
-import { initSecCount } from './_fsec.js';   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
+import { initSecCount } from './_fsec.js';
+import { initExposure } from './_exposure.js';   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
 import { initDateOnly } from './_dateonly.js';   // Datum/Uhrzeit nur als Datum bei „ganztägig“ (Core\Fields 'date_only_if')
 import { initIban } from './_iban.js';
 import { initRuleBuilder } from './_schema_rules.js';
@@ -28,6 +29,7 @@ import { initNetwork } from './_network.js';
 import { initOnline } from './_online.js';   // „online“-Herzschlag (Core\Presence::ONLINE)
 import { initReview } from './_review.js';   // Prüf-Ebene „Eingereicht“ (Core\Review)
 import { initRedirects } from './_redirects.js';   // Administration → Weiterleitungen (Core\Redirects)
+import { initTasks } from './_tasks.js';   // Aufgaben (Core\Tasks): „Aufgabe anlegen“ als Dialog
 import { initPagePreview } from './_ptpreview.js';   // Seitenbaum → Vorschau als Seitenleiste (Mobil/Desktop, hoch/quer)
 import { initEntryEdit } from './_entry_edit.js';
 import { initTargetEdit } from './_target_edit.js';   // „Bearbeiten“ an Karten/Kacheln → Seite bzw. Eintrag (Core\TargetEdit)
@@ -97,6 +99,7 @@ initOnline();
 // Eingereicht: Sammelauswahl (_review.js)
 initReview();
 initRedirects();
+initTasks();
 // Daten → Externe Quellen: Zuordnung mit Auswahl, Beispiel und Probeabruf (Core\Sources) – admin-sources.mjs
 if (d.querySelector('[data-src-form]')) lazy('admin-sources').then(m => m.initSources?.());
 initPagePreview();
@@ -557,6 +560,13 @@ d.addEventListener('click', e => {
     addEventListener('afterprint', done);
     print();
   }
+});
+// Abonnieren: Dialog mit dem neuen Abo-Token (ohne JavaScript offen in der Seite) als modales Fenster – Fokus, Escape, Hintergrund
+$$('dialog[data-abo-dialog][open]').forEach(dlg => {
+  if (typeof dlg.showModal !== 'function') return;
+  dlg.close();
+  dlg.showModal();
+  $('button, [href], input', dlg)?.focus();
 });
 function initCounters(scope = d) {
   $$('[data-max]', scope).forEach(el => {
@@ -1239,7 +1249,7 @@ function initRRule(scope) {
   // Serien-Dialog „nur dieser / dieser und folgende / alle“ (Kalender mit Serien)
   if (scope.querySelector?.('[data-series-scope]:not([data-ready])')) lazy('admin-rrule').then(m => m.initSeries?.(scope));
 }
-function init(scope = d) { initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+function init(scope = d) { initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 

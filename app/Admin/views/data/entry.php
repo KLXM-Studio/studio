@@ -34,6 +34,7 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
 <form method="post" action="<?= e(url($isNew ? $base . '/new' : $base . '/' . $e['id'])) ?>" class="dt-entry" novalidate<?= \Core\Data\Calendar::enabled($t) ? ' data-rrule-preview="' . e(url($base . '/wiederholung')) . '"' . ($e ? ' data-entry-id="' . (int) $e['id'] . '"' : '') : '' ?><?php if ($cond = \Core\Data\Rules::client($t['fields'])): ?> data-conditions="<?= e(json_encode($cond, JSON_UNESCAPED_UNICODE)) ?>"<?php endif; ?>>
   <?= csrf_field() ?>
   <section class="adm-card dt-entry__main">
+    <?= /* Sichtbarkeit: „Auf der Website: …“ bzw. „nicht auf der Website“ (Core\Data\Exposure) */ \Core\Theme::capture(__DIR__ . '/_visibility.php', ['t' => $t, 'values' => $values, 'status' => (string) $status]) ?>
     <div class="adm-fields"><?= Fields::renderForm(Entries::formSchema($t), $values, $errors, 'f') ?></div>
   </section>
   <aside class="dt-entry__side">
@@ -131,6 +132,7 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
     </section>
     <?php endif; ?>
     <?= /* KI-Assistent: Teaser, SEO, Übersetzen (Core\AI) */ \Core\Theme::capture(ROOT . '/app/Admin/views/ai/_entry.php', ['t' => $t, 'e' => $e]) ?>
+    <?php if (!$isNew): // Aufgaben zu diesem Eintrag (Core\Tasks) – Dialog steht außerhalb des Formulars (unten) ?><?= \Core\Theme::capture(ROOT . '/app/Admin/views/tasks/_context.php', ['link' => 'entry:' . $t['handle'] . ':' . (int) $e['id'], 'back' => $base . '/' . (int) $e['id'], 'part' => 'panel']) ?><?php endif; ?>
     <?php if (!$isNew): ?>
     <button class="adm-btn adm-btn--small adm-btn--ghost" form="dup" type="submit" title="<?= e(__('Kopie als Entwurf anlegen – z. B. für den nächsten Termin')) ?>"><?= icon('copy') ?> <?= e(__('Duplizieren')) ?></button>
     <?php endif; ?>
@@ -161,6 +163,7 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
 <form id="tr-<?= e($code) ?>" method="post" action="<?= e(url($base . '/' . $e['id'] . '/translate')) ?>"><?= csrf_field() ?><input type="hidden" name="lang" value="<?= e($code) ?>"></form>
 <?php endforeach; endif; ?>
 <?php if (!$isNew): ?>
+<?= \Core\Theme::capture(ROOT . '/app/Admin/views/tasks/_context.php', ['link' => 'entry:' . $t['handle'] . ':' . (int) $e['id'], 'back' => $base . '/' . (int) $e['id'], 'part' => 'dialog']) ?>
 <?php if (!$isNew): ?><form id="dup" method="post" action="<?= e(url($base . '/' . $e['id'] . '/duplicate')) ?>"><?= csrf_field() ?></form><?php endif; ?>
 <form id="del" method="post" action="<?= e(url($base . '/' . $e['id'] . '/delete')) ?>" data-confirm="„<?= e(Entries::title($t, $e)) ?>“ endgültig löschen?<?= $isHead ? "\n" . e(__('Alle Termine der Serie und ihre geänderten Einzeltermine werden gelöscht.')) : '' ?>"><?= csrf_field() ?></form>
 <?php if ($occ !== null): ?>

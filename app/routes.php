@@ -82,6 +82,15 @@ return function (Router $r): void {
     $r->get('/admin/sso/domain', [Admin\HandoverController::class, 'land']);
     $r->get('/admin/network/media-usages', [Admin\NetworkController::class, 'mediaUsages']);   // signiert, zwischen Websites (MediaPools::usagesElsewhere)
     $r->get('/admin/network', [Admin\NetworkController::class, 'index']);
+    // Netzwerk-Bereich (Core\Network\Area): installationsweite Seiten mit eigenem Controller – dieselben wie unter /admin/system/…
+    // in Einzelinstallationen; alte Adressen leiten in Netzwerken hierher weiter (Area::redirect)
+    $r->get('/admin/network/aufgaben', [Admin\CronController::class, 'index']);
+    $r->get('/admin/network/sicherung', [Admin\OffsiteBackupController::class, 'index']);
+    $r->get('/admin/network/kits', [Admin\KitsController::class, 'index']);
+    $r->get('/admin/network/schriften', [Admin\FontsController::class, 'index']);
+    $r->get('/admin/network/branding', [Admin\BrandingController::class, 'index']);
+    $r->get('/admin/network/integritaet', [Admin\IntegrityController::class, 'index']);
+    $r->post('/admin/network/system-mail', [Admin\NetworkController::class, 'systemMail']);   // „Systemmeldungen an“ (Core\Network\SystemMail)
     $r->get('/admin/network/{section}', [Admin\NetworkController::class, 'section']);   // Bereiche (NetworkController::SECTIONS)
     $r->post('/admin/network/open', [Admin\NetworkController::class, 'open']);
     $r->post('/admin/network/mail', [Admin\MailAccountsController::class, 'network']);        // E-Mail-Konto des Netzwerks (Core\Mail\Accounts)
@@ -162,6 +171,19 @@ return function (Router $r): void {
     $r->post('/admin/entwuerfe/notiz', [$dr, 'note']);
     $r->post('/admin/entwuerfe/wiederherstellen/{id}', [$dr, 'restore']);
     $r->post('/admin/entwuerfe/{op}', [$dr, 'action']);
+    // Aufgaben der Redaktion (Core\Tasks): Liste, anlegen, Verlauf, abhaken, wieder öffnen, Erinnerung, E-Mail-Schalter im Konto
+    $tk = Admin\TaskController::class;
+    $r->get('/admin/aufgaben', [$tk, 'index']);
+    $r->get('/admin/aufgaben/neu', [$tk, 'create']);
+    $r->post('/admin/aufgaben/neu', [$tk, 'store']);
+    $r->post('/admin/aufgaben/einstellungen', [$tk, 'settings']);
+    $r->post('/admin/account/aufgaben', [$tk, 'prefs']);
+    $r->get('/admin/aufgaben/{id}', [$tk, 'show']);
+    $r->get('/admin/aufgaben/{id}/bearbeiten', [$tk, 'edit']);
+    $r->post('/admin/aufgaben/{id}', [$tk, 'update']);
+    $r->post('/admin/aufgaben/{id}/erledigt', [$tk, 'done']);
+    $r->post('/admin/aufgaben/{id}/oeffnen', [$tk, 'reopen']);
+    $r->post('/admin/aufgaben/{id}/loeschen', [$tk, 'delete']);
 
     $r->get('/admin/settings', [Admin\SettingsController::class, 'edit']);
     $r->post('/admin/settings', [Admin\SettingsController::class, 'save']);
@@ -250,6 +272,10 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/pick', [Admin\DataController::class, 'pick']);
     $r->get('/admin/data/{handle}/display', [Admin\DataController::class, 'display']);
     $r->post('/admin/data/{handle}/display', [Admin\DataController::class, 'displaySave']);
+    // Abonnieren per App: öffentliche Adressen, Abo-Tokens (Core\Data\Subscriptions)
+    $r->get('/admin/data/{handle}/abonnieren', [Admin\SubscriptionController::class, 'index']);
+    $r->post('/admin/data/{handle}/abonnieren', [Admin\SubscriptionController::class, 'store']);
+    $r->post('/admin/data/{handle}/abonnieren/{id}/widerrufen', [Admin\SubscriptionController::class, 'revoke']);
     $r->get('/admin/data/{handle}/new', [Admin\DataController::class, 'entryNew']);
     $r->post('/admin/data/{handle}/new', [Admin\DataController::class, 'entrySave']);
     $r->post('/admin/data/{handle}/{id}/delete', [Admin\DataController::class, 'entryDelete']);
@@ -647,6 +673,11 @@ return function (Router $r): void {
     // Prüf-Ebene (Core\Review): Stand eingereichter Änderungen dieses Tokens
     $r->get('/api/v1/changes', [Api::class, 'changes']);
     $r->get('/api/v1/changes/{id}', [Api::class, 'change']);
+    // Aufgaben der Redaktion (Core\Tasks\Api): im Namen des Token-Benutzers
+    $r->get('/api/v1/tasks', [Api::class, 'tasks']);
+    $r->post('/api/v1/tasks', [Api::class, 'taskCreate']);
+    $r->post('/api/v1/tasks/{id}/done', [Api::class, 'taskDone']);
+    $r->post('/api/v1/tasks/{id}/reopen', [Api::class, 'taskReopen']);
 
     // ---------------------------------------------------------------- MCP (Streamable HTTP)
     $r->post('/mcp', [McpController::class, 'handle']);
@@ -730,6 +761,10 @@ return function (Router $r): void {
     });
     $r->get(\Core\VCard::ORG_PATH, [\Core\Http\Controllers\VCardController::class, 'org']);
     $r->get('/vcard/{handle}/{slug}.vcf', [\Core\Http\Controllers\VCardController::class, 'person']);
+    // Abonnieren per App (Core\Data\Subscriptions): Abo-Token im Pfad (Kalender/Kontakte), öffentliche Kontakte-Datei je Tabelle
+    $r->get('/kalender/{handle}/abo/{token}.ics', [\Core\Http\Controllers\SubscriptionController::class, 'calendar']);
+    $r->get('/vcard/{handle}/abo/{token}.vcf', [\Core\Http\Controllers\SubscriptionController::class, 'contacts']);
+    $r->get('/vcard/{handle}.vcf', [\Core\Http\Controllers\SubscriptionController::class, 'contactsPublic']);
     // Website-Suche (Funktion „search“, Core\Search): /suche, /en/search …, Vorschläge als JSON – Seiten mit gleichem Pfad haben Vorrang
     $r->get(\Core\Search\Search::routePattern(true), [\Core\Http\Controllers\SearchPageController::class, 'suggest']);
     $r->get(\Core\Search\Search::routePattern(), [\Core\Http\Controllers\SearchPageController::class, 'show']);

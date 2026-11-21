@@ -291,6 +291,8 @@ final class Database
         Oidc\Accounts::ensureTable($this);
         // Einladungen neuer Konten (Core\Invites): Token nur als Hash, einmal verwendbar
         Invites::ensureTable($this);
+        // Abonnieren per App (Core\Data\Subscriptions): Abo-Tokens je Tabelle, nur als Hash
+        Data\Subscriptions::ensureTable($this);
         // Anmeldedaten selbst ändern (Core\EmailChange): offene Änderungen der E-Mail-Adresse, Tokens nur als Hash
         EmailChange::ensureTable($this);
         // „Passwort vergessen“ (Core\PasswordReset): Links nur als Hash, 60 Minuten, einmal verwendbar
@@ -303,6 +305,8 @@ final class Database
         Redirects\Redirects::ensureTable($this);
         // Entwürfe (Core\Review\Drafts): Notiz und zuständige Person je Entwurf, gesicherte verworfene Einträge
         Review\Drafts::ensureTable($this);
+        // Aufgaben der Redaktion (Core\Tasks): Aufgaben mit Zuständigkeit, Fälligkeit, Status und Verlauf
+        Tasks\Tasks::ensureTable($this);
         // Push-Benachrichtigungen (Core\Push): Abos, Schalter je Person, Nachrichten und Warteschlange
         Push\Push::ensureTable($this);
 

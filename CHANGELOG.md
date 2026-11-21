@@ -24,7 +24,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Serien-Dialog „Nur dieser / Dieser und alle folgenden / Alle Termine“ beim Speichern eines Termins aus dem Kalender,
   Wiederholungs-Editor mit Vorschau der nächsten Termine (Ausnahmen, geänderte und abgesagte Termine), ICS-Export.
 - **ICS** mit RRULE, EXDATE und RECURRENCE-ID je Einzeltermin, `STATUS:CANCELLED`; JSON-LD `EventCancelled`.
-  **dav 1.5.0:** Kalender ohne Zuordnung, Einzeltermine als RECURRENCE-ID, in Apps geänderte Termine werden Einzeltermine.
+  **dav 1.6.0:** Kalender ohne Zuordnung, Einzeltermine als RECURRENCE-ID, in Apps geänderte Termine werden Einzeltermine.
 - **`data:convert <tabelle> --kind=calendar`** (Probelauf, `--apply`, `--revert`): bestehende Termin-Tabelle an Ort und Stelle,
   Website, Feed und Blöcke bleiben gleich. Für alle Arten (auch Adressbuch): Felder nach der Umwandlung wie in der Vorlage geordnet
   (Grundfelder in ihren Abschnitten, eigene Felder mit ihren Abschnitten, leere Abschnitte entfallen, Altfelder am Ende),
@@ -33,6 +33,22 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Tabellen ohne die Art verhalten sich unverändert (praxis: HTML- und Pixelvergleich ohne Abweichung). Selbsttest
   `calendar:selftest`. Handbuch → Daten → „Kalender mit Serien“; Entwicklerhandbuch → Kalender → „Tabellenart calendar, Serien,
   Vorkommens-Index“.
+### Kalender und Kontakte per App abonnieren
+- **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche
+  webcal-Adresse des Kalender-Feeds bzw. öffentliche **.vcf-Sammeldatei** der freigegebenen Kontakte (`/vcard/{tabelle}.vcf`, nur
+  Tabellen für die Website), QR-Code (lokal erzeugt) und Anleitung für iPhone/iPad, macOS, Android (ICSx⁵/DAVx⁵), Outlook und
+  Thunderbird – auch im Handbuch.
+- **Abo-Tokens** (`Core\Data\Subscriptions`, Funktion `subscriptions`, Standard **aus**): benannt, an eine Tabelle gebunden, Umfang
+  „nur öffentlich“ oder „inklusive interner Einträge und Angaben“ (Entwürfe, nicht freigegebene Kontakte, private Nummern – Felder
+  „Nur Website“ nie), nur lesen, optional ablaufend, widerrufbar, „zuletzt genutzt“. Gespeichert nur als SHA-256, Klartext einmal im
+  Dialog. Adressen mit Token im Pfad (`/kalender/{tabelle}/abo/{token}.ics`, `/vcard/{tabelle}/abo/{token}.vcf`) – sicher gegen Caches,
+  die Query-Strings ignorieren; Antworten `private, no-store`, `noindex`, `no-referrer`. Gültig nur, solange das anlegende Konto
+  besteht und die Tabelle bearbeiten darf.
+- **Schutz:** Rate-Limit je Token (120 in 15 min) und je IP bei Fehlversuchen (20 in 15 min); Sicherheitsprotokoll `abo-access`
+  (Info) und `abo-token-invalid` (fail2ban-Filter); Tokens erscheinen nie im 404- oder Sicherheitsprotokoll (gekürzt), nie in
+  Fehlermeldungen oder Stacktraces. Token-Adressen brauchen auf Staging-Websites kein Staging-Passwort.
+- **CardDAV mit Abo-Token** (Erweiterung dav 1.5.0): Token als Passwort, nur lesen, nur die gebundene Kontakte-Tabelle; neuer Filter
+  `subscriptions.apps` für weitere Zugänge auf der Seite „Abonnieren“. Selbsttest `subscriptions:selftest`.
 
 ### Adressbuch (Tabellenart „contacts“) und Freigabe je Feld und Ziel
 - **Tabellenart Adressbuch** (`settings.kind = contacts`, `Core\Data\Kinds`): eine normale Inhaltstabelle (Route, Detailseiten,
@@ -54,6 +70,13 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Visitenkarte), Datenliste, Datensatz-Felder (Kontakt-Knöpfe aus den Mehrfachfeldern), Visitenkarte mit allen freigegebenen
   Angaben und Beschriftungen (`item.X-ABLabel`), JSON-LD mit Adresse. Verknüpfungen auf ein Adressbuch sind Kontakt-Felder
   (Designer: „Adressbücher – Feld Kontakt“); auf der Website erscheinen nur freigegebene Kontakte.
+- **Sichtbarkeit im Formular auf einen Blick** (alle Inhaltstabellen, Verwaltung und Seitenleiste „Eintrag bearbeiten“): an jedem
+  Feld und jeder Angabe dasselbe Merkmal rechts im Feldkopf bzw. in der Zeile – Weltkugel „Öffentlich“ (bei mehreren Zielen
+  „· Website, vCard“) oder Schloss „Intern“, auch bei festen Regeln (immer/nie) sichtbar; „Redaktion entscheidet“ und jede
+  Angabe als Menü mit Häkchen je Ziel bzw. Öffentlich / Nur Ort / Intern (ersetzt Häkchen, Pille und Adress-Auswahl; ohne Skript
+  bedienbar, Tastatur, Zustand als Text). Interne Felder grau hinterlegt. Formularkopf „Auf der Website: Name, Funktion, …“ (live)
+  und deutlicher Hinweis „Dieser Eintrag ist nicht auf der Website“ (Kontakt nicht freigegeben, Entwurf). Liste: Spalte „Website“
+  bei Adressbüchern, Symbol je Angabe. Eine Auskunft für alles: `Exposure::reach()`/`webSummary()`.
 - **`data:convert <tabelle> --kind=contacts`:** Umwandlung an Ort und Stelle mit Probelauf (Standard) und Bericht (Feldzuordnung,
   Namensaufteilung, Freigabe-Vorschlag – mobil/privat und „Nie öffentlich“ werden intern, „Redaktion entscheidet“ je Eintrag –,
   betroffene Blöcke und Einstellungen), `--map=quelle:ziel[beschriftung+|-]`, `--apply` (Sicherung, Revision je Eintrag,
@@ -64,6 +87,55 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Tabellen ohne diese Merkmale verhalten sich unverändert (praxis: Pixelvergleich ohne Abweichung). Selbsttests in `data:selftest`
   (Grundschema, Mehrfachfelder, jeder Ausgabeweg je Ziel, CardDAV/CalDAV, Umwandlung/Zurückdrehen). Handbuch → Daten →
   „Adressbuch“, „Sichtbarkeit“; Entwicklerhandbuch → Daten → „Tabellenarten“, „Freigabe (Exposure)“.
+
+### Netzwerk-Verwaltung: eigener Bereich, Website-Verwaltung nur Website-Eigenes
+- **Netzwerk-Bereich** (`Core\Network\Area`, nur mit mehreren Websites): `/admin/network` mit dunklem Kopf „NETZWERK“, eigener
+  Seitenleiste (Websites, Administratoren, Anmeldung & Domain, E-Mail, Kits, Schriften, Branding, Geteilte Medien & Daten,
+  KI-Verbindungen, Geplante Aufgaben, Sicherung außer Haus, Integrität der Dateien, Speicher, Protokoll) und einem deutlichen
+  **Umschalter Netzwerk ↔ Website** oben in jeder Seitenleiste. Die Verwaltung einer Website zeigt nur noch Website-Eigenes.
+- **Umgezogen** (alt → neu, alte Adressen leiten weiter – 301, von anderen Websites 302 zur Netzwerk-Website; Favoriten und
+  Befehlspalette angepasst): `/admin/system/aufgaben` → `/admin/network/aufgaben`, `/admin/system/sicherung` → `/admin/network/sicherung`,
+  `/admin/system/kits` → `/admin/network/kits`, `/admin/system/fonts` → `/admin/network/schriften`, `/admin/system/branding` →
+  `/admin/network/branding`, Integrität der Dateien → `/admin/network/integritaet` (die Datenbank bleibt bei der Website),
+  `/admin/system#pools` → `/admin/network/geteilt`, `/admin/system#ki` (Verbindungen) → `/admin/network/ki`, `/admin/system#adminpath`
+  und Netzwerk-Domain, Anmelde-Richtlinie, Agentur-Zugang (`/admin/users/sicherheit#oidc` der Netzwerk-Website) → `/admin/network/anmeldung`.
+  Einzelinstallationen bleiben unverändert.
+- **Rechte:** Installationsseiten mit mehreren Websites nur für Rolle `network` (`Permissions::installationAdmin()`); die
+  Administration einer Website – auch der Netzwerk-Website – verwaltet nur ihre Website. Netzwerk-Konten behalten überall die
+  vollen Website-Rechte; in der Benutzerliste einer Website erscheinen sie schreibgeschützt („wird im Netzwerk verwaltet“).
+- **Systemmeldungen an** (`Core\Network\SystemMail`, Netzwerk → E-Mail): Empfänger für Integrität der Dateien, fehlgeschlagene
+  Sicherung außer Haus und Fehler in Geplanten Aufgaben (je Fehlerserie einmal); leer = aktive Netzwerk-Konten. Integritäts-Hinweise
+  zur Datenbank einer Website gehen an deren Administration, nicht an Schatten-Konten der Netzwerk-Administration.
+  `health` meldet einen Fehler, wenn mehrere Websites kein Netzwerk-Konto für E-Mail haben.
+- **E-Mail-Einstellungen in Gruppen:** Grundeinstellungen → E-Mail-Versand mit 1 Versandweg und Konten, 2 Absender je Zweck (verständliche
+  Namen, wirksamer Absender darunter), 3 Empfänger, 4 Test und Umleitung (Testnachricht an der Gruppe), 5 Impressum – jede Gruppe
+  mit Geltung und Rückfall; Netzwerk → E-Mail ebenso (Netzwerk-Konto, Systemmeldungen an, alle Websites).
+- `Data\Delivery::transport()` prüft die TLS-Eignung am Konto, über das die Zustellung wirklich geht (Zweck „Redaktion“), statt am
+  Konto „Standard“. Selbsttest `network:selftest`. Handbuch → „Netzwerk-Verwaltung“, Entwicklerhandbuch → Netzwerk-Administration →
+  „Netzwerk-Bereich“ und „Systemmeldungen“.
+
+### Aufgaben für die Redaktion
+- **Neu: Aufgaben** (`Core\Tasks`, Verwaltung → Aufgaben, `/admin/aufgaben`): Titel, Beschreibung (Markdown-lite), optionaler
+  Bezug über die Linkauswahl (`page:ID`, `page:ID#anker` für einen Block, `entry:tabelle:ID`, `media:ID`), zuständig eine Person,
+  eine Rolle oder alle, Fälligkeit, Priorität, Status offen/erledigt. Eine Aufgabe steht in **„Was ist zu tun?“**, bis jemand sie
+  abhakt – optional mit Kommentar; wieder öffnen ist möglich. Verlauf je Aufgabe (wer/wann/Kommentar), Reiter Offen, Meine,
+  Erledigt (Protokoll), Alle.
+- **Anlegen** im Dialog in „Was ist zu tun?“ und unter Aufgaben, kontextbezogen an Seiteneinstellungen und Eintrag (Bezug
+  vorbelegt, Liste der offenen Aufgaben dazu), per Konsole (`tasks:add|list|done|reopen`, `--site`), REST-API
+  (`GET|POST /api/v1/tasks`, `POST /api/v1/tasks/{id}/done|reopen`) und MCP (`task_list`, `task_create`, `task_done`) – z. B. für
+  offene Fragen beim Umzug einer Website. Aufgaben laufen nicht über die Prüf-Ebene, da sie keine Inhalte ändern.
+- **Entwurfs-Notizen mit zuständiger Person** (`draft_notes`) erscheinen als Aufgaben der Art „draft“ in derselben Liste – ohne
+  Datenmigration; erledigt mit Veröffentlichen/Verwerfen.
+- **Rechte:** neu `tasks.use` (für sich selbst anlegen; die Rolle „Redaktion“ bekommt es einmalig per Migration) und `tasks.manage`
+  (für andere anlegen, zuweisen, alle sehen, bearbeiten, löschen). Abhaken darf jede zuständige Person; Administration immer.
+- **Benachrichtigung:** E-Mail (über `Core\Mailer`, mit Impressum) und Push-Ereignis „Aufgaben für Sie“ an die zuständige Person bzw.
+  die Personen der Rolle; je Konto abschaltbar unter Konto → Mitteilungen → Aufgaben. Erinnerung an fällige Aufgaben über die
+  geplante Aufgabe `tasks.remind` (`tasks:remind --all`) – je Website einschaltbar, **Standard aus**.
+- Projekt-Hinweise mit `aufgabe: ja` lassen sich mit `tasks:import-guide [--dry-run]` einmalig als Aufgaben für alle übernehmen;
+  ohne Übernahme bleibt ihr Verhalten (je Person bis „Lesen“) unverändert.
+- Schema additiv: Tabellen `tasks` und `task_log`. Selbsttest `tasks:selftest`. Handbuch → „Aufgaben für die Redaktion“,
+  Entwicklerhandbuch → „Aufgaben der Redaktion“, REST-API, MCP, Kommandozeile.
+- Übersicht: „Übersicht anpassen“ mit `role="button"` (axe: `aria-pressed` an einem Link), Kürzel in „Gerade aktiv“ mit genug Kontrast.
 
 ### E-Mail: welche Adresse gilt wofür
 - **Neue Übersicht** Grundeinstellungen → E-Mail-Versand → „Übersicht: welche Adresse gilt wofür“ (`/admin/system/mail/uebersicht`,
