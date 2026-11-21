@@ -156,6 +156,7 @@ final class CalendarSelfTest
             $eq('ICS: „Nur Website“ fehlt', str_contains(str_replace("\r\n ", '', $ics), self::SECRET), false);
             $eq('Website: „Nur Website“ da', str_contains((string) (Exposure::publicEntry($t, Entries::find($t, (int) $sid) ?? [])['programm'] ?? ''), self::SECRET), true);
             $vc = Reader::read($ics);
+            if (!$vc instanceof \Sabre\VObject\Component\VCalendar) throw new \RuntimeException('ICS nicht lesbar');
             $exp = $vc->expand(new \DateTime('2027-01-01', $tz), new \DateTime('2027-05-01', $tz));
             $fromIcs = [];
             foreach ($exp->select('VEVENT') as $ev) {
@@ -173,9 +174,15 @@ final class CalendarSelfTest
                 $eq('CalDAV: Serie mit Einzeltermin, ohne „Nur Website“', [str_contains($cal, 'RECURRENCE-ID'), str_contains(str_replace("\r\n ", '', $cal), self::SECRET)], [true, false]);
                 // aus der App: Einzeltermin am 09.03. auf 20:00 verschoben → Einzeltermin im CMS; der vom 23.02. fehlt → wieder normal
                 $vc = Reader::read($cal);
-                foreach ($vc->select('VEVENT') as $ev) if (isset($ev->{'RECURRENCE-ID'})) $vc->remove($ev);
-                $ex = $vc->add('VEVENT', ['UID' => (string) $vc->VEVENT->UID, 'SUMMARY' => 'Übungsabend App', 'DTSTART' => new \DateTime('2027-03-09 20:00', $tz), 'DTEND' => new \DateTime('2027-03-09 22:00', $tz)]);
+                if (!$vc instanceof \Sabre\VObject\Component\VCalendar) throw new \RuntimeException('CalDAV nicht lesbar');
+                $uid = '';
+                foreach ($vc->select('VEVENT') as $ev) {
+                    if (isset($ev->{'RECURRENCE-ID'})) $vc->remove($ev);
+                    elseif (isset($ev->UID)) $uid = (string) $ev->UID;
+                }
+                $ex = $vc->createComponent('VEVENT', ['UID' => $uid, 'SUMMARY' => 'Übungsabend App', 'DTSTART' => new \DateTime('2027-03-09 20:00', $tz), 'DTEND' => new \DateTime('2027-03-09 22:00', $tz)]);
                 $ex->add('RECURRENCE-ID', new \DateTime('2027-03-09 17:30', $tz));
+                $vc->add($ex);
                 $b = new \Klxm\Dav\CalendarBackend();
                 $parse = new \ReflectionMethod($b, 'parse');
                 $sync = new \ReflectionMethod($b, 'sync');
@@ -247,12 +254,12 @@ final class CalendarSelfTest
         $before = $snap($t);
         $fieldsBefore = array_map(fn($f) => [$f['name'], $f['label'], !empty($f['required'])], Tables::allFields($t));
         $plan = Convert::plan($t, Kinds::CALENDAR);
-        $eq('Probelauf: Zuordnung', [$plan['ok'], $plan['fields']['von']['to'] ?? null, $plan['fields']['kategorie']['action'] ?? null, $plan['fields']['was']['to'] ?? null, $plan['fields']['beschreibung']['action'] ?? null, $plan['fields']['beschreibung']['own_to'] ?? null],
+        $eq('Probelauf: Zuordnung', [$plan['ok'], $plan['fields']['von']['to'], $plan['fields']['kategorie']['action'], $plan['fields']['was']['to'], $plan['fields']['beschreibung']['action'], $plan['fields']['beschreibung']['own_to']],
             [true, 'beginn', 'cast', 'titel', 'copy', 'beschreibung_web']);
-        $eq('Probelauf: Beschriftung aus dem Grundschema', [$plan['fields']['was']['label_to'] ?? null, $plan['fields']['von']['label_to'] ?? null], ['Titel', 'Beginn']);
-        $eq('Probelauf ändert nichts', Kinds::of(Tables::find($h) ?? []), 'content');
+        $eq('Probelauf: Beschriftung aus dem Grundschema', [$plan['fields']['was']['label_to'], $plan['fields']['von']['label_to']], ['Titel', 'Beginn']);
+        $eq('Probelauf ändert nichts', Kinds::of(Tables::find($h)), 'content');
         Convert::apply($t, $plan);
-        $nt = Tables::find($h) ?? [];
+        $nt = Tables::find($h);
         $eq('Umwandlung: Art Kalender', Kinds::of($nt), 'calendar');
         $eq('Umwandlung: Termine gleich', $snap($nt), $before);
         $all = Tables::allFields($nt);
@@ -263,7 +270,7 @@ final class CalendarSelfTest
         $eq('Umwandlung: Beschreibung als Text, Rich-Text bleibt „Nur Website“', [Entries::query($nt, ['sort' => 'beginn'])[0]['beschreibung'] ?? null,
             Exposure::isWebsiteOnly(Tables::field($nt, 'beschreibung_web'))], ['Mit Ball', true]);
         Convert::revert($nt);
-        $rt = Tables::find($h) ?? [];
+        $rt = Tables::find($h);
         $eq('Zurück: Art, Felder, Reihenfolge, Beschriftungen, Pflicht', [Kinds::of($rt), array_values(array_filter(array_map(fn($f) => [$f['name'], $f['label'], !empty($f['required'])], Tables::allFields($rt)),
             fn($f) => in_array($f[0], array_column($fieldsBefore, 0), true)))], ['content', $fieldsBefore]);
         $eq('Zurück: Kalender-Einstellung und Termine', [Calendar::config($rt)['start'], $snap($rt)], ['von', $before]);

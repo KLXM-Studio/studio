@@ -310,6 +310,7 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
     /** Feldwerte aus einem VEVENT (Serienkopf, einfacher Termin oder Einzeltermin) */
     private function fields(array $t, ?array $e, \Sabre\VObject\Component $ev): array
     {
+        if (!isset($ev->DTSTART)) throw new BadRequest('Erwartet wird ein VEVENT mit DTSTART.');
         $c = Calendar::config($t);
         $tz = Calendar::tz();
         $in = [];
