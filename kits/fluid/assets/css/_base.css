@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------- Grundlagen */
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;background:var(--f-bg);scroll-padding-top:5.5rem;hanging-punctuation:first}
-body{margin:0;min-height:100vh;min-height:100dvh;background:var(--f-bg);color:var(--f-text);font:400 var(--f-t0)/1.62 var(--f-font);font-optical-sizing:auto;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;overflow-wrap:break-word}
+body{margin:0;min-height:100vh;min-height:100dvh;background:var(--f-bg);color:var(--f-text);font:400 var(--f-t0)/var(--f-lh,1.62) var(--f-font);font-optical-sizing:auto;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;overflow-wrap:break-word}
 img,svg,video{display:block;max-width:100%;height:auto}
 h1,h2,h3,h4,h5,p,ul,ol,dl,dd,figure,blockquote{margin:0}
 ul[role=list],ol[role=list]{list-style:none;padding:0}

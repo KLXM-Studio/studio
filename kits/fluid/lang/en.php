@@ -338,6 +338,8 @@ return [
     'Vergleichstabelle' => 'Comparison table',
     'Vergleichszeilen (bei „Vergleichstabelle“)' => 'Comparison rows (“Comparison table”)',
     'Verhältnis der Schriftstufen' => 'Type scale ratio',
+    'Zeilenhöhe des Fließtexts' => 'Body text line height',
+    '1,4–1,5 = kompakt (schmale Spalten, große Schrift) · 1,6 = ausgewogen · 1,7+ = luftig (lange Texte). Überschriften behalten ihre eigene Zeilenhöhe.' => '1.4–1.5 = compact (narrow columns, large type) · 1.6 = balanced · 1.7+ = airy (long texts). Headings keep their own line height.',
     'Verlauf von unten' => 'Gradient from the bottom',
     'Video' => 'Video',
     'Vollflächiges Bild oder Video mit Abdunkelung' => 'Full-bleed image or video with darkening',

@@ -72,6 +72,10 @@ final class KitSelfTest
                 if (!str_contains($f, '{value}') && !is_file($fluid . '/assets/' . $f)) $missing[] = $f;
             }
             $eq('fluid: Dateien der Liste option_css vorhanden', $missing, []);
+            // Zeilenhöhe des Fließtexts als Token (--f-lh): Style-Editor, Kind-Kits (design_defaults) und Kit-Designer setzen sie ohne eigenes CSS
+            $lh = array_values(array_filter(array_merge(...array_map(fn($g) => (array) ($g['tokens'] ?? []), (array) ($def['design']['groups'] ?? []))), fn($t) => ($t['name'] ?? '') === 'line_height'))[0] ?? [];
+            $eq('fluid: Token line_height → --f-lh (Standard 1,62)', [$lh['var'] ?? null, $lh['default'] ?? null], ['--f-lh', 1.62]);
+            $eq('fluid: Grund-CSS nutzt --f-lh', [str_contains((string) file_get_contents($fluid . '/assets/css/_base.css'), '/var(--f-lh,1.62)'), str_contains((string) file_get_contents($fluid . '/assets/css/_tokens.css'), '--f-lh:1.62')], [true, true]);
         }
         // Theme::withKit: anderes Kit nur für die Dauer eines Aufrufs (Vorschau), danach alles wie vorher – auch bei Fehlern
         $other = '';
