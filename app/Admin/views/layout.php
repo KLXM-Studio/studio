@@ -21,7 +21,7 @@ $nav = array_values(array_filter([
     // Kontakte (Core\Data\AddressBook): sobald es eine Kontakte-Tabelle gibt, die das Konto pflegen darf – öffnet das Adressbuch
     ['/admin/kontakte', __('Kontakte'), 'contacts', $user && \Core\Data\AddressBook::tables()],
     // Glossar (Core\Glossary) ist eine Einstellungsseite (Core\AdminPages, kind settings): Sammelseite „Einstellungen“ und an der Tabelle „glossar“
-    ['/admin/requests', __('Anfragen'), 'requests', (bool) $inboxes || ($user && can('requests.read') && can('data.schema') && \Core\Data\Inbox::available())],
+    ['/admin/requests', __('Eingang'), 'requests', (bool) $inboxes || ($user && can('requests.read') && can('data.schema') && \Core\Data\Inbox::available())],
     // Support & Wissensdatenbank: im Abschnitt „Hilfe & Support“ unten in der Seitenleiste
     // Chat zwischen Benutzern (Core\Chat, optional) – öffnet mit JavaScript die Schublade (resources/js/userchat.js)
     ['/admin/chat', __('Chat'), 'chat', $user && \Core\Chat\Chat::canUse()],

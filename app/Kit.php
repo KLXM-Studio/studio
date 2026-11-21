@@ -142,7 +142,7 @@ final class Kit
 
     /**
      * Einfache Angaben der Definitionsdatei, ohne sie auszuführen (Kits können gleichnamige Helfer definieren):
-     * label, description, version, requires – nur Zeilen mit vier Leerzeichen Einzug wie in den mitgelieferten Kits.
+     * label, description, version, requires, extends – nur Zeilen mit vier Leerzeichen Einzug wie in den mitgelieferten Kits.
      */
     public static function meta(string $dir): array
     {
@@ -151,6 +151,8 @@ final class Kit
         foreach (['label', 'description', 'version', 'requires'] as $k) {
             $out[$k] = preg_match("~^    '" . $k . "'\s*=>\s*'((?:[^'\\\\]|\\\\.)*)'~m", $src, $m) ? stripslashes($m[1]) : '';
         }
+        // Eltern-Kit (wie Kit::parent, ohne die Datei auszuführen) – '' = eigenständiges Kit
+        $out['extends'] = preg_match("~^\s*'extends'\s*=>\s*'([a-z0-9][a-z0-9_-]*)'~m", $src, $m) ? self::clean($m[1]) : '';
         return $out;
     }
 

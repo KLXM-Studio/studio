@@ -172,7 +172,7 @@ final class AddressBook
             if ($or) $where[] = implode(' AND ', $or);
         }
         $cols = array_values(array_filter(['name', 'praefix', 'vorname', 'nachname', 'firma', 'ist_firma', 'position', 'abteilung', 'foto', 'listen', Kinds::PUBLIC_FIELD], fn($c) => self::has($t, $c)));
-        $rows = Tables::db($t)->fetchAll('SELECT id, status, ' . implode(', ', $cols) . " FROM {$t['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params);
+        $rows = Tables::db($t)->fetchAll('SELECT id, status, slug, published_at, ' . (isset($t['shared']) ? 'origin_site, ' : '') . implode(', ', $cols) . " FROM {$t['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params);
         foreach ($rows as &$r) {
             $r['_key'] = self::sortKey($r);
             $r['_letter'] = self::letter($r['_key']);
@@ -180,6 +180,27 @@ final class AddressBook
         unset($r);
         usort($rows, fn($a, $b) => [$a['_key'], (int) $a['id']] <=> [$b['_key'], (int) $b['id']]);
         return $rows;
+    }
+
+    /**
+     * Zeilenmenü eines Kontakts (Namensliste und Karte, Core\RowMenu) – dieselben Aktionen wie in allen Listen, dazu
+     * „Zu Liste hinzufügen“ (Karte mit Listen-Etiketten) und die öffentliche vCard.
+     */
+    public static function menu(array $t, array $s, array $e): array
+    {
+        $id = (int) $e['id'];
+        $back = self::link($t, $s, ['k' => (string) $id]);
+        $items = \Core\RowMenu::forEntry($t, $e, [
+            'back' => '/admin/data/' . $t['handle'] . '?k=' . $id,
+            'move' => Tables::field($t, 'listen') && self::lists($t) ? ['label' => __('Zu Liste hinzufügen'), 'href' => $back . '#ab-card-lists', 'icon' => 'list-bullets'] : null,
+            'row' => \Core\Extensions::tableActions($t)['row'],
+        ]);
+        foreach ($items as &$it) if (($it['key'] ?? '') === 'export') $it['label'] = __('vCard – alle Angaben');
+        unset($it);
+        if (can('data.edit', $t['handle']) && self::online($t, $e)) {
+            $items[] = ['key' => 'export', 'label' => __('vCard – nur öffentliche Angaben'), 'href' => url('/admin/data/' . $t['handle'] . '/vcard') . '?ids[]=' . $id . '&umfang=oeffentlich', 'download' => true];
+        }
+        return $items;
     }
 
     /**

@@ -20,7 +20,7 @@ $certs = $dv['smime'] !== '' ? Delivery::certs($dv['smime']) : [];
 $opts = [
     'none' => [__('Keine Verschlüsselung'), 'database', __('Einträge liegen normal in der Datenbank – die Redaktion sieht und bearbeitet sie direkt. Richtig für Inhalte der Website, Anmeldungen und Listen ohne vertrauliche Angaben.'),
         __('Mitlesen können: alle mit Zugang zu dieser Tabelle, die Server-Administration.')],
-    'system' => [__('Zentraler Schlüssel'), 'lock-key', __('Jede Einsendung wird schon beim Absenden verschlüsselt gespeichert. Lesbar nur unter „Anfragen“ mit dem geheimen Schlüssel der Website – auch wer an die Datenbank kommt, sieht nur Zeichensalat. Empfohlen für Gesundheitsdaten und andere vertrauliche Anfragen.'),
+    'system' => [__('Zentraler Schlüssel'), 'lock-key', __('Jede Einsendung wird schon beim Absenden verschlüsselt gespeichert. Lesbar nur im „Eingang“ mit dem geheimen Schlüssel der Website – auch wer an die Datenbank kommt, sieht nur Zeichensalat. Empfohlen für Gesundheitsdaten und andere vertrauliche Anfragen.'),
         __('Mitlesen können: nur Personen mit dem geheimen Schlüssel und dem Recht „Anfragen lesen“. Jedes Öffnen wird protokolliert.')],
     'both' => [__('Zentraler Schlüssel + Kopie per E-Mail'), 'envelope-simple', __('Wie „Zentraler Schlüssel“, zusätzlich geht der volle Inhalt per E-Mail an die Empfänger (unter „Formular & Eingang → Zustellung“).'),
         __('Die E-Mail ist ohne S/MIME nur auf dem Weg verschlüsselt und liegt lesbar im Postfach.')],
@@ -31,7 +31,7 @@ $opts = [
 $why = function (string $o) use ($inbox, $switch, $managed, $sharedT): ?string {
     $wantInbox = $o !== 'none';
     if ($wantInbox !== $inbox && !$switch) return $sharedT ? __('Bei geteilten Tabellen nicht möglich.') : __('Nur wählbar, solange die Tabelle keine Einträge hat – sonst eine neue Tabelle anlegen.');
-    if ($wantInbox && !Inbox::available()) return __('Dafür die Funktion „Anfragen“ einschalten (Funktionen & Erweiterungen).');
+    if ($wantInbox && !Inbox::available()) return __('Dafür die Funktion „Eingang“ einschalten (Funktionen & Erweiterungen).');
     if (in_array($o, ['both', 'mail'], true) && !Delivery::available()) return __('Dafür die Funktion „Anfragen per E-Mail zustellen“ einschalten (Funktionen & Erweiterungen).');
     if ($o === 'mail' && $managed) return __('Diesen Eingang verwaltet eine Erweiterung (z. B. Buchungen), die gespeicherte Einträge braucht.');
     return null;

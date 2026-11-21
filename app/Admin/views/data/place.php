@@ -83,7 +83,7 @@ $fe = fn(string $k) => isset($errors[$k]) ? '<p class="f-error">' . e($errors[$k
       <p class="adm-row">
         <a class="adm-btn adm-btn--primary" href="<?= e($pu . '?edit=1') ?>"><?= e(__('Im Editor öffnen')) ?></a>
         <a class="adm-btn" href="<?= e($pu) ?>" target="_blank" rel="noopener"><?= e(__('Ansehen')) ?> ↗</a>
-        <a class="adm-btn adm-btn--ghost" href="<?= e($entriesUrl) ?>"><?= e($inbox ? __('Zu den Anfragen') : __('Zu den Einträgen')) ?></a>
+        <a class="adm-btn adm-btn--ghost" href="<?= e($entriesUrl) ?>"><?= e($inbox ? __('Zum Eingang') : __('Zu den Einträgen')) ?></a>
       </p></div>
   </section>
   <?php endif; ?>
@@ -154,6 +154,6 @@ $fe = fn(string $k) => isset($errors[$k]) ? '<p class="f-error">' . e($errors[$k
 
   <div class="wz-nav wz-nav--end">
     <a class="adm-btn adm-btn--ghost" href="<?= e(url('/admin/data/' . $t['handle'] . '/schema')) ?>"><?= e(__('Felder & Einstellungen')) ?></a>
-    <a class="adm-btn<?= $new ? ' adm-btn--primary' : '' ?>" href="<?= e($entriesUrl) ?>"><?= e($new ? __('Fertig – zu „{name}“', ['name' => $t['name']]) : ($inbox ? __('Zu den Anfragen') : __('Zu den Einträgen'))) ?></a>
+    <a class="adm-btn<?= $new ? ' adm-btn--primary' : '' ?>" href="<?= e($entriesUrl) ?>"><?= e($new ? __('Fertig – zu „{name}“', ['name' => $t['name']]) : ($inbox ? __('Zum Eingang') : __('Zu den Einträgen'))) ?></a>
   </div>
 </div>

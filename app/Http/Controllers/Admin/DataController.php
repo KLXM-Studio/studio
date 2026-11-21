@@ -385,7 +385,7 @@ final class DataController extends AdminController
             $t = Tables::find($def['handle']);
         }
         if (Tables::isInbox($t)) {
-            return $this->back('/admin/data/' . $def['handle'] . '/schema', 'success', __('Eingang „{name}“ angelegt. Formular mit dem Block „Formular (Datentabelle)“ auf einer Seite einfügen – eingegangene Anfragen lesen Sie unter „Anfragen“.', ['name' => $def['name']]));
+            return $this->back('/admin/data/' . $def['handle'] . '/schema', 'success', __('Eingang „{name}“ angelegt. Formular mit dem Block „Formular (Datentabelle)“ auf einer Seite einfügen – eingegangene Anfragen lesen Sie im „Eingang“.', ['name' => $def['name']]));
         }
         if ($r->str('with_template') === '1' && $def['settings']['route'] !== '') {
             $this->makeTemplate($t);
@@ -798,9 +798,14 @@ final class DataController extends AdminController
         $t = $this->table($handle);
         if (!can('data.edit', $handle) || !\Core\Data\Calendar::enabled($t)) throw new HttpException(404);
         $c = \Core\Data\Calendar::config($t);
-        $entries = Entries::query($t, ['status' => 'published', 'sort' => $c['start'], 'dir' => 'asc', 'limit' => 5000, 'source' => 'own']);
+        // ?ids[]=…: nur diese Termine (Zeilenmenü „ICS exportieren“, Mehrfachauswahl) – auch Entwürfe, nur eigene Einträge
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($r->query['ids'] ?? [])))));
+        $entries = $ids
+            ? array_values(array_filter(array_map(fn($id) => Entries::find($t, $id), array_slice($ids, 0, 500)), fn($e) => $e && !Shared::isForeign($t, $e)))
+            : Entries::query($t, ['status' => 'published', 'sort' => $c['start'], 'dir' => 'asc', 'limit' => 5000, 'source' => 'own']);
         $body = \Core\Data\ICal::calendar($t, $entries, ['publish' => true, 'name' => $t['name'] . ' – ' . site_name()]);
-        return new Response($body, 200, ['Content-Type' => 'text/calendar; charset=utf-8', 'Content-Disposition' => 'attachment; filename="' . $t['handle'] . '.ics"',
+        $file = (count($entries) === 1 ? \Core\VCard::fileName(Entries::title($t, $entries[0])) : '') ?: $t['handle'];
+        return new Response($body, 200, ['Content-Type' => 'text/calendar; charset=utf-8', 'Content-Disposition' => 'attachment; filename="' . $file . '.ics"',
             'Cache-Control' => 'private, no-store']);
     }
 
@@ -838,7 +843,7 @@ final class DataController extends AdminController
         $need = match ($r->post['action'] ?? '') { 'publish', 'draft' => 'data.publish', 'delete' => 'data.delete', default => 'data.edit' };
         if (!can($need, $handle)) return Response::fail(__('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'), 403);
         $t = $this->table($handle);
-        if (Tables::isInbox($t)) return Response::fail(__('Eingangs-Tabelle: Anfragen unter „Anfragen“ bearbeiten.'), 403);
+        if (Tables::isInbox($t)) return Response::fail(__('Eingangs-Tabelle: Anfragen im „Eingang“ bearbeiten.'), 403);
         $ids = array_map('intval', (array) ($r->post['ids'] ?? []));
         // „Online ab“ in der Zukunft (Core\Schedule): bleiben offline – Hinweis statt „ist online“
         $waiting = ($r->post['action'] ?? '') === 'publish' ? array_values(array_filter(array_map(fn($id) => Entries::find($t, $id), $ids), fn($e) => $e && \Core\Schedule::pending($e))) : [];

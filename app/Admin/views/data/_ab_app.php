@@ -18,8 +18,8 @@ $canSchema = can('data.schema') && \Core\Data\Shared::canSchema($t);
 $back = AddressBook::link($t, $s);
 $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
 ?>
-<div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?>" data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"
-  data-ab-t-sel1="<?= e(__('1 ausgewählt')) ?>" data-ab-t-sel="<?= e(__('{n} ausgewählt')) ?>" data-ab-t-none="<?= e(__('Bitte zuerst Kontakte auswählen.')) ?>">
+<div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?>" data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"<?= \Core\RowMenu::selectAttrs() ?>
+  data-ab-t-none="<?= e(__('Bitte zuerst Kontakte auswählen.')) ?>">
   <nav class="ab-src" aria-label="<?= e(__('Adressbücher und Listen')) ?>">
     <ul>
       <li><a href="<?= e($L(['liste' => '', 'filter' => '', 'ab' => '', 'ansicht' => ''])) ?>" data-ab-nav<?= $cur($list === '' && $filter === '') ?>><?= icon('users') ?><span><?= e(__('Alle Kontakte')) ?></span><small><?= (int) $counts['all'] ?></small></a></li>
@@ -95,14 +95,20 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
     </div>
     <form id="ab-sel" class="ab-selbar" method="post" action="<?= e($base . '/listen') ?>" data-ab-selbar<?= $select ? '' : ' hidden' ?>>
       <?= csrf_field() ?><input type="hidden" name="zurueck" value="<?= e($back) ?>">
-      <span class="ab-selbar__n" aria-live="polite" data-ab-selcount><?= e(__('Auswahl')) ?></span>
-      <?php if ($lists): ?>
-      <label class="sr-only" for="ab-sel-list"><?= e(__('Liste')) ?></label>
-      <select id="ab-sel-list" name="liste"><?php foreach ($lists as $k => $label): ?><option value="<?= e((string) $k) ?>"<?= $list === (string) $k ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select>
-      <button type="submit" name="op" value="add" class="adm-btn adm-btn--small adm-btn--primary"><?= e(__('Zu Liste hinzufügen')) ?></button>
-      <button type="submit" name="op" value="remove" class="adm-btn adm-btn--small"><?= e(__('Aus Liste entfernen')) ?></button>
-      <?php endif; ?>
-      <button type="submit" formaction="<?= e($base . '/vcard') ?>" class="adm-btn adm-btn--small adm-btn--ghost"><?= icon('export') ?> <?= e(__('vCard')) ?></button>
+      <?php // Mehrfachauswahl wie in allen Listen (Core\RowMenu::bar): Zähler, Aktionen mit denselben Symbolen; Rechtsklick auf eine gewählte Zeile bietet sie an
+      $selItems = [];
+      if ($lists) {
+          $selItems[] = ['key' => 'move', 'icon' => 'list-bullets', 'label' => __('Zu Liste hinzufügen'), 'submit' => true, 'attrs' => ['name' => 'op', 'value' => 'add']];
+          $selItems[] = ['key' => 'move', 'icon' => 'x', 'label' => __('Aus Liste entfernen'), 'submit' => true, 'attrs' => ['name' => 'op', 'value' => 'remove']];
+      }
+      $selItems[] = ['key' => 'export', 'label' => __('vCard exportieren'), 'attrs' => ['formaction' => $base . '/vcard']];
+      $listSel = '';
+      if ($lists) {
+          $listSel = '<label class="sr-only" for="ab-sel-list">' . e(__('Liste')) . '</label><select id="ab-sel-list" name="liste">';
+          foreach ($lists as $k => $label) $listSel .= '<option value="' . e((string) $k) . '"' . ($list === (string) $k ? ' selected' : '') . '>' . e($label) . '</option>';
+          $listSel .= '</select>';
+      }
+      echo \Core\RowMenu::bar($selItems, ['always' => true, 'class' => 'ab-selbar__bar', 'before' => $listSel]); ?>
     </form>
   </section>
 

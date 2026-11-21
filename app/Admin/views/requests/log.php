@@ -7,7 +7,7 @@ $names = array_column($tables, 'name', 'handle');
 $actions = ['decrypt' => __('Entschlüsselt'), 'status' => __('Status geändert'), 'assign' => __('Zugewiesen'), 'delete' => __('Gelöscht'), 'purge' => __('Automatisch gelöscht')];
 ?>
 <header class="adm-head">
-  <div><p class="adm-eyebrow"><a href="<?= e(url('/admin/requests')) ?>"><?= e(__('Anfragen')) ?></a></p><h1><?= e(__('Protokoll')) ?></h1>
+  <div><p class="adm-eyebrow"><a href="<?= e(url('/admin/requests')) ?>"><?= e(__('Eingang')) ?></a></p><h1><?= e(__('Protokoll')) ?></h1>
     <p class="adm-muted"><?= e(__('Die letzten 200 Ereignisse: Entschlüsseln, Status, Zuweisung, Löschen. Es werden nie Inhalte protokolliert, die IP-Adresse nur als Kürzel (Hash). Aufbewahrung: {months} Monate (Grundeinstellungen → Spamschutz).', ['months' => $months])) ?></p></div>
 </header>
 

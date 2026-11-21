@@ -48,7 +48,7 @@ final class SearchController extends AdminController
             [__('Neue Seite'), __('Seite anlegen'), '/admin/pages/new', 'plus', 'neu seite anlegen erstellen'],
             [__('Medien hochladen'), __('Mediathek öffnen'), '/admin/media', 'upload', 'bild foto datei pdf upload hochladen'],
             [app()->theme->settingsTitle(), __('Zentrale Angaben'), '/admin/settings', 'gear', 'einstellungen kontakt adresse ' . project('search_keywords', '')],
-            ...(can('requests.read') && \Core\Data\Inbox::readable() ? [[__('Anfragen'), term('requests'), '/admin/requests', 'inbox', 'anfrage formular eingang ' . mb_strtolower(term('requests'))]] : []),
+            ...(can('requests.read') && \Core\Data\Inbox::readable() ? [[__('Eingang'), term('requests'), '/admin/requests', 'inbox', 'eingang inbox anfragen anfrage formular ' . mb_strtolower(term('requests'))]] : []),
             [__('Website ansehen'), __('Startseite öffnen'), url('/'), 'globe', 'website live ansehen'],
             [__('Handbuch'), __('Hilfe & Anleitungen'), '/admin/hilfe', 'help', 'hilfe handbuch anleitung'],
             ...(\Core\Guide::exists() ? [[__('Projekt-Hinweise'), __('Hinweise zu diesem Projekt'), '/admin/hilfe#projekt', 'lightbulb', 'projekt hinweise agentur anleitung kit']] : []),
@@ -58,7 +58,7 @@ final class SearchController extends AdminController
         }
         // Eingangs-Tabellen: nur der Name (Inhalte sind verschlüsselt und werden nie durchsucht)
         foreach (\Core\Data\Inbox::readable() as $t) {
-            $actions[] = [$t['name'], __('Anfragen'), '/admin/requests?table=' . $t['handle'], 'inbox', 'anfragen eingang ' . $t['name'] . ' ' . $t['singular']];
+            $actions[] = [$t['name'], __('Eingang'), '/admin/requests?table=' . $t['handle'], 'inbox', 'anfragen eingang inbox ' . $t['name'] . ' ' . $t['singular']];
         }
         if ($isAdmin) {
             $actions[] = [__('Neue Datentabelle'), __('Eigenen Inhaltstyp anlegen'), '/admin/data/new', 'table', 'tabelle collection daten neu'];

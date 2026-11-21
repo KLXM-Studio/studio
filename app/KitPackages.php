@@ -260,7 +260,9 @@ final class KitPackages
         if ($meta['label'] === '') $errors[] = __('{file}: Angabe \'label\' fehlt.', ['file' => basename($def)]);
         if ($meta['version'] === '') $warnings[] = __('{file}: Angabe \'version\' fehlt.', ['file' => basename($def)]);
         if (!Kit::compatible($meta['requires'])) $errors[] = __('Das Kit verlangt Core {req} – installiert ist {core}.', ['req' => $meta['requires'], 'core' => CMS_VERSION]);
-        if (!is_dir("$dir/templates")) $warnings[] = __('Ordner templates/ fehlt.');
+        // Kind-Kit ('extends'): Vorlagen, Blöcke und Assets darf es ganz vom Eltern-Kit erben – kein Ordner templates/ nötig
+        if ($meta['extends'] === '' && !is_dir("$dir/templates")) $warnings[] = __('Ordner templates/ fehlt.');
+        if ($meta['extends'] !== '' && !Kit::exists($meta['extends'])) $warnings[] = __('Eltern-Kit „{name}“ (extends) ist in dieser Installation nicht vorhanden – das Kit funktioniert erst mit ihm.', ['name' => $meta['extends']]);
         // Syntax prüfen (php -l führt nichts aus)
         $files = [];
         $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));

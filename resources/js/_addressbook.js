@@ -8,6 +8,7 @@
  */
 import { toast } from './_toast.js';
 import { csrf } from './_html.js';
+import { syncSelection } from './_rowmenu.js';   // Mehrfachauswahl wie in allen Listen (Core\RowMenu)
 
 export function initAddressBook() {
   if (!document.querySelector('[data-ab]')) return;
@@ -124,7 +125,7 @@ export function initAddressBook() {
   const wireDrag = () => {
     app().querySelectorAll('.ab-item').forEach(li => { if (!li.draggable) li.draggable = true; });
   };
-  const checkedIds = () => [...app().querySelectorAll('.ab-check:checked')].map(c => c.value);
+  const checkedIds = () => [...app().querySelectorAll('[data-rm-check]:checked')].map(c => c.value);
   const assign = async (ids, list, op, label) => {
     const fd = new FormData();
     fd.append('_csrf', csrf());
@@ -150,13 +151,8 @@ export function initAddressBook() {
     if (sel || k) loadCard(sel?.href || location.href, null);
   };
 
-  const selCount = () => {
-    const box = app();
-    const n = checkedIds().length;
-    const el = box.querySelector('[data-ab-selcount]');
-    if (el) el.textContent = (n === 1 ? box.dataset.abTSel1 : box.dataset.abTSel).replace('{n}', n);
-    box.querySelectorAll('.ab-check').forEach(c => c.closest('.ab-item')?.classList.toggle('is-checked', c.checked));
-  };
+  const selCount = () => syncSelection(app());
+
 
   // Ereignisse, die am Element der Ansicht hängen (nach jedem Ersetzen neu)
   const wire = () => {
@@ -205,7 +201,10 @@ export function initAddressBook() {
       const head = box.querySelector(`[data-ab-letter-head="${CSS.escape(a.dataset.abLetter)}"]`);
       const scroll = box.querySelector('[data-ab-scroll]');
       if (head && scroll) {
-        scroll.scrollTop = head.offsetTop - scroll.offsetTop;
+        // Nicht head.offsetTop: ein angehefteter (sticky) Trenner meldet seine verschobene Lage – vom ersten Namen der Gruppe
+        // aus rechnen und die Höhe des Trenners freilassen, damit er den ersten Namen nicht verdeckt
+        const first = head.nextElementSibling || head;
+        scroll.scrollTop = Math.max(0, first.offsetTop - scroll.offsetTop - head.offsetHeight);
         head.nextElementSibling?.querySelector('.ab-item__a')?.focus({ preventScroll: true });
       } else loadApp(a.href, 'replace');
       return;
@@ -245,7 +244,7 @@ export function initAddressBook() {
 
   // Auswahl
   document.addEventListener('change', e => {
-    if (e.target.matches?.('.ab-check')) selCount();
+    if (e.target.matches?.('[data-rm-check]')) selCount();
   });
 
   // Formulare: Auswahl-Leiste (Hinzufügen/Entfernen), Etiketten der Karte – ohne Neuladen; vCard-Knopf lädt normal herunter

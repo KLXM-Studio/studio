@@ -26,6 +26,29 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   placeholders ask for consent at the content, “Privacy settings” in the footer remains. Per-service flag “Embed with placeholder
   only”, nothing is requested from YouTube/Google/ytimg before consent, no-JS link to the provider, self-test `consent:selftest`.
 
+### Verwaltung: ein Zeilenmenü für alle Listen
+- **Einheitliches Zeilenmenü** (`Core\RowMenu`, `resources/js/_rowmenu.js`) in Datenlisten, Kalender (Termin im Raster), Adressbuch
+  (Namen und Karte), Seitenbaum, Medien und Entwürfen: Knopf „⋯“, dasselbe Menü per Rechtsklick am Mauszeiger und per Tastatur
+  (Umschalt+F10, Menütaste), ARIA `menu`/`menuitem`, Pfeiltasten, Pos1/Ende, Anfangsbuchstabe, Esc/Tab, Fokus zurück; auf dem
+  Telefon als Blatt von unten. Feste Reihenfolge und Symbole: Bearbeiten · Ansehen/Vorschau · Duplizieren · Verschieben/Zuordnen ·
+  Veröffentlichen/Offline nehmen · Versionen · Link kopieren · Exportieren (vCard bzw. ICS je Eintrag) · Aufgabe anlegen ·
+  Erweiterungen · Löschen (rot, Rückfrage). Rechte je Aktion; ohne JavaScript Popover mit Links und Formularen (CSRF), im Seitenbaum
+  führt „⋯“ dann zu den Seiteneinstellungen.
+- **Mehrfachauswahl einheitlich** (`RowMenu::bar`): Häkchen, Leiste mit Anzahl und denselben Aktionen (Datenlisten zusätzlich
+  „Exportieren“, Adressbuch mit Listen und vCard); Rechtsklick auf eine gewählte Zeile bietet die Aktionen für alle gewählten.
+- Neu: `GET /admin/data/{tabelle}/kalender.ics?ids[]=…` (einzelne bzw. gewählte Termine), Filter `rowmenu.actions` für
+  Erweiterungen, Selbsttest `rowmenu:selftest`, Handbuch „Arbeiten in Listen“, Entwicklerhandbuch → Oberfläche → Zeilenmenü.
+- Adressbuch: Buchstaben-Trenner verdecken beim Scrollen und Springen keinen Namen mehr; Merkmal der Angaben wieder
+  „Öffentlich · Website, vCard“ (wie `Exposure::reachText`); Initialen ohne Foto ruhig in der Akzentfarbe der Verwaltung.
+
+### Verwaltung: Menüpunkt „Anfragen“ heißt „Eingang“
+- Der Bereich mit den verschlüsselten Eingangs-Tabellen heißt jetzt **„Eingang“** (EN „Inbox“), weil Websites selbst
+  Datentabellen namens „Anfragen“ anlegen. Geändert sind nur Beschriftungen (Menü, Seitentitel, Verweise, Funktion,
+  Rechte-Gruppe, Befehlspalette – findet auch „eingang“, „inbox“, „anfragen“, Übersicht, Handbuch, Tutorials). Route
+  `/admin/requests`, Rechte `requests.*`, Funktion `requests` und Dashboard-Schlüssel bleiben; einzelne Einsendungen
+  heißen weiter „Anfrage“, die Vorlage bzw. der Zweck „Anfragen“ beim Anlegen einer Tabelle ebenso. Handbuch-Anker
+  `#anfragen` bleibt, `#eingang` kommt hinzu.
+
 ### Kontakte: Adressbuch-Ansicht wie eine Kontakte-App
 - **Standardansicht für Adressbücher** (Tabellenart „contacts“, `Core\Data\AddressBook`): drei Spalten – links Adressbücher, Listen
   (Werte von „Listen“) mit Anzahl und die Filter „Alle“, „Nicht auf der Website“, „Ohne Foto“, „Ohne E-Mail“; in der Mitte die Namen
@@ -102,6 +125,19 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   die Sitemap nennt nur sie – keine Seite pro Vorkommen im Index. JSON-LD einer Serie ohne Parameter: nächster stattfindender Termin.
 - Ort und Beschreibung nur aus Feldern mit Freigabe für die Kalender-Datei (`ics`); Seiten-Cache gilt bis zum Ende des Termins.
   Selbsttest in `calendar:selftest`.
+
+### Kind-Kits: eigenes CSS, Vorschau mit anderem Kit, Zeilenhöhe als Token
+- **`'css' => ['css/marke.css']`** in `theme.php`: Stylesheets eines Kits *zusätzlich* zum CSS des Eltern-Kits (ohne `css/site.css` zu
+  ersetzen oder per `@import` zu bündeln) – wie `'css'` im Kit von REDAXO fluid. Im Layout nach Grund-, Options- und Block-CSS und vor der
+  Design-Datei der Website (Werte aus Verwaltung → Design gewinnen weiter), auf Fehler-, Wartungs- und Offline-Seiten vor `</head>`. Jedes Kit
+  der Kette steuert seine Liste bei (Eltern zuerst); fehlende Dateien fallen weg, `kit:check` meldet sie. `Theme::kitStylesheets()`.
+- **`Theme::withKit($kit, $fn, $werte = null)`:** eine Funktion mit einem anderen Kit als aktivem Kit ausführen (Vorschau, Kit-Designer),
+  optional mit Design-Werten nur für den Aufruf – danach gelten Kit, Design-Zustand, Standardwerte der Kit-Einstellungen und die aktuelle
+  Seite wieder wie vorher, auch bei Fehlern. Die Website wird nicht umgestellt.
+- **Kit fluid: Zeilenhöhe des Fließtexts** als Wert im Style-Editor (`line_height` → `--f-lh`, 1,3–2, Standard 1,62 wie bisher) – Kind-Kits
+  setzen sie per `design_defaults`.
+- **Kit-Pakete:** Kind-Kits (`'extends'`) brauchen keinen Ordner `templates/` mehr (`KitPackages::check` warnt nur bei eigenständigen Kits
+  und meldet ein fehlendes Eltern-Kit); `Kit::meta()` liefert `extends`. Selbsttests in `kits:selftest`.
 
 ### Kalender und Kontakte per App abonnieren
 - **Seite „Abonnieren“** je Kalender- und Kontakte-Tabelle (Daten → Tabelle → Abonnieren, Recht „Einträge bearbeiten“): öffentliche

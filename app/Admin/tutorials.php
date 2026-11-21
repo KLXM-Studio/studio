@@ -178,7 +178,7 @@ return [
             'goal' => 'Sie lesen eingegangene Online-Anfragen (z. B. Rezept- oder Rückrufwünsche) und markieren, wer sich kümmert.',
             'prerequisites' => ['Recht „Online-Anfragen lesen“.', 'Den geheimen Schlüssel (z. B. im Passwortmanager).'],
             'steps' => [
-                'Neue Online-Anfragen zeigt die Zahl neben <b>Anfragen</b> im Menü.',
+                'Neue Online-Anfragen zeigt die Zahl neben <b>Eingang</b> im Menü.',
                 'Links die Eingänge, z. B. Rezeptanfragen, mit <b>Neu</b>, <b>In Bearbeitung</b> und <b>Erledigt</b>. Die Inhalte sind verschlüsselt gespeichert.',
                 'Geheimen Schlüssel aus dem Passwortmanager einfügen und <b>Entschlüsseln</b>.',
                 'Jetzt sind die Angaben lesbar – in der Liste und rechts im Detail. Nach dem Neuladen ist alles wieder verschlossen.',

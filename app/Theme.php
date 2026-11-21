@@ -55,6 +55,9 @@ final class Theme
     /** Beim Rendern gemeldete Merkmale (markUsed), z. B. '@table' oder 'video:@player' – laden Dateien aus conditional_css */
     private array $marks = [];
 
+    /** @var list<array{0: string, 1: string}> Eigene Stylesheets der Kits der Kette (theme.php → 'css'): [Kit, Pfad], Eltern zuerst */
+    private array $kitCss = [];
+
     /** Erster sichtbarer Block der Seite schon vergeben (Block::isFirst) – einmal je Anfrage */
     private bool $firstSeen = false;
 
@@ -73,7 +76,15 @@ final class Theme
         $this->chain = Kit::chain($name);
         // Vererbung: Definitionen von den Eltern her zusammenführen (Kind gewinnt)
         $merged = [];
-        foreach (array_reverse($this->chain, true) as $dir) $merged = self::mergeDefinition($merged, (array) require (string) Kit::definitionFile($dir));
+        foreach (array_reverse($this->chain, true) as $k => $dir) {
+            $own = (array) require (string) Kit::definitionFile($dir);
+            // Eigene Stylesheets je Kit der Kette ('css' => ['css/brand.css']): ergänzen sich, Eltern zuerst (Theme::kitStylesheets)
+            foreach ((array) ($own['css'] ?? []) as $css) {
+                if (is_string($css) && preg_match('~^[\w./-]+\.css$~', $css) && !str_contains($css, '..')) $this->kitCss[] = [(string) $k, ltrim($css, '/')];
+            }
+            unset($own['css']);
+            $merged = self::mergeDefinition($merged, $own);
+        }
         $this->def = $merged;
 
         foreach ($this->def['blocks'] ?? [] as $type => $b) {
@@ -224,6 +235,36 @@ final class Theme
     public function label(): string
     {
         return $this->def['label'] ?? $this->name;
+    }
+
+    /**
+     * $fn mit einem anderen Kit als aktivem Kit ausführen (app()->theme), ohne die Website umzustellen – für Vorschauen (Kit-Designer,
+     * Kit-Auswahl). Optional mit Design-Werten nur für diesen Aufruf ($values → Design::override). Danach gelten wieder Kit, Design-Zustand
+     * (gespeicherte Werte, Vorschau-Werte) und app()->currentPage von vorher – auch bei Fehlern. Gespeicherte Design-Werte des anderen
+     * Kits liest Design::values() wie üblich aus design.{kit}; nichts wird geschrieben. Die Standardwerte der Kit-Einstellungen, die ein
+     * neu erzeugtes Kit registriert, gelten nur während des Aufrufs.
+     * @template T
+     * @param callable(Theme): T $fn  bekommt das Kit
+     * @return T
+     */
+    public static function withKit(string|self $kit, callable $fn, ?array $values = null): mixed
+    {
+        $app = app();
+        $saved = $app->theme;
+        $page = $app->currentPage;
+        $defaults = $app->settings->defaultsState();
+        $theme = $kit instanceof self ? $kit : ($kit === $saved->name ? $saved : new self($kit));
+        $state = Design::state(['values' => null, 'override' => null, 'preloaded' => []]);
+        $app->theme = $theme;
+        try {
+            if ($values !== null) Design::override($values);
+            return $fn($theme);
+        } finally {
+            $app->theme = $saved;
+            $app->currentPage = $page;
+            $app->settings->defaultsState($defaults);
+            Design::state($state);
+        }
     }
 
     /**
@@ -395,7 +436,14 @@ final class Theme
         if ($file === '') {
             throw new \RuntimeException("Template '$template' fehlt im Kit '{$this->name}'");
         }
+        // Eigene Stylesheets der Kits (theme.php → 'css'): im Layout nach dem Grund-, Options- und Block-CSS (Liste $extraCss) und vor
+        // der Design-Datei der Website; andere ganze Seiten (Fehler, Wartung, offline) bekommen sie vor </head>
+        $own = $this->kitStylesheets();
+        if ($own && $template === 'layout') $vars['extraCss'] = [...(array) ($vars['extraCss'] ?? []), ...$own];
         $html = self::capture($file, $vars);
+        if ($own && $template !== 'layout' && !str_contains($html, (string) $own[0]) && ($i = stripos($html, '</head>')) !== false) {
+            $html = substr($html, 0, $i) . implode('', array_map(fn($u) => '<link rel="stylesheet" href="' . e($u) . '">' . "\n", $own)) . substr($html, $i);
+        }
         // Ganze Seite (Layout): Stylesheet für angepasste Bilder nur bei Bedarf einbinden, im Bearbeiten-Modus immer (Core\ImageFx)
         // Bild im Rahmen (Core\ImageFit): Stylesheet + erzeugte Regeln (Farben, unscharfer Hintergrund) ebenso
         return str_contains($html, '</head>') ? ImageFit::inject(ImageFx::inject($html, app()->editing), app()->editing) : $html;
@@ -743,6 +791,28 @@ final class Theme
         $file = Kit::publicDir($kit) . '/' . ltrim($path, '/');
         $v = is_file($file) ? substr(md5((string) filemtime($file)), 0, 8) : CMS_VERSION;
         return Kit::url($kit, $path) . '?v=' . $v;
+    }
+
+    /**
+     * Eigene Stylesheets der Kits dieser Kette (theme.php → 'css' => ['css/brand.css', …], Pfade in public/assets/kits/{kit}/):
+     * zusätzlich zum CSS des Eltern-Kits, ohne dessen css/site.css zu ersetzen. Jedes Kit der Kette steuert seine Liste bei
+     * (Eltern zuerst, dann das Kind), fehlende Dateien fallen weg. Wie 'css' im Kit von REDAXO fluid.
+     * @return list<string> Adressen mit Versions-Parameter
+     */
+    public function kitStylesheets(): array
+    {
+        $out = [];
+        foreach ($this->kitCss as [$kit, $path]) {
+            $file = Kit::publicDir($kit) . '/' . $path;
+            if (is_file($file)) $out[] = Kit::url($kit, $path) . '?v=' . substr(md5((string) filemtime($file)), 0, 8);
+        }
+        return array_values(array_unique($out));
+    }
+
+    /** Angaben 'css' der Kits der Kette, auch ohne gebaute Datei (kit:check): list<[Kit, Pfad]> */
+    public function kitStylesheetEntries(): array
+    {
+        return $this->kitCss;
     }
 
     /** Bringt das Kit (oder ein Eltern-Kit) die öffentliche Datei mit (public/assets/kits/{name}/…)? */
