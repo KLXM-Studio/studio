@@ -43,7 +43,7 @@ function update(form) {
     const to = box.querySelector('[data-exp-to]');
     if (!to) return;
     const on = [...box.querySelectorAll('[data-expose-target]:checked')].map(c => c.dataset.short);
-    to.textContent = on.length ? ' · ' + on.join(', ') : '';
+    to.textContent = on.length ? (to.dataset.sep || ' · ') + on.join(', ') : '';
   });
   const sum = form.querySelector('[data-pubsum]');
   if (!sum) return;
