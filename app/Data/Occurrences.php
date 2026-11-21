@@ -176,6 +176,8 @@ final class Occurrences
             $db = Tables::db($t);
             $row = $db->fetch("SELECT * FROM {$t['table']} WHERE id = ?", [$id]);
             $head = $row && Kinds::isCalendar($t) && (int) ($row[Series::SERIES] ?? 0) > 0 ? (int) $row[Series::SERIES] : $id;
+            // gelöschter Einzeltermin: Serie aus dem Index (das Vorkommen der Serie gilt wieder)
+            if (!$row) $head = (int) ($db->fetchValue('SELECT series_id FROM ' . self::TABLE . ' WHERE tbl = ? AND entry_id = ? AND series_id IS NOT NULL', [$t['table'], $id]) ?: $id);
             $ids = [$head];
             if (Kinds::isCalendar($t)) foreach ($db->fetchAll("SELECT id FROM {$t['table']} WHERE " . Series::SERIES . ' = ?', [$head]) as $r) $ids[] = (int) $r['id'];
             if ($id !== $head) $ids[] = $id;

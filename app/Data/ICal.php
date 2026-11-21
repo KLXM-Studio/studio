@@ -131,7 +131,7 @@ final class ICal
      * VEVENTs einer Serie (Kalender der Art calendar): Serienkopf mit RRULE/EXDATE, danach je abweichendem Einzeltermin ein VEVENT mit
      * gleicher UID und RECURRENCE-ID (RFC 5545 §3.8.4.4). $o['public']: öffentliche Ausgabe – Einzeltermine nur veröffentlicht und mit
      * Freigabe „ics“; nicht veröffentlichte ersetzen das Vorkommen trotzdem (wie auf der Website) und werden zur Ausnahme (EXDATE).
-     * $o['uid']: UID aus CalDAV, $o['extra']: zusätzliche Zeilen des Serienkopfs.
+     * $o['uid']: UID aus CalDAV, $o['extra']: zusätzliche Zeilen des Serienkopfs, $o['apps']: für Apps der Redaktion (Exposure::forApps).
      */
     public static function series(array $table, array $head, array $o = []): array
     {
@@ -143,6 +143,7 @@ final class ICal
         foreach ($ovs as $rid => $ov) {
             if ($pub && ($ov['status'] !== 'published' || (($ov['lang'] ?? null) !== ($head['lang'] ?? null)))) { $hidden[] = substr($rid, 0, 10); continue; }
             if ($pub) $ov = Exposure::publicEntry($table, $ov, 'ics');
+            if (!empty($o['apps'])) $ov = Exposure::forApps($table, $ov, 'ics');   // CalDAV: nie „Nur Website“
             array_push($out, ...self::vevent($table, $ov, ['uid' => $o['uid'] ?? Calendar::uid($table, $head), 'rid' => $rid, 'rid_date' => $allDay]));
         }
         $first = self::vevent($table, $head, ['uid' => $o['uid'] ?? Calendar::uid($table, $head), 'extra' => (array) ($o['extra'] ?? []), 'exdates_extra' => $hidden]);

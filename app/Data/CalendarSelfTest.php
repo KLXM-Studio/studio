@@ -167,6 +167,26 @@ final class CalendarSelfTest
             sort($web);
             $eq('ICS-Rundreise = Website', $fromIcs, $web);
 
+            // ---------------------------------------------------------- CalDAV (Erweiterung dav, falls geladen)
+            if (class_exists(\Klxm\Dav\CalendarBackend::class)) {
+                $cal = \Klxm\Dav\CalendarBackend::render($t, Entries::find($t, (int) $nid) ?? [], null);
+                $eq('CalDAV: Serie mit Einzeltermin, ohne „Nur Website“', [str_contains($cal, 'RECURRENCE-ID'), str_contains(str_replace("\r\n ", '', $cal), self::SECRET)], [true, false]);
+                // aus der App: Einzeltermin am 09.03. auf 20:00 verschoben → Einzeltermin im CMS; der vom 23.02. fehlt → wieder normal
+                $vc = Reader::read($cal);
+                foreach ($vc->select('VEVENT') as $ev) if (isset($ev->{'RECURRENCE-ID'})) $vc->remove($ev);
+                $ex = $vc->add('VEVENT', ['UID' => (string) $vc->VEVENT->UID, 'SUMMARY' => 'Übungsabend App', 'DTSTART' => new \DateTime('2027-03-09 20:00', $tz), 'DTEND' => new \DateTime('2027-03-09 22:00', $tz)]);
+                $ex->add('RECURRENCE-ID', new \DateTime('2027-03-09 17:30', $tz));
+                $b = new \Klxm\Dav\CalendarBackend();
+                $parse = new \ReflectionMethod($b, 'parse');
+                $sync = new \ReflectionMethod($b, 'sync');
+                [$in] = $parse->invoke($b, $t, Entries::find($t, (int) $nid), $vc->serialize());
+                Entries::save($t, (int) $nid, $in);
+                $sync->invoke($b, $t, (int) $nid);
+                $ovs = Series::overrides($t, (int) $nid);
+                $eq('CalDAV: in der App geänderter Termin wird Einzeltermin', [array_keys($ovs), $ovs['2027-03-09 17:30']['beginn'] ?? null], [['2027-03-09 17:30'], '2027-03-09 20:00']);
+                $same('nach CalDAV');
+            }
+
             // ---------------------------------------------------------- Rückfall ohne Index
             Occurrences::$disabled = true;
             $eq('Rückfall ohne Index', $starts($occ()), $starts(Calendar::compute($t, $d('2027-01-01'), $d('2027-05-01'), ['status' => 'published'])));

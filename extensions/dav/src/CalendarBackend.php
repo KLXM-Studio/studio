@@ -23,6 +23,10 @@ use Sabre\VObject\Reader;
  * DESCRIPTION ↔ Beschreibung (reiner Text), LOCATION/GEO ↔ Ort, CATEGORIES ↔ Kategorie (Auswahltexte), URL = Detailseite (nur lesen).
  * Alles andere (Erinnerungen, Teilnehmer, X-Eigenschaften, geänderte Einzeltermine mit RECURRENCE-ID) bleibt in dav_objects.raw erhalten
  * und wird bei der Ausgabe mit den aktuellen Feldwerten zusammengeführt.
+ *
+ * Kalender der Tabellenart „calendar“ (Core\Data\Kinds): Zuordnung fest aus dem Grundschema (keine Einstellung), abweichende
+ * Einzeltermine (Core\Data\Series) gehen als VEVENT mit RECURRENCE-ID hinaus; in einer App geänderte oder abgesagte Einzeltermine
+ * werden zu Einzelterminen im CMS (entfernte wieder zu normalen Vorkommen). Zusatzfelder „Nur Website“ gehen nie an Apps.
  */
 final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
 {
@@ -158,6 +162,7 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         $in['lang'] = Lang::default();
         [$id, $errors] = Entries::save($t, null, $in);
         if ($errors) throw new BadRequest('Ungültige Eingaben: ' . implode(' ', $errors));
+        $this->sync($t, (int) $id);
         Dav::saveObject('cal', $t['handle'], (int) $id, (string) $objectUri, $uid, (string) $calendarData);
         return null;                                         // Daten werden normalisiert → Client lädt neu
     }
@@ -172,6 +177,7 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         [$in, $uid] = $this->parse($t, $e, (string) $calendarData);
         [, $errors] = Entries::save($t, (int) $e['id'], $in);
         if ($errors) throw new BadRequest('Ungültige Eingaben: ' . implode(' ', $errors));
+        $this->sync($t, (int) $e['id']);
         Dav::saveObject('cal', $t['handle'], (int) $e['id'], (string) $objectUri, $o['uid'] ?? $uid, (string) $calendarData);
         return null;
     }
@@ -201,8 +207,9 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
     {
         $e = \Core\Data\Exposure::forApps($t, $e, 'ics');   // Felder, die bewusst nur für andere Ziele freigegeben sind (z. B. „Nur Website“): nie an Apps
         $uid = $o['uid'] ?? Calendar::uid($t, $e);
+        $series = \Core\Data\Kinds::isCalendar($t);
         $lines = array_merge(['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:' . ICal::prodId(), 'CALSCALE:GREGORIAN'],
-            ICal::vtimezone(Calendar::tz(), (int) date('Y')), ICal::vevent($t, $e, ['uid' => $uid]), ['END:VCALENDAR']);
+            ICal::vtimezone(Calendar::tz(), (int) date('Y')), $series ? ICal::series($t, $e, ['uid' => $uid, 'apps' => true]) : ICal::vevent($t, $e, ['uid' => $uid]), ['END:VCALENDAR']);
         $fresh = implode("\r\n", array_map([ICal::class, 'fold'], $lines)) . "\r\n";
         if (empty($o['raw'])) return $fresh;
         try {
@@ -227,6 +234,11 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
             if ($prop instanceof \Sabre\VObject\Property) $master->add(clone $prop);
         }
         if (!isset($master->UID)) $master->add('UID', $uid);
+        if ($series) {
+            // Einzeltermine kommen aus dem CMS: Rohdaten-Fassungen ersetzen (Erinnerungen der Serie bleiben am Serienkopf)
+            foreach ($raw->select('VEVENT') as $ev) if (isset($ev->{'RECURRENCE-ID'})) $raw->remove($ev);
+            foreach ($new->select('VEVENT') as $ev) if (isset($ev->{'RECURRENCE-ID'})) $raw->add(clone $ev);
+        }
         // Zeitzone der Website mitliefern
         $tzid = Calendar::tz()->getName();
         $has = false;
@@ -255,6 +267,49 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         }
         $ev = $vc instanceof VCalendar ? self::master($vc) : null;
         if (!$ev || !isset($ev->DTSTART)) throw new BadRequest('Erwartet wird ein VEVENT mit DTSTART.');
+        $in = $this->fields($t, $e, $ev);
+        // Kalender mit Serien: geänderte Einzeltermine (RECURRENCE-ID) → Einzeltermine im CMS (übernimmt sync() nach dem Speichern)
+        if (\Core\Data\Kinds::isCalendar($t) && $vc instanceof VCalendar) {
+            $tz = Calendar::tz();
+            $this->overrides = [];
+            foreach ($vc->select('VEVENT') as $ov) {
+                if (!isset($ov->{'RECURRENCE-ID'}, $ov->DTSTART)) continue;
+                $rid = \DateTimeImmutable::createFromInterface($ov->{'RECURRENCE-ID'}->getDateTime($tz))->setTimezone($tz)->format('Y-m-d H:i');
+                $oin = $this->fields($t, null, $ov);
+                $oin[\Core\Data\Kinds::CANCELLED_FIELD] = strtoupper((string) ($ov->STATUS ?? '')) === 'CANCELLED';
+                $this->overrides[$rid] = $oin;
+            }
+            $in[\Core\Data\Kinds::CANCELLED_FIELD] = strtoupper((string) ($ev->STATUS ?? '')) === 'CANCELLED';
+        }
+        return [$in, trim((string) ($ev->UID ?? '')) ?: bin2hex(random_bytes(16))];
+    }
+
+    /** @var array<string, array>|null Einzeltermine der zuletzt gelesenen Serie (ursprünglicher Beginn => Feldwerte) */
+    private ?array $overrides = null;
+
+    /**
+     * Einzeltermine einer Serie nach dem Speichern aus der App übernehmen: vorhandene ändern, neue anlegen, in der App entfernte löschen
+     * (das Vorkommen gilt dann wieder wie in der Serie).
+     */
+    private function sync(array $t, int $head): void
+    {
+        if ($this->overrides === null || !\Core\Data\Kinds::isCalendar($t)) return;
+        $have = \Core\Data\Series::overrides($t, $head);
+        $headEntry = Entries::find($t, $head);
+        foreach ($this->overrides as $rid => $in) {
+            $in[\Core\Data\Series::SERIES] = $head;
+            $in[\Core\Data\Series::RID] = $rid;
+            $in[Calendar::config($t)['recurrence']] = '';
+            if (isset($have[$rid])) Entries::save($t, (int) $have[$rid]['id'], $in);
+            elseif ($headEntry) Entries::save($t, null, $in + ['status' => $headEntry['status'], 'slug' => ($headEntry['slug'] ?? 'termin') . '-' . str_replace('-', '', substr($rid, 0, 10))]);
+        }
+        foreach ($have as $rid => $ov) if (!isset($this->overrides[$rid])) Entries::delete($t, (int) $ov['id']);
+        $this->overrides = null;
+    }
+
+    /** Feldwerte aus einem VEVENT (Serienkopf, einfacher Termin oder Einzeltermin) */
+    private function fields(array $t, ?array $e, \Sabre\VObject\Component $ev): array
+    {
         $c = Calendar::config($t);
         $tz = Calendar::tz();
         $in = [];
@@ -294,7 +349,10 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
                     : $txt;
             }
         }
-        if ($c['location'] !== '') {
+        if (\Core\Data\Kinds::isCalendar($t)) {
+            $in['ort'] = trim((string) ($ev->LOCATION ?? ''));
+            if (isset($ev->GEO)) $in['standort'] = str_replace(';', ', ', (string) $ev->GEO);
+        } elseif ($c['location'] !== '') {
             if ((Tables::field($t, $c['location'])['type'] ?? '') === 'geo') {
                 if (isset($ev->GEO)) $in[$c['location']] = str_replace(';', ', ', (string) $ev->GEO);
             } else {
@@ -314,6 +372,6 @@ final class CalendarBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         // „Nur Website“-Felder (Core\Data\Exposure): gehen nie an Apps – und Apps schreiben sie nie
         $apps = array_column(\Core\Data\Exposure::appFields($t, 'ics'), 'name');
         foreach ($t['fields'] as $f) if (!in_array($f['name'], $apps, true)) unset($in[$f['name']]);
-        return [$in, trim((string) ($ev->UID ?? '')) ?: bin2hex(random_bytes(16))];
+        return $in;
     }
 }
