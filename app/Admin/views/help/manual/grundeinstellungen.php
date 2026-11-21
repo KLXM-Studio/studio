@@ -1,6 +1,16 @@
 <?php /** Handbuch · Kapitel „Grundeinstellungen (Administration)“ – technische Einstellungen der Website unter /admin/system */ ?>
   <p class="lead">Unter <b>System → Grundeinstellungen</b> stehen die technischen Einstellungen der Website – aufgebaut wie die Systemeinstellungen am Mac: links die Bereiche, rechts die Einstellungen in Gruppen. Sichtbar für die Administration (Recht „Grundeinstellungen“).</p>
 
+  <h3 id="ge-aufbau">So sind die Einstellungen aufgebaut</h3>
+  <ul>
+    <li><b>Wichtiges zuerst, Seltenes eingeklappt:</b> Gruppen wie „Verwaltung“, „Feineinstellungen“ oder „Eigene Regeln für die robots.txt“ sind zugeklappt; der Kopf zeigt den aktuellen Stand in Kurzform.</li>
+    <li><b>Ein Satz je Gruppe</b> sagt, wofür sie gilt und was greift, wenn sie leer bleibt. Mit mehreren Websites zeigt ein Kennzeichen <b>Gilt für: diese Website</b> bzw. <b>Gilt für: alle Websites</b>.</li>
+    <li><b>Wirksamer Wert:</b> Leere Felder zeigen als grauen Text, was dann gilt (z. B. „leer: https://www.ihre-domain.de“). Wo ein Schalter überstimmt wird, steht „Wirksam: …“ darunter – etwa „gesperrt – Testumgebung sperrt immer“ bei „Suchmaschinen aussperren“.</li>
+    <li><b>Warnhinweise</b> (orange, mit Warnsymbol) markieren Einstellungen mit großer Wirkung: Wartungsmodus, Suchmaschinen aussperren, Kit-Wechsel, Hauptadresse, eigene robots.txt-Regeln.</li>
+    <li><b>Abhängige Felder</b> erscheinen erst, wenn ihr Schalter an ist – z. B. der Text im Wartungsmodus, die Bearbeitungssperre (braucht „Anzeigen, wer gerade wo arbeitet“), die Felder der Web-App oder des Besucher-Chats. Werte bleiben beim Ausblenden erhalten.</li>
+    <li><b>Eine Einstellung, ein Ort:</b> Die Hauptadresse steht auf der Seite <b>Domain</b>, sobald es sie gibt; Name, Kontakt, Logo und Rechtstexte stehen in den <a href="#einstellungen">Website-Einstellungen</a>.</li>
+    <li><b>Letzte Änderungen</b> (Reiter <b>Systeminfo</b>): die letzten Änderungen der Grundeinstellungen mit <b>Zurücknehmen</b>, wie bei den Website-Einstellungen. Passwörter werden dabei nie gespeichert.</li>
+  </ul>
   <h3 id="ge-bereiche">Die Bereiche</h3>
   <ul>
     <li><b>Allgemein, Indexierung &amp; Crawler, App-Icon &amp; PWA, Karten &amp; externe Quellen, Sprachen, E-Mail-Versand, Spamschutz, Suche, KI</b> – jede Einstellung erklärt sich darunter.</li>

@@ -556,6 +556,16 @@ final class DataController extends AdminController
         $t = $this->table($handle);
         $this->noInbox($t, $r);
         if (!can('data.edit', $handle)) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+        // Kontakte (Core\Data\AddressBook): Ansicht „Adressbuch | Liste“ (?view=book|list, je Konto gemerkt; Standard Adressbuch)
+        if (\Core\Data\AddressBook::enabled($t)) {
+            $user = app()->auth->user();
+            if (in_array($r->str('view'), \Core\Data\AddressBook::VIEWS, true) && $user) {
+                \Core\Data\AddressBook::setView((int) $user['id'], $r->str('view'));
+                $user = app()->auth->user();
+            }
+            $view = in_array($r->str('view'), \Core\Data\AddressBook::VIEWS, true) ? $r->str('view') : \Core\Data\AddressBook::view($user);
+            if ($view === 'book') return (new AddressBookController())->show($r, $t);
+        }
         $status = in_array($r->str('status'), ['published', 'draft'], true) ? $r->str('status') : 'all';
         $sort = $r->str('sort') ?: $t['settings']['sort_field'];
         $dir = $r->str('dir') ?: $t['settings']['sort_dir'];

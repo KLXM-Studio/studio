@@ -193,7 +193,7 @@ final class Metrics
             $add('chat', 4, 'info', 'chats', (int) $chatN, __('Ungelesene Chat-Nachrichten'), __('Nachrichten aus dem Team.'), '/admin/chat', __('Chat öffnen'));
         }
         // Einrichtung (Kit-Prüfungen wie „Impressum zugeordnet“, E-Mail-Versand, Schlüssel, Platzhalter)
-        if (can('settings.edit') || $admin) {
+        if (can('settings.info') || $admin) {
             $open = array_values(array_filter($checks, fn($c) => !$c['ok'] && !isset($c['placeholder']) && ($admin || !($c['admin'] ?? false))));
             if ($open) {
                 $add('setup', 1, 'warn', 'list-checks', count($open), __('Einrichtung abschließen'),
@@ -203,7 +203,7 @@ final class Metrics
         // Platzhalter und Redaktionsnotizen (Inhalt, daher auch für die Redaktion): alle Fundstellen je Seite/Eintrag und Block
         // aufklappbar (View: pages/_placeholders.php) mit „Im Frontend bearbeiten“ (Editor springt zum Block), „In der Verwaltung“
         // und – nur bei Platzhaltern – „Ist gewollt“ je Fundstelle. Notizen sind öffentlich unsichtbar, daher nur Hinweis (info).
-        if (can('pages.edit') || can('settings.edit') || $admin) {
+        if (can('pages.edit') || can('settings.info') || $admin) {
             $all = self::placeholders(app()->db, self::placeholdersOk(), 200);
             if ($all) {
                 $first = $all[0];

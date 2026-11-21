@@ -7,8 +7,13 @@ use Core\Fields;
 use Core\Lang;
 use Core\Http\Request;
 use Core\Http\Response;
+use Core\SettingsRevisions;
+use Core\SiteSettings;
 
-/** Zentrales Einstellungsformular des Themes (Titel und Felder vom Theme). */
+/**
+ * Website-Einstellungen des Kits (Titel und Felder vom Kit). Zwei Stufen (Core\SiteSettings): mit settings.info nur die
+ * „Website-Angaben“, mit settings.edit alles. Jede Änderung landet als Version in settings_revisions („Zurücknehmen“).
+ */
 final class SettingsController extends AdminController
 {
     /** Bearbeitete Sprache: leer = Standardsprache, sonst Übersetzung (gespeichert als „feld@en“) */
@@ -20,12 +25,11 @@ final class SettingsController extends AdminController
 
     public function edit(Request $r, array $errors = [], ?array $values = null): Response
     {
-        $this->auth($r, 'settings.edit');
-        $theme = app()->theme;
+        $this->auth($r, 'settings.info');
         $lang = $this->lang($r);
-        $groups = $theme->settingsGroups();
+        $groups = SiteSettings::groups();
         $source = [];
-        foreach ($theme->settingsFields() as $f) {
+        foreach (SiteSettings::fields() as $f) {
             if (isset($f['name'])) $source[$f['name']] = app()->settings->get($f['name']);
         }
         if ($lang !== '') {
@@ -46,8 +50,9 @@ final class SettingsController extends AdminController
             $values = $source;
         }
         return $this->view('settings', [
-            'title' => $theme->settingsTitle(), 'groups' => $groups, 'lang' => $lang,
+            'title' => SiteSettings::title(), 'groups' => SiteSettings::decorate($groups), 'lang' => $lang, 'full' => SiteSettings::full(),
             'values' => $values, 'errors' => $errors, 'action' => '/admin/settings',
+            'revisions' => SettingsRevisions::latest('settings', 6), 'fieldsByName' => array_column(array_filter(app()->theme->settingsFields(), fn($f) => isset($f['name'])), null, 'name'),
         ], $errors ? 422 : 200);
     }
 
@@ -57,9 +62,9 @@ final class SettingsController extends AdminController
      */
     public function preview(Request $r): Response
     {
-        $this->auth($r, 'settings.edit');
+        $this->auth($r, 'settings.info');
         $lang = $this->lang($r);
-        $fields = app()->theme->settingsFields();
+        $fields = SiteSettings::fields();
         if ($lang !== '') {
             $fields = array_values(array_filter(Fields::forTranslation($fields), fn($f) => isset($f['name'])));
         }
@@ -94,9 +99,10 @@ final class SettingsController extends AdminController
 
     public function save(Request $r): Response
     {
-        $this->auth($r, 'settings.edit');
+        $this->auth($r, 'settings.info');
         $lang = $this->lang($r);
-        $fields = app()->theme->settingsFields();
+        // Nur Felder, die die Person bearbeiten darf (Website-Angaben bzw. alles) – übrige Werte bleiben unberührt
+        $fields = SiteSettings::fields();
         if ($lang !== '') {
             $fields = array_values(array_filter(Fields::forTranslation($fields), fn($f) => isset($f['name'])));
         }
@@ -104,6 +110,8 @@ final class SettingsController extends AdminController
         $current = [];
         foreach ($fields as $f) if (isset($f['name'])) $current[$f['name']] = app()->settings->get($f['name'] . ($lang !== '' ? '@' . $lang : ''));
         [$values, $errors] = Fields::sanitize($fields, (array) ($r->post['f'] ?? []), $current);
+        // Pflichtwerte, die einmal gesetzt nicht mehr leer sein dürfen (Impressum, Datenschutz) – nur in der Standardsprache
+        if ($lang === '') $errors += SiteSettings::keepErrors($fields, $values, $current);
         if ($errors) {
             app()->session->flash('error', __('Bitte prüfen Sie die markierten Felder – es wurde nichts gespeichert.'));
             return $this->edit($r, $errors, $values);
@@ -113,8 +121,13 @@ final class SettingsController extends AdminController
                 $empty = $v === null || $v === '' || $v === [] || $v == app()->settings->get($k);
                 $empty ? app()->settings->delete($k . '@' . $lang) : app()->settings->set($k . '@' . $lang, $v);
             }
+            // Version: was in dieser Sprache wirklich gespeichert ist (leer = Rückfall auf die Standardsprache)
+            $after = [];
+            foreach ($values as $k => $_) $after[$k] = app()->settings->get($k . '@' . $lang);
+            SettingsRevisions::record('settings', $current, $after, 'admin', $lang);
         } else {
             app()->settings->setMany($values);
+            SettingsRevisions::record('settings', $current, $values, 'admin');
         }
         // Erweiterungen (Extension::on 'settings.saved'): nur geänderte Schlüssel, ohne Werte
         $changed = array_keys(array_filter($values, fn($v, $k) => $v != ($current[$k] ?? null), ARRAY_FILTER_USE_BOTH));
@@ -122,6 +135,16 @@ final class SettingsController extends AdminController
         $this->changed();
         $q = $lang !== '' ? '?lang=' . $lang : '';
         return $this->back('/admin/settings' . $q . ($r->str('_tab') ? '#' . preg_replace('~[^\w\-]~', '', $r->str('_tab')) : ''),
-            'success', __('{title} gespeichert.', ['title' => app()->theme->settingsTitle() . ($lang !== '' ? ' (' . Lang::all()[$lang] . ')' : '')]));
+            'success', __('{title} gespeichert.', ['title' => SiteSettings::title() . ($lang !== '' ? ' (' . Lang::all()[$lang] . ')' : '')]));
+    }
+
+    /** Letzte Änderung zurücknehmen (Core\SettingsRevisions) – nur Felder, die die Person bearbeiten darf */
+    public function undo(Request $r, string $id): Response
+    {
+        $this->auth($r, 'settings.info');
+        $allowed = array_column(array_filter(SiteSettings::fields(), fn($f) => isset($f['name'])), 'name');
+        $err = SettingsRevisions::undo((int) $id, $allowed, 'settings');
+        if ($err === null) $this->changed();
+        return $this->back('/admin/settings#aenderungen', $err === null ? 'success' : 'error', $err ?? __('Änderung zurückgenommen.'));
     }
 }

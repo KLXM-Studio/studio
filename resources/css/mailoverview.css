@@ -27,6 +27,7 @@
 .mo-net th,.mo-net td{padding:10px 8px}
 .mo-net tbody th .adm-badge{display:inline-block;margin:6px 4px 0 0}
 .mo-open{margin-top:8px}
+.mo-table .adm-badge--warn{color:color-mix(in srgb,var(--adm-warn) 70%,var(--adm-ink))}   /* auf getönten Zeilen ≥ 4,5:1 (axe) */
 /* Schmal: jede Zeile als Karte, Beschriftung aus data-label */
 @media (max-width:860px){
   .mo-table thead{display:none}

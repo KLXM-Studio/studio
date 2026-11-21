@@ -37,7 +37,7 @@ final class Features
     {
         return array_merge([
             'pages.structure' => ['Seiten anlegen, verschieben und löschen', ['pages.manage']],
-            'settings' => ['Zentrale Angaben des Kits', ['settings.edit']],
+            'settings' => ['Zentrale Angaben des Kits', ['settings.info', 'settings.edit']],
             'media' => ['Mediathek', ['media.upload', 'media.delete']],
             // Untertitel, Kapitel und Transkripte für Video/Audio (Core\MediaTracks); KI-Transkription zusätzlich über „ai“
             'media.captions' => ['Untertitel & Transkripte für Videos und Audio', []],

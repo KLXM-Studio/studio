@@ -18,6 +18,8 @@ $nav = array_values(array_filter([
     // Website-Angaben (/admin/settings) stehen unter „Einrichtung › Website“ (Core\AdminPages::groups)
     ['/admin/media', __('Medien'), 'media', $user && can('media.upload')],
     ['/admin/data', __('Daten'), 'data', (bool) $dataOk],
+    // Kontakte (Core\Data\AddressBook): sobald es eine Kontakte-Tabelle gibt, die das Konto pflegen darf – öffnet das Adressbuch
+    ['/admin/kontakte', __('Kontakte'), 'contacts', $user && \Core\Data\AddressBook::tables()],
     // Glossar (Core\Glossary) ist eine Einstellungsseite (Core\AdminPages, kind settings): Sammelseite „Einstellungen“ und an der Tabelle „glossar“
     ['/admin/requests', __('Anfragen'), 'requests', (bool) $inboxes || ($user && can('requests.read') && can('data.schema') && \Core\Data\Inbox::available())],
     // Support & Wissensdatenbank: im Abschnitt „Hilfe & Support“ unten in der Seitenleiste
@@ -59,11 +61,13 @@ if ($hubPage && in_array(rtrim($hubPage['href'], '/'), [\Core\AdminPages::HUB, \
 // Genauester Menüpunkt zur Adresse (z. B. /admin/system/domain vor /admin/system) – der übergeordnete ist dann nicht aktuell
 $bestHref = '';
 foreach ($adminNav as $n) if ($reqPath !== '' && ($reqPath === $n[0] || str_starts_with($reqPath, $n[0] . '/')) && strlen($n[0]) > strlen($bestHref)) $bestHref = $n[0];
-$isCur = function (string $key, string $href = '') use ($hubKind, $reqPath, $section, $bestHref): bool {
+$isCur = function (string $key, string $href = '') use ($hubKind, $reqPath, $section, $bestHref, $view): bool {
     if ($hubKind !== '') return ($key === 'prefs' && $hubKind === 'settings') || ($key === 'stats' && $hubKind === 'stats');
     if ($href !== '' && $bestHref !== $href && str_starts_with($bestHref, $href . '/')) return false;
     if ($href !== '' && ($reqPath === $href || str_starts_with($reqPath, $href . '/'))) return true;
     if (in_array($key, ['prefs', 'stats'], true)) return false;   // beide Sammelseiten liegen in views/prefs – nur über die Adresse
+    // Adressbuch-Ansicht: „Kontakte“ statt „Daten“ ist der aktuelle Menüpunkt
+    if ($key === 'contacts' || ($key === 'data' && $view === 'data/addressbook')) return $view === 'data/addressbook' && $key === 'contacts';
     return $section === $key || ($key === 'users' && $section === 'role');
 };
 $newReq = 0;
@@ -125,8 +129,8 @@ if ($user && ($req = app()->request)) {
 <?php $drill = $user && !empty($drill) ? $drill : ''; ?>
 <body class="adm<?= $user ? '' : ' adm--bare ' . \Core\AuthScreen::bodyClass() ?><?= $netArea ? ' adm--netarea' : '' ?><?= $drill ? ' is-drill' : '' ?>" data-max-vars="<?= (int) ini_get('max_input_vars') ?>"<?= $user && \Core\Http\Controllers\Admin\PresenceController::on() ? ' data-online-endpoint="' . e(url('/admin/api/online')) . '"' : '' ?>>
 <?= $user ? '' : \Core\AuthScreen::sky() ?>
-<?php if (environment() === 'production' && ($mr = \Core\Mailer::testRedirect())): // Test-Umleitung aktiv – nicht vergessen ?><div class="adm-env adm-env--mail" role="note"><?= e(__('E-MAIL-TEST')) ?> · <?= e(__('Alle E-Mails gehen an {to} statt an die eigentlichen Empfänger.', ['to' => implode(', ', $mr)])) ?> <?php if (can('system.manage')): ?><a href="<?= e(url('/admin/system#mail')) ?>"><?= e(__('Ausschalten')) ?></a><?php endif; ?></div><?php endif; ?>
-<?php if (environment() !== 'production'): ?><div class="adm-env adm-env--<?= e(environment()) ?>" role="note"><?= e(strtoupper(environment())) ?> · <?= e(__('Testumgebung – Änderungen hier gehen nicht auf die Live-Website. E-Mails werden umgeleitet, Suchmaschinen ausgesperrt.')) ?></div><?php endif; ?>
+<?php if (environment() === 'production' && ($mr = \Core\Mailer::testRedirect())): // Test-Umleitung aktiv – nicht vergessen ?><div class="adm-env adm-env--mail" role="region" aria-label="<?= e(__('E-Mail-Test')) ?>"><?= e(__('E-MAIL-TEST')) ?> · <?= e(__('Alle E-Mails gehen an {to} statt an die eigentlichen Empfänger.', ['to' => implode(', ', $mr)])) ?> <?php if (can('system.manage')): ?><a href="<?= e(url('/admin/system#mail')) ?>"><?= e(__('Ausschalten')) ?></a><?php endif; ?></div><?php endif; ?>
+<?php if (environment() !== 'production'): ?><div class="adm-env adm-env--<?= e(environment()) ?>" role="region" aria-label="<?= e(__('Testumgebung')) ?>"><?= e(strtoupper(environment())) ?> · <?= e(__('Testumgebung – Änderungen hier gehen nicht auf die Live-Website. E-Mails werden umgeleitet, Suchmaschinen ausgesperrt.')) ?></div><?php endif; ?>
 <?php if ($user):
   // Schmale Bildschirme (≤ 900 px): schlanke Kopfleiste, Seitenleiste als Schublade (resources/js/_drawer.js; ohne JavaScript per #adm-side)
   $areaTitle = (string) ($drillTitle ?? '');

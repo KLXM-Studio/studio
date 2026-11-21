@@ -6,15 +6,17 @@ $pol = $policy ?? \Core\Mfa::policy(); ?>
 <form class="set-group us-2fa" id="zwei-faktor" method="post" action="<?= e(url('/admin/users/2fa')) ?>">
   <?= csrf_field() ?><input type="hidden" name="methods" value="1">
   <h2 class="set-group__title"><?= e(__('Anmeldung & Sicherheit')) ?></h2>
-  <p class="set-group__note"><?= e(__('Welche Verfahren dürfen Konten dieser Website nutzen, und für welche Rollen ist ein zweiter Faktor Pflicht? Eingerichtete Verfahren sehen Sie in der Liste oben („2FA“, „Passkey“).')) ?></p>
+  <p class="set-group__lead"><?php if (\Core\Sites::multi()): ?><span class="set-scope"><?= e(__('Gilt für: diese Website')) ?></span> <?php endif; ?><?= e(__('Welche Verfahren Konten dieser Website nutzen dürfen und für welche Rollen ein zweiter Faktor Pflicht ist. Standard: beide Verfahren erlaubt, zweiter Faktor freiwillig. Netzwerk-Konten folgen immer der Richtlinie des Netzwerks.')) ?></p>
   <h3 class="set-group__title set-group__title--sub"><?= e(__('Erlaubte Verfahren')) ?></h3>
   <div class="set-list">
     <div class="f f--bool"><label class="f-check"><input type="checkbox" role="switch" name="totp" value="1"<?= $pol['totp'] ? ' checked' : '' ?>> <span><?= e(__('Authenticator-App (6-stelliger Code)')) ?></span></label></div>
     <div class="f f--bool"><label class="f-check"><input type="checkbox" role="switch" name="passkey" value="1"<?= $pol['passkey'] ? ' checked' : '' ?>> <span><?= e(__('Passkeys (Touch ID, Face ID, Windows Hello, Android, Passwortmanager, Sicherheitsschlüssel)')) ?></span></label></div>
-    <div class="f f--bool"><label class="f-check"><input type="checkbox" role="switch" name="passwordless" value="1" aria-describedby="us-pwl-h"<?= $pol['passwordless'] ? ' checked' : '' ?>> <span><?= e(__('Anmeldung ohne Passwort mit Passkey')) ?></span></label>
-      <p class="f-help" id="us-pwl-h"><?= e(__('Zählt als Zwei-Faktor-Anmeldung (Gerät + Fingerabdruck, Gesicht oder PIN). Setzt „Passkeys“ voraus.')) ?></p></div>
+    <?php // nur sichtbar, wenn Passkeys erlaubt sind (resources/js/admin.js initShowIf) ?>
+    <div class="f-vis" data-show-if="<?= e('[{"passkey":["1"]}]') ?>"><div class="f f--bool"><label class="f-check"><input type="checkbox" role="switch" name="passwordless" value="1" aria-describedby="us-pwl-h"<?= $pol['passwordless'] ? ' checked' : '' ?>> <span><?= e(__('Anmeldung ohne Passwort mit Passkey')) ?></span></label>
+      <p class="f-help" id="us-pwl-h"><?= e(__('Zählt als Zwei-Faktor-Anmeldung (Gerät + Fingerabdruck, Gesicht oder PIN).')) ?></p></div></div>
   </div>
   <h3 class="set-group__title set-group__title--sub"><?= e(__('Zweiter Faktor je Rolle')) ?></h3>
+  <p class="set-group__lead"><?= e(__('„Verlangt“: Wer noch keinen zweiten Faktor hat, richtet ihn bei der nächsten Anmeldung ein (nach der Übergangsfrist ohne Ausweg). Eingerichtete Verfahren je Person zeigt die Liste unter „Personen“.')) ?></p>
   <div class="set-list">
   <?php foreach ($roles as $k => $ro): $cur = $pol['roles'][$k] ?? ''; ?>
     <?php if ($k === 'network'): ?>

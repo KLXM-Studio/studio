@@ -6,6 +6,8 @@
     <p class="set-page__lead"><?= e(__('Was eine Person darf, bestimmt ihre Rolle. Eigene Rollen stellen Sie aus einzelnen Rechten zusammen.')) ?></p>
     <a class="adm-btn adm-btn--small" href="<?= e(url('/admin/roles/new')) ?>">+ <?= e(__('Neue Rolle')) ?></a>
   </div>
+  <?php // Website-Einstellungen in zwei Stufen (Core\SiteSettings): bestehende Rollen behalten „alles“, neue Websites geben der Redaktion nur die Angaben ?>
+  <p class="set-group__lead" id="rollen-angaben"><?= e(__('Website-Einstellungen gibt es in zwei Stufen: „Website-Angaben pflegen“ (Kontakt, Öffnungszeiten, Hinweisbalken, Social Media, Fußbereich) und „{title} ändern“ (alles, auch Logo, Rechtstexte und SEO). Neue Websites geben der Redaktion nur die Angaben; bestehende Rollen behalten ihre Rechte.', ['title' => app()->theme->settingsTitle()])) ?></p>
   <div class="us-rolegrid"><?php $defaults = \Core\Permissions::defaults(); /* Standardrollen: nie löschbar */ ?>
     <?php foreach ($roles as $k => $ro): $all = in_array('*', $ro['permissions'], true); $editable = $k !== 'admin' && $k !== 'network'; ?>
     <article class="us-role-card">
