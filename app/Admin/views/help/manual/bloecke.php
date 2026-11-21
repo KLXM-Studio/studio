@@ -53,15 +53,16 @@
   <h3 id="text-bild-ausrichten"><?= e($blocks['media_text']['label']) ?>: Bild ausrichten</h3>
   <p>Steht neben dem Bild ein langer Text, legt <b>Bild ausrichten</b> fest, wo das Bild sitzt (Varianten mit Bild rechts, links oder abwechselnd):</p>
   <ul>
-    <li><b>Mitlaufen</b> (Standard): Das Bild steht oben neben dem Text und bleibt beim Scrollen unter dem Kopfbereich sichtbar, bis der Text zu Ende ist. Ist der Text kürzer als das Bild, sieht der Block aus wie bisher (Text mittig neben dem Bild).</li>
+    <li><b>Mitlaufen</b> (Standard für neue Blöcke): Das Bild steht oben neben dem Text und bleibt beim Scrollen unter dem Kopfbereich sichtbar, bis der Text zu Ende ist. Ist der Text kürzer als das Bild, sieht der Block aus wie bisher (Text mittig neben dem Bild).</li>
     <li><b>Oben:</b> Das Bild steht oben neben dem Text und scrollt mit der Seite.</li>
     <li><b>Mitte:</b> Das Bild steht senkrecht mittig neben dem Text – bei langen Texten mit viel Leerraum darüber und darunter.</li>
   </ul>
+  <p>Blöcke, die es vor dieser Einstellung schon gab, stehen auf „Mitte“ und sehen damit aus wie bisher – wählen Sie „Mitlaufen“, wenn Sie es dort möchten.</p>
   <p>Auf schmalen Bildschirmen (Telefon) stehen Bild und Text untereinander; die Einstellung wirkt dann nicht. Es bewegt sich nichts von selbst, daher gilt sie auch bei „Bewegung reduzieren“.</p>
   <?php endif; ?>
   <?php if (isset($blocks['gallery'])): ?>
   <h3 id="galerie-einzelbild"><?= e($blocks['gallery']['label']) ?> mit einem Bild</h3>
-  <p>Enthält eine Galerie genau ein Bild, erscheint es automatisch als <b>Einzelbild in voller Inhaltsbreite</b> im Originalformat – mit Bildunterschrift darunter und, wenn eingeschaltet, per Klick groß (Lightbox). Anordnung, Spalten und Bildformat gelten erst ab zwei Bildern. Sehr hohe Bilder werden höchstens etwa so hoch wie das Browserfenster und stehen dann mittig. Kommt ein zweites Bild hinzu, zeigt der Block wieder die gewählte Anordnung.</p>
+  <p>Enthält eine Galerie genau ein Bild und ist <b>Einzelnes Bild groß zeigen</b> an (Standard für neue Galerien; bei älteren Galerien aus, damit sie unverändert bleiben), erscheint es als <b>Einzelbild in voller Inhaltsbreite</b> im Originalformat – mit Bildunterschrift darunter und, wenn eingeschaltet, per Klick groß (Lightbox). Anordnung, Spalten und Bildformat gelten erst ab zwei Bildern. Sehr hohe Bilder werden höchstens etwa so hoch wie das Browserfenster und stehen dann mittig. Kommt ein zweites Bild hinzu, zeigt der Block wieder die gewählte Anordnung.</p>
   <?php endif; ?>
   <?php if (isset($blocks['subpages'])): ?>
   <h3 id="unterseiten">Unterseiten</h3>

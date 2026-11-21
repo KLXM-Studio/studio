@@ -71,6 +71,15 @@ final class App
         Extensions::boot();
         // KI (Symfony AI, config 'ai'): semantische Suche der Wissensdatenbank einsetzen, falls konfiguriert
         AI\Ai::boot();
+        // Geänderte Block-Standardwerte: bestehende Blöcke einmal auf ihr bisheriges Aussehen festlegen – beim ersten Aufruf
+        // nach einem Update, falls `migrate` (Konsole, mit Ausgabe) noch nicht lief
+        if (PHP_SAPI !== 'cli' && Blocks\DefaultChanges::pending()) {
+            try {
+                foreach (Blocks\DefaultChanges::run() as $line) error_log('[block-defaults] ' . $app->site->key . ': ' . $line);
+            } catch (\Throwable $e) {
+                error_log('[block-defaults] ' . $e->getMessage());
+            }
+        }
 
         // Erststart: Inhalte des Kits einspielen – sobald Kit und Startinhalte entschieden sind (Core\Onboarding;
         // sonst wählt die Administration beides im Willkommen-Bildschirm)

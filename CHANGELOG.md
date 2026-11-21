@@ -35,10 +35,18 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Bildergalerie mit genau einem Bild** (neue Option „Einzelnes Bild groß zeigen“, an für neue Blöcke; bestehende unverändert): erscheint als Einzelbild in voller Inhaltsbreite im Originalformat (`figure.cms-gallery--single`
   mit Bildunterschrift, Lightbox wie bisher) statt klein in einer Spalte; hohe Bilder höchstens 85 % der Fensterhöhe, mittig.
   Die Live-Galerie bleibt unverändert. Handbuch → Alle Blöcke, Entwicklerhandbuch → Kits.
-- *EN:* Media + text blocks get “Align image”: “Follow” (default, also for existing blocks), “Top”, “Centre”. “Follow” places the
-  image at the top next to long text and keeps it visible below the header while scrolling (pure CSS sticky, only side by side;
-  short text looks as before). An image gallery with exactly one image now shows it as a single full-width image in its original
-  aspect ratio with caption and lightbox, instead of a small column.
+- **Bestehende Seiten sehen aus wie vorher** (`Core\Blocks\DefaultChanges`): `migrate` – sonst der erste Aufruf nach dem Update –
+  schreibt einmal je Website in alle gespeicherten Blöcke ohne Wert den bisherigen Zustand (`valign: center`, `single_large: false`):
+  Seiten (Entwurf und veröffentlicht, Vorlagen), Seitenversionen, Einträge der Inhalts-Tabellen samt geteilter Tabellen und
+  Versionen, auch verschachtelt (Layout-Spalten, Inhaltsblöcke). Merker `sys.block_defaults`, idempotent, `updated_at` bleibt;
+  die neuen Standards gelten nur für neue Blöcke. Erweiterungen mit eigenen Block-Tabellen nutzen `DefaultChanges::patchData()`.
+  Selbsttest in `blocks:selftest`.
+- *EN:* Media + text blocks get “Align image”: “Follow” (default for new blocks), “Top”, “Centre”. “Follow” places the image at the
+  top next to long text and keeps it visible below the header while scrolling (pure CSS sticky, only side by side; short text looks
+  as before). An image gallery with exactly one image can show it as a single full-width image in its original aspect ratio with
+  caption and lightbox (“Show single image large”, on for new blocks). Existing content keeps its look: `migrate` (or the first
+  request after the update) writes the previous values into all stored blocks without a value, once per site
+  (`Core\Blocks\DefaultChanges`, pages, revisions, content tables, nested blocks).
 
 ### Cookie-Einwilligung: „Hinweis nur, wenn nötig“ (consent_kit 1.5.0)
 - **Kein Banner, wenn nur Einbettungen aktiv sind:** Sind ausschließlich Dienste aktiv, die nur über Platzhalter laden (z. B. nur
