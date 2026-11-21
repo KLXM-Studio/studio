@@ -25,7 +25,9 @@
 @import "./_features.css";   /* Funktionen & Erweiterungen (Core\Features, app/Admin/views/features.php, resources/js/_features.js) */   /* Externe Quellen (Core\Sources): Zuordnung, Vorschau, Protokoll, Badge „aus Quelle“ */
 @import "./_subscribe.css";   /* Daten → Abonnieren (Core\Data\Subscriptions) */
 @import "./_addressbook.css";   /* Kontakte: Adressbuch-Ansicht (Core\Data\AddressBook, resources/js/_addressbook.js) */
-@import "./_netarea.css";   /* Netzwerk-Bereich: Kopf „NETZWERK“, Seitenleiste, Umschalter (Core\Network\Area) */
+@import "./_netarea.css";   /* Netzwerk-Bereich: Kopf, Seitenleiste in Graphit (Core\Network\Area) */
+@import "./_areaswitch.css";   /* Umschalter Netzwerk ↔ Website + Popover-Menüs (.adm-pop) */
+@import "./_topbar.css";   /* PROTOTYP Kopfleiste (Variante B, ?ui=b) */
 @import "./_mailsettings.css";   /* E-Mail-Versand: nummerierte Gruppen, wirksamer Absender (system/_mail.php, network/_email.php) */
 @import "./_settingsui.css";   /* Einstellungsseiten: Geltung, Warnhinweis, wirksamer Wert, Letzte Änderungen (Fields::renderGroups) */
 @import "./_toast.css";   /* Meldungen (Toast), gemeinsam mit editor.shadow.css */

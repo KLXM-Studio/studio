@@ -64,7 +64,7 @@ final class Stats
         $cfg = Sites::all()[$key] ?? [];
         $site = new Site($key, $cfg);
         $own = trim((string) ($cfg['label'] ?? ''));
-        return ['key' => $key, 'label' => $own === '' && $key === Site::DEFAULT ? __('Hauptwebsite') : $site->label(), 'label_own' => $own,
+        return ['key' => $key, 'label' => $own === '' && $key === Site::DEFAULT ? __('Hauptwebsite') : $site->label(), 'label_own' => $own, 'site_name' => '',
             'hosts' => $site->hosts(), 'url' => Network::siteUrl($key), 'network' => $key === Network::siteKey(), 'at' => time()];
     }
 
@@ -99,6 +99,7 @@ final class Stats
             // Ohne eigenen Namen (config 'label', Netzwerk-Übersicht → Name ändern): Name der Website aus den Einstellungen
             $sn = trim(strip_tags((string) (($set['org_name'] ?? '') ?: ($set['site_name'] ?? ''))));   // Kits: project 'name_setting' (meist org_name)
             if ($d['label_own'] === '' && $sn !== '') $d['label'] = $sn;
+            $d['site_name'] = $sn;   // Name aus den Website-Einstellungen (Umschalter Netzwerk ↔ Website, Core\Network\Area::switcher)
             // Schalter der Verwaltung (Funktionen & Erweiterungen) – Preset und 'features' der Konfiguration gehen vor
             $cfgF = array_merge(Features::PRESETS[$preset] ?? [], (array) $cfg->get('features', []));
             foreach ((array) ($set[Features::UI_KEY] ?? []) as $fk => $on) if (!array_key_exists($fk, $cfgF)) $state[$fk] = (bool) $on;

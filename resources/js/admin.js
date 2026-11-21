@@ -28,6 +28,8 @@ import { initFavorites } from './_favorites.js';
 import { initNavGroups } from './_navgroups.js';   // Seitenleiste → Administration: aufklappbare Gruppen
 import { initSupport } from './_support.js';
 import { initNetwork } from './_network.js';
+import { initPopovers } from './_areaswitch.js';   // Popover-Menüs: Umschalter Netzwerk ↔ Website, Favoriten, Konto (data-pop)
+import { initQuickbar } from './_quickbar.js';   // PROTOTYP Kopfleiste (Variante B): Suche in der Leiste, Ein-/Ausblenden
 import { initOnline } from './_online.js';   // „online“-Herzschlag (Core\Presence::ONLINE)
 import { initReview } from './_review.js';   // Prüf-Ebene „Eingereicht“ (Core\Review)
 import { initRedirects } from './_redirects.js';   // Administration → Weiterleitungen (Core\Redirects)
@@ -98,6 +100,8 @@ initFavorites(csrf);
 initSupport(csrf);
 // Netzwerk-Übersicht: Filter und Suche (_network.js)
 initNetwork();
+initPopovers();
+initQuickbar();
 initOnline();
 // Eingereicht: Sammelauswahl (_review.js)
 initReview();
