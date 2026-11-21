@@ -201,6 +201,9 @@ final class Database
             // Funktionen & Erweiterungen: wer hat wann was geschaltet (Core\FeatureLog)
             'feature_log' => "id $pk, created_at VARCHAR(25) NOT NULL, user_id INT NULL, user_email $str NULL, kind VARCHAR(12) NOT NULL,
                 target VARCHAR(80) NOT NULL, old_value VARCHAR(12) NULL, new_value VARCHAR(12) NULL, detail $str NULL, ip_hash VARCHAR(32) NULL",
+            // Versionen der Einstellungen (Core\SettingsRevisions): geänderte Schlüssel vorher/nachher, „Zurücknehmen“
+            'settings_revisions' => "id $pk, created_at VARCHAR(25) NOT NULL, user_id INT NULL, user_name $str NULL, channel VARCHAR(8) NOT NULL,
+                area VARCHAR(12) NOT NULL, changes_json TEXT NOT NULL, undone_by INT NULL",
             // Aktionslog (Core\Activity): wer hat wann Seiten, Einträge, Medien angelegt, geändert, veröffentlicht, gelöscht
             'activity_log' => "id $pk, created_at VARCHAR(25) NOT NULL, user_id INT NULL, user_name $str NULL, action VARCHAR(16) NOT NULL,
                 type VARCHAR(12) NOT NULL, tbl VARCHAR(64) NULL, entity_id INT NOT NULL DEFAULT 0, label $str NULL, lang VARCHAR(8) NULL,
@@ -327,6 +330,7 @@ final class Database
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS inbox_log_time ON inbox_log (created_at)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS change_log_status ON change_log (status, id)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS activity_time ON activity_log (created_at)');
+            $this->pdo->exec('CREATE INDEX IF NOT EXISTS settings_rev_area ON settings_revisions (area, id)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS activity_entity ON activity_log (type, tbl, entity_id)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS media_tracks_media ON media_tracks (media_id, status)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS media_jobs_status ON media_jobs (status, id)');

@@ -23,7 +23,7 @@ final class Icons
     /** Menü-Schlüssel der Verwaltung (data-ico, Favoriten, Suche) → Symbol */
     public const NAV = [
         'dashboard' => 'squares-four', 'pages' => 'files', 'page' => 'file-text', 'home' => 'house', 'settings' => 'sliders-horizontal',
-        'media' => 'images', 'data' => 'database', 'requests' => 'tray', 'inbox' => 'tray', 'calendar' => 'calendar-dots', 'dav' => 'calendar-dots',
+        'media' => 'images', 'data' => 'database', 'contacts' => 'address-book', 'requests' => 'tray', 'inbox' => 'tray', 'calendar' => 'calendar-dots', 'dav' => 'calendar-dots',
         'system' => 'gear-six', 'gear' => 'gear-six', 'features' => 'toggle-left', 'design' => 'palette', 'users' => 'users', 'role' => 'users', 'account' => 'user-circle',
         'user' => 'user', 'api' => 'code', 'network' => 'network', 'globe' => 'globe', 'landings' => 'globe', 'domain' => 'globe', 'branding' => 'paint-brush', 'support' => 'lifebuoy', 'chat' => 'chats', 'push' => 'bell-ringing', 'chatcfg' => 'chats', 'help' => 'question', 'review' => 'clipboard-text', 'drafts' => 'pencil-simple', 'pagetemplates' => 'stamp', 'redirects' => 'signpost', 'glossary' => 'book-open-text',
         'prefs' => 'sliders-horizontal', 'stats' => 'chart-bar', 'tools' => 'wrench', 'activity' => 'clock-counter-clockwise',

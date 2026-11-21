@@ -33,6 +33,7 @@
 .al-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 16px}
 .al-table select,.al-table input{width:100%;min-width:130px}
 .al-test{white-space:nowrap;vertical-align:middle}
+.mo-table .adm-badge--warn{color:color-mix(in srgb,var(--adm-warn) 70%,var(--adm-ink))}   /* auf getönten Zeilen ≥ 4,5:1 (axe) */
 /* Schmal: jede Zeile als Karte, Beschriftung aus data-label */
 @media (max-width:860px){
   .mo-table thead{display:none}

@@ -20,10 +20,15 @@ $groupIcon = function (array $g): string {
     return 'gear-six';
 };
 ?>
+<?php $full = $full ?? true; $revisions = $revisions ?? []; $fieldsByName = $fieldsByName ?? []; ?>
 <header class="adm-head">
   <div><p class="adm-eyebrow"><?= e(__('Website')) ?></p><h1><?= e($title) ?></h1>
-    <p class="adm-muted"><?= e(__('Diese Angaben erscheinen automatisch überall auf der Website (Kopf, Kontakt, Fußzeile, Suchmaschinen-Daten).')) ?></p></div>
+    <p class="adm-muted"><?= e(__('Diese Angaben erscheinen automatisch überall auf der Website (Kopf, Kontakt, Fußbereich, Daten für Suchmaschinen). Felder mit * sind Pflicht.')) ?>
+      <?= e(__('Technisches (Kit, Domain, E-Mail-Versand, Suchmaschinen aussperren) steht in den Grundeinstellungen.')) ?></p></div>
 </header>
+<?php if (!$full): // Nur „Website-Angaben“ (Recht settings.info): sagen, was fehlt und wer es ändert ?>
+<p class="adm-flash adm-flash--info st-info" role="note"><?= e(__('Sie pflegen die Website-Angaben: Kontakt, Öffnungszeiten, Hinweisbalken, Social Media und Texte im Fußbereich. Logo, Rechtstexte, SEO und Schalter des Kits ändert die Administration.')) ?></p>
+<?php endif; ?>
 <?php $langName = Lang::all()[$lang !== '' ? $lang : Lang::default()] ?? ''; ?>
 <?php if ($lang !== ''): ?>
 <p class="st-trans" role="note"><strong><?= e(__('Sie bearbeiten: {lang}', ['lang' => $langName])) ?></strong> · <?= e(__('Übersetzung ({lang}): Nur Texte werden je Sprache gepflegt – Telefon, Adresse, Links usw. gelten für alle Sprachen. Leere Felder zeigen den Text der Standardsprache.', ['lang' => $langName])) ?></p>
@@ -71,3 +76,23 @@ $groupIcon = function (array $g): string {
   <p class="st-pv__note adm-muted"><?= e(__('Zeigt die Startseite mit Ihren ungespeicherten Änderungen. Gespeichert wird erst mit „Speichern“.')) ?></p>
 </aside>
 </div>
+<?php if ($revisions): // Letzte Änderungen mit „Zurücknehmen“ (Core\SettingsRevisions) – auch über API, MCP und KI
+  $chan = ['admin' => __('Verwaltung'), 'api' => 'REST-API', 'mcp' => 'MCP', 'ai' => __('KI'), 'undo' => __('Zurückgenommen')]; ?>
+<section class="adm-card st-rev" id="aenderungen" aria-labelledby="st-rev-h">
+  <h2 id="st-rev-h"><?= e(__('Letzte Änderungen')) ?></h2>
+  <p class="set-group__lead"><?= e(__('Jede Änderung lässt sich zurücknehmen, solange die Felder seitdem nicht erneut geändert wurden.')) ?></p>
+  <ul class="st-rev__list">
+    <?php foreach ($revisions as $rv): ?>
+    <li class="st-rev__item">
+      <span class="st-rev__when"><?= e(\Core\Format::admin()->datetime(strtotime($rv['created_at']))) ?> · <?= e((string) ($rv['user_name'] ?? '–')) ?> · <?= e($chan[$rv['channel']] ?? $rv['channel']) ?></span>
+      <span class="st-rev__what"><?php foreach (array_slice($rv['changes'], 0, 4) as $i => $c): $base = explode('@', (string) $c['k'])[0]; $fd = $fieldsByName[$base] ?? [];
+        $lbl = (string) ($fd['label'] ?? $base) . (str_contains((string) $c['k'], '@') ? ' (' . strtoupper(explode('@', (string) $c['k'])[1]) . ')' : ''); ?><?= $i ? ' · ' : '' ?><strong><?= e($lbl) ?></strong>: <del><?= e(\Core\SettingsRevisions::display($c['b'], $fd)) ?></del> → <ins><?= e(\Core\SettingsRevisions::display($c['a'], $fd)) ?></ins><?php endforeach; ?><?= count($rv['changes']) > 4 ? ' · ' . e(__('und {n} weitere', ['n' => count($rv['changes']) - 4])) : '' ?></span>
+      <?php if ($rv['undone']): ?><span class="adm-badge adm-badge--muted"><?= e(__('zurückgenommen')) ?></span>
+      <?php elseif ($rv['channel'] !== 'undo'): ?>
+      <form method="post" action="<?= e(url('/admin/settings/undo/' . $rv['id'])) ?>"><?= csrf_field() ?><button class="adm-btn adm-btn--small adm-btn--ghost" type="submit"><?= e(__('Zurücknehmen')) ?></button></form>
+      <?php endif; ?>
+    </li>
+    <?php endforeach; ?>
+  </ul>
+</section>
+<?php endif; ?>

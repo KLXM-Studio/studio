@@ -187,6 +187,7 @@ return function (Router $r): void {
 
     $r->get('/admin/settings', [Admin\SettingsController::class, 'edit']);
     $r->post('/admin/settings', [Admin\SettingsController::class, 'save']);
+    $r->post('/admin/settings/undo/{id}', [Admin\SettingsController::class, 'undo']);   // Version zurücknehmen (Core\SettingsRevisions)
     $r->post('/admin/api/settings-preview', [Admin\SettingsController::class, 'preview']);
     $r->get('/admin/design', [Admin\DesignController::class, 'edit']);
     $r->post('/admin/design', [Admin\DesignController::class, 'save']);
@@ -267,6 +268,11 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/einsetzen', [Admin\DataController::class, 'placeSave']);
     $r->post('/admin/data/{handle}/bulk', [Admin\DataController::class, 'bulk']);
     $r->post('/admin/data/{handle}/quick', [Admin\DataController::class, 'quick']);
+    // Adressbuch-Ansicht (Core\Data\AddressBook): Listen zuordnen, vCard-Export – vor /{id}; Menüpunkt „Kontakte“
+    $r->get('/admin/kontakte', [Admin\AddressBookController::class, 'home']);
+    $r->post('/admin/data/{handle}/listen', [Admin\AddressBookController::class, 'assign']);
+    $r->get('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
+    $r->post('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
     // Geteilte Tabellen (Core\Data\Shared): fremde Einträge, Auswahl, Anzeige auf dieser Website – vor /{id}
     $r->get('/admin/data/{handle}/shared', [Admin\DataController::class, 'foreign']);
     $r->post('/admin/data/{handle}/pick', [Admin\DataController::class, 'pick']);
@@ -298,6 +304,7 @@ return function (Router $r): void {
     $r->post('/admin/funktionen/erweiterung', [Admin\FeaturesController::class, 'extension']);
     $r->post('/admin/funktionen/freigabe', [Admin\FeaturesController::class, 'delegate']);
     $r->get('/admin/system', [Admin\SystemController::class, 'edit']);
+    $r->post('/admin/system/undo/{id}', [Admin\SystemController::class, 'undo']);   // Version der Grundeinstellungen zurücknehmen
     $r->post('/admin/system', [Admin\SystemController::class, 'save']);
     $r->post('/admin/system/testmail', [Admin\SystemController::class, 'testMail']);
     $r->post('/admin/system/keys', [Admin\SystemController::class, 'generateKeys']);

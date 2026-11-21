@@ -9,14 +9,15 @@ $net ??= false;
 $showDb ??= true;
 $systemTo ??= [];
 $f = \Core\Format::admin();
-$section = function (string $id, string $title, string $help, ?array $res, string $accept) use ($f): void {
+// $scope: 'site'|'network' – Kennzeichen „Gilt für“ (nur mit mehreren Websites)
+$section = function (string $id, string $title, string $help, ?array $res, string $accept, string $scope = '') use ($f): void {
     $err = $res ? count(array_filter($res['findings'], fn($x) => $x['level'] === 'error')) : 0;
     $warn = $res ? count(array_filter($res['findings'], fn($x) => $x['level'] === 'warning')) : 0;
     ?>
 <section class="adm-card" aria-labelledby="ig-<?= e($id) ?>">
   <h2 id="ig-<?= e($id) ?>"><?= icon($err ? 'warning' : 'shield-check') ?> <?= e($title) ?>
     <?php if ($res): ?><span class="adm-badge<?= $err ? ' adm-badge--warn' : ($warn ? ' adm-badge--muted' : '') ?>"><?= e($err ? __('{n} Fehler', ['n' => $err]) : ($warn ? __('{n} Hinweise', ['n' => $warn]) : __('nichts Unerwartetes'))) ?></span><?php endif; ?></h2>
-  <p class="adm-muted"><?= e($help) ?></p>
+  <p class="adm-muted"><?php if ($scope !== '' && \Core\Sites::multi()): ?><span class="set-scope<?= $scope === 'network' ? ' set-scope--net' : '' ?>"><?= e($scope === 'network' ? __('Gilt für: alle Websites') : __('Gilt für: diese Website')) ?></span> <?php endif; ?><?= e($help) ?></p>
   <?php if (!$res): ?>
   <p><?= e(__('Noch nicht geprüft.')) ?></p>
   <?php else: ?>
@@ -50,8 +51,8 @@ $section = function (string $id, string $title, string $help, ?array $res, strin
 <?php $current = 'integritaet'; include __DIR__ . '/_sidenav.php'; ?>
   <div class="us-main">
 <?php
-if ($canFiles) $section('files', __('Dateien der Installation'), __('Prüfsummen von Code, Autoloader, Konfiguration und jeder .htaccess/.user.ini – dazu ausführbare Dateien in public/ und storage/ sowie PHP-Code in neuen Mediendateien. Nach einem Update oder Deploy den Stand als bekannt übernehmen.'), $files, 'files');
-if ($showDb) $section('db', __('Datenbank dieser Website'), __('Trigger und Views, neue Tabellen, neue Konten mit allen Rechten, neue API-Schlüssel und Skript-Code in Seiten oder Einstellungen.'), $db, 'db');
+if ($canFiles) $section('files', __('Dateien der Installation'), __('Prüfsummen von Code, Autoloader, Konfiguration und jeder .htaccess/.user.ini – dazu ausführbare Dateien in public/ und storage/ sowie PHP-Code in neuen Mediendateien. Nach einem Update oder Deploy den Stand als bekannt übernehmen.'), $files, 'files', 'network');
+if ($showDb) $section('db', __('Datenbank dieser Website'), __('Trigger und Views, neue Tabellen, neue Konten mit allen Rechten, neue API-Schlüssel und Skript-Code in Seiten oder Einstellungen.'), $db, 'db', 'site');
 ?>
 <section class="adm-card" aria-labelledby="ig-mail">
   <h2 id="ig-mail"><?= icon('envelope-simple') ?> <?= e(__('Hinweis per E-Mail')) ?></h2>

@@ -250,7 +250,14 @@ final class CmsService
         if (!$values) {
             throw new ApiError(422, 'Keine Felder übergeben.');
         }
+        // KI-Assistent (läuft mit den Rechten der angemeldeten Person): ohne settings.edit nur Website-Angaben (Core\SiteSettings)
+        if ($this->origin['channel'] === 'ai' && app()->auth->check() && ($deny = \Core\SiteSettings::forbidden(array_keys($values)))) {
+            throw new ApiError(403, 'Diese Felder dürfen Sie nicht ändern: ' . implode(', ', $deny), ['forbidden' => $deny]);
+        }
         $fields = array_values(array_intersect_key($byName, $values));
+        $before = [];
+        foreach ($fields as $f) $before[$f['name']] = app()->settings->get($f['name'] . ($this->foreign() ? '@' . $this->lang : ''));
+        $channel = in_array($this->origin['channel'], ['mcp', 'ai'], true) ? $this->origin['channel'] : 'api';
         if ($this->foreign()) {
             // Übersetzung: nur übersetzbare Felder, leere Werte = Rückfall auf die Standardsprache
             $fixed = array_values(array_map(fn($f) => $f['name'], array_filter($fields, fn($f) => !Fields::translatable($f))));
@@ -264,15 +271,19 @@ final class CmsService
             foreach ($clean as $k => $v) {
                 $v === null || $v === '' || $v === [] ? app()->settings->delete($k . '@' . $this->lang) : app()->settings->set($k . '@' . $this->lang, $v);
             }
+            \Core\SettingsRevisions::record('settings', $before, $clean, $channel, $this->lang);
             PageCache::clear();
             \Core\Extensions::emit(new \Core\Events\SettingsSaved('settings', array_map(fn($k) => $k . '@' . $this->lang, array_keys($clean))));
             return $clean + ['_lang' => $this->lang];
         }
         [$clean, $errors] = Fields::sanitize($fields, $values);
+        // Impressum und Datenschutz: einmal gesetzt, nicht leer speicherbar (Core\SiteSettings::KEEP)
+        $errors += \Core\SiteSettings::keepErrors($fields, $clean, $before);
         if ($errors) {
             throw new ApiError(422, 'Validierung fehlgeschlagen.', ['errors' => $errors]);
         }
         app()->settings->setMany($clean);
+        \Core\SettingsRevisions::record('settings', $before, $clean, $channel);
         PageCache::clear();
         \Core\Extensions::emit(new \Core\Events\SettingsSaved('settings', array_keys($clean)));
         return $clean;
