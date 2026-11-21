@@ -16,6 +16,8 @@
  * in mitgelieferten Paketen und unbekannte Kennungen erzeugen eine Warnung; Copyleft in Build-Werkzeugen nur einen
  * Hinweis (wird nicht ausgeliefert). Ausnahmen mit Begründung: ALLOW.
  * npm-Pakete werden aus node_modules/.pnpm gelesen – vorher `pnpm install` (tools/build.mjs erledigt das für Themes).
+ * Bibliotheken ohne Paketmanager, die tools/build.mjs als Release-Datei mit Prüfsumme lädt (tools/vendor-releases.json,
+ * z. B. a11y_datetime), zählen als mitgeliefert – Lizenz aus der Liste, Lizenzdatei unter public/assets/vendor/{name}/.
  * Nicht erfasst (Hinweise in THIRD-PARTY-NOTICES.md): Schriften/Stimmen/Daten außerhalb von Paketmanagern. Webfonts der Kits
  * liefert der Schriften-Manager zur Laufzeit (Core\Fonts, je Schrift LICENSE.txt in public/assets/fonts/installed) – nur noch
  * mitgelieferte Kit-Schriften (public/assets/kits/{kit}/fonts) werden hier auf ihre Lizenzdatei geprüft.
@@ -71,6 +73,7 @@ const REQUIRED_FILES = [
   PDFJS + 'wasm/LICENSE_JBIG2',
   PDFJS + 'wasm/LICENSE_OPENJPEG',
   PDFJS + 'wasm/LICENSE_QCMS',
+  'public/assets/vendor/a11y_datetime/LICENSE.txt',
   'public/assets/fonts/OFL-Lato.txt',
   'public/assets/icons/LICENSE.txt',
 ];
@@ -173,6 +176,13 @@ if (rootComposer.license !== PROJECT_LICENSE) problems.push(`composer.json: "lic
 if (!fs.existsSync(path.join(ROOT, 'LICENSE'))) problems.push('LICENSE fehlt');
 
 all.push(...composer());
+// Release-Dateien ohne Paketmanager (tools/build.mjs lädt sie mit fester Prüfsumme)
+const releases = path.join(ROOT, 'tools/vendor-releases.json');
+if (fs.existsSync(releases)) {
+  for (const [name, r] of Object.entries(JSON.parse(fs.readFileSync(releases, 'utf8')))) {
+    all.push({ eco: 'release', project: 'tools/vendor-releases.json', name, version: r.version, license: r.license ?? '', dev: false, bundled: true, url: r.repository ?? '' });
+  }
+}
 for (const dir of pnpmProjects()) {
   const r = npm(dir);
   const rel = path.relative(ROOT, dir);

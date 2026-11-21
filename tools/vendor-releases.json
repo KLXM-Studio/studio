@@ -1,0 +1,18 @@
+{
+  "a11y_datetime": {
+    "version": "5.3.3",
+    "license": "MIT",
+    "repository": "https://github.com/FriendsOfREDAXO/a11y_datetime",
+    "commit": "1048038fc3a41a558e4abf5b5122733adf6d12a8",
+    "files": {
+      "dist.zip": {
+        "url": "https://github.com/FriendsOfREDAXO/a11y_datetime/releases/download/v5.3.3/dist.zip",
+        "sha256": "1f596ee73dffdb0ec125c5a8b34158166ebb9b571e12ff15250867aa36b4051f"
+      },
+      "LICENSE.md": {
+        "url": "https://raw.githubusercontent.com/FriendsOfREDAXO/a11y_datetime/1048038fc3a41a558e4abf5b5122733adf6d12a8/LICENSE.md",
+        "sha256": "3eb5e67cb29633bcf75ade85e38065940ae571452ebd1e28a195216000c7720b"
+      }
+    }
+  }
+}
