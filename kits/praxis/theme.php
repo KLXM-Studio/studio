@@ -57,6 +57,10 @@ return [
     'version' => '1.0.0',
     'requires' => '>=1.0.0',   // benötigte Core-Version
 
+    // Datums-/Zeitauswahl der Website (Core\DatetimePicker): aus – die Anfrageformulare (templates/partials/form.php,
+    // eigenes form.js) sind optisch eingefroren und behalten die Auswahl des Browsers; die Verwaltung nutzt den Kalender.
+    'datetime_picker' => false,
+
     'backgrounds' => ['white' => 'Weiß', 'gray' => 'Grau', 'bordeaux' => 'Akzentfarbe', 'dark' => 'Dunkel'],   // Schlüssel „bordeaux“ = Akzentfläche (gespeicherte Inhalte)
     'dark_backgrounds' => ['bordeaux', 'dark'],
 

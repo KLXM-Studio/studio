@@ -6246,6 +6246,11 @@ return [
     'Phosphor Gefüllt' => 'Phosphor fill',
     'Lucide (Linie)' => 'Lucide (line)',
     'Tabler (Linie)' => 'Tabler (line)',
+    'Datums- und Zeitauswahl' => 'Date and time picker',
+    'Barrierefreier Kalender – überall, auch auf Telefonen' => 'Accessible calendar – everywhere, including phones',
+    'Kalender am Computer – Telefone und Tablets nutzen die Auswahl des Systems' => 'Calendar on computers – phones and tablets use the system picker',
+    'Immer die Auswahl des Browsers' => 'Always the browser’s own picker',
+    'Gilt für die Verwaltung und die Formulare der Website. Der barrierefreie Kalender zeigt Datum und Uhrzeit deutsch (TT.MM.JJJJ, HH:MM), lässt sich vollständig per Tastatur bedienen und sagt Monat und Auswahl für Screenreader an; Eintippen bleibt möglich. Ohne JavaScript gilt immer die Auswahl des Browsers. Ein Kit kann den Kalender auf der Website abschalten.' => 'Applies to the admin area and the website’s forms. The accessible calendar shows dates and times in the user’s language (German DD.MM.YYYY, English DD/MM/YYYY, 24-hour time), works entirely with the keyboard and announces month and selection to screen readers; typing stays possible. Without JavaScript the browser’s picker is always used. A kit can switch the calendar off on the website.',
     'Symbolstil auf der Website' => 'Icon style on the website',
     'Gilt für alle Symbole der Website (Blöcke, Kit). Lucide und Tabler sind freie Linien-Sätze – Symbole, die es dort nicht gibt, kommen aus Phosphor „Linie“. Die Verwaltung bleibt unverändert.' => 'Applies to all icons on the website (blocks, kit). Lucide and Tabler are free line sets – icons they don’t have come from Phosphor “regular”. The admin area stays unchanged.',
     // Erststart: Willkommen-Bildschirm (Core\Onboarding)

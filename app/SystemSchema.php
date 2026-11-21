@@ -48,6 +48,10 @@ final class SystemSchema
                 ['name' => 'sys.icon_topics', 'label' => 'Symbolbereiche in der Symbolauswahl', 'type' => 'multiselect',
                     'options' => Icons::topicOptions(),
                     'help' => 'Nichts angehakt = alle Bereiche. „Allgemein“ und „Bedienung“ sind immer dabei; über die Suche lassen sich weitere Bereiche einblenden. Auf der Website lädt ohnehin nur ein kleines Sprite mit den tatsächlich verwendeten Symbolen.'],
+                // Datums- und Zeitauswahl (Core\DatetimePicker, resources/js/_datetime.js) – Verwaltung und Formulare der Website
+                ['name' => 'sys.datetime_picker', 'label' => 'Datums- und Zeitauswahl', 'type' => 'select', 'required' => true, 'default' => 'picker',
+                    'options' => DatetimePicker::options(),
+                    'help' => 'Gilt für die Verwaltung und die Formulare der Website. Der barrierefreie Kalender zeigt Datum und Uhrzeit deutsch (TT.MM.JJJJ, HH:MM), lässt sich vollständig per Tastatur bedienen und sagt Monat und Auswahl für Screenreader an; Eintippen bleibt möglich. Ohne JavaScript gilt immer die Auswahl des Browsers. Ein Kit kann den Kalender auf der Website abschalten.'],
                 ['type' => 'heading', 'label' => __('Darstellung auf der Website')],
                 ['name' => 'sys.symbol_style', 'label' => 'Symbolstil auf der Website', 'type' => 'select', 'default' => 'duotone',
                     'options' => Icons::styleOptions(),

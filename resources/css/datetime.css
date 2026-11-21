@@ -1,0 +1,20 @@
+/*
+ * Datums- und Zeitauswahl auf der Website (Formulare der Datentabellen, resources/js/datetime.mjs) – Farben aus den
+ * Token des Kits (--kit-*, hell/dunkel liefert das Kit). Lädt nur, wenn ein Datums- oder Zeitfeld auf der Seite ist.
+ * Ein Kit passt den Kalender über dieselben Token an oder schaltet ihn ab (theme.php: 'datetime_picker' => false).
+ */
+@import "./_datetime-shape.css";
+.flatpickr-calendar.dt-site{
+  --a11y-dt-radius:var(--kit-radius,8px);
+  --a11y-dt-calendar-bg:var(--kit-bg,#fff);--a11y-dt-calendar-border:var(--kit-line,#d9d9de);
+  --a11y-dt-month-bg:transparent;--a11y-dt-month-fg:var(--kit-ink,#1b1b1f);
+  --a11y-dt-weekdays-bg:transparent;--a11y-dt-weekdays-fg:var(--kit-muted,#5c5c66);
+  --a11y-dt-day-fg:var(--kit-text,#1b1b1f);
+  --a11y-dt-day-disabled-fg:color-mix(in srgb,var(--kit-muted,#5c5c66) 55%,transparent);
+  --a11y-dt-day-not-allowed-fg:color-mix(in srgb,var(--kit-muted,#5c5c66) 70%,transparent);
+  --a11y-dt-day-hover-bg:color-mix(in srgb,var(--kit-accent,#2f5a9e) 10%,transparent);
+  --a11y-dt-today-color:var(--kit-accent,#2f5a9e);
+  --a11y-dt-selected-bg:var(--kit-accent,#2f5a9e);--a11y-dt-selected-fg:var(--kit-on-accent,#fff);
+  --a11y-dt-focus-ring:2px solid var(--kit-accent,#2f5a9e);
+  font-family:var(--kit-font,inherit);color:var(--kit-text,#1b1b1f)
+}
