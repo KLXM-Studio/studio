@@ -38,7 +38,7 @@ if (!$fields) {
 }
 $imageField = null;
 foreach ($fields as $f) {
-    if ((Tables::field($t, $f)['type'] ?? '') === 'media') { $imageField = $f; break; }
+    if ((\Core\Data\Network::anyField($t, $f)['type'] ?? '') === 'media') { $imageField = $f; break; }
 }
 $other = array_values(array_filter($fields, fn($f) => $f !== $imageField && $f !== '_title'));
 $showTitle = in_array('_title', $fields, true);
@@ -57,7 +57,7 @@ if (str_starts_with((string) ($d['filter_field'] ?? ''), $pfx)) {
         $val = !$ctx ? null : ($op === 'current' ? $ctx['entry']['id'] : ($ctx['entry'][$ff] ?? null));
         if (is_array($val)) $val = $val[0] ?? null;
         // Funktionen (Core\Data\Roles): „verknüpft mit dem aufgerufenen Eintrag“ = Funktion mit Verknüpfung entry:{tabelle}:{id}
-        if ($op === 'current' && $ctx && (Tables::field($t, $ff)['type'] ?? '') === \Core\Data\Roles::TYPE) $val = 'entry:' . $ctx['table']['handle'] . ':' . (int) $ctx['entry']['id'];
+        if ($op === 'current' && $ctx && (\Core\Data\Network::anyField($t, $ff)['type'] ?? '') === \Core\Data\Roles::TYPE) $val = 'entry:' . $ctx['table']['handle'] . ':' . (int) $ctx['entry']['id'];
         $o['where'] = [[$ff, '=', $val === null || $val === '' ? '-1' : (string) $val]];
     } elseif ($op === 'empty' || $op === 'notempty') {
         $o['where'] = [[$ff, $op, '']];   // ist leer / ist nicht leer (ohne Wert)
@@ -89,7 +89,7 @@ $vcands = [];   // eingestellte Filterfelder [name => Feld]
 foreach (['visitor_filter', 'visitor_filter2'] as $k) {
     if (!str_starts_with((string) ($d[$k] ?? ''), $pfx)) continue;
     $vn = substr($d[$k], strlen($pfx));
-    $vfd = Tables::field($t, $vn);
+    $vfd = \Core\Data\Network::anyField($t, $vn);
     if (!$vfd || !in_array($vfd['type'], ['select', 'multiselect'], true) || isset($vcands[$vn]) || in_array($vn, ['q', 'seite'], true)) continue;
     $vcands[$vn] = $vfd;
 }
@@ -162,7 +162,7 @@ $contain = $fit === 'contain' || ($fit === '' && $layout === 'directory');
 // Etiketten (Verzeichnis): Farbton nach Position der Option (dl-tone-1 … 5)
 $tone = fn(array $f, string $k) => 'dl-tone-' . ((int) array_search($k, array_keys((array) ($f['options'] ?? [])), true) % 5 + 1);
 $chips = function (array $e, string $f) use ($t, $tone): string {
-    $fd = Tables::field($t, $f);
+    $fd = \Core\Data\Network::anyField($t, $f);
     $vals = array_values(array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null));
     if (!$fd || !$vals) return '';
     $h = '';
@@ -194,8 +194,8 @@ if ($az) $hTag = !empty($d['title']) ? 'h4' : 'h3';
 $titleClamp = Clamp::titleClass($d);   // Textlänge/Titel kürzen (Karten und Listen; Texte über Clamp::text)
 // Spaltenköpfe der Tabelle: Titel-Feld, Sonderfelder „_when“ (Termin) und „published_at“ wie im Block „Datensatz-Felder“
 $colLabel = fn(string $f) => match (true) {
-    $f === '_title' => ($tf = Tables::field($t, $t['settings']['title_field'])) ? Tables::label($tf) : lt('Titel'),
-    ($ff = Tables::field($t, $f)) !== null => Tables::label($ff),
+    $f === '_title' => ($tf = \Core\Data\Network::anyField($t, $t['settings']['title_field'])) ? Tables::label($tf) : lt('Titel'),
+    ($ff = \Core\Data\Network::anyField($t, $f)) !== null => Tables::label($ff),
     $f === '_when' => lt('Termin'),
     $f === 'published_at' => lt('Datum'),
     default => $f,
@@ -273,7 +273,7 @@ $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($
   <p class="dl-empty"><?= e($d['empty_text'] ?: lt('Zurzeit gibt es hier keine Einträge.')) ?><?= is_editing() ? ' <small>(nur veröffentlichte Einträge erscheinen)</small>' : '' ?></p>
   <?php elseif ($layout === 'table'):
     // Zahlenfelder rechtsbündig (dl-num), Zeilen mit gesetztem Ja/Nein-Feld „highlight_field“ hervorgehoben (dl-row--hl, z. B. Summen)
-    $num = fn(string $f) => (Tables::field($t, $f)['type'] ?? '') === 'number' ? ' class="dl-num"' : '';
+    $num = fn(string $f) => (\Core\Data\Network::anyField($t, $f)['type'] ?? '') === 'number' ? ' class="dl-num"' : '';
     $hl = str_starts_with((string) ($d['highlight_field'] ?? ''), $pfx) ? substr($d['highlight_field'], strlen($pfx)) : null;
     // Merkmale für Kits (Theme::markUsed): '@table' bei jeder Tabelle; „Spalten sortierbar“ → '@tablesort' lädt Kern-Skript
     // js/table-sort.js und css/table-sort.css (Komponente von NativeCSS: Schaltflächen im Kopf, aria-sort, Ansage; dazu Schatten
@@ -296,7 +296,7 @@ $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($
     <?php foreach ($azLetters as $L): ?><li><?php if (isset($groups[$L])): ?><a href="#<?= e($b->domId() . '-az-' . ($L === '#' ? 'num' : strtolower($L))) ?>"><?= e($L) ?></a><?php else: ?><span aria-hidden="true"><?= e($L) ?></span><?php endif; ?></li><?php endforeach; ?>
   </ul></nav>
   <?php endif; ?>
-  <?php foreach ($groups as $L => $grows): $chipField = fn(string $f) => $layout === 'directory' && in_array(Tables::field($t, $f)['type'] ?? '', ['select', 'multiselect'], true); ?>
+  <?php foreach ($groups as $L => $grows): $chipField = fn(string $f) => $layout === 'directory' && in_array(\Core\Data\Network::anyField($t, $f)['type'] ?? '', ['select', 'multiselect'], true); ?>
   <?php if ($L !== ''): ?><<?= $azTag ?> class="dl-az__head" id="<?= e($b->domId() . '-az-' . ($L === '#' ? 'num' : strtolower($L))) ?>"><?= e($L) ?></<?= $azTag ?>><?php endif; ?>
   <ul class="dl-items<?= in_array($layout, ['cards', 'directory'], true) ? ' dl-cols-' . e((string) ($d['columns'] ?: 3)) : '' ?>" role="list">
     <?php foreach ($grows as $e): $url = $link($e); $title = Entries::title($t, $e); ?>
@@ -305,11 +305,11 @@ $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($
       <div class="dl-img ratio-<?= e(str_replace(':', '-', (string) ($d['ratio'] ?? '16:10'))) ?><?= $contain ? ' dl-img--contain' : '' ?>"><?= $pic ?: '<span class="dl-ph" aria-hidden="true"></span>' ?></div>
       <?php endif; ?>
       <div class="dl-body">
-        <?php $meta = $jobs && ($js = \Core\Data\Jobs::summary($t, $e)) !== '' ? [e($js)] : []; foreach ($other as $f) { if ($chipField($f)) continue; if (in_array(Tables::field($t, $f)['type'] ?? 'date', ['date', 'datetime', 'select', 'time'], true) || $f === 'published_at') { $h = Entries::html($t, $e, $f); if ($h !== '') $meta[] = $h; } } ?>
+        <?php $meta = $jobs && ($js = \Core\Data\Jobs::summary($t, $e)) !== '' ? [e($js)] : []; foreach ($other as $f) { if ($chipField($f)) continue; if (in_array(\Core\Data\Network::anyField($t, $f)['type'] ?? 'date', ['date', 'datetime', 'select', 'time'], true) || $f === 'published_at') { $h = Entries::html($t, $e, $f); if ($h !== '') $meta[] = $h; } } ?>
         <?php if ($meta): ?><p class="dl-meta"><?= implode('<span aria-hidden="true"> · </span>', $meta) ?></p><?php endif; ?>
         <?php if ($showTitle): ?><<?= $hTag ?> class="dl-name<?= $titleClamp ?>"><?= $knum($e) ?><?= $url ? '<a href="' . e($url) . '" class="dl-link">' . e($title) . '</a>' : e($title) ?></<?= $hTag ?>><?php endif; ?>
         <?php if (($ex = $excerpt($e)) !== ''): ?><p class="dl-excerpt"><?= $ex ?></p><?php endif; ?>
-        <?php foreach ($other as $f): $type = Tables::field($t, $f)['type'] ?? 'date'; if (in_array($type, ['date', 'datetime', 'select', 'time'], true) || $chipField($f) || ($ex !== '' && in_array($type, ['text', 'textarea', 'richtext'], true))) continue; [$clamp, $html] = Clamp::text($t, $e, $f, $d); if ($html === '') continue; ?>
+        <?php foreach ($other as $f): $type = \Core\Data\Network::anyField($t, $f)['type'] ?? 'date'; if (in_array($type, ['date', 'datetime', 'select', 'time'], true) || $chipField($f) || ($ex !== '' && in_array($type, ['text', 'textarea', 'richtext'], true))) continue; [$clamp, $html] = Clamp::text($t, $e, $f, $d); if ($html === '') continue; ?>
         <div class="dl-f dl-f--<?= e($type) ?><?= $clamp ?>"><?= $html ?></div>
         <?php endforeach; ?>
         <?php foreach ($other as $f): if (!$chipField($f) || ($ch = $chips($e, $f)) === '') continue; ?>

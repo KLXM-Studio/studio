@@ -9675,4 +9675,5 @@ return [
     '{n} Entwürfe von {site} nicht sichtbar' => '{n} drafts of {site} not visible',
     '{n} Kontakte von {site} nicht für die Website freigegeben' => '{n} contacts of {site} not released for the website',
     '{site}: Es gibt dort schon eine eigene Tabelle mit dem Kurznamen „{key}“ – statt direkt beteiligen einladen (data:share {key} --invite={sitekey} bzw. data:invite); die Website tritt dann mit data:network-join bei und führt ihre Einträge zusammen.' => '{site}: there is already an own table with the short name “{key}” – invite instead of adding directly (data:share {key} --invite={sitekey} or data:invite); the website then joins with data:network-join and merges its entries.',
+    '(nur diese Website)' => '(this website only)',
 ];

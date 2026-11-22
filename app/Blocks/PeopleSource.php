@@ -95,7 +95,7 @@ final class PeopleSource
         if ($limit && !Roles::has($t) && !Nearby::found(Nearby::forBlock($d))) $o['limit'] = $limit;
 
         $ff = (string) ($d['filter_field'] ?? '');
-        $field = str_starts_with($ff, $pfx) ? Tables::field($t, substr($ff, strlen($pfx))) : null;
+        $field = str_starts_with($ff, $pfx) ? \Core\Data\Network::anyField($t, substr($ff, strlen($pfx))) : null;
         $values = self::values((string) ($d['filter_values'] ?? ''));
         $rf = Roles::field($t);
         // Funktionen ohne Wert auf der Detailseite eines anderen Eintrags: Personen mit einer Funktion, die mit ihm verknüpft ist

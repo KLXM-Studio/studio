@@ -81,6 +81,11 @@ final class EntryEditController extends AdminController
         }
         if (!can('data.publish', $handle)) $in['status'] = 'draft';
         if (!$e && $r->str('lang') !== '') $in['lang'] = $r->str('lang');
+        // Netzwerk (Core\Data\Network): Weitergabe-Stufe – nur mit Recht „Einträge veröffentlichen“, nicht beim Speichern einzelner Felder
+        if (!$partial && \Core\Data\Network::levelsOn($t) && can('data.publish', $handle) && $r->str('share_level') !== '') {
+            $in[\Core\Data\Network::COL] = $r->str('share_level');
+            $in[\Core\Data\Network::COL_SITES] = array_map('strval', (array) ($r->post['share_sites'] ?? []));
+        }
         [$newId, $errors] = Entries::save($t, $e ? (int) $e['id'] : null, $in);
         if ($errors) {
             $values = $in + ($e ?? []);
@@ -88,6 +93,10 @@ final class EntryEditController extends AdminController
                 'errors' => $errors, 'labels' => array_column($t['fields'], 'label', 'name')]
                 // 200 statt 422: Prüfhinweise sind kein Fehler der Anfrage (keine Meldung in der Browser-Konsole)
                 + ($partial ? [] : $this->payload($t, $e, $values, $errors)));
+        }
+        // Netzwerk: Zusatzangaben dieser Website (share_extra)
+        if (!$partial && !empty($t['site_fields']) && is_array($r->post['x'] ?? null) && ($xe = \Core\Data\Network::saveExtras($t, (int) $newId, (array) $r->post['x']))) {
+            return Response::json(['ok' => false, 'error' => __('Zusatzangaben: {msg}', ['msg' => implode(' ', array_map('strval', $xe))]), 'errors' => $xe]);
         }
         $this->changed();
         $saved = Entries::find($t, (int) $newId);

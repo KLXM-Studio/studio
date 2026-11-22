@@ -71,7 +71,7 @@ final class NetworkSelfTest
             self::$ok += (int) $res['ok'];
             foreach ((array) $res['fails'] as $f) self::$fail[] = "$step ($site): $f";
         };
-        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB'], [$bund, 'localPrep'], [$la, 'localMember'], [$bund, 'localBack'], [$lb, 'joinPrepB'], [$la, 'joinA'], [$lb, 'joinB'], [$la, 'joinClean']] as [$s, $st]) {
+        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB'], [$bund, 'localPrep'], [$la, 'localMember'], [$bund, 'localExtras'], [$bund, 'localBack'], [$lb, 'joinPrepB'], [$la, 'joinA'], [$lb, 'joinB'], [$la, 'joinClean']] as [$s, $st]) {
             $call($s, $st);
         }
         @unlink($file);
@@ -92,7 +92,7 @@ final class NetworkSelfTest
             $st = match ($step) {
                 'setup' => self::setup($st, $eq), 'landA' => self::landA($st, $eq), 'landB' => self::landB($st, $eq), 'bund' => self::bund($st, $eq),
                 'landA2' => self::landA2($st, $eq), 'bund2' => self::bund2($st, $eq), 'join' => self::join($st, $eq), 'cleanup' => self::cleanup($st, $eq), 'cleanupB' => self::cleanupB($st, $eq),
-                'localPrep' => self::localPrep($st, $eq), 'localMember' => self::localMember($st, $eq), 'localBack' => self::localBack($st, $eq),
+                'localPrep' => self::localPrep($st, $eq), 'localMember' => self::localMember($st, $eq), 'localBack' => self::localBack($st, $eq), 'localExtras' => self::localExtras($st, $eq),
                 'joinPrepB' => self::joinPrepB($st, $eq), 'joinA' => self::joinA($st, $eq), 'joinB' => self::joinB($st, $eq), 'joinClean' => self::joinClean($st, $eq),
                 default => throw new \InvalidArgumentException('Unbekannter Schritt'),
             };
@@ -545,6 +545,52 @@ final class NetworkSelfTest
         $eq('Land B hat verlassen', in_array($st['sites'][2], (array) (Shared::meta($key)['members'] ?? []), true), false);
         Shared::unshare($key, true);
         foreach (['ntj_', 'njr_'] as $p) if ($x = Tables::find($p . $s)) Tables::delete($x);
+        return $st;
+    }
+
+    /** Zusatzfelder im Block-Editor, in Datensatz-Feldern, Sortierung und Besucher-Filtern (Eigentümer-Website nach dem Teilen) */
+    private static function localExtras(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        $t = self::table('ntc_' . $s);
+        [, $err] = Network::saveSiteFields($t, [['name' => 'regionalgruppe', 'label' => 'Regionalgruppe'], ['name' => 'workshop', 'label' => 'Workshop'],
+            ['label' => 'Stufe', 'type' => 'select', 'options' => ['anfaenger' => 'Anfänger', 'profi' => 'Profi']]]);
+        $eq('Zusatzfelder ergänzt, Verknüpfungen bleiben', [$err, array_column(self::table('ntc_' . $s)['site_fields'] ?? [], 'type')], [[], ['relation', 'relation', 'select']]);
+        $t = self::table('ntc_' . $s);
+        Network::saveExtras($t, (int) $st['C1'], ['stufe' => 'anfaenger']);
+        Network::saveExtras($t, (int) $st['C2'], ['stufe' => 'profi']);
+        $t = self::table('ntc_' . $s);
+        // Block-Editor: Feldauswahl zeigt Zusatzfelder gekennzeichnet (Filter/Sortierung bzw. angezeigte Felder)
+        $one = \Core\Fields::renderForm([['name' => 'ff', 'label' => 'Feld', 'type' => 'datafield', 'system' => true]], [], [], 'x');
+        $many = \Core\Fields::renderForm([['name' => 'fs', 'label' => 'Felder', 'type' => 'datafields']], [], [], 'x');
+        $sel = \Core\Fields::renderForm([['name' => 'vf', 'label' => 'Filter', 'type' => 'datafield', 'types' => ['select', 'multiselect']]], [], [], 'x');
+        $mark = __('(nur diese Website)');
+        $eq('Block-Editor: Zusatzfelder in der Feldauswahl, gekennzeichnet', [str_contains($one, 'value="ntc_' . $s . '.regionalgruppe"'), str_contains($one, 'Regionalgruppe ' . $mark),
+            str_contains($many, 'value="ntc_' . $s . '.workshop"'), str_contains($sel, 'value="ntc_' . $s . '.stufe"'), str_contains($sel, 'value="ntc_' . $s . '.regionalgruppe"')], [true, true, true, true, false]);
+        // Sortierung und Besucher-Filter
+        $titles = fn(array $o) => array_map(fn($e) => Entries::title($t, $e), Entries::query($t, $o + ['status' => 'all', 'lang' => 'all']));
+        $eq('Sortieren nach Zusatzfeld', $titles(['where' => [['stufe', 'notempty', '']], 'sort' => 'stufe', 'dir' => 'desc']) === ['Stammtisch', 'Gruppenabend'] || $titles(['sort' => 'stufe', 'dir' => 'desc'])[0] === 'Stammtisch', true);
+        $fc = Entries::facets($t, ['stufe'], ['status' => 'all', 'lang' => 'all']);
+        $eq('Besucher-Filter: Trefferzahlen je Option', $fc['counts']['stufe'] ?? null, ['anfaenger' => 1, 'profi' => 1]);
+        $eq('Besucher-Filter: „eine von“', $titles(['where' => [['stufe', 'in', ['profi']]]]), ['Stammtisch']);
+        // Datensatz-Felder und Ausgabe
+        $c1 = Entries::find($t, (int) $st['C1']) ?? [];
+        $eq('Ausgabe eines Zusatzfelds (Verknüpfung, Auswahl)', [Entries::text($t, $c1, 'regionalgruppe'), Entries::text($t, $c1, 'stufe')], ['Niederrhein', 'Anfänger']);
+        $eq('Freigabe wie bei normalen Feldern', Exposure::publicNames($t, ['regionalgruppe', 'stufe']), ['regionalgruppe', 'stufe']);
+        $html = '';
+        $prev = app()->entry;
+        try {
+            app()->entry = ['table' => $t, 'entry' => Exposure::publicEntry($t, $c1)];
+            $html = app()->theme->renderBlocks([['id' => 'ntdf', 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'dl']]]);
+        } catch (\Throwable $e) {
+            $html = 'Fehler: ' . $e->getMessage();
+        } finally {
+            app()->entry = $prev;
+        }
+        $eq('Datensatz-Felder ohne Auswahl zeigen die Zusatzfelder', [str_contains($html, 'Regionalgruppe'), str_contains($html, 'Niederrhein'), str_contains($html, 'Anfänger')], [true, true, true]);
+        // Frontend-Bearbeitung: Weitergabe nur mit Recht (ohne Anmeldung: Feld gesperrt), Zusatzfelder im Panel
+        $panel = \Core\Theme::capture(ROOT . '/app/Views/entry-panel.php', ['t' => $t, 'e' => $c1, 'values' => $c1, 'errors' => [], 'reason' => null, 'foreign' => false]);
+        $eq('Panel „Eintrag bearbeiten“: Zusatzfelder dieser Website', str_contains($panel, 'name="x[stufe]"'), true);
         return $st;
     }
 }

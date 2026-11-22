@@ -369,7 +369,7 @@ final class Exposure
     {
         $out = [];
         foreach ($names as $n) {
-            $f = Tables::field($t, (string) $n);
+            $f = Tables::field($t, (string) $n) ?? Network::siteField($t, (string) $n);   // Zusatzfelder dieser Website: gleiche Regeln
             $r = self::rule($f);
             if ($f !== null && ($r['mode'] === 'never' || ($r['mode'] === 'always' && !$r[$target]))) continue;
             $out[] = $n;

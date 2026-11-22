@@ -29,6 +29,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Verknüpfungen auf Tabellen, die lokal bleiben (Regionalgruppen, Workshops), werden auf Wunsch (`data:share --local-fields=…`, Probelauf
   `--dry-run`, Häkchen in der Verwaltung) Zusatzfelder der teilenden Website – Werte bleiben, Filter „verknüpft mit dem aufgerufenen
   Eintrag“ und „In deiner Nähe“ wirken weiter, beim Aufheben kehren sie in die Spalte zurück.
+- **Zusatzfelder überall wie Felder:** Feldauswahl im Block-Editor (Filter, Sortierung, Besucher-Filter, angezeigte Felder) mit
+  „(nur diese Website)“, „Datensatz-Felder“ und Detailseite zeigen sie mit derselben Freigabe; Seitenleiste „Eintrag bearbeiten“ mit
+  Zusatzfeldern und Weitergabe-Stufe (nur mit Veröffentlichungsrecht).
 - **Beitreten mit eigenen Verknüpfungen:** `data:network-join` übernimmt Verknüpfungen der beitretenden Website auf ihre lokalen Tabellen
   standardmäßig als deren Zusatzfelder (`--local-fields`, `--no-local-fields`) – auch an zusammengeführten Doppeln; der Probelauf nennt,
   wie viele fremde Einträge warum nicht sichtbar sind (Entwürfe, nicht weitergegeben …). Einladen auf der Kommandozeile mit `data:invite`

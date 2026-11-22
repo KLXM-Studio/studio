@@ -355,7 +355,8 @@ final class Network
         $cur = json_decode((string) ($db->fetchValue('SELECT extra_data FROM share_extra WHERE extra_site = ? AND extra_entry = ?', [site()->key, $id]) ?? ''), true) ?: [];
         [$values, $errors] = \Core\Fields::sanitize(Entries::schema(['fields' => [...$defs, ...array_values(array_filter($t['fields'], fn($f) => $f['name'] === 'listen'))], 'settings' => []] + $t), array_intersect_key($in, array_flip(array_column($defs, 'name'))), $cur);
         if ($errors) return $errors;
-        $values = array_intersect_key($values, array_flip(array_column($defs, 'name')));
+        // nur übergebene Zusatzfelder ändern – die übrigen behalten ihren Wert (z. B. Auswahl ergänzt, Verknüpfung bleibt)
+        $values = array_intersect_key($values, array_flip(array_column($defs, 'name')), $in);
         foreach ($defs as $f) {
             if (!array_key_exists($f['name'], $values)) continue;
             $v = $values[$f['name']];
@@ -382,6 +383,59 @@ final class Network
             return '';
         }
         return (string) ($r['u'] ?? '') . '/' . (string) ($r['n'] ?? 0);
+    }
+
+    /** Zusatzfeld dieser Website (Definition) oder null – für Ausgabe, Feldauswahl im Block-Editor, Besucher-Filter */
+    public static function siteField(array $t, string $name): ?array
+    {
+        foreach ((array) ($t['site_fields'] ?? []) as $d) if (($d['name'] ?? '') === $name) return $d;
+        return null;
+    }
+
+    /** Feld des gemeinsamen Schemas oder – falls keins – Zusatzfeld dieser Website (Ausgabe in Blöcken) */
+    public static function anyField(array $t, string $name): ?array
+    {
+        return Tables::field($t, $name) ?? self::siteField($t, $name);
+    }
+
+    /** Namen der Zusatzfelder dieser Website, die kein Feld des gemeinsamen Schemas ersetzen (Ausgabe „alle Felder“) */
+    public static function siteFieldNames(array $t): array
+    {
+        $have = array_column((array) ($t['fields'] ?? []), 'name');
+        return array_values(array_filter(array_map(fn($d) => (string) ($d['name'] ?? ''), (array) ($t['site_fields'] ?? [])), fn($n) => $n !== '' && !in_array($n, $have, true)));
+    }
+
+    /** Kennzeichnung im Block-Editor */
+    public static function siteLabel(array $d): string
+    {
+        return Tables::label($d) . ' ' . __('(nur diese Website)');
+    }
+
+    /** ORDER-BY-Ausdruck für ein Zusatzfeld (Parameter nach $post), null = kein Zusatzfeld */
+    public static function sortSql(array $t, string $name, array &$post): ?string
+    {
+        if (!self::siteField($t, $name) || !preg_match('~^[a-z][a-z0-9_]{0,63}$~', $name)) return null;
+        $post[] = site()->key;
+        return "(SELECT json_extract(extra_data, '$." . $name . "') FROM share_extra WHERE extra_site = ? AND extra_entry = {$t['table']}.id)";
+    }
+
+    /** Werte bestimmter Zusatzfelder an Rohzeilen (mit id) hängen – z. B. für Trefferzahlen der Besucher-Filter */
+    public static function withExtras(array $t, array $rows, array $names): array
+    {
+        $ids = array_values(array_filter(array_map(fn($r) => (int) ($r['id'] ?? 0), $rows)));
+        $data = [];
+        foreach (array_chunk($ids, 500) as $chunk) {
+            try {
+                foreach (Shared::db((string) $t['shared']['key'])->fetchAll('SELECT extra_entry, extra_data FROM share_extra WHERE extra_site = ? AND extra_entry IN (' . implode(',', $chunk) . ')', [site()->key]) as $x) {
+                    $data[(int) $x['extra_entry']] = json_decode((string) $x['extra_data'], true) ?: [];
+                }
+            } catch (\Throwable) {
+                return $rows;
+            }
+        }
+        foreach ($rows as &$r) foreach ($names as $n) $r[$n] = $data[(int) ($r['id'] ?? 0)][$n] ?? null;
+        unset($r);
+        return $rows;
     }
 
     // ================================================================= Teilen: Verknüpfungen auf lokale Tabellen
@@ -537,6 +591,14 @@ final class Network
         foreach ((array) ($t['site_fields'] ?? []) as $d) if (($d['name'] ?? '') === $name) { $def = $d; break; }
         if (!$def || !preg_match('~^[a-z][a-z0-9_]{0,63}$~', $name)) return null;
         $path = '$.' . $name;
+        // „eine von“ (Besucher-Filter): je Wert eine Bedingung, verbunden mit ODER
+        if ($op === 'in') {
+            $parts = [];
+            foreach (array_values(array_unique(array_filter(array_map('strval', (array) $v), fn($x) => $x !== ''))) as $x) {
+                if (($sql = self::extraCondition($t, $name, '=', $x, $params)) !== null) $parts[] = $sql;
+            }
+            return $parts ? '(' . implode(' OR ', $parts) . ')' : '1 = 0';
+        }
         $neg = $op === '!=';
         if (in_array($def['type'], ['relation', 'relations'], true)) {
             $tid = ctype_digit((string) $v) ? (int) $v : 0;

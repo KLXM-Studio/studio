@@ -68,7 +68,7 @@ final class Clamp
     /** Wird dieses Feld gekürzt? */
     public static function applies(array $table, string $field): bool
     {
-        return in_array(Tables::field($table, $field)['type'] ?? '', self::TYPES, true);
+        return in_array(Network::anyField($table, $field)['type'] ?? '', self::TYPES, true);
     }
 
     /** Auszug: Leerraum zusammenfassen, an einer Wortgrenze kürzen, „…“ anhängen */

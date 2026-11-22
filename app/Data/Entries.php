@@ -52,16 +52,22 @@ final class Entries
     {
         [$where, $params] = self::where($table, $o);
         $sort = (string) ($o['sort'] ?? $table['settings']['sort_field']);
-        if (!in_array($sort, array_merge(Tables::SYSTEM, array_column($table['fields'], 'name')), true)) $sort = 'sort';
         $dir = strtolower((string) ($o['dir'] ?? $table['settings']['sort_dir'])) === 'desc' ? 'DESC' : 'ASC';
         $pre = [];
-        $order = "$sort $dir, id $dir";
+        $post = [];
+        // Netzwerk: Sortieren nach einem Zusatzfeld dieser Website (Wert aus share_extra)
+        if (!in_array($sort, array_merge(Tables::SYSTEM, array_column($table['fields'], 'name')), true) && ($sx = Network::sortSql($table, $sort, $post)) !== null) {
+            $order = "$sx $dir, id $dir";
+        } else {
+            if (!in_array($sort, array_merge(Tables::SYSTEM, array_column($table['fields'], 'name')), true)) $sort = 'sort';
+            $order = "$sort $dir, id $dir";
+        }
         if (Tables::isShared($table) && !empty($o['featured_first'])) $order = "CASE WHEN _pick = 'featured' THEN 0 ELSE 1 END, " . $order;
         $sql = 'SELECT ' . self::select($table, $pre) . " FROM {$table['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . " ORDER BY $order";
         if (!empty($o['limit'])) {
             $sql .= ' LIMIT ' . max(1, (int) $o['limit']) . ' OFFSET ' . max(0, (int) ($o['offset'] ?? 0));
         }
-        return self::attach($table, array_map(fn($r) => self::decode($table, $r), Tables::db($table)->fetchAll($sql, array_merge($pre, $params))));
+        return self::attach($table, array_map(fn($r) => self::decode($table, $r), Tables::db($table)->fetchAll($sql, array_merge($pre, $params, $post))));
     }
 
     /** Spalten: bei geteilten Tabellen zusätzlich die Auswahl dieser Website (_pick: visible|featured|hidden|rejected) */
@@ -121,9 +127,12 @@ final class Entries
     {
         unset($o['limit'], $o['offset']);
         $cols = [];
+        $extra = [];
         foreach ($fields as $n) {
             $f = Tables::field($table, (string) $n);
             if ($f && in_array($f['type'], ['select', 'multiselect'], true)) $cols[$f['name']] = $f['type'];
+            // Netzwerk: Auswahl-Zusatzfelder dieser Website (Werte in share_extra)
+            elseif (!$f && ($sf = Network::siteField($table, (string) $n)) && in_array($sf['type'], ['select', 'multiselect'], true)) { $cols[$sf['name']] = $sf['type']; $extra[] = $sf['name']; }
         }
         $counts = array_fill_keys(array_keys($cols), []);
         if (\Core\PageAccess::hidesTable($table)) return ['total' => 0, 'counts' => $counts];
@@ -132,8 +141,9 @@ final class Entries
             $rows = self::query($table, $o);   // geschützte Tabelle: nur, was dieser Besucher sieht (bereits dekodiert)
         } else {
             [$where, $params] = self::where($table, $o);
-            $rows = Tables::db($table)->fetchAll('SELECT ' . implode(', ', array_keys($cols)) . " FROM {$table['table']}"
+            $rows = Tables::db($table)->fetchAll('SELECT ' . implode(', ', ['id', ...array_diff(array_keys($cols), $extra)]) . " FROM {$table['table']}"
                 . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params);
+            if ($extra) $rows = Network::withExtras($table, $rows, $extra);
         }
         foreach ($rows as $r) {
             foreach ($cols as $n => $type) {
@@ -274,7 +284,7 @@ final class Entries
             }
             // Netzwerk: Zusatzfelder dieser Website (Core\Data\Network, Werte in share_extra) – z. B. „Termine der Regionalgruppe“
             if (!in_array($f, $names, true) && !empty($table['site_fields']) && $v !== '' && $v !== null && is_string($f)
-                && ($sql = Network::extraCondition($table, $f, (string) $op, is_array($v) ? ($v[0] ?? '') : $v, $params)) !== null) {
+                && ($sql = Network::extraCondition($table, $f, (string) $op, $op === 'in' ? (array) $v : (is_array($v) ? ($v[0] ?? '') : $v), $params)) !== null) {
                 $where[] = $sql;
                 continue;
             }
@@ -985,7 +995,7 @@ final class Entries
         if (in_array($name, ['created_at', 'updated_at', 'published_at'], true)) {
             return !empty($e[$name]) ? e(date_local((string) $e[$name], $o['date_style'] ?? 'short')) : '';
         }
-        $f = Tables::field($table, $name);
+        $f = Tables::field($table, $name) ?? Network::siteField($table, $name);   // auch Zusatzfelder dieser Website (Netzwerk)
         if (!$f) return '';
         $v = $e[$name] ?? null;
         if ($v === null || $v === '' || $v === []) return '';

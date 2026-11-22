@@ -36,9 +36,11 @@ if (!$fields) {
     // Adressbuch (Kinds): Titel, Foto, Funktion, Kontaktangaben, eigene Felder – ohne Namensteile und Schalter
     $fields = \Core\Data\Kinds::isContacts($t) && $layout !== 'head' ? ['_title', ...\Core\Data\Kinds::detailFields($t)] : ($layout === 'head' ? array_values(array_filter(['_title', 'published_at', Tables::imageField($t)]))
         : array_values(array_filter(array_column(array_filter($t['fields'], fn($f) => $f['type'] !== 'blocks' && Exposure::publicNames($t, [$f['name']]) !== []), 'name'), fn($n) => $n !== $t['settings']['title_field'])));   // Inhaltsblöcke: eigener Block entry_blocks
+    // Netzwerk: Zusatzfelder dieser Website (geteilte Tabellen) wie normale Felder – gleiche Freigabe-Regeln
+    if ($layout !== 'head') $fields = [...$fields, ...array_diff(Exposure::publicNames($t, \Core\Data\Network::siteFieldNames($t)), $fields)];
 }
-$label = fn(string $f) => $f === '_title' ? lt('Titel') : ($f === '_when' ? lt('Termin') : ($f === 'published_at' ? lt('Veröffentlicht') : Tables::label(Tables::field($t, $f) ?? ['label' => $f])));
-$type = fn(string $f) => Tables::field($t, $f)['type'] ?? ($f === '_title' ? 'title' : 'date');
+$label = fn(string $f) => $f === '_title' ? lt('Titel') : ($f === '_when' ? lt('Termin') : ($f === 'published_at' ? lt('Veröffentlicht') : Tables::label(\Core\Data\Network::anyField($t, $f) ?? ['label' => $f])));
+$type = fn(string $f) => \Core\Data\Network::anyField($t, $f)['type'] ?? ($f === '_title' ? 'title' : 'date');
 $ratio = (string) ($d['ratio'] ?? '16:9');
 // Steckbrief ohne einen einzigen Wert: auf der Website nichts ausgeben – der Abschnitt entfällt (Theme/Layout überspringen leere Ausgabe)
 if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f === '_title' || Entries::html($t, $e, $f) !== '')) return;
@@ -73,7 +75,7 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
           if ($f === '_title') continue;
           if ($tp === 'media') { $img ??= $f; continue; }
           if (in_array($tp, ['select', 'multiselect'], true)) {
-              $fd = Tables::field($t, $f);
+              $fd = \Core\Data\Network::anyField($t, $f);
               foreach (array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null) as $k) $chips[] = '<span class="dl-chip ' . $toneP($fd, (string) $k) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</span>';
               continue;
           }
@@ -125,7 +127,7 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
       $tp = $type($f);
       if ($tp === 'media') { $img ??= $f; continue; }
       if (in_array($tp, ['select', 'multiselect'], true)) {
-          $fd = Tables::field($t, $f);
+          $fd = \Core\Data\Network::anyField($t, $f);
           foreach (array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null) as $k) $chips[] = '<span class="dl-chip ' . $tone($fd, (string) $k) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</span>';
           continue;
       }

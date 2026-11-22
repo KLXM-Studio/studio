@@ -46,6 +46,10 @@ $readonly = $reason !== null;
   <?php endif; ?>
   <?= /* Sichtbarkeit: „Auf der Website: …“ (Core\Data\Exposure, wie in der Verwaltung) */ \Core\Theme::capture(ROOT . '/app/Admin/views/data/_visibility.php', ['t' => $t, 'values' => $values, 'status' => $isNew ? ($publish ? 'published' : ($workflow ? 'draft' : 'published')) : (string) $status]) ?>
   <fieldset class="adm-fields cms-epanel__fields"<?= $readonly ? ' disabled' : '' ?>><legend class="adm-sr"><?= e(__('Felder')) ?></legend><?= Fields::renderForm(Entries::formSchema($t), $values, $errors, 'f') ?></fieldset>
+  <?php if (!$readonly && \Core\Data\Tables::isShared($t)): // Netzwerk (Core\Data\Network): Zusatzfelder dieser Website und Weitergabe-Stufe (nur mit data.publish änderbar) ?>
+  <?= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_network.php', ['t' => $t, 'e' => $e, 'values' => $values, 'part' => 'extra', 'action' => null]) ?>
+  <?= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_network.php', ['t' => $t, 'e' => $e, 'values' => $values, 'part' => 'level', 'action' => null]) ?>
+  <?php endif; ?>
   <details class="cms-epanel__more"<?= isset($errors['slug']) ? ' open' : '' ?>>
     <summary><?= e(__('Adresse & Sprache')) ?></summary>
     <div class="f"><label for="cms-ep-slug"><?= e(__('Adresse')) ?></label>

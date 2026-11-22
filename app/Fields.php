@@ -712,6 +712,8 @@ final class Fields
                     foreach ($t['fields'] as $tf) {
                         if ($tf['name'] !== $t['settings']['title_field']) $opts[$tf['name']] = $tf['label'];
                     }
+                    // Netzwerk: Zusatzfelder dieser Website (geteilte Tabellen) – gekennzeichnet
+                    foreach ((array) ($t['site_fields'] ?? []) as $sf) if (!isset($opts[$sf['name']])) $opts[$sf['name']] = \Core\Data\Network::siteLabel($sf);
                     $opts['published_at'] = 'Veröffentlicht am';
                 }
                 foreach ($opts as $k => $l) {
@@ -881,6 +883,11 @@ final class Fields
             }
             foreach ($t['fields'] as $tf) {
                 if ($types !== null ? in_array($tf['type'], $types, true) : !in_array($tf['type'], ['richtext', 'textarea', 'media', 'file'], true)) $opts[$tf['name']] = $tf['label'];
+            }
+            // Netzwerk: Zusatzfelder dieser Website (geteilte Tabellen) – gekennzeichnet
+            foreach ((array) ($t['site_fields'] ?? []) as $sf) {
+                if (isset($opts[$sf['name']])) continue;
+                if ($types !== null ? in_array($sf['type'], $types, true) : !in_array($sf['type'], ['richtext', 'textarea'], true)) $opts[$sf['name']] = \Core\Data\Network::siteLabel($sf);
             }
             $h .= '<optgroup label="' . e($t['name']) . '" data-table="' . e($t['handle']) . '">';
             foreach ($opts as $k => $l) {
