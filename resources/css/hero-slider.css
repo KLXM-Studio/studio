@@ -1,0 +1,78 @@
+/*
+ * Einstieg als Slider (Core\Blocks\HeroSlider, Skript js/hero-slider.js) – lädt nur auf Seiten mit Slider; ein Kit ersetzt die Datei mit
+ * eigener css/hero-slider.css oder setzt nur Tokens. Die Folien sind die Abschnitte des Kit-Heros (.hs__slide > section), die Hülle
+ * legt sie mit Skript übereinander (Raster, eine Zelle) – Höhe = höchste Folie, kein Springen.
+ *
+ * Ohne Skript: erste Folie statisch, die übrigen hidden, keine Steuerung. Bewegung nur mit .is-moving (Skript, ohne „Bewegung
+ * reduzieren“) – sonst harte Schnitte.
+ *
+ * Tokens (Standard in Klammern):
+ *   --hs-t (.9s)                  Dauer des Übergangs          --hs-ease (cubic-bezier(.2,.7,.2,1))
+ *   --hs-kb-scale (1.08)          Zoom bei Kenburns            (Dauer = Anzeigedauer der Folie, setzt das Skript als --hs-dur)
+ *   --hs-ctrl-bg (rgb(0 0 0/.6))  Fläche der Steuerung         --hs-ctrl-fg (#fff) Symbole und Nummern
+ *   --hs-ctrl-gap (.25rem)        Abstand der Knöpfe           --hs-ctrl-y (1rem) Abstand zum unteren Rand (über dem Bild)
+ *   --hs-dot (.625rem)            Größe der Punkte             --hs-focus (#fff), --hs-focus-halo (#000) Fokusring
+ */
+.hs{position:relative;display:flex;flex-direction:column;container:hs/inline-size}
+.hs__slide[hidden]{display:none}
+.hs.is-ready .hs__track{display:grid;touch-action:pan-y}
+.hs.is-ready .hs__slide{grid-area:1/1;min-width:0;visibility:hidden;opacity:0}
+.hs.is-ready .hs__slide.is-active{visibility:visible;opacity:1;z-index:2}
+.hs.is-ready .hs__slide.is-leaving{visibility:visible;z-index:1}
+/* Kürzere Folien füllen die Höhe der höchsten: Abschnitt als Spalte, sein Inhalt (Einstieg des Kits) wächst mit */
+.hs.is-ready .hs__slide > *{height:100%;box-sizing:border-box}
+.hs.is-ready .hs__slide > .sec{display:flex;flex-direction:column}
+.hs.is-ready .hs__slide > .sec > :not(.sec__bg){flex:1 1 auto}
+
+/* ------------------------------------------------------------ Steuerung: Pause, zurück, Auswahl, weiter */
+.hs__ctrl{z-index:3;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:var(--hs-ctrl-gap,.25rem);
+  align-self:center;margin-block:.75rem;padding:.25rem;border-radius:999px;background:var(--hs-ctrl-bg,rgb(0 0 0/.6));color:var(--hs-ctrl-fg,#fff);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hs__ctrl[hidden]{display:none}
+.hs--below .hs__ctrl{order:2}
+.hs--overlay .hs__ctrl{position:absolute;inset-block-end:var(--hs-ctrl-y,1rem);inset-inline:0;width:max-content;max-width:calc(100% - 2rem);margin:0 auto}
+.hs__ctrl .hs__btn,.hs__dot{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:2.75rem;min-height:2.75rem;margin:0;padding:0 .5rem;
+  border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:.875rem;font-weight:700;line-height:1;cursor:pointer}
+/* Pause-Knopf (Hero::playToggle, video-toggle.css): in der Leiste statt in der Ecke */
+.hs__ctrl button.hx-vt{position:static;min-width:2.75rem;min-height:2.75rem;border:0;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+.hs__ctrl .hs__btn:hover,.hs__dot:hover{background:rgb(255 255 255/.16)}
+.hs__ctrl button:focus-visible{outline:3px solid var(--hs-focus,#fff);outline-offset:-3px;box-shadow:inset 0 0 0 6px var(--hs-focus-halo,#000)}
+.hs__ico{width:1.25rem;height:1.25rem}
+.hs__dots{display:flex;flex-wrap:wrap;justify-content:center}
+.hs__dots--dots .hs__num{display:block;width:var(--hs-dot,.625rem);height:var(--hs-dot,.625rem);border:2px solid currentColor;border-radius:50%;box-sizing:border-box}
+.hs__dots--dots .hs__dot[aria-current="true"] .hs__num{background:currentColor}
+.hs__dots--numbers .hs__dot{min-width:2.5rem;opacity:.72;font-variant-numeric:tabular-nums}
+.hs__dots--numbers .hs__dot[aria-current="true"]{opacity:1;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.3em}
+.hs__sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* Schmal (Telefon): Leiste unter den Folien statt über dem Bild, kleinere Punkte (Ziel ≥ 32 px) – verdeckt keinen Text */
+@container hs (max-width:40rem){
+  .hs--overlay .hs__ctrl{position:static;order:2;width:auto;max-width:calc(100% - 1rem);margin:.5rem auto}
+  .hs__ctrl .hs__btn,.hs__ctrl button.hx-vt{min-width:2.5rem;min-height:2.5rem}
+  .hs__dot{min-width:2rem;min-height:2.5rem;padding:0}
+}
+.hs-editnote{margin:.5rem auto;max-width:60rem;padding:.5rem 1rem;border-radius:8px;background:rgb(0 0 0/.06);font-size:.875rem}
+
+/* ------------------------------------------------------------ Übergänge (nur mit .is-moving) */
+.hs.is-moving .hs__slide{transition:opacity var(--hs-t,.9s) var(--hs-ease,cubic-bezier(.2,.7,.2,1)),visibility 0s linear var(--hs-t,.9s)}
+.hs.is-moving .hs__slide.is-active{transition-delay:0s}
+/* Morphing: Bilder blenden weich ineinander (Folie), der Titel wird von links aufgedeckt */
+.hs.is-moving.hs--morph:not(.hs--words) .hs__slide.is-active .hs-title{animation:hs-clip calc(var(--hs-t,.9s) * 1.1) var(--hs-ease,cubic-bezier(.2,.7,.2,1)) .12s both}
+/* … bzw. Wort für Wort (Wörter setzt das Skript in .hs-w, Verzögerung über --i) */
+.hs.is-moving.hs--words .hs__slide.is-active .hs-w{display:inline-block;animation:hs-word .7s var(--hs-ease,cubic-bezier(.2,.7,.2,1)) calc(.15s + var(--i,0) * 70ms) both}
+/* Aufdecken von unten bzw. seitlich: neue Folie schiebt eine Maske über die alte (die alte bleibt stehen) */
+.hs.is-moving:is(.hs--up,.hs--side) .hs__slide{opacity:1;transition:none}
+.hs.is-moving:is(.hs--up,.hs--side) .hs__slide.is-active{transition:clip-path var(--hs-t,.9s) var(--hs-ease,cubic-bezier(.2,.7,.2,1));clip-path:inset(0)}
+.hs.is-moving.hs--up .hs__slide:not(.is-active,.is-leaving){clip-path:inset(100% 0 0 0)}
+.hs.is-moving.hs--side .hs__slide:not(.is-active,.is-leaving){clip-path:inset(0 0 0 100%)}
+.hs.is-moving.hs--side.is-back .hs__slide:not(.is-active,.is-leaving){clip-path:inset(0 100% 0 0)}
+.hs.is-moving:is(.hs--up,.hs--side) .hs__slide.is-active .hs-title{animation:hs-rise calc(var(--hs-t,.9s) * 1.1) var(--hs-ease,cubic-bezier(.2,.7,.2,1)) .2s both}
+/* Kenburns: Bilder der sichtbaren Folie zoomen langsam zum Fokuspunkt (transform-origin setzt das Skript aus object-position) */
+.hs--kb .hs__slide :where(picture,figure,div):has(> img),.hs--kb .hs__slide :where(div,figure):has(> picture){overflow:hidden}
+.hs.is-moving.hs--kb .hs__slide:is(.is-active,.is-leaving) img{animation:hs-kb calc(var(--hs-dur,7s) + var(--hs-t,.9s) * 2) linear both}
+@keyframes hs-clip{from{clip-path:inset(-.2em 100% -.2em 0)}to{clip-path:inset(-.2em 0 -.2em 0)}}
+@keyframes hs-word{from{opacity:0;transform:translateY(.45em)}to{opacity:1;transform:none}}
+@keyframes hs-rise{from{opacity:0;transform:translateY(1.25rem)}to{opacity:1;transform:none}}
+@keyframes hs-kb{from{transform:scale(1)}to{transform:scale(var(--hs-kb-scale,1.08))}}
+
+@media (forced-colors:active){.hs__ctrl{border:1px solid CanvasText;background:Canvas;color:CanvasText}.hs__dots--dots .hs__dot[aria-current="true"] .hs__num{background:Highlight;border-color:Highlight}}
+@media print{.hs__ctrl{display:none}.hs.is-ready .hs__slide:not(.is-active){display:none}}

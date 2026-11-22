@@ -25,6 +25,20 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Neue Tabellen:** „Detailseiten mit Kopf wie Seiten“ im Assistenten und beim Anlegen, `data:template … --with-detail-page --hero`.
   Bestehende Vorlagen und Blöcke bleiben unverändert (Standard „Eigene Inhalte“). Selbsttest `hero:selftest`.
 
+### Einstieg als Slider (`Core\Blocks\HeroSlider`)
+- **Hero jedes Kits als Slider** (Block → Slider → „Als Slider zeigen“, Standard aus): mehrere Folien mit derselben Variante und
+  Gestaltung – der Kern legt die Folien um den Hero des Kits, kein Kit-Renderer musste geändert werden. Folien: Inhalt des Blocks,
+  eigene Folien (Bild/Video, Dachzeile, Titel, Text, Buttons) und/oder hervorgehobene Einträge mehrerer Tabellen mit der Zuordnung
+  „Felder des Eintrags“ wie beim Detail-Hero; Button zur Detailseite.
+- **Übergänge:** Morphing (Bilder weich ineinander, Titel per Clip-Path bzw. Wort für Wort), Aufdecken von unten oder seitlich,
+  Überblenden; optional Kenburns zum Fokuspunkt des Bildes.
+- **Steuerung und Barrierefreiheit:** automatischer Wechsel mit einstellbarer Dauer, Pause bei Maus und Fokus, Pause/Play mit dem
+  gemeinsamen Video-Schalter (`Hero::playToggle`), Punkte oder Nummern, Pfeile, Tastatur, Wischen. `aria-roledescription` Karussell/Folie
+  mit „x von n“, Live-Region nur nach Bedienung, bei „Bewegung reduzieren“ kein Auto-Wechsel und harte Schnitte, genau eine H1.
+- **Technik:** ohne JavaScript steht die erste Folie still; eigenes kleines Skript `js/hero-slider.js` und `css/hero-slider.css` nur auf
+  Seiten mit Slider (CSP-konform, kein Fremdskript); weitere Folien laden ihre Bilder verzögert. Bestand byte-gleich. Selbsttest
+  `slider:selftest`.
+
 ### Auf der Startseite hervorheben und Block „Highlights“ (`Core\Data\Featured`)
 - **Grundfeld „Auf der Startseite hervorheben“** für jede Tabelle mit Detailseiten (Tabelle → Auf der Website → Detailseiten, Standard
   aus): je Eintrag Schalter, optional Reihenfolge und „bis“-Datum (einschließlich, ohne Cron). Spalten `_featured`, `_featured_order`,

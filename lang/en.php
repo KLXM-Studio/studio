@@ -1622,6 +1622,7 @@ return [
     'sichtbar' => 'visible',
     'nicht sichtbar' => 'not visible',
     'Hervorheben' => 'Feature',
+    'Slider mit {n} Folien – die Vorschau zeigt die erste. Übergänge und Steuerung sehen Besucher.' => 'Slider with {n} slides – the preview shows the first. Visitors see transitions and controls.',
     // „Auf der Startseite hervorheben“, Block „Highlights“ (Core\Data\Featured)
     'Auf der Startseite hervorheben' => 'Feature on the home page',
     'Bitte ein Datum angeben.' => 'Please enter a date.',

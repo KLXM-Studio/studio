@@ -86,6 +86,12 @@ return [
     'Folie {n}' => 'Slide {n}',
     'Vorherige Folie' => 'Previous slide',
     'Nächste Folie' => 'Next slide',
+    // Einstieg als Slider (Core\Blocks\HeroSlider)
+    'Automatischen Wechsel anhalten' => 'Pause automatic rotation',
+    'Automatischen Wechsel starten' => 'Start automatic rotation',
+    'Folie wählen' => 'Choose slide',
+    'Folie {n}: {title}' => 'Slide {n}: {title}',
+    'Wechselnde Folien' => 'Rotating slides',
     'Automatisches Weiterblättern anhalten' => 'Pause automatic slide rotation',
     'Automatisches Weiterblättern starten' => 'Start automatic slide rotation',
     // Kalender

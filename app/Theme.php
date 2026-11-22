@@ -114,6 +114,8 @@ final class Theme
         }
         // Einstieg mit Quelle „Felder des Eintrags“ (Core\Blocks\EntryHero): Felder „Quelle“ + Zuordnung am Hero jedes Kits (mit Titel und Bild)
         if (isset($this->blocks['hero'])) $this->blocks['hero'] = Blocks\EntryHero::decorate($this->blocks['hero']);
+        // Einstieg als Slider (Core\Blocks\HeroSlider): Abschnitt „Slider“ am Hero jedes Kits (mit Titel) – Standard aus
+        if (isset($this->blocks['hero'])) $this->blocks['hero'] = Blocks\HeroSlider::decorate($this->blocks['hero']);
         // Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“ für Blöcke mit 'list_template' => true (Kern-Datenliste, Kopien in Kits)
         foreach ($this->blocks as $type => $b) {
             if (Blocks\ListTemplates::supports($b)) $this->blocks[$type] = Blocks\ListTemplates::decorate($b, (string) $type);
@@ -718,6 +720,8 @@ final class Theme
 
     public function renderBlock(Block $block): string
     {
+        // Einstieg als Slider (Core\Blocks\HeroSlider): Folien um den Hero des Kits legen – null bei nur einer Folie (wie bisher)
+        if (!empty($block->data['slider']) && Blocks\HeroSlider::active($block) && ($slider = Blocks\HeroSlider::render($this, $block)) !== null) return $slider;
         $inner = $this->renderInner($block);
         if ($inner === null) {
             return app()->editing ? '<p>Renderer für „' . e($block->type) . '“ fehlt.</p>' : '';
@@ -962,6 +966,8 @@ final class Theme
         }
         // Sortierbare Tabellen (Datenliste → „Spalten sortierbar“, Merkmal '@tablesort'; nicht im Editor) – eigene css/table-sort.css des Kits ersetzt sie
         if ($types !== null && in_array('@tablesort', $types, true)) $out[] = $this->coreCss('table-sort.css');
+        // Einstieg als Slider (Merkmal '@heroslider', Core\Blocks\HeroSlider) – eigene css/hero-slider.css des Kits ersetzt sie
+        if ($types !== null && in_array('@heroslider', $types, true)) $out[] = $this->coreCss('hero-slider.css');
         // Video (Zwei-Klick-Lösung): neutrale Grundlage nur für Kits ohne eigene Stile für .vembed – eigene css/embed.css ersetzt sie
         if (($types === null || in_array('video', $types, true)) && ($this->hasAsset('css/embed.css') || !$this->stylesEmbed())) {
             $out[] = $this->coreCss('embed.css');
@@ -1027,6 +1033,8 @@ final class Theme
         if (in_array('@tablesort', $types, true)) $out[] = asset('js/table-sort.js');
         // Wissensbereich: Kapitelmenü als Schublade (Telefon, Modus „Fokus“), mitlaufende Abschnitte – Kern-Skript für jedes Kit
         if (in_array('@knowledge', $types, true)) $out[] = asset('js/knowledge.js');
+        // Einstieg als Slider: Wechsel, Steuerung, Wischen (Kern-Skript für jedes Kit, nur mit Merkmal '@heroslider')
+        if (in_array('@heroslider', $types, true)) $out[] = asset('js/hero-slider.js');
         foreach ($this->def['conditional_css'] ?? [] as $file => $needs) {
             if (str_ends_with($file, '.js') && array_intersect($needs, $types)) {
                 $out[] = $this->asset($file);

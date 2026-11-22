@@ -25,6 +25,17 @@
     <li><b>Laufzeile, Bewegung:</b> bewegt sich langsam, hält per Schaltfläche, Maus oder Tastatur und steht bei „Bewegung reduzieren“ still.</li>
   </ul>
   <?php endif; ?>
+  <?php if (in_array('slider', array_column((array) ($blocks['hero']['fields'] ?? []), 'name'), true)): ?>
+  <h3 id="einstieg-slider"><?= e($blocks['hero']['label']) ?> als Slider</h3>
+  <p>Der Einstieg kann zwischen mehreren Folien wechseln – mit derselben Variante und Gestaltung wie sonst. Eingeschaltet wird das im Block unter <b>Slider</b> → „Als Slider zeigen“ (Standard aus; bestehende Einstiege bleiben, wie sie sind).</p>
+  <ul>
+    <li><b>Folien:</b> die erste ist der Inhalt des Einstiegs (oder – „Erste Folie: Nur die Folien unten“ – gleich die erste weitere Folie). Dazu <b>eigene Folien</b> mit Bild oder Video, Dachzeile, Titel, Text und Buttons und/oder <b>Folien aus Einträgen</b>: Einträge mit „Auf der Startseite hervorheben“ aus einer oder mehreren Tabellen (<a href="<?= e(url('/admin/hilfe#startseite-hervorheben')) ?>">Einträge hervorheben</a>). Bild, Titel, Dachzeile und Text kommen dann wie beim Einstieg mit „Felder des Eintrags“ aus dem Eintrag, der Button führt zur Detailseite.</li>
+    <li><b>Übergang:</b> Morphing (Bilder blenden weich ineinander, der Titel wird aufgedeckt – oder Wort für Wort), Aufdecken von unten oder seitlich, Überblenden; dazu optional <b>Kenburns</b> (Bilder zoomen langsam zum Fokuspunkt aus der Mediathek).</li>
+    <li><b>Steuerung:</b> wechselt automatisch nach der eingestellten Zeit, hält an, solange die Maus darüber steht oder ein Element darin den Tastatur-Fokus hat, und hat einen Pause-Knopf wie das Hintergrundvideo. Punkte oder Nummern und Pfeile wählen eine Folie, auf dem Telefon geht es auch per Wischen; in der Steuerung wechseln die Pfeiltasten, Pos1 und Ende.</li>
+    <li><b>Barrierefrei:</b> Screenreader hören „Folie 2 von 4“ – Ansagen nur, wenn jemand selbst wechselt. Bei „Bewegung reduzieren“ wechselt nichts von selbst und ohne Übergang. Nur die erste Folie trägt die Hauptüberschrift (H1). Ohne JavaScript steht die erste Folie still.</li>
+    <li>Im Editor zeigt die Vorschau die erste Folie mit einem Hinweis; Übergänge sehen Sie in der Vorschau der Seite.</li>
+  </ul>
+  <?php endif; ?>
   <?php if (isset($blocks['dials'])): ?>
   <h3 id="kennzahlen-skala">Kennzahlen mit Skala</h3>
   <p>Jede Kennzahl erscheint als Rundinstrument mit großer Zahl, Bezeichnung und optionalem Zusatz (z. B. Quelle oder Zeitraum). Der farbige Bogen zeigt, wie „voll“ die Skala ist:</p>
