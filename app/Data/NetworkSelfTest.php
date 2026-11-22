@@ -361,7 +361,7 @@ final class NetworkSelfTest
         return $st;
     }
 
-    // ================================================================= Teilen mit Verknüpfungen auf lokale Tabellen (Fall oejv: Termine/Personen)
+    // ================================================================= Teilen mit Verknüpfungen auf lokale Tabellen (Fall Verband: Termine/Personen)
 
     /** Lokale Tabelle anlegen (Website, nicht geteilt) */
     private static function local(string $handle, array $in): array
@@ -458,7 +458,7 @@ final class NetworkSelfTest
         return $st;
     }
 
-    // ================================================================= Beitritt einer Website mit eigenen lokalen Verknüpfungen (Fall oejv/bayern)
+    // ================================================================= Beitritt einer Website mit eigenen lokalen Verknüpfungen (Fall Landesverband / neuer Landesverein)
 
     /** Land B: eigene Regionalgruppen und eigener Kalender (per data:convert umgewandelt) mit Verknüpfung, darunter ein Doppel */
     private static function joinPrepB(array $st, \Closure $eq): array
