@@ -315,7 +315,7 @@ a.adm-stat:hover{box-shadow:0 0 0 2px var(--adm-a);color:inherit}
 .cms-mark{display:inline-flex;align-items:baseline;gap:0;white-space:nowrap;letter-spacing:-.02em}
 .cms-mark b{font-weight:800}
 .cms-mark i{font-style:normal;font-weight:600;color:var(--adm-a-ink)}
-.cms-mark em{font-style:normal;font-weight:400;margin-left:.3em;opacity:.75}
+.cms-mark em{font-style:normal;font-weight:400;margin-left:.3em;opacity:.82}
 .adm-product{margin:10px 0 0;text-align:center;font-size:14px;color:var(--adm-t3)}
 .adm-product--adm-side{margin:4px 12px 0;text-align:left;font-size:12px;color:#A9B0AD}
 .adm-product--adm-side .cms-mark i{color:#EDE9E3}

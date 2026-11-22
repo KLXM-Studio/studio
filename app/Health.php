@@ -61,6 +61,8 @@ final class Health
             'Verwaltung unter ' . \Core\AdminPath::prefix() . (\Core\AdminPath::custom() ? ' (eigene Adresse)' : '') => true,
         ], $t);
         $add(\Core\NetworkHost::health(), $t);             // Netzwerk-Domain: führt sie (noch) zur Netzwerk-Website?
+        $add(\Core\Domains::fallbackHealth(), self::SETUP);   // Domains ohne Website, die über fallback_site eine andere Website ausliefern
+        $add(\Core\Blueprint\QuickConfig::health(), self::SETUP);   // Website aus einer Vorlage: Schnelleinrichtung offen, Vorlagen-Update
         $add(\Core\Data\Shared::health() + \Core\Search\Search::health() + \Core\AI\Ai::health(), $t);
         $add(\Core\Sources\Sources::health(true), $t);       // Abruf-Fehler technisch, fehlende Zieltabelle Einrichtung
         $add(\Core\Push\Push::health(true), $t);             // Versand hängt technisch, VAPID-Schlüssel fehlt Einrichtung

@@ -17,6 +17,7 @@ import { conditions } from './_conditions.js';
 import { isVideoUrl } from './_videourl.js';   // Bedingung show_if '~video' (Core\VideoLinks)
 import { initSecCount } from './_fsec.js';
 import { initExposure } from './_exposure.js';
+import { initQuickConfig } from './_quickconfig.js';   // Schnelleinrichtung: Vorschau der Akzentfarbe mit Kontrast (Core\Blueprint\QuickConfig)
 import { initRowMenus, openMenu } from './_rowmenu.js';   // Eintragslisten: Zeilenmenü (⋯) an den Knopf setzen   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
 import { initDateOnly } from './_dateonly.js';   // Datum/Uhrzeit nur als Datum bei „ganztägig“ (Core\Fields 'date_only_if')
 import { initDatetime, watchDatetime } from './_datetime.js';   // Datums-/Zeitauswahl a11y_datetime statt der des Browsers (Progressive Enhancement)
@@ -1274,7 +1275,7 @@ function initDt(scope) {
 }
 if (IN_ADMIN) watchDatetime(d, dtOpts());
 onRoot(r => watchDatetime(r, dtOpts()));
-function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initHotspots(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initHotspots(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initQuickConfig(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 

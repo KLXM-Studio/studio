@@ -8,6 +8,8 @@ use Core\Data\Entries;
 use Core\Data\Tables;
 
 $cols = array_values(array_filter($t['fields'], fn($f) => !empty($f['in_list']) && $f['name'] !== $t['settings']['title_field']));
+// Demo-Einträge einer Website aus einer Vorlage (Core\Blueprint\Demo) – Merkmal „Demo“ in der Liste
+$demoIds = Tables::isShared($t) ? [] : array_flip(\Core\Blueprint\Demo::state()['entries'][(string) $t['handle']] ?? []);
 // Adressbuch (Exposure::perEntry): „Auf der Website zeigen“ als eigene Spalte „Website“ mit Merkmal statt Ja/Nein
 $perEntry = \Core\Data\Exposure::perEntry($t);
 if ($perEntry) $cols = array_values(array_filter($cols, fn($f) => $f['name'] !== \Core\Data\Kinds::PUBLIC_FIELD));
@@ -159,6 +161,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
           <a href="<?= e(url($base . '/' . $e['id'])) ?>"><?= e(Entries::title($t, $e)) ?></a>
           <?php if (!empty($shared) && !empty($e['suggest'])): $sp = $ownerPicks[$e['id']] ?? null; ?><small class="sh-pick sh-pick--<?= e($sp ?? 'suggested') ?>"><?= e(match ($sp) { 'visible' => __('übernommen'), 'featured' => __('hervorgehoben'), 'rejected' => __('abgelehnt'), 'hidden' => __('ausgeblendet'), default => __('vorgeschlagen') }) ?></small><?php endif; ?>
           <?php if (isset($extOrigin[$e['id']])): ?><small class="src-badge" title="<?= e(__('Aus der externen Quelle „{name}“ – nur lesbar', ['name' => $extOrigin[$e['id']]['name']])) ?>"><?= icon('plugs-connected') ?> <?= e(__('aus Quelle')) ?></small><?php endif; ?>
+          <?php if (isset($demoIds[(int) $e['id']])): ?><small class="src-badge src-badge--demo" title="<?= e(__('Beispiel-Eintrag aus der Website-Vorlage – entfernen unter Schnelleinrichtung → Demoinhalte')) ?>"><?= e(__('Demo')) ?></small><?php endif; ?>
           <?php if ($url): ?><a class="dt-view" href="<?= e($url) ?>" target="_blank" rel="noopener" aria-label="Auf der Website ansehen">↗</a><?php endif; ?>
           <?= $rowMenu($e) ?>
         </div></td>

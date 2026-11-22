@@ -40,7 +40,7 @@ final class Area
     ];
 
     /** Seiten des Netzwerk-Bereichs mit eigenem Controller (Routen in app/routes.php vor /admin/network/{section}) */
-    public const PAGES = ['aufgaben', 'sicherung', 'kits', 'schriften', 'branding', 'integritaet', 'meldungen'];
+    public const PAGES = ['aufgaben', 'sicherung', 'kits', 'schriften', 'branding', 'integritaet', 'meldungen', 'vorlagen'];
 
     /** Gibt es den Netzwerk-Bereich? Nur mit mehreren Websites – Einzelinstallationen behalten alles in den Grundeinstellungen */
     public static function active(): bool
@@ -135,6 +135,7 @@ final class Area
                 \Core\Fonts::canManage() ? ['schriften', '/admin/network/schriften', __('Schriften'), 'text-t', ''] : null,
                 \Core\Branding::canEdit() ? ['branding', '/admin/network/branding', __('Branding & Support'), 'paint-brush', ''] : null,
                 ['geteilt', '/admin/network/geteilt', __('Geteilte Medien & Daten'), 'share-network', ''],
+                can('network.blueprints') ? ['vorlagen', '/admin/network/vorlagen', __('Website-Vorlagen'), 'copy', ''] : null,
                 ['ki', '/admin/network/ki', __('KI-Verbindungen'), 'sparkle', ''],
             ]))],
             ['label' => __('Betrieb & Sicherheit'), 'items' => array_values(array_filter([

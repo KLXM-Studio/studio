@@ -35,6 +35,10 @@ if (PHP_SAPI === 'cli') {
     Core\Http\Forwarded::apply($_SERVER, (array) ($local['trusted_proxies'] ?? $base['trusted_proxies'] ?? []),
         fn(string $h) => Sites::resolve($h, null) !== null || ($nh = (string) ($local['network_host'] ?? $base['network_host'] ?? '')) !== '' && strtolower($h) === strtolower($nh), (bool) ($local['forwarded_host'] ?? $base['forwarded_host'] ?? true));
     $siteKey = Sites::resolve((string) ($_SERVER['HTTP_HOST'] ?? ''), $fallback);
+    // Domain ohne eigene Website, Rückfall greift → merken (site:list und health weisen darauf hin, Core\Domains::fallbackHosts)
+    if ($siteKey !== null && count(Sites::all()) > 1 && Sites::resolve((string) ($_SERVER['HTTP_HOST'] ?? ''), null) === null) {
+        try { Core\Domains::noteFallback((string) ($_SERVER['HTTP_HOST'] ?? ''), $siteKey); } catch (\Throwable) {}
+    }
     if ($siteKey === null) {
         http_response_code(404);
         header('Content-Type: text/plain; charset=utf-8');

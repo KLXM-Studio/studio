@@ -50,6 +50,7 @@ $core = [
     'funktionen' => 'Funktionen & Erweiterungen (Haupt-Admin)',
     'grundeinstellungen' => 'Grundeinstellungen: Domain, Testumgebung, Verschlüsselung (Administration)',
     'netzwerk' => 'Netzwerk-Verwaltung: mehrere Websites (Netzwerk-Administration)',
+    'website-vorlagen' => 'Website-Vorlagen, Schnelleinrichtung & Website kopieren',
     'aufgaben' => 'Häufige Aufgaben',
     'assistent' => \Core\AI\Assist::brand() . ': schreiben, übersetzen, prüfen',
     'ki-chat' => 'KI-Chats: Assistent & Besucher-Chat',

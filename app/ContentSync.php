@@ -283,7 +283,7 @@ final class ContentSync
         return $walk($blocks);
     }
 
-    private static function isMediaKey(string $key): bool
+    public static function isMediaKey(string $key): bool
     {
         return (bool) preg_match('~(image|media|poster|logo|file|photo|video|bgImage)\d*s?$~i', $key);
     }

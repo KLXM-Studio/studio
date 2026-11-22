@@ -183,6 +183,8 @@
 .src-badge{display:inline-flex;align-items:center;gap:4px;min-height:20px;padding:0 7px;margin-left:6px;border-radius:5px;background:var(--adm-accent-bg,var(--adm-fill));color:var(--adm-a-ink,var(--adm-t2));font-size:11.5px;font-weight:700;white-space:nowrap;vertical-align:middle}
 .src-badge .ico{width:13px;height:13px}
 .src-badge--l{font-size:12.5px;min-height:24px;margin:0 8px 0 0}
+/* Demo-Eintrag aus einer Website-Vorlage (Core\Blueprint\Demo, Datenliste) */
+.src-badge--demo{background:var(--adm-warn-bg);color:var(--adm-warn)}
 .src-badge--l .ico{width:15px;height:15px}
 .src-note{display:block;line-height:1.55;background:var(--adm-fill);color:var(--adm-ink);font-weight:500}
 
