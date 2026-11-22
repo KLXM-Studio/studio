@@ -576,6 +576,15 @@ final class Entries
         if (!$errors) [$values, $errors] = Roles::apply($table, $current, $values);
         // Bedingungen: ausgeblendete Felder leeren, „Pflicht wenn“ und Vergleiche prüfen (gilt für Verwaltung, API, MCP, DAV, Formulare)
         [$values, $errors] = Rules::apply($table['fields'], $values, $errors);
+        // Inhaltsblöcke (Feldtyp „blocks“): Rollenrechte an Blöcken wie auf Seiten (Core\BlockGuard) – Verwaltung, Website, API, MCP
+        foreach ($errors ? [] : $table['fields'] as $f) {
+            if ($f['type'] !== EntryBlocks::TYPE) continue;
+            try {
+                $values[$f['name']] = \Core\BlockGuard::forSave(EntryBlocks::items($current[$f['name']] ?? null), (array) ($values[$f['name']] ?? []), \Core\EditLock::apiActor() ?: null);
+            } catch (\Core\BlockDenied $e) {
+                $errors[$f['name']] = $e->getMessage();
+            }
+        }
         if ($errors) {
             return [null, $errors];
         }

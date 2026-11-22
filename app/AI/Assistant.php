@@ -125,7 +125,7 @@ final class Assistant
         $order = array_keys($blocks);
         usort($order, fn($a, $b) => ($b === 'richtext') <=> ($a === 'richtext'));
         foreach ($order as $type) {
-            if (str_starts_with($type, 'cblk_') || !Features::allowsBlock($type)) continue;
+            if (str_starts_with($type, 'cblk_') || !\Core\BlockGuard::mayInsert($type)) continue;   // Website-Rahmen + erlaubte Blöcke der Rolle
             $text = $head = null;
             foreach ((array) ($blocks[$type]['fields'] ?? []) as $f) {
                 if (!$text && ($f['type'] ?? '') === 'richtext') $text = $f['name'];

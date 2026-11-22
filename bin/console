@@ -234,7 +234,7 @@
  *   glossary:sharetest --sandbox                      Ende-zu-Ende-Test des geteilten Glossars (zwei Websites) – nur in einer Wegwerf-Kopie
  *   roles:clean [--dry-run] [--all]                  Rollen: Rechte entfernen, die weder Kern noch eine installierte Erweiterung kennt
  *                                                     (Probelauf mit --dry-run; migrate entfernt nichts – Health zeigt einen Hinweis)
- *   roles:selftest                                    Selbsttest: unbekannte Rechte, Probelauf, Erhalt beim Speichern einer Rolle
+ *   roles:selftest                                    Selbsttest: unbekannte Rechte, Erhalt beim Speichern, Blockrechte (Core\BlockGuard)
  *   notfound:create [--lang=en] [--publish]           Seite „Nicht gefunden (404)“ anlegen (Startinhalte des Kits, sonst Entwurf)
  *   notfound:selftest                                 Selbsttest der 404-Seite (Anlegen, Sichtbarkeit, eigene Adresse, Vorschläge)
  *   media:web [--all] [--force] [--pool=key]          Web-Fassung großer Videos erzeugen (kleiner, startet sofort; nur mit ffmpeg)

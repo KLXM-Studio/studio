@@ -256,6 +256,10 @@ final class App
             if ($e instanceof EditLocked && !str_starts_with($request->path, '/api/') && $request->wantsJson()) {
                 return Http\Response::json(['ok' => false, 'locked' => true, 'error' => $e->getMessage()], 423);
             }
+            // Rollenrechte an Blöcken (Core\BlockGuard) bei JSON-Aufrufen: Meldung mit den Gründen statt Fehlerseite
+            if ($e instanceof BlockDenied && !str_starts_with($request->path, '/api/') && $request->wantsJson()) {
+                return Http\Response::json(['ok' => false, 'denied' => $e->problems, 'error' => $e->getMessage()], 403);
+            }
             if (str_starts_with($request->path, '/api/') || $request->path === '/mcp') {
                 return Http\Controllers\ApiController::fail(new Api\ApiError($e->getCode() ?: 404,
                     $e->getCode() === 405 ? 'Methode nicht erlaubt.' : 'Unbekannter API-Endpunkt. Übersicht: ' . absolute_url('/api/v1/openapi.json')));

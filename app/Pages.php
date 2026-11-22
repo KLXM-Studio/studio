@@ -438,12 +438,15 @@ final class Pages
             $id = preg_replace('~[^\w\-]~', '', (string) ($b['id'] ?? '')) ?: substr(bin2hex(random_bytes(6)), 0, 10);
             while (isset($seen[$id])) $id = substr(bin2hex(random_bytes(6)), 0, 10);
             $seen[$id] = true;
-            $out[] = [
+            $row = [
                 'id' => $id,
                 'type' => $type,
                 'data' => $data,
                 'tunes' => ['section' => $nested ? Layout::childTunes((array) ($b['tunes']['section'] ?? $b['section'] ?? []), $theme) : $theme->sanitizeTunes($b['tunes']['section'] ?? [], $def)],
             ];
+            // Gesperrter Block (Core\BlockGuard): nur mit voller Gestaltung änderbar – ob die Sperre gesetzt werden darf, prüft der Guard
+            if (!empty($b['lock']) && ($lock = BlockGuard::cleanLock($b['lock']))) $row['lock'] = $lock;
+            $out[] = $row;
         }
         return $out;
     }
@@ -451,6 +454,8 @@ final class Pages
     public static function saveDraft(int $id, array $blocks, ?int $userId, string $note = 'Gespeichert'): void
     {
         EditLock::assert('page', (string) $id, $userId ?? EditLock::apiActor());   // Bearbeitungssperre (sys.edit_lock); ohne Person (Zeitplan, Import) keine Sperre
+        // Rollenrechte an Blöcken (Core\BlockGuard): erlaubte Blöcke, gesperrte Blöcke, Gestaltung – wirft BlockDenied
+        if (($p = self::find($id))) $blocks = BlockGuard::forSave(self::blocks($p, true), $blocks, $userId);
         // Erweiterungen prüfen/ändern die Blöcke vor dem Speichern (Extension::blocksBeforeSave)
         $blocks = Extensions::filterBlocksBeforeSave($blocks, ['page_id' => $id, 'user_id' => $userId]);
         $json = json_encode(['time' => (int) (microtime(true) * 1000), 'blocks' => $blocks, 'version' => '2.31'],

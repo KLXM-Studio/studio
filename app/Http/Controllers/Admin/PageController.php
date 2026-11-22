@@ -432,7 +432,12 @@ final class PageController extends AdminController
         $user = $this->auth($r, 'pages.edit');
         $row = app()->db->fetch('SELECT * FROM revisions WHERE id = ? AND page_id = ?', [(int) $rev, (int) $id]) ?? throw new HttpException(404);
         $blocks = json_decode((string) $row['blocks_json'], true)['blocks'] ?? [];
-        Pages::saveDraft((int) $id, Pages::sanitizeBlocks($blocks), (int) $user['id'], 'Wiederhergestellt (Stand ' . $row['created_at'] . ')');
+        try {
+            Pages::saveDraft((int) $id, Pages::sanitizeBlocks($blocks), (int) $user['id'], 'Wiederhergestellt (Stand ' . $row['created_at'] . ')');
+        } catch (\Core\BlockDenied $e) {   // Version ändert gesperrte bzw. nicht erlaubte Blöcke (Core\BlockGuard)
+            if ($r->wantsJson()) return Response::fail($e->getMessage(), 403);
+            return $this->back('/admin/pages/' . $id, 'error', $e->getMessage());
+        }
         if ($p = Pages::find((int) $id)) \Core\Extensions::emit(new \Core\Events\PageRestored($p, (int) $row['id'], (int) $user['id']));
         // Versionen (JSON): Entwurf angelegt – die Seite öffnet danach im Editor
         if ($r->wantsJson()) return Response::json(['ok' => true, 'message' => __('Stand wiederhergestellt – als Entwurf. Prüfen und dann veröffentlichen.'), 'url' => Pages::url(Pages::find((int) $id)) . '?edit=1']);

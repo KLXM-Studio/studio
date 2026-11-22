@@ -6,7 +6,7 @@ namespace Core;
 /**
  * Rollen und Berechtigungen.
  *
- * Rollen liegen in der Tabelle `roles` (key, name, description, permissions_json, tables_json, builtin).
+ * Rollen liegen in der Tabelle `roles` (key, name, description, permissions_json, tables_json, blocks_json, builtin).
  * „admin“ hat immer alle Rechte und ist nicht änderbar. Alle anderen Rollen sind frei einstellbar –
  * bei Datentabellen und Anfragen (Eingangs-Tabellen) optional nur für ausgewählte Tabellen.
  */
@@ -40,10 +40,12 @@ final class Permissions
                 // Externe Quellen (Core\Sources) – zusätzlich Funktion „sources“ der Website
                 'sources.manage' => __('Externe Quellen einrichten und abrufen (Feeds, APIs, OpenImmo)'),
             ],
-            // Gestaltung (Core\Blocks\ListTemplates): Listen-Vorlagen anlegen, ändern, als Standard setzen – Redaktion wählt sie nur aus.
-            // Später zusätzlich Varianten/Abstände und Sperren von Blöcken (Plan „Rollen“); neu, darum keine Rolle außer admin von selbst
+            // Gestaltung der Blöcke in zwei Stufen (Core\BlockGuard): „im Rahmen des Kits“ = Abschnitts-Optionen (Hintergrund, Abstände,
+            // Trennlinie, Höhe, Hintergrundbild, Effekt) und Varianten – haben alle Rollen mit pages.edit (Migration, nichts ändert sich);
+            // „voll“ zusätzlich Blöcke sperren/entsperren, gesperrte und nicht erlaubte Blöcke ändern, Listen-Vorlagen (Core\Blocks\ListTemplates)
             __('Gestaltung') => [
-                'design.blocks' => __('Blöcke gestalten: Listen-Vorlagen anlegen, ändern und als Standard festlegen'),
+                'design.blocks.basic' => __('Blöcke gestalten im Rahmen des Kits: Variante, Hintergrund, Abstände und weitere Abschnitts-Optionen'),
+                'design.blocks' => __('Blöcke gestalten (voll): zusätzlich Blöcke sperren und entsperren, gesperrte Blöcke ändern, Listen-Vorlagen anlegen und als Standard festlegen'),
             ],
             __('Eingang') => [
                 'requests.read' => __('Online-Anfragen lesen (mit Schlüssel)'),
@@ -114,10 +116,10 @@ final class Permissions
             'network' => ['name' => 'Netzwerk-Administration', 'description' => 'Alle Websites und alle Daten (zentral verwaltet)', 'permissions' => ['*'], 'builtin' => 1],
             'editor' => ['name' => 'Redaktion', 'description' => 'Inhalte pflegen und veröffentlichen',
                 // Neue Websites: nur Website-Angaben (settings.info); bestehende Rollen behalten ihre Rechte (seed legt nur Fehlendes an)
-                'permissions' => ['pages.edit', 'pages.publish', 'pages.manage', 'settings.info', 'media.upload', 'media.delete',
+                'permissions' => ['pages.edit', 'pages.publish', 'pages.manage', 'design.blocks.basic', 'settings.info', 'media.upload', 'media.delete',
                     'data.edit', 'data.publish', 'data.delete', 'requests.read', 'requests.manage', 'support.report', 'support.answer', 'ai.use', 'chat.use', 'push.view', 'tasks.use'], 'builtin' => 1],
             'author' => ['name' => 'Autorin / Autor', 'description' => 'Entwürfe schreiben, nichts veröffentlichen',
-                'permissions' => ['pages.edit', 'media.upload', 'data.edit', 'support.report'], 'builtin' => 1],
+                'permissions' => ['pages.edit', 'design.blocks.basic', 'media.upload', 'data.edit', 'support.report'], 'builtin' => 1],
             'requests' => ['name' => 'Anfragen bearbeiten', 'description' => 'Nur Online-Anfragen',
                 'permissions' => ['requests.read', 'requests.manage', 'support.report'], 'builtin' => 1],
         ];
@@ -135,7 +137,7 @@ final class Permissions
         foreach (self::defaults() as $key => $r) {
             if (!$db->fetchValue('SELECT COUNT(*) FROM roles WHERE rkey = ?', [$key])) {
                 $db->insert('roles', ['rkey' => $key, 'name' => $r['name'], 'description' => $r['description'],
-                    'permissions_json' => json_encode($r['permissions']), 'tables_json' => null, 'builtin' => (int) ($r['builtin'] ?? 0)]);
+                    'permissions_json' => json_encode($r['permissions']), 'tables_json' => null, 'builtin' => (int) ($r['builtin'] ?? 0)]);   // blocks_json: Standard null (alle)
             }
         }
     }
@@ -160,7 +162,39 @@ final class Permissions
         return ['key' => $r['rkey'], 'name' => $r['name'], 'description' => (string) $r['description'],
             'permissions' => json_decode((string) $r['permissions_json'], true) ?: [],
             'tables' => $r['tables_json'] === null ? null : (json_decode((string) $r['tables_json'], true) ?: []),
+            // Erlaubte Blöcke (Core\BlockGuard): null = alle, die die Website erlaubt; Liste = nur diese Typen einfügen und ändern
+            'blocks' => ($r['blocks_json'] ?? null) === null ? null : array_values(array_map('strval', (array) (json_decode((string) $r['blocks_json'], true) ?: []))),
             'builtin' => (bool) $r['builtin']];
+    }
+
+    /**
+     * Einmalige Migration beim Anlegen der Spalte roles.blocks_json (Database::migrate): Rollen mit „Seiten bearbeiten“ bekommen
+     * „Blöcke gestalten im Rahmen des Kits“ – sie durften Abschnitts-Optionen und Varianten schon immer ändern.
+     * @return list<string> geänderte Rollen
+     */
+    public static function grantDesignBasic(Database $db): array
+    {
+        $out = [];
+        foreach ($db->fetchAll('SELECT rkey, permissions_json FROM roles') as $r) {
+            $perms = json_decode((string) $r['permissions_json'], true) ?: [];
+            if (!is_array($perms) || in_array('*', $perms, true) || !in_array('pages.edit', $perms, true) || in_array('design.blocks.basic', $perms, true)) continue;
+            $perms[] = 'design.blocks.basic';
+            $db->update('roles', ['permissions_json' => json_encode(array_values($perms))], 'rkey = :k', ['k' => (string) $r['rkey']]);
+            $out[] = (string) $r['rkey'];
+        }
+        return $out;
+    }
+
+    /**
+     * Darf die Rolle diesen Blocktyp neu einfügen? Rahmen der Website (Features::allowsBlock) und – wenn gesetzt – die
+     * „Erlaubten Blöcke“ der Rolle. Rollen mit allen Rechten: nur der Rahmen.
+     */
+    public static function allowsBlock(?array $role, string $type): bool
+    {
+        if (!Features::allowsBlock($type)) return false;
+        if (!$role) return false;
+        if (in_array('*', $role['permissions'], true) || !is_array($role['blocks'] ?? null)) return true;
+        return in_array($type, $role['blocks'], true);
     }
 
     /** Darf die Rolle das? Optional für eine bestimmte Datentabelle. */
@@ -184,6 +218,8 @@ final class Permissions
         if (in_array('*', $role['permissions'], true)) return true;
         // „Website-Einstellungen“ (alles) schließt „Website-Angaben“ ein (Core\SiteSettings)
         if ($perm === 'settings.info' && in_array('settings.edit', $role['permissions'], true)) return true;
+        // „Blöcke gestalten (voll)“ schließt die Stufe „im Rahmen des Kits“ ein (Core\BlockGuard)
+        if ($perm === 'design.blocks.basic' && in_array('design.blocks', $role['permissions'], true)) return true;
         if (!in_array($perm, $role['permissions'], true)) return false;
         // Tabellenauswahl der Rolle gilt für Daten-Rechte und für Anfragen (Eingangs-Tabellen, z. B. nur „Rezeptanfragen“)
         if ($table !== null && is_array($role['tables'])

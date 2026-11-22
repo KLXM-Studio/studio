@@ -150,7 +150,7 @@ final class Generator
     {
         $out = [];
         foreach (app()->theme->blocks() as $type => $b) {
-            if (in_array($type, self::PAGE_SKIP, true) || !Features::allowsBlock($type) || !empty($b['central'])) continue;
+            if (in_array($type, self::PAGE_SKIP, true) || !\Core\BlockGuard::mayInsert($type) || !empty($b['central'])) continue;   // auch erlaubte Blöcke der Rolle
             $fields = self::catalogFields((array) ($b['fields'] ?? []));
             if (!array_filter($fields, fn($f) => in_array($f['type'], ['text', 'textarea', 'richtext', 'inline', 'repeater'], true))) continue;
             $out[$type] = ['type' => $type, 'label' => (string) $b['label'], 'help' => mb_substr((string) ($b['help'] ?? ''), 0, 160), 'fields' => $fields];
@@ -279,6 +279,7 @@ final class Generator
         $base = $slug;
         for ($n = 2; Pages::slugTaken($slug, $parent, null, $lang); $n++) $slug = $base . '-' . $n;
         $blocks = Pages::sanitizeBlocks(array_map(fn($s) => ['type' => $s['type'], 'data' => $s['data'], 'tunes' => ['section' => []]], $d['sections']));
+        $blocks = \Core\BlockGuard::forSave([], $blocks, null);   // Rollenrechte an Blöcken (wirft BlockDenied)
         $sort = (int) app()->db->fetchValue('SELECT COALESCE(MAX(sort), 0) + 10 FROM pages WHERE ' . ($parent ? 'parent_id = ?' : 'parent_id IS NULL'), $parent ? [$parent] : []);
         $id = Pages::create(['slug' => $slug, 'title' => $d['title'], 'meta_description' => $d['meta_description'], 'status' => 'draft',
             'parent_id' => $parent, 'lang' => $lang, 'sort' => $sort, 'menu' => 0], $blocks);
