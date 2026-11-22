@@ -10,6 +10,34 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Wissensbereich / Handbuch (Tabellenart „Wissen“, `Core\Data\Knowledge`)
+- **Neue Tabellenart `knowledge`** (Vorlage „Wissen“ im Assistenten, `data:template knowledge`): Kapitel als Einträge mit Bereich,
+  Oberkapitel (Kapitelbaum, 3+ Ebenen), Reihenfolge, Kapitelnummer (automatisch „2.1.3“, überschreibbar), Anreißer, Inhaltsblöcken,
+  Schlagworten, verwandten Kapiteln, Glossarbegriffen, Autor/in und „Zuletzt geprüft“. Grundschema versioniert, nur additiv; Rechte,
+  Workflow, Versionen, Suche, API und Teilen im Netzwerk wie bei allen Datentabellen. Neue Bereiche und Schlagworte direkt im Eintrag.
+- **Ansicht der Kapitel** (`Knowledge::frame`, `css/knowledge.css`, `js/knowledge.js`): Seitenleiste mit Suche und Kapiteln, Brotkrumen
+  (auch JSON-LD), Nummer in der Überschrift, „In diesem Kapitel“ aus den Zwischenüberschriften (mitlaufend), Schlagworte als Links zur
+  gefilterten Übersicht, „Begriffe in diesem Kapitel“, „Verwandte Kapitel“, Zurück/Weiter mit `rel="prev|next"`. **Layouts** je
+  Tabelle: Klassisch, Kompakt, Fokus (Schublade), Handbuch (Abschnitte rechts ab 1200 px), Handbuch kompakt. Telefon: Kapitelmenü als
+  Schublade, Knopf „Kapitel“ unten links. Nur Kit-Tokens (`--kit-*`), ohne Kit-Anpassung in fluid, native und allen Kits; axe ohne
+  Fund, Sprunglink, Landmarken, `aria-current`, Fokusführung, ohne JavaScript bedienbar.
+- **Datenliste erweitert** (gemeinsame Regel `Core\Blocks\ListFilter`): Darstellung **„Kapitel“** (Inhaltsverzeichnis mit Nummern),
+  **mehrere Optionen je Filter** als Kontrollkästchen (`?feld[]=…`, innerhalb eines Filters „eine davon“, Filter-Reihen zusammen;
+  Zustand in der Adresse, Zurück-Taste, ohne JavaScript per Formular), **Trefferauszug** mit markiertem Suchwort und **Glossarbegriffe**
+  als eigene Treffergruppe. Neue Bedingung `in` in `Entries::conditions()`, `live.js` lädt bei `[data-live-change]` sofort nach.
+- **Glossar bleibt websiteweit:** Wissenseinträge verknüpfen nur Begriffe des einen Glossars; der Block „Glossar“ zeigt auf der
+  Begriffsseite optional **„Erwähnt in“** (Wissenseinträge und Seiten).
+- **Umstieg** `php bin/console data:import-pages <zweig> [--apply] | --revert`: Seitenzweig → Wissensbereich mit Probelauf, Kapitelbaum
+  aus dem Seitenbaum, Archiv der alten Seiten, umgestellten Verweisen und 301-Weiterleitungen; vollständig zurückdrehbar.
+- Selbsttest `knowledge:selftest`; Handbuch → Wissensbereich & Handbuch, Entwicklerhandbuch → Wissensbereich.
+- *EN:* New table kind “Knowledge” for manuals and knowledge bases: chapters with areas, parent chapters, automatic (overridable)
+  chapter numbers, content blocks, keywords, related chapters and glossary terms. Detail pages get a sidebar with search and chapters,
+  “In this chapter” from the subheadings, keywords, related chapters and previous/next, in five layouts (Classic, Compact, Focus,
+  Manual, Compact manual) with an off-canvas drawer on phones – styled only via kit tokens, accessible, works without JavaScript. The
+  data list block gains a “Chapters” layout, multi-select filters (state in the URL), search excerpts and glossary hits. The glossary
+  stays site-wide (optional “Mentioned in” on term pages). `data:import-pages` converts a page branch with dry run and full revert.
+  Self-test `knowledge:selftest`.
+
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:
   90 %, 100 % (Standard), 112 %, 125 %, 140 %, mit kleinem/großem „A“, Prozentanzeige und **Zurücksetzen**. Wirkt sofort ohne
