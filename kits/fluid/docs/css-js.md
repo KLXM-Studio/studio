@@ -129,7 +129,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 
 ### Variablen je Stylesheet
 
-**css/_base.css** (25)
+**css/_base.css** (29)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -147,7 +147,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-ink` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
 | `--f-line` | `color-mix(in srgb,var(--f-fg) 20%,transparent)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
 | `--f-line-strong` | `color-mix(in srgb,var(--f-fg) 48%,transparent)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-link` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
+| `--f-link` | `var(--f-link-t1,var(--f-a))` | `.bg-tint:not(:is(.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark) *)` | 2 |
 | `--f-muted` | `var(--f-a-on)` | `.bg-accent` | 4 |
 | `--f-sec-bg` | `var(--f-surface)` | `.bg-muted` | 3 |
 | `--f-surface` | `color-mix(in srgb,var(--f-bg) 60%,transparent)` | `.bg-tint` | 1 |
@@ -158,6 +158,10 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--ico-2-opacity` | `.24` | `.ico` | – |
 | `--min` | `12.5rem` | `.min-s` | 2 |
 | `--mt-r` | `var(--f-img-r,var(--f-r-l))` | `.mt` | – |
+| `--sp-card` | `var(--f-card)` | `:root .cms-subpages` | – |
+| `--sp-card-bd` | `var(--f-card-bd)` | `:root .cms-subpages` | – |
+| `--sp-card-sh` | `var(--f-card-sh)` | `:root .cms-subpages` | – |
+| `--sp-r` | `var(--f-r-l)` | `:root .cms-subpages` | – |
 
 **css/_footer.css** (2)
 
@@ -195,7 +199,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--fl-c` | `var(--f-line)` | `html` | – |
 | `--fl-w` | `1px` | `html` | – |
 
-**css/_tokens.css** (113)
+**css/_tokens.css** (114)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -241,6 +245,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-ico` | `var(--f-a)` | `:root` | – |
 | `--f-ico-bg` | `var(--f-a-soft)` | `:root` | – |
 | `--f-ink` | `#0B0D17` | `:root` | 2 |
+| `--f-lh` | `1.62` | `:root` | – |
 | `--f-line` | `#E2E4EB` | `:root` | 2 |
 | `--f-line-strong` | `color-mix(in srgb,var(--f-ink) 26%,var(--f-bg))` | `:root` | – |
 | `--f-link` | `var(--f-a)` | `:root` | – |
@@ -617,7 +622,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 |---|---|---|---|
 | `--f-nav-mark` | `var(--f-a2)` | `.nm-highlight .hdr` | 1 |
 
-**css/opt-palette-colorful.css** (12)
+**css/opt-palette-colorful.css** (13)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -625,6 +630,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-band` | `linear-gradient(90deg,var(--f-p1) 0 20%,var(--f-p2) 20% 40%,var(--f-p3) 40% 60%,var(--f-p4) 60% 80%,var(--f-p5) 80%)` | `.pal-colorful .ftr,.pal-colorful .hdr--sidebar` | – |
 | `--f-ico` | `var(--f-tone)` | `.pal-colorful .feat` | – |
 | `--f-ico-bg` | `var(--f-tone-soft)` | `.pal-colorful .feat` | – |
+| `--f-link` | `var(--f-link-t2,var(--f-a))` | `.pal-colorful main>.sec.bg-tint:nth-of-type(5n+2)` | 3 |
 | `--f-p1` | `var(--f-a)` | `html.pal-colorful` | – |
 | `--f-p2` | `var(--f-b)` | `html.pal-colorful` | – |
 | `--f-p3` | `var(--f-c3)` | `html.pal-colorful` | – |
@@ -809,7 +815,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `js/prefs-theme.js` | – | – | – | – | 1,4 KB (Quelle) |
 | `js/reel.js` | ja | – | ja | – | 1,3 KB (Quelle) |
 | `js/scheme.js` | – | – | – | – | 1,6 KB (Quelle) |
-| `js/scrolly.js` | – | ja | – | – | 1,0 KB (Quelle) |
+| `js/scrolly.js` | – | ja | – | – | 1,1 KB (Quelle) |
 | `js/site.js` | ja | ja | ja | – | 11,1 KB (Quelle) |
 | `js/tabs.js` | – | – | – | – | 1,3 KB (Quelle) |
 | `js/toc.js` | ja | – | ja | – | 2,4 KB (Quelle) |
@@ -840,6 +846,7 @@ _Keine Namensraum-Ereignisse._
 | `data-focus` | assets/js/preferences-early.js, assets/js/preferences.js |
 | `data-font-preview` | assets/js/preferences.js |
 | `data-header` | templates/partials/header-sidebar.php, templates/partials/header.php, assets/js/site.js |
+| `data-img` | blocks/scrolly.php, assets/js/scrolly.js |
 | `data-key` | assets/js/preferences.js |
 | `data-label-dark` | templates/partials/header.php, assets/js/scheme.js |
 | `data-label-light` | templates/partials/header.php, assets/js/scheme.js |
