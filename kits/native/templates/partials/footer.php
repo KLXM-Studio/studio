@@ -8,6 +8,7 @@
 $address = fluid_address_lines();
 $social = fluid_social();
 $pages = \Core\Pages::menu(false);
+$more = footer_nav_links(array_column($pages, 'id'));   // weitere Links unter „Seiten“ (Core\FooterLinks, wie fluid); leer = wie bisher
 $legal = array_merge(fluid_legal_links(), footer_links());   // footer_links(): z. B. „Datenschutz-Einstellungen“ (Erweiterung consent_kit)
 $langs = language_links();
 $text = trim((string) setting('footer_text'));
@@ -30,10 +31,10 @@ $home = url(\Core\Lang::prefix(\Core\Lang::current()) . '/');
       <?= fluid_quick_contact('nv-footer__list') ?>
     </div>
     <?php endif; ?>
-    <?php if ($pages): ?>
+    <?php if ($pages || $more): ?>
     <nav class="nv-footer__col" aria-labelledby="nv-footer-pages">
       <h2 class="nv-footer__h" id="nv-footer-pages"><?= e(lt('Seiten')) ?></h2>
-      <ul class="nv-footer__list" role="list"><?php foreach ($pages as $m): ?><li><a href="<?= e($m['href']) ?>"<?= fluid_is_current($m) ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?></ul>
+      <ul class="nv-footer__list" role="list"><?php foreach ($pages as $m): ?><li><a href="<?= e($m['href']) ?>"<?= fluid_is_current($m) ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?><?= footer_nav_html($more) ?></ul>
     </nav>
     <?php endif; ?>
     <?php if ($social): ?>

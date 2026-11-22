@@ -7,7 +7,7 @@ namespace Core;
 
 /**
  * „Seiteneinstellungen“: Werkzeug in der Werkzeugleiste der Website (Core\FrontendTools) – Redaktion mit Recht pages.manage
- * ändert Titel, Adresse, Titel/Beschreibung für Suchmaschinen, Vorschaubild, Status und Menü der aktuellen Seite, ohne in die
+ * ändert Titel, Adresse, Titel/Beschreibung für Suchmaschinen, Vorschaubild, Status, Menü und „Im Fußbereich zeigen“ der aktuellen Seite, ohne in die
  * Verwaltung zu wechseln. Eintrag im Menü „⋯“ (ersetzt dort den Link in die Verwaltung), beim Ansehen und Bearbeiten; Modal wie
  * „Neue Seite“ (Core\PageTool). Gespeichert wird über denselben Weg wie das Formular der Verwaltung
  * (PageController::saveSettings): Prüfungen, Weiterleitung bei neuer Adresse, Seiten-Cache.
@@ -58,6 +58,7 @@ final class PageSettingsTool
                 'planFromHelp' => __('Bis dahin bleibt die Seite offline – auch wenn „Online“ gewählt ist. Leer = sofort.'),
                 'planUntilHelp' => __('Danach ist die Seite nicht mehr aufrufbar und erscheint nicht mehr in Menü, Suche und Sitemap. Leer = unbegrenzt.'),
                 'menu' => __('Im Hauptmenü zeigen'), 'navTitle' => __('Beschriftung im Menü (optional)'),
+                'footer' => __('Im Fußbereich zeigen'),
                 'noindex' => __('Nicht in Suchmaschinen / Sitemap aufnehmen'),
                 'searchExclude' => __('Nicht in der Website-Suche zeigen'),
                 'ai' => __('Vorschlag für Titel und Beschreibung'), 'aiBusy' => __('Vorschlag wird erstellt …'),

@@ -8,12 +8,15 @@
  * in der Zeile, Großer Schriftzug → statt des Kopf-Buttons. Leer = wie bisher.
  * Dichte (Design → „Dichte des Fußbereichs“): „Kompakt“ gibt die Adresse einzeilig aus (Zeilen als <span> mit Leerzeichen, Trenner per CSS);
  * Abstände, Listen als Zeilen und Unterzeile: css/opt-footer_density.css. „Normal“ = Markup wie bisher.
+ * Weitere Links (footer_nav_links(), Core\FooterLinks: Liste in Website → Darstellung, Seiten mit „Im Fußbereich zeigen“) hängen
+ * unter „Seiten“ an – Spalten/Großer Schriftzug in der Spalte, Schlicht/Zentriert in der Zeile. Leer = Markup wie bisher.
  */
 $address = fluid_address_lines();
 $phone = fluid_phone();
 $email = fluid_email();
 $social = fluid_social();
 $pages = \Core\Pages::menu(false);
+$more = footer_nav_links(array_column($pages, 'id'));
 $legal = array_merge(fluid_legal_links(), footer_links());   // footer_links(): z. B. „Datenschutz-Einstellungen“ (Erweiterung consent_kit)
 $langs = language_links();
 $text = trim((string) setting('footer_text'));
@@ -34,10 +37,10 @@ $socialList = function () use ($social): string {
     foreach ($social as $s) $h .= '<li><a href="' . e($s['url']) . '" target="_blank" rel="noopener me">' . e($s['label']) . '<span class="sr-only"> ' . e(lt('(öffnet in neuem Tab)')) . '</span></a></li>';
     return $h;
 };
-$pageList = function () use ($pages): string {
+$pageList = function () use ($pages, $more): string {
     $h = '';
     foreach ($pages as $m) $h .= '<li><a href="' . e($m['href']) . '"' . (fluid_is_current($m) ? ' aria-current="page"' : '') . '>' . e($m['label']) . '</a></li>';
-    return $h;
+    return $h . footer_nav_html($more);
 };
 ?>
 <footer class="ftr ftr--<?= e($variant) ?>">
@@ -53,7 +56,7 @@ $pageList = function () use ($pages): string {
     <div class="ftr__row">
       <?= app()->theme->partial('brand', ['href' => $home, 'class' => 'brand--footer']) ?>
       <?php if ($tagline !== ''): ?><p class="ftr__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>
-      <?php if ($pages): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?= $pageList() ?></ul></nav><?php endif; ?>
+      <?php if ($pages || $more): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?= $pageList() ?></ul></nav><?php endif; ?>
       <?php if ($ftrCta): ?><?= $ctaButton($ftrCta, 'ftr__btn') ?><?php endif; ?>
     </div>
     <?php if ($text !== ''): ?><p class="ftr__text"><?= nl2br(fluid_title($text), false) ?></p><?php endif; ?>
@@ -73,7 +76,7 @@ $pageList = function () use ($pages): string {
         <?= fluid_quick_contact('ftr__list') ?>
       </div>
       <?php endif; ?>
-      <?php if ($pages): ?>
+      <?php if ($pages || $more): ?>
       <nav class="ftr__col" aria-labelledby="ftr-pages">
         <h2 class="ftr__h" id="ftr-pages"><?= e(lt('Seiten')) ?></h2>
         <ul class="ftr__list" role="list"><?= $pageList() ?></ul>

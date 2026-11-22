@@ -119,6 +119,8 @@ setzt `fluid_html_class()` `is-darkbase` (color-scheme dark). Serifen-Überschri
 **Fußbereich:** Handlungsaufruf aus den Einstellungen `footer_cta_label` + `footer_cta_link` (Website → Darstellung, Stufe
 „Website-Angaben“, `fluid_footer_cta()`; Link `page:ID` oder Adresse) – Spalten: `.ftr__action` unter Claim/Text, Schlicht/Zentriert:
 `.ftr__btn` in `.ftr__row`, Großer Schriftzug: statt des Kopf-Buttons; Kind-Kit native: unter dem Text. Leer = Markup wie bisher.
+Weitere Links unter „Seiten“: `footer_nav_links()` (Core\FooterLinks – Liste `footer_more_links` aus Website → Darstellung, Seiten mit
+„Im Fußbereich zeigen“), angehängt an die Seitenliste der Spalte bzw. `.ftr__inline`; Kind-Kit native: Spalte „Seiten“. Leer = Markup wie bisher.
 Haftender Kopf am Seitenende: `.ftr` ist View-Timeline `--f-ftr` (`timeline-scope` am `body`), der Kopf gleitet mit dem Anfang des
 Fußes weg (`f-hdr-yield` in `_header.css`, nur bei Unterstützung von View-Timelines; nicht bei Seitenleisten).
 

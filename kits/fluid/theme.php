@@ -246,6 +246,8 @@ return [
                     'help' => 'Z. B. „Mitglied werden“ oder „Termin anfragen“. Erscheint als Button im Fußbereich – bei „Großer Schriftzug“ statt des Buttons aus dem Kopfbereich. Leer = kein Button.'],
                 ['name' => 'footer_cta_link', 'label' => 'Handlungsaufruf im Fußbereich – Link', 'type' => 'link', 'width' => 'half', 'translate' => true,
                     'help' => 'Seite der Website auswählen oder eine Adresse eingeben.'],
+                // Weitere Links im Fußbereich (Core\FooterLinks): unter „Seiten“, sortierbar; leer = wie bisher
+                ...\Core\FooterLinks::settingsFields(),
                 // Kopfbereich-Aktionen (Core\HeaderActions): Handlungsaufruf, zweite Aktion, Status-Bezeichnung, Anmelden
                 ...\Core\HeaderActions::settingsFields(),
             ]],

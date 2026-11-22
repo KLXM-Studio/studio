@@ -2,11 +2,11 @@
  * „Seiteneinstellungen“ (Core\PageSettingsTool) – Werkzeug der Werkzeugleiste auf der Website (Menü „⋯“), geladen erst beim
  * ersten Öffnen (CMSAdmin.tools, resources/js/_tools.js), dargestellt als Modal wie „Neue Seite“ (panel size 'modal').
  *
- * Links die Seite (Titel, Adresse, Status, Menü, Suchmaschinen-Ausschluss), rechts Titel und Beschreibung für Suchmaschinen
+ * Links die Seite (Titel, Adresse, Status, Menü, „Im Fußbereich zeigen“, Suchmaschinen-Ausschluss), rechts Titel und Beschreibung für Suchmaschinen
  * mit Zeichenzähler, KI-Vorschlag (falls verfügbar) und Vorschaubild für soziale Netzwerke (Mediathek: CMSMedia.pick).
  * Gespeichert wird über PageController::apiSettingsSave (gleicher Weg wie das Formular der Verwaltung). Danach: <title>,
- * Meta-Angaben, Titel der Werkzeugleiste und Adresse (history.replaceState) ohne Neuladen nachführen; ändern sich Status oder
- * Menü, lädt die Seite neu – im Bearbeiten-Modus nur, wenn keine ungespeicherten Änderungen im Editor stehen.
+ * Meta-Angaben, Titel der Werkzeugleiste und Adresse (history.replaceState) ohne Neuladen nachführen; ändern sich Status,
+ * Menü oder Fußbereich, lädt die Seite neu – im Bearbeiten-Modus nur, wenn keine ungespeicherten Änderungen im Editor stehen.
  * Endpunkte: data.endpoint (GET/POST, Recht pages.manage), data.ai (KI-Vorschlag, Recht ai.use).
  */
 import { esc } from './_html.js';
@@ -54,7 +54,8 @@ function render(ctx) {
       <div class="f"><label for="ps-until">${esc(T('planUntil'))}</label><input type="datetime-local" id="ps-until" name="online_until" value="${esc(pg.online_until)}" aria-describedby="ps-until-h"><p class="f-help" id="ps-until-h">${esc(T('planUntilHelp'))}</p></div>`}
       ${fixedSlug ? '' : `
       <label class="f-check f-check--switch ps-check"><input type="checkbox" role="switch" name="menu"${pg.menu ? ' checked' : ''}> <span>${esc(T('menu'))}</span></label>
-      <div class="f" data-ps-nav${pg.menu ? '' : ' hidden'}><label for="ps-nav">${esc(T('navTitle'))}</label><input id="ps-nav" name="nav_title" maxlength="60" autocomplete="off" value="${esc(pg.nav_title)}" placeholder="${esc(pg.title)}"></div>`}
+      <div class="f" data-ps-nav${pg.menu ? '' : ' hidden'}><label for="ps-nav">${esc(T('navTitle'))}</label><input id="ps-nav" name="nav_title" maxlength="60" autocomplete="off" value="${esc(pg.nav_title)}" placeholder="${esc(pg.title)}"></div>
+      <label class="f-check f-check--switch ps-check"><input type="checkbox" role="switch" name="footer"${pg.footer ? ' checked' : ''}> <span>${esc(T('footer'))}</span></label>`}
       ${pg.notFound ? '' : `<label class="f-check f-check--switch ps-check"><input type="checkbox" role="switch" name="noindex"${pg.noindex ? ' checked' : ''}> <span>${esc(T('noindex'))}</span></label>
       <label class="f-check f-check--switch ps-check"><input type="checkbox" role="switch" name="search_exclude"${pg.search_exclude ? ' checked' : ''}> <span>${esc(T('searchExclude'))}</span></label>`}
     </fieldset>
@@ -160,6 +161,7 @@ function render(ctx) {
     if (form.status) body.status = form.status.value;
     if (form.online_from) { body.online_from = form.online_from.value; body.online_until = form.online_until.value; }
     if (form.menu) { body.menu = form.menu.checked; body.nav_title = $('#ps-nav').value.trim(); }
+    if (form.footer) body.footer = form.footer.checked;
     if (form.noindex) body.noindex = form.noindex.checked;
     if (form.search_exclude) body.search_exclude = form.search_exclude.checked;
     st.busy = true; go.disabled = true; go.querySelector('span').textContent = T('saving');
@@ -184,7 +186,8 @@ function render(ctx) {
 function applied(ctx, prev, res) {
   const pg = res.page, d = document;
   const url = res.url + location.search + location.hash;
-  const reload = prev.status !== pg.status || prev.menu !== pg.menu || (pg.menu && (prev.nav_title !== pg.nav_title || prev.title !== pg.title));
+  const reload = prev.status !== pg.status || prev.menu !== pg.menu || prev.footer !== pg.footer
+    || ((pg.menu || pg.footer) && (prev.nav_title !== pg.nav_title || prev.title !== pg.title));   // Menü bzw. Fußbereich zeigen die Seite
   const dirty = !!window.CMSEditor?.isDirty?.();
   if (reload && !dirty) {
     window.CMSAdmin?.toastNext?.(res.warning || res.message, res.warning ? 'error' : 'ok');

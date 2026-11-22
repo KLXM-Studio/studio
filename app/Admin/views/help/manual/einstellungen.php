@@ -16,7 +16,7 @@
   <h3 id="website-angaben">Website-Angaben und Website-Einstellungen</h3>
   <p>Die Seite gibt es in zwei Stufen – je nach Rolle:</p>
   <ul>
-    <li><b>Website-Angaben pflegen</b> (Recht <code>settings.info</code>): Name, Adresse und Kontakt, Öffnungszeiten, Hinweisbalken, Social Media, Texte und Handlungsaufruf im Fußbereich, Beschriftung und Link des Buttons im Kopfbereich und das Standard-Vorschaubild für soziale Netzwerke. Wer nur dieses Recht hat, sieht die Seite als <b>Website-Angaben</b> mit genau diesen Feldern.</li>
+    <li><b>Website-Angaben pflegen</b> (Recht <code>settings.info</code>): Name, Adresse und Kontakt, Öffnungszeiten, Hinweisbalken, Social Media, Texte, Handlungsaufruf und weitere Links im Fußbereich, Beschriftung und Link des Buttons im Kopfbereich und das Standard-Vorschaubild für soziale Netzwerke. Wer nur dieses Recht hat, sieht die Seite als <b>Website-Angaben</b> mit genau diesen Feldern.</li>
     <li><b><?= e($settingsTitle ?? app()->theme->settingsTitle()) ?> ändern</b> (Recht <code>settings.edit</code>): alles, zusätzlich Logo, Rechtstexte (Impressum, Datenschutz, Barrierefreiheit), SEO und Titel-Zusatz sowie die Schalter des Kits.</li>
   </ul>
   <p>Bestehende Rollen behalten ihre Rechte. Auf <b>neuen</b> Websites bekommt die Rolle „Redaktion“ nur die Website-Angaben; die Administration kann unter <b>Benutzer &amp; Rollen</b> jederzeit mehr freigeben. Technisches – Kit, Domain, E-Mail-Versand, Suchmaschinen aussperren – steht in den <a href="#grundeinstellungen">Grundeinstellungen</a>.</p>

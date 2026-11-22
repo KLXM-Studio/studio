@@ -275,6 +275,8 @@ final class Database
             'online_until' => 'VARCHAR(25) NULL',
             // Nicht in der Website-Suche (unabhängig von noindex – Suchmaschinen und Sitemap bleiben), Core\Search\Documents
             'search_exclude' => 'INT NOT NULL DEFAULT 0',
+            // „Im Fußbereich zeigen“ (Core\FooterLinks): Seite zusätzlich unter „Seiten“ im Fußbereich – Standard aus
+            'footer' => 'INT NOT NULL DEFAULT 0',
         ]);
         $this->dropUniqueSlug();
         // API-Tokens: Änderungen direkt übernehmen oder zur Freigabe einreichen (Core\Review), zuletzt gemeldeter MCP-Client

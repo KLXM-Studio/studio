@@ -239,6 +239,8 @@
  *                                                     Bestand, Vorlage „Kopf wie Seiten“, Wissensbereich mit Kopf über der Seitenleiste
  *   slider:selftest                                   Selbsttest Einstieg als Slider: Felder (Standard aus), Bestand, eine H1, Rollen, ohne Skript,
  *                                                     Folien aus hervorgehobenen Einträgen, Bearbeiten-Modus, Dateien nur bei Bedarf
+ *   footer:selftest                                   Selbsttest „Weitere Links im Fußbereich“: Standard leer (byte-gleich), Liste, Seitenschalter,
+ *                                                     Reihenfolge, Doppelte, aria-current, Ausgabe aller Fuß-Varianten (fluid/native)
  *   highlights:selftest                               Selbsttest „Auf der Startseite hervorheben“ + Block „Highlights“: Schalter (Standard aus),
  *                                                     Reihenfolge, „bis“-Datum, Mischung mehrerer Tabellen, Sortierung, Karten/Teaser, Bestand
  *   knowledge:selftest                                Selbsttest Wissensbereich: Kapitelbaum, Nummern, Abschnitte, Ansicht (Layout-Modi), Suche mit
@@ -1755,6 +1757,13 @@ switch ($cmd) {
     case 'slider:selftest':
         // Einstieg als Slider (Core\Blocks\HeroSlider) – vorübergehende Tabelle
         $res = Core\Blocks\HeroSliderSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'footer:selftest':
+        // Weitere Links im Fußbereich (Core\FooterLinks) – vorübergehende Seiten, zurückgerollt
+        $res = Core\FooterLinksSelfTest::run();
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

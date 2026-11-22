@@ -92,6 +92,7 @@ $inv = fn($k) => isset($errors[$k]) ? ' aria-invalid="true" aria-describedby="' 
     <?php if ($isNew || (!$page['is_home'] && !$nf)): ?>
     <div class="f f--bool"><input type="hidden" name="menu" value="0"><label class="f-check f-check--switch"><input type="checkbox" role="switch" name="menu" value="1"<?= !empty($old['menu']) ? ' checked' : '' ?>> <span>Im Hauptmenü zeigen</span></label></div>
     <div class="f"><label for="nav_title">Beschriftung im Menü (optional)</label><input id="nav_title" name="nav_title" maxlength="60" value="<?= e($old['nav_title'] ?? '') ?>" placeholder="<?= e($old['title'] ?? 'wie der Titel') ?>"></div>
+    <div class="f f--bool"><input type="hidden" name="footer" value="0"><label class="f-check f-check--switch"><input type="checkbox" role="switch" name="footer" value="1"<?= !empty($old['footer']) ? ' checked' : '' ?> aria-describedby="footer-h"> <span><?= e(__('Im Fußbereich zeigen')) ?></span></label><p class="f-help" id="footer-h"><?= e(__('Zusätzlich unter „Seiten“ im Fußbereich – z. B. für „News abonnieren“ oder „Presse“, auch ohne Hauptmenü. Sofern das Kit es vorsieht (z. B. fluid).')) ?></p></div>
     <?php endif; ?>
     <?php if (!$nf): ?>
     <div class="f f--bool"><input type="hidden" name="noindex" value="0"><label class="f-check f-check--switch"><input type="checkbox" role="switch" name="noindex" value="1"<?= !empty($old['noindex']) ? ' checked' : '' ?>> <span>Nicht in Suchmaschinen / Sitemap aufnehmen</span></label></div>

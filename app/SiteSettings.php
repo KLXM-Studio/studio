@@ -21,7 +21,7 @@ final class SiteSettings
 {
     /** Felder, die ohne Angabe im Kit als „Website-Angaben“ gelten */
     public const INFO = ['org_name', 'short_name', 'tagline', 'street', 'zip', 'city', 'country', 'phone', 'email', 'hours', 'hours_note', 'geo',
-        'topbar_text', 'footer_statement', 'footer_text', 'footer_cta_label', 'footer_cta_link', 'social', 'og_default_image', 'notice_active', 'notice_text',
+        'topbar_text', 'footer_statement', 'footer_text', 'footer_cta_label', 'footer_cta_link', 'footer_more_links', 'social', 'og_default_image', 'notice_active', 'notice_text',
         // Besuchs- und Ortsangaben einzelner Kits (galerie, nature, editorial)
         'edition', 'seasons', 'directions', 'venue_name', 'admission', 'appointment_note', 'hours_exceptions', 'venues', 'enquiry_label'];
     /** Präfixe für „Website-Angaben“: Hinweisbalken (Core\Notice) und Beschriftungen/Links im Kopfbereich (Core\HeaderActions) */

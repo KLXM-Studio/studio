@@ -10,6 +10,20 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Weitere Links im Fußbereich (Liste und Seitenschalter)
+- Neue Liste **„Weitere Links im Fußbereich“** unter Website → Darstellung (Kit fluid und NativeCSS): je Eintrag Beschriftung und Link aus der
+  Linkauswahl (Seite, Eintrag, Datei oder Adresse), sortierbar, je Sprache – z. B. „News abonnieren“, „Presse“, „Downloads“. Die Links stehen unter
+  „Seiten“ nach den Seiten des Hauptmenüs: bei „Spalten“/„Großer Schriftzug“ in der Spalte, bei „Schlicht“/„Zentriert“ in der Zeile; gleiche Fokus-Stile
+  und Farben wie die übrigen Fußlinks, `aria-current` an der aufgerufenen Seite, externe Adressen mit Hinweis „öffnet in neuem Tab“.
+- Neuer Schalter **„Im Fußbereich zeigen“** in den Seiteneigenschaften (Verwaltung und Seiteneinstellungen auf der Website, Spalte `pages.footer`,
+  Standard aus): die Seite folgt nach der Liste, in Baumreihenfolge, mit der Beschriftung im Menü. Beides darf es geben – die Liste für eigene
+  Beschriftungen und Adressen, der Schalter für Seiten, deren Link beim Verschieben mitwandern soll. Doppelte Ziele, Entwürfe und Seiten, die schon im
+  Menü stehen, erscheinen nicht. Leer = Fußbereich byte-gleich wie bisher.
+- Für andere Kits: `footer_nav_links($skipIds)` / `footer_nav_html($items)` (`Core\FooterLinks`, Feld per `FooterLinks::settingsFields()`),
+  Entwicklerhandbuch → Kits → „Weitere Links im Fußbereich“. Selbsttest `footer:selftest`.
+- *EN:* New “More footer links” list (Website → Appearance, fluid and NativeCSS) and a “Show in footer” page switch (off by default); links follow
+  the main menu pages under “Pages”. Helper `footer_nav_links()` for other Kits.
+
 ### Kit fluid: aktive Einträge im Aufklappmenü des farbigen Kopfs mit ausreichendem Kontrast
 - Bei Kopfbereich „Akzentfarbe“, „Zweite Markenfarbe“ bzw. „Dunkel“ markieren Strich und fette Schrift die aktuelle Seite im
   Aufklappmenü – ohne die helle Fläche, die den Kontrast der Schrift unter 4,5:1 drücken konnte (axe). Farbwerte unverändert,

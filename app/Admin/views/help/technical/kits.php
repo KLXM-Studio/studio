@@ -342,7 +342,7 @@ php bin/console site:create kanzlei www.kanzlei.de kanzlei   # als eigene Websit
 ├── seed.php             settings, pages (→ tools/demo-content.php), page_refs, after
 ├── blocks/              hero, text, text_image, cards, cta, faq, video, downloads
 ├── templates/           layout, error, maintenance, offline
-│   └── partials/        header (Navigation als popover, Suche, Sprachen), footer (+ footer_links()), section,
+│   └── partials/        header (Navigation als popover, Suche, Sprachen), footer (+ footer_links(), footer_nav_links()), section,
 │                        (Video-Zwei-Klick, Editor, Werkzeugleiste, Marke, Sprachen: Kern-Fragmente)
 ├── assets/css/          _tokens.css (Tokens + Rollen, hell/dunkel) · _base.css · site.css (immer)
 │                        blocks.css (Beispielblöcke) · core.css (nur Variablen für Kern-Blöcke)
@@ -507,6 +507,31 @@ php bin/console site:create kanzlei www.kanzlei.de kanzlei   # als eigene Websit
     Überschrift, Bild, Knopf, Karte) zum Nachbauen.</p>
   <p><b>Persönliche Einstellungen</b> der Auswahl (Ansicht, Favoriten, zuletzt verwendet) liegen je Konto in <code>users.ui_prefs</code>
     unter <code>blockpicker</code> (<code>Core\UiPrefs</code>, POST <code>/admin/api/block-picker</code>).</p>
+  <h3 id="fusslinks">Weitere Links im Fußbereich – <code>footer_nav_links()</code>, <code>Core\FooterLinks</code></h3>
+  <p>Zusätzliche Links unter „Seiten“ im Fußbereich, z. B. „News abonnieren“, „Presse“, „Downloads“ – von der Redaktion gepflegt, Standard leer.
+    Nicht zu verwechseln mit <code>footer_links()</code> (Rechtliches-Zeile, Links von Erweiterungen wie „Datenschutz-Einstellungen“).</p>
+  <table class="doc-table">
+    <tr><th>Quelle</th><th>Pflege</th><th>Technik</th></tr>
+    <tr><td>Liste „Weitere Links im Fußbereich“</td><td>Website → Darstellung, je Eintrag Beschriftung + Link (Linkauswahl: <code>page:ID</code>, <code>page:ID#anker</code>, Eintrag, Datei, Adresse), sortierbar mit den Pfeilen des Repeaters, je Sprache (<code>footer_more_links@en</code>)</td><td>Einstellung <code>footer_more_links</code>; Feld im Kit mit <code>...\Core\FooterLinks::settingsFields()</code> in eine Gruppe von <code>'settings'</code>; zählt zu den „Website-Angaben“ (<code>settings.info</code>)</td></tr>
+    <tr><td>Seitenschalter „Im Fußbereich zeigen“</td><td>Seiteneigenschaften (Verwaltung und Werkzeugleiste ⋯ → Seiteneinstellungen)</td><td>Spalte <code>pages.footer</code> (INT, Standard 0, additiv), auch in Übersetzungen und Content-Sync; Beschriftung <code>nav_title</code> bzw. Titel</td></tr>
+  </table>
+  <ul>
+    <li><b>Reihenfolge:</b> erst die Liste in ihrer Reihenfolge, dann die Seiten mit Schalter in Baumreihenfolge. Doppelte Ziele erscheinen einmal;
+      Seiten, die schon unter „Seiten“ stehen (<code>$skipIds</code>, meist <code>array_column(Pages::menu(false), 'id')</code>), fallen weg.</li>
+    <li><b>Sichtbarkeit:</b> nur veröffentlichte Seiten in der Sprache der Anfrage (<code>page:ID</code> wird auf die Übersetzung abgebildet), für Besucher
+      ohne geschützte Bereiche (<code>Core\PageAccess</code>). Leere Zeilen, Entwürfe und gelöschte Ziele fallen still weg.</li>
+    <li><b>Rückgabe:</b> <code>footer_nav_links(array $skipIds = [])</code> → <code>[['label', 'href', 'current' =&gt; bool, 'external' =&gt; bool, 'id' =&gt; ?int], …]</code>,
+      leer ohne Einträge. <code>footer_nav_html($items, $liClass = '', $aClass = '')</code> gibt <code>&lt;li&gt;&lt;a&gt;</code> aus – maskiert, mit
+      <code>aria-current="page"</code> an der aufgerufenen Seite, externe Adressen mit <code>target="_blank" rel="noopener"</code> und Hinweis „(öffnet in neuem Tab)“ für Screenreader.</li>
+    <li><b>Im Kit</b> (so machen es fluid und NativeCSS): die Links an die Liste der Seiten hängen, damit Fokus-Stile, Kontrast und Abstände der übrigen Fußlinks gelten;
+      die Liste nur ausgeben, wenn Seiten <i>oder</i> weitere Links da sind. Leer bleibt das Markup byte-gleich.
+      <pre><code>$pages = \Core\Pages::menu(false);
+$more = footer_nav_links(array_column($pages, 'id'));
+&lt;?php if ($pages || $more): ?&gt;&lt;ul class="…" role="list"&gt;…Seiten…&lt;?= footer_nav_html($more) ?&gt;&lt;/ul&gt;&lt;?php endif; ?&gt;</code></pre></li>
+    <li><b>fluid:</b> „Spalten“ und „Großer Schriftzug“ in der Spalte „Seiten“, „Schlicht“/„Zentriert“ in der Zeile (<code>.ftr__inline</code>); NativeCSS erbt Feld und Ausgabe (Spalte „Seiten“).</li>
+    <li><b>Selbsttest:</b> <code>php bin/console footer:selftest --site=…</code> (Standard leer und byte-gleich, Liste, Seitenschalter, Reihenfolge, Doppelte, Menü-Seiten,
+      Entwürfe, aria-current, neuer Tab, Escaping, Ausgabe aller Fuß-Varianten bei Kits auf Basis von fluid).</li>
+  </ul>
   <h3 id="vcard">Visitenkarte (vCard) – <code>vcard_url()</code>, <code>Core\VCard</code></h3>
   <p>Besucher speichern die Organisation mit einem Klick im Adressbuch (iOS, Android, Outlook, Thunderbird). Immer an, sobald Telefon, E-Mail oder Adresse eingetragen sind – keine eigene Funktion, keine eigene Ablage.</p>
   <table class="doc-table">
@@ -532,6 +557,7 @@ php bin/console site:create kanzlei www.kanzlei.de kanzlei   # als eigene Websit
     <tr><td><code>fmt()-&gt;date($v)</code>, <code>-&gt;relative()</code>, <code>-&gt;number()</code>, <code>-&gt;bytes()</code> …</td><td>Werte formatieren in der Sprache der Seite (<code>Core\Format</code>) – Datum, Zahl, Betrag, Größe, Dauer, Telefon, Host, Auszug; siehe <a href="#format">Format</a>. <code>date_local($v, $stil)</code> und <code>phone_display()</code> bleiben als Kurzformen</td></tr>
     <tr><td><code>paragraphs($text)</code></td><td>Mehrzeiligen Text (ohne HTML) in Absätze <code>&lt;p&gt;</code> mit <code>&lt;br&gt;</code> umwandeln (maskiert, <code>*Wort*</code> betont)</td></tr>
     <tr><td><code>emphasis($text)</code>, <code>{kit}_title($text)</code>, <code>strip_emphasis($text)</code></td><td><code>*Wort*</code>-Betonung für Überschriften und kurze Texte – siehe <a href="#betonung">Betonung</a></td></tr>
+    <tr><td><code>footer_nav_links($skipIds)</code>, <code>footer_nav_html($items)</code></td><td>Weitere Links für „Seiten“ im Fußbereich (Liste aus den Einstellungen + Seiten mit „Im Fußbereich zeigen“) bzw. ihre <code>&lt;li&gt;</code> – siehe <a href="#fusslinks">Weitere Links im Fußbereich</a></td></tr>
     <tr><td><code>vcard_url()</code>, <code>vcard_entry_url($table, $entry)</code></td><td>Visitenkarte der Organisation bzw. einer Person (<code>.vcf</code>) oder <code>null</code> – siehe <a href="#vcard">Visitenkarte</a></td></tr>
     <tr><td><code>img($id, $sizes, $opt)</code></td><td><code>&lt;picture&gt;</code> mit AVIF/WebP-srcset, width/height, lazy – im ersten Block das erste Bild ohne <code>eager</code>-Angabe sofort (<a href="#erster-block">Erster Block</a>)</td></tr>
     <tr><td><code>theme_asset()</code>, <code>asset()</code></td><td>Asset-URL mit Cache-Busting</td></tr>

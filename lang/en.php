@@ -10008,4 +10008,11 @@ return [
     'Neutrale dunkle Abschnitte und Flächen, Farbe nur für Akzente.' => 'Neutral dark sections and surfaces, colour only for accents.',
     'Sehr dunkle Abschnitte, kräftiger Akzent, gut lesbar auch bei Sonnenlicht.' => 'Very dark sections, strong accent, readable even in sunlight.',
     'Region (Abkürzung)' => 'Region (abbreviation)',
+    // Weitere Links im Fußbereich (Core\FooterLinks)
+    'Weitere Links im Fußbereich' => 'More footer links',
+    'Link hinzufügen' => 'Add link',
+    'Erscheinen im Fußbereich unter „Seiten“ – nach den Seiten des Hauptmenüs, z. B. „News abonnieren“ oder „Presse“. Reihenfolge mit den Pfeilen. Einzelne Seiten lassen sich auch in den Seiteneigenschaften mit „Im Fußbereich zeigen“ aufnehmen; die Liste steht dann zuerst.' => 'Shown in the footer under “Pages”, after the pages of the main menu – e.g. “Subscribe to news” or “Press”. Change the order with the arrows. Individual pages can also be added in the page settings with “Show in footer”; this list then comes first.',
+    'Seite der Website auswählen oder eine Adresse eingeben.' => 'Choose a page of the website or enter an address.',
+    'Im Fußbereich zeigen' => 'Show in footer',
+    'Zusätzlich unter „Seiten“ im Fußbereich – z. B. für „News abonnieren“ oder „Presse“, auch ohne Hauptmenü. Sofern das Kit es vorsieht (z. B. fluid).' => 'Also listed under “Pages” in the footer – e.g. for “Subscribe to news” or “Press”, even without the main menu. If the Kit supports it (e.g. fluid).',
 ];

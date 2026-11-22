@@ -561,6 +561,22 @@ function footer_links(): array
     return $links;
 }
 
+/**
+ * Weitere Links im Fußbereich (Core\FooterLinks) für die Liste „Seiten“: Liste „Weitere Links im Fußbereich“ (Website → Darstellung)
+ * und Seiten mit „Im Fußbereich zeigen“ – [['label', 'href', 'current', 'external', 'id'], …], leer ohne Einträge.
+ * $skipIds: Seiten, die schon dastehen. Im Kit: $more = footer_nav_links(array_column($pages, 'id')); … footer_nav_html($more)
+ */
+function footer_nav_links(array $skipIds = []): array
+{
+    return \Core\FooterLinks::items($skipIds);
+}
+
+/** Einträge aus footer_nav_links() als <li><a …></a></li> (aria-current, neuer Tab mit Hinweis für Screenreader) */
+function footer_nav_html(array $items, string $liClass = '', string $aClass = ''): string
+{
+    return \Core\FooterLinks::html($items, $liClass, $aClass);
+}
+
 /** Adresse der Datenschutzerklärung (Core\Legal) – für Kern-Fragmente und Kits statt kit-eigener Helfer */
 function privacy_url(): string
 {

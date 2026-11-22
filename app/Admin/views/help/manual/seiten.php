@@ -10,7 +10,7 @@
     Titel eingeben, bei Bedarf Vorlage und „Im Menü zeigen“ wählen, <b>Seite anlegen und bearbeiten</b>: Die Seite entsteht als Entwurf und öffnet sich im Editor.</p>
   <p><b>Seiteneinstellungen direkt auf der Website:</b> Im Menü <b>⋯</b> der Werkzeugleiste öffnet <b>Seiteneinstellungen</b> ein Fenster –
     beim Ansehen und beim Bearbeiten, ohne in die Verwaltung zu wechseln. Dort ändern Sie Titel, Adresse, Status, „Im Hauptmenü zeigen“
-    (mit Beschriftung), „Nicht in Suchmaschinen“, den <b>Titel</b> und die <b>Beschreibung für Suchmaschinen</b> (mit Zeichenzähler; mit KI-Assistent
+    (mit Beschriftung), „Im Fußbereich zeigen“, „Nicht in Suchmaschinen“, den <b>Titel</b> und die <b>Beschreibung für Suchmaschinen</b> (mit Zeichenzähler; mit KI-Assistent
     auch per <b>Vorschlag</b>) sowie das <b>Vorschaubild für soziale Netzwerke</b> – aus der Mediathek wählen oder gleich hochladen. <b>Speichern</b>
     übernimmt alles sofort: Titel und Vorschaubild im Seitenkopf sind direkt aktuell; ändern sich Status oder Menü, lädt die Seite neu (im Editor nur,
     wenn nichts Ungespeichertes verloren geht). Eine neue Adresse zeigt vorher an, ob die alte automatisch weiterleitet. Übergeordnete Seite, Versionen
@@ -60,6 +60,7 @@
     <tr><td>Adresse (URL)</td><td>Entsteht aus dem Titel; bei veröffentlichten Seiten nur mit Bedacht ändern – alte Links leiten dann weiter, externe Verweise sollten angepasst werden.</td></tr>
     <tr><td>Status</td><td><b>Entwurf</b> = nur für Angemeldete sichtbar, <b>Online</b> = öffentlich. Schneller geht’s mit dem Status-Knopf in der Seitenübersicht oder in der Leiste auf der Website.</td></tr>
     <tr><td>Im Hauptmenü zeigen, Beschriftung</td><td>Menüeintrag an/aus und ein kürzerer Menütext.</td></tr>
+    <tr><td>Im Fußbereich zeigen</td><td>Die Seite steht zusätzlich im Fußbereich unter „Seiten“ – auch wenn sie nicht im Hauptmenü ist, z. B. „News abonnieren“, „Presse“ oder „Downloads“. Es gilt die Beschriftung im Menü bzw. der Titel; die Adresse wandert beim Verschieben mit. Eigene Beschriftungen oder Adressen außerhalb der Website: Liste „Weitere Links im Fußbereich“ unter <?= e($settingsTitle) ?> → Darstellung (sofern das Kit sie anbietet, z. B. fluid und NativeCSS). Standard: aus.</td></tr>
     <tr><td>Titel für Suchmaschinen</td><td>Optional ein eigener Titel für Google &amp; Co., wenn der Seitentitel dafür zu kurz oder zu lang ist.</td></tr>
     <tr><td>Beschreibung für Suchmaschinen</td><td>Der kurze Text unter dem Link bei Google (120–160 Zeichen). Der <b>SEO-Check</b> prüft Titel, Beschreibung, Überschriften und Alt-Texte.</td></tr>
     <tr><td>Vorschaubild</td><td>Bild, das soziale Netzwerke und Messenger beim Teilen der Seite zeigen. Es wird automatisch im Format 1200 × 630 (1,91 : 1) zugeschnitten, wie Facebook, LinkedIn und Co. es erwarten – um den Fokuspunkt des Bilds (Mediathek → Fokuspunkt), damit z. B. ein Gesicht im Ausschnitt bleibt.</td></tr>
