@@ -30,8 +30,9 @@ if (($d['view'] ?? 'list') === 'term') {
     $term = Glossary::term($t, $e);
     $back = Glossary::overviewUrl();
     $host = $term['link'] !== '' ? (string) parse_url($term['link'], PHP_URL_HOST) : '';
-    $set = ['@type' => 'DefinedTermSet', 'name' => lt('Glossar'), 'inLanguage' => $term['lang']] + ($back ? ['url' => abs_url($back)] : []);
-    StructuredData::add(array_filter(['@type' => 'DefinedTerm', 'name' => $term['term'], 'description' => $term['short'], 'inLanguage' => $term['lang'],
+    // Gleiche @id wie in der Übersicht und in Wissenseinträgen (about/mentions): Detailseite#term, Sammlung: Übersicht#set
+    $set = array_filter(['@type' => 'DefinedTermSet', '@id' => Glossary::setLdId(), 'name' => lt('Glossar'), 'inLanguage' => $term['lang']]) + ($back ? ['url' => abs_url($back)] : []);
+    StructuredData::add(array_filter(['@type' => 'DefinedTerm', '@id' => Glossary::termLdId($term['url']), 'name' => $term['term'], 'description' => $term['short'], 'inLanguage' => $term['lang'],
         'alternateName' => array_values(array_diff($term['variants'], [$term['term']])) ?: null,
         'url' => $term['url'] ? abs_url($term['url']) : null, 'sameAs' => preg_match('~(^|\.)(wikipedia|wikidata)\.org$~', $host) ? $term['link'] : null, 'inDefinedTermSet' => $set]));
     ?>
@@ -80,9 +81,9 @@ if (isset($groups['#'])) { $h = $groups['#']; unset($groups['#']); $groups['#'] 
 $base = 'glx-' . $b->id;
 $hTag = !empty($d['title']) ? 'h3' : 'h2';
 $showCat = !empty($d['show_category']);
-$set = ['@type' => 'DefinedTermSet', 'name' => (string) ($d['title'] ?: lt('Glossar')), 'inLanguage' => \Core\Lang::current()];
+$set = array_filter(['@type' => 'DefinedTermSet', '@id' => Glossary::setLdId(), 'name' => (string) ($d['title'] ?: lt('Glossar')), 'inLanguage' => \Core\Lang::current()]);
 if (($u = Glossary::overviewUrl()) !== null) $set['url'] = abs_url($u);
-$set['hasDefinedTerm'] = array_map(fn($x) => array_filter(['@type' => 'DefinedTerm', 'name' => $x['term'], 'description' => $x['short'],
+$set['hasDefinedTerm'] = array_map(fn($x) => array_filter(['@type' => 'DefinedTerm', '@id' => Glossary::termLdId($x['url']), 'name' => $x['term'], 'description' => $x['short'],
     'url' => $x['url'] ? abs_url($x['url']) : null]), array_values(array_filter($terms, fn($x) => !$x['draft'])));
 if ($set['hasDefinedTerm']) StructuredData::add($set);
 ?>

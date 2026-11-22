@@ -60,6 +60,7 @@
     <li><b>Menü:</b> Mit „Einträge im Menü zeigen“ (Felder &amp; Einstellungen → Auf der Website) stehen die Kapitel unter der Übersichtsseite im Kopfmenü – oberste Ebene oder zwei Ebenen, auf Wunsch mit Nummer. Der Umstieg übernimmt den Menüstand der alten Seiten.</li>
     <li><b>Kapitel:</b> Brotkrumen, Nummer vor dem Titel, Seitenleiste mit Suche, „In diesem Kapitel“, Schlagworte, Begriffe, verwandte Kapitel und <b>Zurück / Weiter</b> in Lesereihenfolge.</li>
     <li>Farben und Schrift kommen aus dem Kit – Sie müssen nichts gestalten.</li>
+    <li>Für Suchmaschinen beschreibt die Website den Wissensbereich als Sammlung von Artikeln mit Kapitelnummer, Bereich, Schlagworten, Begriffen und „Zuletzt geprüft“ – automatisch, ohne Pflege.</li>
   </ul>
 
   <h3>Vorhandene Seiten übernehmen</h3>

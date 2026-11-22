@@ -131,6 +131,55 @@ final class KnowledgeSelfTest
                 app()->currentPage = $prevPage;
                 Pages::db()->update('pages', ['menu' => 0], 'id = :id', ['id' => (int) $lpRow['id']]);
             }
+            // 4c. JSON-LD: Kapitel (Article in der Sammlung, Kette, Nummer, Bereich, Abschnitte, geprüft), Übersicht (CollectionPage ohne ItemList)
+            if ($lpRow) {
+                $tpl = Pages::find((int) $t['settings']['detail_page_id']);
+                Entries::save($t, $b, ['geprueft_am' => '2026-10-01', 'autor' => 'Erika Musterfrau']);
+                Knowledge::flush();
+                $eB = Entries::find($t, $b);
+                Knowledge::$sections = [['id' => 'kn-erster-teil', 'label' => 'Erster Teil']];
+                \Core\StructuredData::reset();
+                $g = \Core\StructuredData::graph($tpl, $t, $eB, []);
+                $byType = [];
+                foreach ($g['@graph'] as $n) $byType[(string) ($n['@type'] ?? '')][] = $n;
+                $art = $byType['Article'][0] ?? [];
+                $collId = KnowledgeLd::collectionId($t);
+                $parts = isset($art['isPartOf']['@id']) ? [$art['isPartOf']] : (array) ($art['isPartOf'] ?? []);
+                $ck(KnowledgeLd::check($g) === [] && isset($byType['Collection'][0]) && count($byType['Article'] ?? []) === 1, 'JSON-LD Kapitel: gültig, @id-Bezüge auflösbar, keine Dopplungen: ' . implode('; ', KnowledgeLd::check($g)));
+                $ck(($parts[0]['@id'] ?? '') === $collId && str_ends_with((string) ($parts[1]['url'] ?? ''), '/' . (string) $t['settings']['route'] . '/' . Entries::find($t, $a)['slug'])
+                    && ($art['alternateName'] ?? '') === '1.1.1' && !isset($art['position']), 'JSON-LD Kapitel: isPartOf Sammlung + Oberkapitel, alternateName = Nummer');
+                $ck(($art['articleSection'] ?? '') === 'Grundlagen' && str_contains((string) ($art['keywords'] ?? ''), 'Wild') && ($art['author']['name'] ?? '') === 'Erika Musterfrau'
+                    && ($art['hasPart'][0]['@type'] ?? '') === 'WebPageElement' && str_ends_with((string) ($art['hasPart'][0]['url'] ?? ''), '#kn-erster-teil'), 'JSON-LD Kapitel: Bereich, Schlagworte, Autor, Abschnitte');
+                // Glossarbegriffe: about mit derselben @id wie die Glossar-Detailseite (falls es ein Glossar mit Begriffen gibt)
+                $gt = \Core\Glossary\Glossary::enabled() && (Tables::field($t, 'begriffe')['target'] ?? '') === \Core\Glossary\Glossary::HANDLE ? (\Core\Glossary\Glossary::terms()[0] ?? null) : null;
+                if ($gt && $gt['url']) {
+                    Entries::save($t, $b, ['begriffe' => [$gt['id']]]);
+                    $gG = \Core\StructuredData::graph($tpl, $t, Entries::find($t, $b), []);
+                    $artG = array_values(array_filter($gG['@graph'], fn($n) => ($n['@type'] ?? '') === 'Article'))[0] ?? [];
+                    $ck(($artG['about'][0]['@id'] ?? '') === \Core\Glossary\Glossary::termLdId($gt['url']) && ($artG['about'][0]['@type'] ?? '') === 'DefinedTerm'
+                        && ($artG['about'][0]['inDefinedTermSet']['@id'] ?? null) === \Core\Glossary\Glossary::setLdId(), 'JSON-LD Kapitel: Glossarbegriffe mit der @id der Glossar-Detailseite');
+                    Entries::save($t, $b, ['begriffe' => []]);
+                }
+                $wp = $byType['WebPage'][0] ?? [];
+                $ck(($wp['lastReviewed'] ?? '') === '2026-10-01' && isset($wp['reviewedBy']), 'JSON-LD WebPage: lastReviewed, reviewedBy');
+                $gA = \Core\StructuredData::graph($tpl, $t, Entries::find($t, $a), []);
+                $artA = array_values(array_filter($gA['@graph'], fn($n) => ($n['@type'] ?? '') === 'Article'))[0] ?? [];
+                $ck(($artA['position'] ?? 0) === 1 && ($artA['isPartOf']['@id'] ?? '') === $collId, 'JSON-LD Kapitel der obersten Ebene: position');
+                // Übersicht: CollectionPage, Sammlung mit Kapiteln in Lesereihenfolge, keine ItemList der Datenliste
+                $prevPage2 = app()->currentPage;
+                app()->currentPage = $lpRow;
+                app()->entry = null;
+                \Core\StructuredData::reset();
+                app()->theme->renderBlocks(Pages::blocks($lpRow));
+                $go = \Core\StructuredData::graph($lpRow, null, null, []);
+                $types = array_column($go['@graph'], '@type');
+                $coll = array_values(array_filter($go['@graph'], fn($n) => ($n['@type'] ?? '') === 'Collection'))[0] ?? [];
+                $order = array_map(fn($id) => abs_url((string) Knowledge::tree($t)['nodes'][$id]['href']) . '#main', Knowledge::tree($t)['order']);
+                $ck(in_array('CollectionPage', $types, true) && !in_array('ItemList', $types, true) && array_column($coll['hasPart'] ?? [], '@id') === $order && KnowledgeLd::check($go) === [],
+                    'JSON-LD Übersicht: CollectionPage, hasPart in Lesereihenfolge, keine ItemList, auflösbar');
+                app()->currentPage = $prevPage2;
+                Knowledge::$sections = [];
+            }
             $mu = MenuEntries::selftest();
             $ok += $mu['ok'];
             array_push($fails, ...$mu['fails']);
@@ -297,6 +346,10 @@ final class KnowledgeSelfTest
             $ck(isset($rr['Extra']) && ($extra === null || in_array($extra, array_column(EntryBlocks::items($rr['Extra']['inhalt']), 'type'), true))
                 && !in_array('hero', array_column(EntryBlocks::items($rr['Extra']['inhalt'] ?? null), 'type'), true) && ($rr['Extra']['anreisser'] ?? '') === 'Kopftext'
                 && (!$mid || (int) ($rr['Extra']['bild'] ?? 0) === $mid), 'Seitenkopf: Bild → Feld „Bild“, Text → Anreißer, freigeschalteter Block übernommen');
+            // JSON-LD der Zielseite eines Verweises: isPartOf auch die Sammlung
+            $gT = \Core\StructuredData::graph(Pages::find($pt), null, null, []);
+            $wpT = array_values(array_filter($gT['@graph'], fn($n) => ($n['@type'] ?? '') === 'WebPage'))[0] ?? [];
+            $ck($tr && in_array(KnowledgeLd::collectionId($tr), array_column((array) ($wpT['isPartOf'] ?? []), '@id'), true) && KnowledgeLd::check($gT) === [], 'JSON-LD Zielseite eines Verweises: isPartOf Sammlung');
             // Kapitel-Adresse eines Verweises (/zweig/tief) → 301 auf die Seite (/zweig/liste/tief)
             $res = (new \Core\Http\Controllers\SiteController())->page(new \Core\Http\Request('GET', '/' . $slug2 . '/tief', [], [], [], []), $slug2 . '/tief');
             $ck($res->status === 301 && str_ends_with((string) ($res->headers['Location'] ?? ''), '/' . $slug2 . '/liste/tief'), 'Verweis-Kapitel: Adresse leitet per 301 auf die Seite');

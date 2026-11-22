@@ -107,6 +107,8 @@ final class StructuredData
     /** Datenliste: verlinkte Einträge als ItemList */
     public static function itemList(array $table, array $rows, string $name = ''): void
     {
+        // Übersicht eines Wissensbereichs: die Sammlung (CollectionPage → Collection.hasPart) trägt die Kapitel – keine zweite Liste
+        if (Data\KnowledgeLd::onOverview($table)) return;
         $items = [];
         foreach (array_values($rows) as $i => $e) {
             if (!($u = Entries::absUrl($table, $e))) continue;
@@ -194,7 +196,11 @@ final class StructuredData
             $main['@id'] = $url . '#main';
             $main['mainEntityOfPage'] = ['@id' => $url . '#webpage'];
             $webpage['mainEntity'] = ['@id' => $url . '#main'];
+            // Wissen (Core\Data\KnowledgeLd): Sammlung, Kapitelkette, Nummer, Bereich, Begriffe, Abschnitte, geprüft
+            if (Data\Knowledge::is($table)) Data\KnowledgeLd::entry($table, $entry, $url, $main, $webpage, $graph);
             $graph[] = $main;
+        } elseif (!$entry) {
+            Data\KnowledgeLd::page($page, $webpage, $graph);   // Übersicht eines Wissensbereichs (CollectionPage) bzw. Zielseite eines Verweises
         }
         $graph[] = $webpage;
         // Knoten der Blöcke (FAQ, Listen, Termine, Videos) – IDs seitenbezogen machen
@@ -202,6 +208,13 @@ final class StructuredData
             if (isset($n['@id']) && str_starts_with($n['@id'], '#')) $n['@id'] = $url . $n['@id'];
             $graph[] = $n;
         }
+        // Gleiche Knoten nur einmal (z. B. Sammlung eines Wissensbereichs aus mehreren Quellen)
+        $seen = [];
+        $graph = array_filter($graph, function ($n) use (&$seen) {
+            if (!isset($n['@id'])) return true;
+            if (isset($seen[$n['@id']])) return false;
+            return $seen[$n['@id']] = true;
+        });
         return ['@context' => 'https://schema.org', '@graph' => array_values($graph)];
     }
 

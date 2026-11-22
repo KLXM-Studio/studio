@@ -34,6 +34,17 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
   `data:kind-upgrade` with dry run and revert.
 
+### Wissen: vollständige strukturierte Daten (`Core\Data\KnowledgeLd`)
+- Kapitel als `Article` in einer Sammlung (`{Übersicht}#collection`) mit Kette der Oberkapitel, Kapitelnummer (`alternateName`,
+  `position`), Schlagworten, Bereich (`articleSection`), Glossarbegriffen (`about` als `DefinedTerm` mit derselben `@id` wie die
+  Glossar-Detailseite, `inDefinedTermSet` = `/glossar#set` – der Glossar-Block nutzt nun dieselben IDs), Autor/in, Abschnitten
+  (`hasPart` `WebPageElement`) und bei geteilten Einträgen der Herkunft; WebPage mit `lastReviewed`/`reviewedBy`, `relatedLink`,
+  Brotkrumen mit Kapitelkette. Übersicht als `CollectionPage` mit den Kapiteln in Lesereihenfolge (ohne doppelte ItemList),
+  Zielseiten von Verweis-Kapiteln mit `isPartOf` auf die Sammlung. Jede `@id` nur einmal im Graphen; Selbsttest prüft Bezüge.
+- *EN:* Complete schema.org data for knowledge areas: chapters as Articles within a Collection (parent chain, number, section,
+  keywords, glossary terms with the glossary's own @ids, sections, review date), overview as CollectionPage without duplicate
+  ItemList, shared entries with source organization; self-test checks that all @id references resolve.
+
 ### Wissen: Startseite mit Karten, Bedingung „ist leer“
 - Datenliste, Darstellung „Kapitel“: **„Kapitel als“ Inhaltsverzeichnis oder Karten** (`chapters_style`). Karten der obersten Ebene im
   Raster (Spalten, Bildformat) mit Bild, Kapitelnummer als Plakette, Titel, Anreißer und höchstens drei Unterkapiteln plus „weitere“;

@@ -33,6 +33,8 @@ final class Knowledge
     public const MAX = 2000;
 
     private static array $trees = [];
+    /** Abschnitte des zuletzt gerahmten Kapitels (frame) – für JSON-LD hasPart (KnowledgeLd::entry) */
+    public static array $sections = [];
 
     public static function is(?array $t): bool
     {
@@ -305,6 +307,7 @@ final class Knowledge
         $node = $tree['nodes'][$id] ?? null;
         $num = $cfg['numbers'] && $node ? $node['number'] : '';
         [$content, $sections] = self::sections($content);
+        self::$sections = $sections;
         $content = self::numberHeading($content, $num);
         $layout = $cfg['layout'];
         $handbook = in_array($layout, ['handbook', 'handbook_menu'], true);

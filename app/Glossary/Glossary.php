@@ -190,6 +190,18 @@ final class Glossary
         return Pages::url($p);
     }
 
+    /** JSON-LD: @id eines Begriffs (Detailseite + #term) – überall gleich (Glossar-Block, Wissenseinträge „about“), sonst null */
+    public static function termLdId(?string $url): ?string
+    {
+        return $url ? abs_url($url) . '#term' : null;
+    }
+
+    /** JSON-LD: @id der Begriffssammlung (Übersichtsseite + #set), sonst null */
+    public static function setLdId(): ?string
+    {
+        return ($u = self::overviewUrl()) !== null ? abs_url($u) . '#set' : null;
+    }
+
     // ================================================================= Ausgabe auf der Website
 
     /**
