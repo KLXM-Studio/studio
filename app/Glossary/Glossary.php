@@ -404,6 +404,13 @@ final class Glossary
             app()->settings->set(self::SET, $s);
         }
         Tables::flush();
+        // Wissensbereiche (Core\Data\Knowledge), die vor dem Glossar entstanden: Feld „Glossarbegriffe“ jetzt aufs Glossar zeigen lassen
+        foreach (Tables::content() as $kt) {
+            if (!\Core\Data\Knowledge::is($kt) || (Tables::field($kt, 'begriffe')['target'] ?? '') !== '' || isset($kt['shared'])) continue;
+            [$clean, $err] = Tables::validate(Tables::toInput($kt), $kt);
+            if (!$err) { Tables::update($kt, $clean); $msgs[] = __('Wissensbereich „{name}“: Glossarbegriffe verknüpfbar.', ['name' => $kt['name']]); }
+        }
+        Tables::flush();
         self::flush();
         PageCache::clear();
         return [$msgs, Tables::findContent(self::HANDLE)];

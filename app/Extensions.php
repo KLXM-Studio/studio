@@ -666,6 +666,26 @@ final class Extensions
         return null;
     }
 
+    /**
+     * Knöpfe weiterer Marker-Editoren (Extension::hotspotEditor) aktiver Erweiterungen – nur Adressen dieser Installation.
+     * @return list<array{url: string, label: string, title: string, icon: string}>
+     */
+    public static function hotspotEditors(): array
+    {
+        $out = [];
+        foreach (self::$active as $x) {
+            foreach ($x->hotspotEditorProviders as $fn) {
+                $d = self::safe($x, 'hotspotEditor', fn() => $fn(), null);
+                if (!is_array($d) || !is_string($d['url'] ?? null) || !str_starts_with($d['url'], '/') || str_starts_with($d['url'], '//')) continue;
+                $label = trim((string) ($d['label'] ?? ''));
+                $icon = (string) ($d['icon'] ?? '');
+                $out[] = ['url' => $d['url'], 'label' => $label !== '' ? $label : __('Im Editor öffnen'), 'title' => trim((string) ($d['title'] ?? '')),
+                    'icon' => preg_match('~^[a-z0-9-]{1,40}$~', $icon) ? $icon : 'pencil-simple'];
+            }
+        }
+        return $out;
+    }
+
     /** Zeilen für `health`: ['Bezeichnung' => true|false|null] */
     public static function health(): array
     {

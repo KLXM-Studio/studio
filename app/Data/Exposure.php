@@ -204,7 +204,7 @@ final class Exposure
     public static function forApps(array $t, array $e, string $app = 'vcard'): array
     {
         foreach ((array) ($t['fields'] ?? []) as $f) if (!self::forApp($f, $app) && array_key_exists($f['name'], $e)) $e[$f['name']] = null;
-        return $e;
+        return self::perEntry($t) ? Roles::refresh($t, $e) : $e;   // Hauptfunktion frisch (vCard TITLE)
     }
 
     /**
@@ -345,7 +345,8 @@ final class Exposure
             elseif (\Core\Combo::isMulti((string) $f['type'])) $e[$n] = \Core\Combo::publicItems((string) $f['type'], $e[$n]);
         }
         unset($e[self::STATE]);
-        return $e;
+        // Funktionen je Person (Core\Data\Roles): Hauptfunktion frisch aus den Funktionen (eine beendete Funktion gilt sofort nicht mehr)
+        return self::perEntry($t) ? Roles::refresh($t, $e) : $e;
     }
 
     /** publicEntry() für eine Liste von Einträgen (Schlüssel bleiben); nicht freigegebene Kontakte fallen weg */

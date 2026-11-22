@@ -26,8 +26,19 @@ final class Kinds
     public const CALENDAR = 'calendar';
     /** Orte: Veranstaltungsorte mit Anschrift und Kartenpunkt – Verknüpfung „Ort aus der Liste“ (ort_ref) in Kalendern */
     public const PLACES = 'places';
-    /** Aktuelle Version des Grundschemas je Art */
-    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1];
+    /** Wissen: Kapitel eines Wissensbereichs/Handbuchs mit Bereich, Oberkapitel, Nummer, Schlagworten (Core\Data\Knowledge) */
+    public const KNOWLEDGE = 'knowledge';
+    /**
+     * Aktuelle Version des Grundschemas je Art. Kontakte v2: Funktionen je Person (Feld funktionen, Core\Data\Roles); Wissen v2: bild,
+     * verweis. Wie eine Tabelle auf die neue Version kommt, regelt AUTO_UPGRADE.
+     */
+    public const VERSIONS = [self::CONTACTS => 2, self::CALENDAR => 1, self::PLACES => 1, self::KNOWLEDGE => 2];
+    /**
+     * Arten, deren neue Versionen nur leere Felder ergänzen: jedes Speichern im Tabellen-Designer (Tables::validate) hebt sie auf die
+     * aktuelle Version (Wissen; Knowledge::upgrade). Alle anderen behalten ihre Version, bis data:kind-upgrade sie hebt
+     * (Core\Data\KindUpgrade, mit Probelauf, Werten und Rückweg) – Kontakte v2 füllt Funktionen aus Funktion und Listen.
+     */
+    public const AUTO_UPGRADE = [self::KNOWLEDGE];
     /** Feste Kalender-Zuordnung der Art calendar (settings.calendar → Grundfelder) */
     public const CALENDAR_MAP = ['start' => 'beginn', 'end' => 'ende', 'all_day' => 'ganztaegig', 'recurrence' => 'wiederholung', 'location' => 'ort',
         'description' => 'beschreibung', 'category' => 'kategorie'];
@@ -69,6 +80,12 @@ final class Kinds
         return self::of($t) === self::PLACES;
     }
 
+    /** Wissensbereich (Kapitel mit Bereich, Oberkapitel, Nummern, Schlagworten – Ansicht Core\Data\Knowledge)? */
+    public static function isKnowledge(array $t): bool
+    {
+        return self::of($t) === self::KNOWLEDGE;
+    }
+
     /**
      * Kalender-Einstellung (settings.calendar) einer Tabelle der Art calendar: Zuordnung fest aufs Grundschema, eingeschaltet;
      * Dauer ohne Ende, öffentlicher Feed und „Datum im Seitentitel“ bleiben einstellbar.
@@ -82,6 +99,14 @@ final class Kinds
         return self::VERSIONS[$kind] ?? 0;
     }
 
+    /** Version des Grundschemas einer Tabelle (ältere Tabellen ohne Angabe: 1) */
+    public static function tableVersion(array $t): int
+    {
+        $k = self::of($t);
+        if (!self::isSpecial($k)) return 0;
+        return max(1, min(self::version($k), (int) ($t['settings']['kind_version'] ?? 1)));
+    }
+
     /** Bezeichnung der Art (Verwaltung) */
     public static function label(string $kind): string
     {
@@ -89,6 +114,7 @@ final class Kinds
             self::CONTACTS => __('Adressbuch'),
             self::CALENDAR => __('Kalender'),
             self::PLACES => __('Orte'),
+            self::KNOWLEDGE => __('Wissen'),
             'inbox' => __('Eingang'),
             default => __('Inhalte'),
         };
@@ -113,6 +139,9 @@ final class Kinds
                 ['name' => 'nachname', 'label' => 'Nachname', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'ist_firma', 'label' => 'Ist eine Organisation', 'type' => 'bool', 'width' => 'half', 'since' => 1],
                 ['name' => 'position', 'label' => 'Funktion', 'type' => 'text', 'in_list' => 1, 'width' => 'half', 'since' => 1, 'help' => 'z. B. 1. Vorsitzende'],
+                // v2: mehrere Funktionen je Person (Gremium/Liste, Verknüpfung, seit/bis) – position trägt dann die Hauptfunktion
+                ['name' => Roles::FIELD, 'label' => 'Funktionen', 'type' => Roles::TYPE, 'since' => 2,
+                    'help' => 'Je Funktion Gremium bzw. Liste, optional eine Verknüpfung (z. B. Arbeitskreis) und Zeitraum. Die erste aktuelle ist die Hauptfunktion.'],
                 ['name' => 'firma', 'label' => 'Organisation', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'abteilung', 'label' => 'Abteilung', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'foto', 'label' => 'Foto', 'type' => 'media', 'width' => 'half', 'since' => 1],
@@ -122,7 +151,7 @@ final class Kinds
                 ['name' => 'web', 'label' => 'Web', 'type' => 'urls', 'since' => 1],
                 ['name' => 'geburtstag', 'label' => 'Geburtstag', 'type' => 'date', 'width' => 'half', 'private' => 1, 'since' => 1],
                 ['name' => 'listen', 'label' => 'Listen', 'type' => 'multiselect', 'in_list' => 1, 'options' => '', 'since' => 1,
-                    'help' => 'Gruppen wie „Vorstand“ oder „Presse“ – in Adressbuch-Apps als Gruppen bzw. Kategorien.'],
+                    'help' => 'Gruppen wie „Vorstand“ oder „Presse“ – in Adressbuch-Apps als Gruppen bzw. Kategorien. Listen aus den Funktionen kommen von selbst dazu.'],
                 ['name' => 'notiz', 'label' => 'Notiz', 'type' => 'textarea', 'private' => 1, 'since' => 1],
             ],
             self::CALENDAR => [
@@ -149,6 +178,33 @@ final class Kinds
                 ['name' => 'standort', 'label' => 'Ort (Karte)', 'type' => 'geo', 'since' => 1],
                 ['name' => 'hinweise', 'label' => 'Anfahrt und Hinweise', 'type' => 'textarea', 'since' => 1],
             ],
+            // Wissen: Verknüpfungen auf die eigene Tabelle (oberkapitel, verwandt) bzw. das Glossar (begriffe) setzt enforceInput
+            self::KNOWLEDGE => [
+                ['name' => 'titel', 'label' => 'Titel', 'type' => 'text', 'required' => 1, 'in_list' => 1, 'searchable' => 1, 'since' => 1],
+                ['name' => 'bereich', 'label' => 'Bereich', 'type' => 'select', 'in_list' => 1, 'options' => '', 'width' => 'half', 'since' => 1,
+                    'help' => 'Oberste Gliederung, z. B. „Grundlagen“, „Praxis“. Die Reihenfolge der Bereiche ergibt die erste Stelle der Kapitelnummer.'],
+                ['name' => 'oberkapitel', 'label' => 'Oberkapitel', 'type' => 'relation', 'target' => '', 'width' => 'half', 'since' => 1,
+                    'help' => 'Leer = Kapitel der ersten Ebene. Sonst steht das Kapitel darunter (z. B. 2.1 unter 2).'],
+                ['name' => 'kapitelnummer', 'label' => 'Kapitelnummer', 'type' => 'text', 'width' => 'half', 'since' => 1,
+                    'help' => 'Leer = automatisch aus Bereich, Oberkapitel und Reihenfolge. Eigene Nummer, z. B. „A.1“, ersetzt die automatische.'],
+                ['name' => 'anreisser', 'label' => 'Anreißer', 'type' => 'textarea', 'searchable' => 1, 'since' => 1,
+                    'help' => 'Ein, zwei Sätze: worum es im Kapitel geht – in Übersicht, Suche und Inhaltsverzeichnis.'],
+                ['name' => 'inhalt', 'label' => 'Inhalt', 'type' => 'blocks', 'searchable' => 1, 'since' => 1,
+                    'help' => 'Text, Bilder, Downloads … wie auf einer Seite. Zwischenüberschriften (H2) erscheinen als Abschnitte „In diesem Kapitel“.'],
+                ['name' => 'schlagworte', 'label' => 'Schlagworte', 'type' => 'multiselect', 'in_list' => 1, 'options' => '', 'since' => 1,
+                    'help' => 'Besucher filtern danach; Kapitel mit gleichen Schlagworten erscheinen als „Verwandte Kapitel“.'],
+                ['name' => 'verwandt', 'label' => 'Verwandte Kapitel', 'type' => 'relations', 'target' => '', 'since' => 1],
+                ['name' => 'begriffe', 'label' => 'Glossarbegriffe', 'type' => 'relations', 'target' => '', 'since' => 1,
+                    'help' => 'Begriffe aus dem Glossar der Website, die das Kapitel erklärt – erscheinen als „Begriffe in diesem Kapitel“.'],
+                ['name' => 'autor', 'label' => 'Autor/in', 'type' => 'text', 'width' => 'half', 'since' => 1],
+                ['name' => 'geprueft_am', 'label' => 'Zuletzt geprüft', 'type' => 'date', 'width' => 'half', 'since' => 1,
+                    'help' => 'Wann der Inhalt zuletzt fachlich geprüft wurde – steht unter dem Kapitel.'],
+                // Version 2: Bild des Kapitels (Karten, Teilen, Kopf der Detailseite) und Kapitel als Verweis auf eine Seite
+                ['name' => 'bild', 'label' => 'Bild', 'type' => 'media', 'width' => 'half', 'since' => 2,
+                    'help' => 'Optional: Bild des Kapitels für Übersicht, Teilen und den Kopf der Seite.'],
+                ['name' => 'verweis', 'label' => 'Verweis auf Seite', 'type' => 'link', 'width' => 'half', 'since' => 2,
+                    'help' => 'Optional: Das Kapitel ist dann ein Verweis – Navigation, Inhaltsverzeichnis, Suche und Vor/Zurück führen auf diese Seite, die Kapitel-Adresse leitet dorthin weiter. Inhalt bleibt leer.'],
+            ],
             default => [],
         };
         return array_values(array_filter($all, fn($f) => (int) $f['since'] <= $version));
@@ -160,21 +216,22 @@ final class Kinds
         return array_column(self::schema($kind, $version), 'name');
     }
 
-    public static function isSystem(string $kind, string $name): bool
+    public static function isSystem(string $kind, string $name, ?int $version = null): bool
     {
-        return self::isSpecial($kind) && in_array($name, self::systemNames($kind), true);
+        return self::isSpecial($kind) && in_array($name, self::systemNames($kind, $version), true);
     }
 
     /** Auswahlfeld, das ohne Optionen gespeichert werden darf (Listen einer Kontakte-Tabelle) */
     public static function allowsEmptyOptions(string $kind, string $name): bool
     {
-        return ($kind === self::CONTACTS && $name === 'listen') || ($kind === self::CALENDAR && $name === 'kategorie');
+        return ($kind === self::CONTACTS && $name === 'listen') || ($kind === self::CALENDAR && $name === 'kategorie')
+            || ($kind === self::KNOWLEDGE && in_array($name, ['bereich', 'schlagworte'], true));
     }
 
     /** Verknüpfung, die ohne Zieltabelle gespeichert werden darf (Ort aus der Liste, solange es keine Orte-Tabelle gibt) */
     public static function allowsEmptyTarget(string $kind, string $name): bool
     {
-        return $kind === self::CALENDAR && $name === 'ort_ref';
+        return ($kind === self::CALENDAR && $name === 'ort_ref') || ($kind === self::KNOWLEDGE && $name === 'begriffe');
     }
 
     /** Erste Tabelle der Art „Orte“ (Ziel für ort_ref neuer Kalender), sonst '' */
@@ -188,9 +245,14 @@ final class Kinds
      * Eingabe des Designers (Tables::validate) an das Grundschema anpassen: fehlende System-Felder anhängen, Typ eines vorhandenen
      * System-Feldes festhalten (mit Hinweis). Beschriftung, Hilfe, Breite, „In der Liste“ und Optionen der Listen bleiben änderbar.
      */
-    public static function enforceInput(string $kind, array $fields, array &$errors): array
+    public static function enforceInput(string $kind, array $fields, array &$errors, string $handle = '', ?int $version = null): array
     {
-        $schema = array_column(self::schema($kind), null, 'name');
+        $schema = array_column(self::schema($kind, $version), null, 'name');
+        // Wissen: Oberkapitel und verwandte Kapitel verweisen immer auf die eigene Tabelle, Glossarbegriffe aufs Glossar (falls vorhanden)
+        if ($kind === self::KNOWLEDGE) {
+            foreach (['oberkapitel', 'verwandt'] as $n) if (isset($schema[$n])) $schema[$n]['target'] = $handle;
+            if (isset($schema['begriffe'])) $schema['begriffe']['target'] = Tables::findContent(\Core\Glossary\Glossary::HANDLE) ? \Core\Glossary\Glossary::HANDLE : '';
+        }
         $seen = [];
         foreach ($fields as $i => $f) {
             if (!is_array($f)) continue;
@@ -210,6 +272,9 @@ final class Kinds
                 $fields[$i]['type'] = $schema[$n]['type'];
             }
             $fields[$i]['name'] = $n;
+            if (isset($schema[$n]['target']) && $kind === self::KNOWLEDGE && ($n !== 'begriffe' || $schema[$n]['target'] !== '' || ($f['target'] ?? '') === '')) {
+                $fields[$i]['target'] = $schema[$n]['target'];
+            }
             unset($fields[$i]['legacy']);
         }
         foreach ($schema as $n => $def) {
@@ -224,9 +289,9 @@ final class Kinds
      * Vollständige Vorlage für „Neue Tabelle → Adressbuch“: Grundschema mit Abschnitten wie in Adressbuch-Apps
      * (Name & Organisation, Kontakt, Weitere Angaben). Eigene Felder ergänzt die Redaktion danach.
      */
-    public static function presetFields(string $kind): array
+    public static function presetFields(string $kind, ?int $version = null): array
     {
-        $by = array_column(self::schema($kind), null, 'name');
+        $by = array_column(self::schema($kind, $version), null, 'name');
         $pick = function (string ...$names) use ($by): array {
             $out = [];
             foreach ($names as $n) {
@@ -249,15 +314,26 @@ final class Kinds
             ];
         }
         if ($kind === self::PLACES) return $pick('name', 'adresse', 'standort', 'hinweise');
+        if ($kind === self::KNOWLEDGE) {
+            return [
+                ['label' => 'Kapitel', 'name' => 'abschnitt_kapitel', 'type' => 'section'],
+                ...array_map(fn($f) => $f['name'] === 'inhalt' ? $f + ['blocks' => Knowledge::contentBlocks()] : $f, $pick('titel', 'bereich', 'oberkapitel', 'kapitelnummer', 'anreisser', 'bild', 'inhalt')),
+                ['label' => 'Zuordnung', 'name' => 'abschnitt_zuordnung', 'type' => 'section', 'style' => 'collapsed'],
+                ...$pick('schlagworte', 'verwandt', 'begriffe', 'autor', 'geprueft_am', 'verweis'),
+            ];
+        }
         if ($kind !== self::CONTACTS) return [];
+        $v2 = isset($by[Roles::FIELD]);
         return [
             ...$pick(self::PUBLIC_FIELD),
             ['label' => 'Name & Organisation', 'name' => 'abschnitt_name', 'type' => 'section'],
             ...$pick('name', 'praefix', 'vorname', 'nachname', 'position', 'firma', 'abteilung', 'ist_firma', 'foto'),
+            // v2: Funktionen und Listen in einem Abschnitt (die Hauptfunktion „position“ bildet sich aus den Funktionen)
+            ...($v2 ? [['label' => 'Funktionen & Listen', 'name' => 'abschnitt_funktionen', 'type' => 'section'], ...$pick(Roles::FIELD, 'listen')] : []),
             ['label' => 'Kontakt', 'name' => 'abschnitt_kontakt', 'type' => 'section', 'help' => 'Jede Angabe ist zuerst intern – „Öffentlich“ zeigt sie auf der Website.'],
             ...$pick('telefon', 'email', 'adresse', 'web'),
             ['label' => 'Weitere Angaben', 'name' => 'abschnitt_weiteres', 'type' => 'section'],
-            ...$pick('geburtstag', 'listen', 'notiz'),
+            ...$pick(...($v2 ? ['geburtstag', 'notiz'] : ['geburtstag', 'listen', 'notiz'])),
         ];
     }
 
@@ -267,7 +343,7 @@ final class Kinds
      */
     public static function detailFields(array $t): array
     {
-        $first = ['foto', 'listen', 'position', 'firma', 'telefon', 'email', 'web', 'adresse'];
+        $first = ['foto', 'listen', 'position', Roles::FIELD, 'firma', 'telefon', 'email', 'web', 'adresse'];
         $skip = [self::PUBLIC_FIELD, 'name', 'praefix', 'vorname', 'nachname', 'ist_firma', 'abteilung', 'geburtstag', 'notiz'];
         $names = array_column($t['fields'], 'name');
         $out = array_values(array_intersect($first, $names));
@@ -305,7 +381,10 @@ final class Kinds
         $names = self::systemNames(self::CONTACTS);
         $eq('Grundschema Kontakte', array_values(array_intersect(['oeffentlich', 'name', 'vorname', 'nachname', 'position', 'foto', 'telefon', 'email', 'adresse', 'web', 'listen'], $names)),
             ['oeffentlich', 'name', 'vorname', 'nachname', 'position', 'foto', 'telefon', 'email', 'adresse', 'web', 'listen']);
-        $eq('Version 1 = aktuell, nur additiv', [self::version(self::CONTACTS), count(self::schema(self::CONTACTS, 1)) <= count(self::schema(self::CONTACTS))], [1, true]);
+        $eq('Version 2 = aktuell, nur additiv', [self::version(self::CONTACTS), count(self::schema(self::CONTACTS, 1)) < count(self::schema(self::CONTACTS)),
+            array_values(array_diff(self::systemNames(self::CONTACTS), self::systemNames(self::CONTACTS, 1)))], [2, true, [Roles::FIELD]]);
+        $err0 = [];
+        $eq('v1-Tabelle bleibt v1 (Designer ergänzt keine v2-Felder)', array_column(self::enforceInput(self::CONTACTS, [], $err0, "", 1), 'name') === self::systemNames(self::CONTACTS, 1), true);
         $eq('Mehrfachfelder sind Combo-Typen', array_values(array_filter(array_column(self::schema(self::CONTACTS), 'type'), fn($t) => \Core\Combo::isMulti($t))), ['phones', 'emails', 'addresses', 'urls']);
         $eq('Geburtstag und Notiz nie öffentlich', [Tables::field(['fields' => self::schema(self::CONTACTS)], 'geburtstag')['private'] ?? 0, Tables::field(['fields' => self::schema(self::CONTACTS)], 'notiz')['private'] ?? 0], [1, 1]);
         $err = [];

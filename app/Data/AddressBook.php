@@ -128,6 +128,16 @@ final class AddressBook
         $row = Tables::db($t)->fetch('SELECT ' . implode(', ', $sel) . " FROM {$t['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), array_merge($lp, $params)) ?? [];
         $lists = [];
         foreach ($keys as $i => $k) $lists[(string) $k] = (int) ($row["n_l$i"] ?? 0);
+        // Funktionen (Core\Data\Roles): beendete zählen nicht – wie index()
+        if ($keys && ($rf = Roles::field($t))) {
+            $lists = array_fill_keys(array_map('strval', $keys), 0);
+            $p2 = [];
+            $w2 = self::base($t, $p2);
+            foreach (Tables::db($t)->fetchAll("SELECT listen, {$rf['name']} AS f FROM {$t['table']}" . ($w2 ? ' WHERE ' . implode(' AND ', $w2) : ''), $p2) as $r) {
+                $x = ['listen' => self::listKeys($r), $rf['name'] => $r['f']];
+                foreach (array_keys($lists) as $k) if (in_array(Roles::membership($t, $x, (string) $k), ['current', 'manual'], true)) $lists[$k]++;
+            }
+        }
         return ['all' => (int) ($row['n_all'] ?? 0), 'lists' => $lists, 'offline' => (int) ($row['n_offline'] ?? 0),
             'nofoto' => (int) ($row['n_nofoto'] ?? 0), 'nomail' => (int) ($row['n_nomail'] ?? 0)];
     }
@@ -171,8 +181,18 @@ final class AddressBook
             }
             if ($or) $where[] = implode(' AND ', $or);
         }
-        $cols = array_values(array_filter(['name', 'praefix', 'vorname', 'nachname', 'firma', 'ist_firma', 'position', 'abteilung', 'foto', 'listen', Kinds::PUBLIC_FIELD], fn($c) => self::has($t, $c)));
+        $roles = Roles::field($t);
+        $cols = array_values(array_filter(['name', 'praefix', 'vorname', 'nachname', 'firma', 'ist_firma', 'position', 'abteilung', 'foto', 'listen', Kinds::PUBLIC_FIELD, ...($roles ? [(string) $roles['name']] : [])], fn($c) => self::has($t, $c)));
         $rows = Tables::db($t)->fetchAll('SELECT id, status, slug, published_at, ' . (isset($t['shared']) ? 'origin_site, ' : '') . implode(', ', $cols) . " FROM {$t['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params);
+        // Funktionen (Core\Data\Roles): in einer Liste nur, wer dort eine aktuelle Funktion hat oder von Hand zugeordnet ist – auch
+        // bevor der Eintrag nach dem Ende einer Funktion neu gespeichert wurde; Hauptfunktion frisch
+        if ($roles) {
+            $rows = array_values(array_filter(array_map(function (array $r) use ($t, $roles): array {
+                $r['listen'] = self::listKeys($r);
+                $r[$roles['name']] = Roles::items($r[$roles['name']] ?? null);
+                return Roles::refresh($t, $r);
+            }, $rows), fn(array $r) => $list === '' || in_array(Roles::membership($t, $r, $list), ['current', 'manual'], true)));
+        }
         foreach ($rows as &$r) {
             $r['_key'] = self::sortKey($r);
             $r['_letter'] = self::letter($r['_key']);
@@ -341,7 +361,7 @@ final class AddressBook
      */
     public static function groups(array $t, array $e): array
     {
-        $head = ['name', 'praefix', 'vorname', 'nachname', 'ist_firma', 'position', 'firma', 'abteilung', 'foto', 'listen', Kinds::PUBLIC_FIELD];
+        $head = ['name', 'praefix', 'vorname', 'nachname', 'ist_firma', 'position', 'firma', 'abteilung', 'foto', 'listen', Kinds::PUBLIC_FIELD, Roles::FIELD];
         $groups = [];
         $more = [];
         foreach (Tables::dataFields((array) $t['fields']) as $f) {
@@ -428,7 +448,10 @@ final class AddressBook
             $has = in_array($list, $keys, true);
             if ($has === $add) { $out['skipped']++; continue; }
             $keys = $add ? [...$keys, $list] : array_values(array_diff($keys, [$list]));
-            [, $err] = Entries::save($t, $id, ['listen' => $keys], $note);
+            $in = ['listen' => $keys];
+            // Entfernen beendet die aktuellen Funktionen in dieser Liste (bleiben als „Ehemalige“ erhalten, Core\Data\Roles::endIn)
+            if (!$add && ($rf = Roles::field($t))) $in[$rf['name']] = Roles::endIn(Roles::items($e[$rf['name']] ?? null), $list);
+            [, $err] = Entries::save($t, $id, $in, $note);
             if ($err) {
                 $out['errors'][] = Entries::title($t, $e) . ': ' . implode(' ', array_map('strval', $err));
                 continue;

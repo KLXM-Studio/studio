@@ -39,6 +39,7 @@ $core = [
     'medien' => 'Bilder & Dateien',
     'daten' => 'Eigene Daten (Aktuelles, Team …)',
     'stellen' => 'Stellenangebote & Google for Jobs',
+    'wissen' => 'Wissensbereich & Handbuch',
     'quellen' => 'Externe Quellen: Feeds, APIs, OpenImmo',
     'anfragen' => 'Eingang: Online-Anfragen lesen',
     'smime' => 'S/MIME einrichten: verschlüsselte Anfragen per E-Mail',

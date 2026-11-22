@@ -53,3 +53,10 @@
 .ctm__label{font-size:.85em;opacity:.7;margin:0}
 .ctm__value{margin:0;overflow-wrap:anywhere}
 @media (max-width:480px){.ctm__item{grid-template-columns:1fr;gap:0}}
+
+/* Funktionen je Person (Core\Data\Roles): Funktion fett, Gremium/verknüpfter Eintrag und Zeitraum dahinter – ohne Transparenz (Kontrast) */
+.ctr{display:grid;gap:.3em;margin:0;padding:0;list-style:none}
+.ctr__item{margin:0}
+.ctr__role{font-weight:600}
+.ctr__meta::before,.ctr__when::before{content:"· "}
+.ctr__when{font-size:.9em;white-space:nowrap}

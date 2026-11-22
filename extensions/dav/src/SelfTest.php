@@ -112,6 +112,31 @@ final class SelfTest
         $eq('nur URL-Basis ohne Vorlage: sofort online', Dav::statusPreset(['settings' => ['route' => 'team', 'detail_page_id' => null] + $t['settings']] + $t), 'published');
         $eq('Standardwert der Einstellungen folgt dem Vorschlag', Dav::tableSettings($td)['status'], 'draft');
 
+        echo "Listen als Gruppen (Adressbuch mit Funktionen)\n";
+        \Core\Data\Roles::$today = '2026-06-01';
+        $ct = ['id' => 0, 'handle' => 'dav_selftest_kb', 'table' => 'data_dav_selftest_kb', 'name' => 'Kontakte', 'singular' => 'Kontakt',
+            'settings' => ['title_field' => 'name', 'workflow' => false, 'kind' => 'contacts', 'kind_version' => 2],
+            'fields' => [['name' => 'name', 'label' => 'Name', 'type' => 'text'], ['name' => 'position', 'label' => 'Funktion', 'type' => 'text'],
+                ['name' => 'funktionen', 'label' => 'Funktionen', 'type' => 'roles'],
+                ['name' => 'listen', 'label' => 'Listen', 'type' => 'multiselect', 'options' => ['vorstand' => 'Vorstand', 'presse' => 'Presse']]]];
+        $ents = [
+            [['id' => 1, 'name' => 'Erika Musterfrau', 'listen' => ['vorstand'], 'funktionen' => [['funktion' => 'Vorsitz', 'liste' => 'vorstand']]], ['uid' => 'uid-erika']],
+            [['id' => 2, 'name' => 'Max Mustermann', 'listen' => ['vorstand'], 'funktionen' => [['funktion' => 'Kassenwart', 'liste' => 'vorstand', 'bis' => '2026-01-31']]], ['uid' => 'uid-max']],
+            [['id' => 3, 'name' => 'Lena Beispiel', 'listen' => ['presse'], 'funktionen' => []], ['uid' => 'uid-lena']],
+        ];
+        $eq('Gruppen-Karten nur mit Funktionen und Listen', [CardBackend::hasGroups($ct), CardBackend::hasGroups($t)], [true, false]);
+        $g = CardBackend::groupCard($ct, 'vorstand', 'Vorstand', $ents);
+        $eq('Gruppe: Art, Name', [self::val($g, 'X-ADDRESSBOOKSERVER-KIND'), self::val($g, 'FN')], ['group', 'Vorstand']);
+        $members = array_map('strval', \Sabre\VObject\Reader::read($g)->select('X-ADDRESSBOOKSERVER-MEMBER'));
+        $eq('Gruppe: aktuelle Funktion ja, beendete nein', $members, ['urn:uuid:uid-erika']);
+        $eq('Gruppe: von Hand zugeordnet', array_map('strval', \Sabre\VObject\Reader::read(CardBackend::groupCard($ct, 'presse', 'Presse', $ents))->select('X-ADDRESSBOOKSERVER-MEMBER')), ['urn:uuid:uid-lena']);
+        $eq('Gruppe: feste UID und Adresse', [CardBackend::groupUid($ct, 'vorstand') === CardBackend::groupUid($ct, 'vorstand'), CardBackend::groupUri('vorstand')], [true, 'liste-vorstand.vcf']);
+        $tc = CardBackend::render($ct, ['id' => 1, 'updated_at' => '2026-05-01 10:00:00', 'name' => 'Erika Musterfrau', 'position' => 'alt',
+            'funktionen' => [['funktion' => 'Kassenwart', 'bis' => '2026-01-31'], ['funktion' => 'Vorsitz', 'liste' => 'vorstand']]], null, Dav::TABLE_DEFAULTS);
+        $eq('TITLE = Hauptfunktion (erste aktuelle, frisch)', self::val($tc, 'TITLE'), 'Vorsitz');
+        $eq('Funktionen nicht als X-MYCMS-*', str_contains($tc, 'X-MYCMS-FUNKTIONEN'), false);
+        \Core\Data\Roles::$today = null;
+
         echo $fail ? "\n$fail Prüfungen fehlgeschlagen\n" : "\nAlle Prüfungen bestanden\n";
         return $fail ? 1 : 0;
     }

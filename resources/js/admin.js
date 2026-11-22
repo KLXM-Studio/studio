@@ -12,7 +12,9 @@ import { toast, toastNext, flushToast } from './_toast.js';   // Meldungen (Verw
 import { openSpotlight } from './_spotlight.js';
 import { t } from './_i18n.js';
 import { initGeo } from './_geo.js';
+import { initHotspots, hotspots } from './_hotspots.js';   // Marker-Editor „Interaktives Bild“ (Feldtyp „hotspots“, Core\Hotspots)
 import { conditions } from './_conditions.js';
+import { isVideoUrl } from './_videourl.js';   // Bedingung show_if '~video' (Core\VideoLinks)
 import { initSecCount } from './_fsec.js';
 import { initExposure } from './_exposure.js';
 import { initRowMenus, openMenu } from './_rowmenu.js';   // Eintragslisten: Zeilenmenü (⋯) an den Knopf setzen   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
@@ -370,7 +372,7 @@ function initShowIf(scope = d) {
       el.hidden = ![].concat(cond).some(alt => Object.entries(alt).every(([name, vals]) => {
         const list = $$(`[name="${name.replace(/"/g, '\\"')}"]`, form), radio = list.find(c => c.type === 'radio' && c.checked);
         const box = list.filter(c => c.type === 'checkbox'), v = radio ? radio.value : val(box[0] || list.find(c => c.type !== 'hidden') || list[0]);
-        return vals.some(x => x === '*' ? v !== '' : x === v);
+        return vals.some(x => x === '*' ? v !== '' : x === '~video' ? isVideoUrl(v) : x === v);   // '~video': YouTube-/Vimeo-Adresse (Core\VideoLinks)
       }));
     });
     if (!form._showIf) { form._showIf = true; form.addEventListener('input', run); form.addEventListener('change', run); }
@@ -1268,7 +1270,7 @@ function initDt(scope) {
 }
 if (IN_ADMIN) watchDatetime(d, dtOpts());
 onRoot(r => watchDatetime(r, dtOpts()));
-function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initHotspots(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 
@@ -1324,7 +1326,7 @@ function extData(name) {
   }
   return extCache[name];
 }
-window.CMSAdmin = { init, toast, toastNext, openMediaPicker, pickLink, openLinkPicker, openPagesPicker, esc, Rich, Markdown, openSpotlight, t, ico, bar: bar_, formFields,
+window.CMSAdmin = { init, hotspots, toast, toastNext, openMediaPicker, pickLink, openLinkPicker, openPagesPicker, esc, Rich, Markdown, openSpotlight, t, ico, bar: bar_, formFields,
   // Werkzeuge beim Bearbeiten und Ereignisse (stabile Schnittstelle, Technik → Erweiterungen): CMSAdmin.tools.register(id, { mount, unmount })
   tools: tools_, events: { emit, beforeSave },
   // Angaben einer Erweiterung für ihre Skripte (Extension::adminData → <script type="application/json" id="cms-ext-{name}">)

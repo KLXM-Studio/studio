@@ -55,6 +55,8 @@ final class SiteController
             }
             // Geteilte Tabellen: nur Einträge, die diese Website zeigt (eigene + gewählte Quellen)
             $entry = Entries::bySlug($t, $m[2], !app()->auth->check(), Lang::current(), 'site');
+            // Wissen: Kapitel vom Typ „Verweis“ leiten auf ihre Seite weiter (Core\Data\Knowledge::refUrl)
+            if ($entry && \Core\Data\Knowledge::is($t) && ($to = \Core\Data\Knowledge::refUrl($t, $entry)) !== null) return Response::redirect($to, 301);
             if ($tpl && $entry) {
                 // Website-Ausgabe: „Nie öffentlich“-Felder sind für Vorlage, Blöcke und Kopfdaten leer (Core\Data\Exposure)
                 app()->entry = ['table' => $t, 'entry' => \Core\Data\Exposure::publicEntry($t, $entry)];
@@ -236,6 +238,10 @@ final class SiteController
         } else {
             $content = $theme->renderBlocks($blocks);
         }
+        // Wissensbereich (Tabellenart knowledge, Core\Data\Knowledge): Seitenleiste mit Kapiteln, Abschnitte, Vor/Zurück um den Inhalt
+        $knowledge = !$error && \Core\Data\Knowledge::applies();
+        if ($knowledge) $content = \Core\Data\Knowledge::frame($content, $ctx['table'], $ctx['entry']);
+        $types = $app->editing ? null : [...self::types($blocks), ...($knowledge ? ['@knowledge'] : [])];
 
         // Angemeldet auf der Website unterwegs: „online“ mit Ort (Core\Presence::ONLINE) – Besucher nie
         if ($loggedIn) \Core\Http\Controllers\Admin\PresenceController::seen((string) ($ctx['entry']['title'] ?? $page['title'] ?? ''), (string) $r->path);
@@ -245,10 +251,14 @@ final class SiteController
             'seo' => $error ? ['title' => (string) ($page['meta_title'] ?: $page['title'])] + Seo::forError(404)
                 : ($ctx ? Seo::forEntry($page, $ctx['table'], $ctx['entry']) : Seo::forPage($page)),
             'editor' => $editor,
-            'extraCss' => $theme->conditionalCss($app->editing ? null : self::types($blocks)),
-            'extraJs' => $app->editing ? $theme->editorJs() : $theme->conditionalJs(self::types($blocks)),
+            'extraCss' => $theme->conditionalCss($types),
+            'extraJs' => $types === null ? $theme->editorJs() : $theme->conditionalJs($types),
             'toolbar' => $loggedIn ? ['page' => $page, 'editing' => $app->editing, 'dirty' => Pages::hasUnpublished($page), 'live' => $live] : null,
         ]);
+        // Wissensbereich: <link rel="prev|next"> der Kapitel-Reihenfolge
+        if ($knowledge && ($links = \Core\Data\Knowledge::headLinks($ctx['table'], $ctx['entry'])) !== '' && ($pos = stripos($html, '</head>')) !== false) {
+            $html = substr($html, 0, $pos) . $links . substr($html, $pos);
+        }
 
         // Gerade über die Leiste abgemeldet (AuthController::logout → ?abgemeldet): kurze Meldung, Skript entfernt den Zusatz aus der Adresse
         if (!$loggedIn && !$error && array_key_exists('abgemeldet', $r->query)) {
@@ -265,6 +275,8 @@ final class SiteController
         if (!$app->editing) $html = \Core\Push\Visitor::inject($html);
         // PDF-Links: Auswahl „Anzeigen | Herunterladen“ (Core\PdfLinks) – Skript nur, wenn die Seite solche Links hat
         if (!$app->editing) $html = \Core\PdfLinks::inject($html);
+        // Video-Links (YouTube/Vimeo) in der Lightbox nach Einwilligung (Core\VideoLinks) – Einstellung aus: Ausgabe unverändert
+        if (!$app->editing) $html = \Core\VideoLinks::inject($html);
         // Infografiken mit Design-Farben: Hell/Dunkel-Schalter und dunkle Abschnitte (Core\Graphics\Themed) – auch beim Bearbeiten
         $html = \Core\Graphics\Themed::inject($html);
         // Bewegte Grafiken: Skript nur bei Auslöser „sobald sichtbar“, Klick, Hotspots, Zählen oder Schleifen (Core\Graphics\Motion)
@@ -431,6 +443,7 @@ final class SiteController
                 $loc = site_url() . Entries::url($t, $e);
                 if (Tables::isShared($t) && Entries::absUrl($t, $e) !== $loc) continue;
                 if (!$live($e)) continue;
+                if (\Core\Data\Knowledge::is($t) && \Core\Data\Knowledge::refUrl($t, $e) !== null) continue;   // Verweis-Kapitel: Adresse leitet weiter, die Seite steht selbst in der Sitemap
                 $urls[] = ['loc' => $loc, 'lastmod' => $mod($e['updated_at'] ?? $e['published_at']),
                     'images' => self::sitemapImages(array_map(fn($f) => (int) ($e[$f] ?? 0), $mediaFields))];
             }

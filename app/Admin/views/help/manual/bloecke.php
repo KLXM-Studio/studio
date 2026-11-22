@@ -19,7 +19,7 @@
   </table></div>
   <ul>
     <li><b>Such-Einstieg:</b> braucht die eingeschaltete Website-Suche (Grundeinstellungen → Funktionen). Vorschläge unter dem Feld: ein Suchbegriff pro Zeile, oder „Beschriftung | Link“ für einen direkten Link.</li>
-    <li><b>Video:</b> nur eigene, kurze Dateien ohne Ton aus der Mediathek (keine Einwilligung nötig). Das Video läuft stumm in Schleife, hat immer eine Pause-Schaltfläche und bleibt bei „Bewegung reduzieren“ ein Standbild – das Bild des Einstiegs.</li>
+    <li><b>Video:</b> nur eigene, kurze Dateien ohne Ton aus der Mediathek (keine Einwilligung nötig). Das Video läuft stumm in Schleife und hat unten rechts immer einen runden Knopf zum Anhalten und Abspielen (Pause- bzw. Play-Symbol). Bei „Bewegung reduzieren“ startet es nicht von selbst – es bleibt das Bild des Einstiegs, der Knopf bietet „abspielen“ an. Unter <b>Video-Schalter</b> wählen Sie „Symbol“ (Standard) oder „Symbol mit Text“ – dann steht „Hintergrundvideo anhalten“ bzw. „abspielen“ daneben.</li>
     <li><b>Kennzahlen, Termine, Formular, Karte:</b> nutzen dieselben Bausteine wie die gleichnamigen Blöcke (Kennzahlen mit Skala, Nächste Termine, Formular aus einer Datentabelle, Karte mit dem Standort aus den <?= e($settingsTitle) ?>). Nur belegbare Zahlen verwenden; das Formular kurz halten (2–4 Felder).</li>
     <li><b>Vorher/Nachher:</b> zwei Bilder mit gleichem Ausschnitt und Format; der Regler lässt sich mit Maus, Finger und Pfeiltasten bedienen.</li>
     <li><b>Laufzeile, Bewegung:</b> bewegt sich langsam, hält per Schaltfläche, Maus oder Tastatur und steht bei „Bewegung reduzieren“ still.</li>
@@ -63,6 +63,18 @@
   <?php if (isset($blocks['gallery'])): ?>
   <h3 id="galerie-einzelbild"><?= e($blocks['gallery']['label']) ?> mit einem Bild</h3>
   <p>Enthält eine Galerie genau ein Bild und ist <b>Einzelnes Bild groß zeigen</b> an (Standard für neue Galerien; bei älteren Galerien aus, damit sie unverändert bleiben), erscheint es als <b>Einzelbild in voller Inhaltsbreite</b> im Originalformat – mit Bildunterschrift darunter und, wenn eingeschaltet, per Klick groß (Lightbox). Anordnung, Spalten und Bildformat gelten erst ab zwei Bildern. Sehr hohe Bilder werden höchstens etwa so hoch wie das Browserfenster und stehen dann mittig. Kommt ein zweites Bild hinzu, zeigt der Block wieder die gewählte Anordnung.</p>
+  <?php endif; ?>
+  <?php if (isset($blocks['hotspots'])): ?>
+  <h3 id="interaktives-bild"><?= e($blocks['hotspots']['label']) ?></h3>
+  <p>Ein Bild mit nummerierten <b>Markierungen</b> – etwa ein Gartenplan, ein Gebäude, ein Gerät oder eine Karte. Besucher klicken auf eine Nummer (oder wählen sie mit der Tab-Taste und Enter) und sehen ein kleines Fenster mit Titel, kurzem Text und auf Wunsch einem Link oder einem Begriff aus dem Glossar. Auf dem Telefon stehen alle Markierungen zusätzlich als Liste unter dem Bild.</p>
+  <ul>
+    <li><b>Bild wählen</b>, dann <b>ins Bild klicken</b>: An der Stelle entsteht eine Markierung, der Titel ist gleich zum Tippen bereit. Markierungen lassen sich mit der Maus <b>ziehen</b>; mit der Tastatur: Markierung anwählen, Pfeiltasten (mit Umschalt in 5er-Schritten), <kbd>Entf</kbd> löscht, <kbd>Enter</kbd> öffnet die Angaben.</li>
+    <li><b>Form:</b> „Punkt“ zeigt nur die Nummer. „Kreis“, „Rechteck“ und „Fläche (Vieleck)“ heben einen Bereich hervor – Größe bzw. Eckpunkte ziehen Sie an den kleinen Quadraten; Umschalt + Klick fügt einer Fläche einen Eckpunkt an. Die Nummer steht in der Mitte der Fläche.</li>
+    <li><b>Reihenfolge = Nummer:</b> Mit ↑ und ↓ in der Liste der Markierungen ändern Sie die Nummern – in dieser Reihenfolge springt auch die Tab-Taste.</li>
+    <li><b>Text</b> ist formatierbar (fett, Listen, Links), aber ohne Bilder. <b>Glossar-Begriff</b> (wenn das Glossar eingeschaltet ist): zeigt dessen Kurz-Erklärung, auch ohne eigenen Text.</li>
+    <li><b>Alt-Text</b> und Bildnachweis kommen aus der Mediathek – bitte dort pflegen.</li>
+    <li><b>Mehrfach verwenden:</b> Legen Sie unter Daten → Neue Tabelle die Vorlage <b>„Interaktive Bilder“</b> an und pflegen Sie dort Bild und Markierungen. Im Block wählen Sie dann „Quelle: Aus einer Datentabelle“ und den Eintrag – ändern Sie den Eintrag, ändert sich jede Stelle. Als geteilte Tabelle steht das Bild auch anderen Websites im Netzwerk zur Verfügung.</li>
+  </ul>
   <?php endif; ?>
   <?php if (isset($blocks['subpages'])): ?>
   <h3 id="unterseiten">Unterseiten</h3>

@@ -26,12 +26,19 @@ final class EntryBlocks
     /** Platzhalter für den Block-Editor im Modus „Bearbeiten“ (editor.js setzt dort #cms-editor ein – auch in einer Layout-Spalte) */
     public const SLOT = '<div class="eb-slot" data-cms-content-slot></div>';
 
-    /** Wählbare Blöcke [typ => Bezeichnung] – einfügbar, ohne Daten-Blöcke */
+    /** Daten-Blöcke, die in Einträgen erlaubt sind – die Datenliste mit Schutz gegen Rekursion (enterList, Stapel within) */
+    public const DATA_OK = ['data_list'];
+    /** Eintrag, dessen Inhaltsblöcke gerade ausgegeben werden – innerster zuletzt: [['table' => …, 'entry' => …, 'prev' => app()->entry], …] */
+    private static array $stack = [];
+    /** Datenlisten in Ausgabe (enterList) */
+    private static int $lists = 0;
+
+    /** Wählbare Blöcke [typ => Bezeichnung] – einfügbar, ohne Daten-Blöcke (außer DATA_OK) */
     public static function choices(): array
     {
         $out = [];
         foreach (app()->theme->blocks() as $type => $b) {
-            if (in_array($type, self::NEVER, true) || ($b['group'] ?? '') === 'Daten' || str_starts_with((string) $type, 'data_')) continue;
+            if (in_array($type, self::NEVER, true) || (($b['group'] ?? '') === 'Daten' || str_starts_with((string) $type, 'data_')) && !in_array($type, self::DATA_OK, true)) continue;
             if (($b['insertable'] ?? true) === false || !\Core\Features::allowsBlock((string) $type)) continue;
             $out[(string) $type] = (string) ($b['label'] ?? $type);
         }
@@ -77,10 +84,58 @@ final class EntryBlocks
         return Pages::sanitizeBlocks($list);
     }
 
-    /** Darstellung (eigene Abschnitte des Kits) */
-    public static function render(array $blocks): string
+    /**
+     * Darstellung (eigene Abschnitte des Kits). Mit $table/$entry: Blöcke dieses Eintrags – Datenlisten darin beziehen „aufgerufener
+     * Eintrag“ (Filter current/same, Ausschluss) auf ihn, auch wenn er in einer Liste oder auf einer anderen Seite erscheint.
+     */
+    public static function render(array $blocks, ?array $table = null, ?array $entry = null): string
     {
-        return $blocks ? app()->theme->renderBlocks($blocks) : '';
+        if (!$blocks) return '';
+        return $table && $entry ? self::within($table, $entry, fn() => app()->theme->renderBlocks($blocks)) : app()->theme->renderBlocks($blocks);
+    }
+
+    /** $fn ausführen, während die Inhaltsblöcke von $entry ausgegeben werden (app()->entry = dieser Eintrag, danach wie vorher) */
+    public static function within(array $table, array $entry, callable $fn): mixed
+    {
+        $app = app();
+        self::$stack[] = ['table' => $table, 'entry' => $entry, 'prev' => $app->entry];
+        $app->entry = ['table' => $table, 'entry' => $entry];
+        try {
+            return $fn();
+        } finally {
+            $top = array_pop(self::$stack);
+            $app->entry = $top['prev'] ?? null;
+        }
+    }
+
+    /** Eintrag, dessen Inhaltsblöcke gerade ausgegeben werden (['table', 'entry']) – null außerhalb */
+    public static function current(): ?array
+    {
+        $top = self::$stack ? self::$stack[array_key_last(self::$stack)] : null;
+        return $top ? ['table' => $top['table'], 'entry' => $top['entry']] : null;
+    }
+
+    /**
+     * Schutz gegen Rekursion: Eine Datenliste darf nur außerhalb einer anderen Datenliste ausgegeben werden – steckt in ihren Einträgen
+     * (z. B. im Feld „Inhalt“) wieder eine Datenliste, auch über andere Tabellen, bleibt diese leer. Rückgabe: Wächter (beim Verlassen der
+     * Ausgabe wieder frei) oder null = nicht ausgeben.
+     */
+    public static function enterList(): ?object
+    {
+        if (self::$lists > 0) return null;
+        self::$lists++;
+        return new class {
+            public function __destruct()
+            {
+                EntryBlocks::leaveList();
+            }
+        };
+    }
+
+    /** @internal Gegenstück zu enterList() (Wächter) */
+    public static function leaveList(): void
+    {
+        self::$lists = max(0, self::$lists - 1);
     }
 
     /** Text für die Suche */

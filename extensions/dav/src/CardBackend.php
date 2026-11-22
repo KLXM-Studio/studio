@@ -29,6 +29,13 @@ use Sabre\VObject\Reader;
  * Eine in der App neue oder geänderte Angabe ist nie von selbst öffentlich: „Öffentlich“ bleibt nur bei unverändertem Wert.
  * Felder, die bewusst nur für andere Ziele freigegeben sind (Exposure::appFields, z. B. „Nur Website“), und Altfelder gehen nie an
  * Apps und werden von Apps nie geschrieben.
+ *
+ * Listen als Gruppen (Adressbücher mit Funktionen, Grundschema contacts ab v2, Core\Data\Roles): je Liste eine Gruppen-Karte
+ * liste-{schlüssel}.vcf (X-ADDRESSBOOKSERVER-KIND:group, Mitglieder als X-ADDRESSBOOKSERVER-MEMBER:urn:uuid:{UID}) – Apple Kontakte
+ * zeigt sie als Gruppen, andere Apps nutzen weiter CATEGORIES. Mitglied ist, wer eine aktuelle Funktion in der Liste hat oder von
+ * Hand zugeordnet ist. Mitglieder in der App ändern = Kontakt der Liste zuordnen bzw. entfernen (wie im Adressbuch der Verwaltung,
+ * entfernen beendet die Funktion). Neue Gruppen und das Löschen von Gruppen gehen nur im CMS. Adressbücher ohne Funktionen und
+ * Inhaltstabellen bekommen keine Gruppen-Karten (unverändert).
  */
 final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
 {
@@ -89,7 +96,99 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
     public function getCards($addressbookId)
     {
         $t = $this->table($addressbookId);
-        return array_map(fn($x) => $this->row($t, $x[0], $x[1]), $this->entries($t));
+        $entries = $this->entries($t);
+        return [...array_map(fn($x) => $this->row($t, $x[0], $x[1]), $entries), ...array_values(self::groupRows($t, $entries))];
+    }
+
+    // ------------------------------------------------------------------ Listen als Gruppen (Grundschema contacts v2)
+
+    /** Hat das Adressbuch Gruppen-Karten? (Kontakte mit Funktionen und Listen) */
+    public static function hasGroups(array $t): bool
+    {
+        return \Core\Data\Kinds::isContacts($t) && \Core\Data\Roles::has($t) && \Core\Data\AddressBook::lists($t) !== [];
+    }
+
+    /** Adresse der Gruppen-Karte einer Liste */
+    public static function groupUri(string $key): string
+    {
+        return 'liste-' . $key . '.vcf';
+    }
+
+    /** UID der Gruppen-Karte (fest je Website, Tabelle und Liste) */
+    public static function groupUid(array $t, string $key): string
+    {
+        return 'klxm-liste-' . substr(md5(site()->key . '|' . $t['handle'] . '|' . $key), 0, 20);
+    }
+
+    /** UID der Kontakt-Karte (wie render(): gespeicherte UID der App, sonst die des CMS) */
+    private static function cardUid(array $t, array $e, ?array $o): string
+    {
+        return (string) ($o['uid'] ?? self::uid($t, $e));
+    }
+
+    /**
+     * Gruppen-Karte einer Liste: FN/N = Name der Liste, Mitglieder = Kontakte mit aktueller Funktion in der Liste oder von Hand
+     * zugeordnet. $entries = sichtbare Einträge [[Eintrag, dav_objects-Zeile], …] (wie getCards).
+     */
+    public static function groupCard(array $t, string $key, string $label, array $entries): string
+    {
+        $card = new VCard(['VERSION' => '3.0', 'PRODID' => '-//KLXM//' . CMS_NAME . ' ' . CMS_VERSION . '//DE', 'UID' => self::groupUid($t, $key)]);
+        $card->add('FN', $label);
+        $card->add('N', [$label, '', '', '', '']);
+        $card->add('X-ADDRESSBOOKSERVER-KIND', 'group');
+        foreach ($entries as [$e, $o]) {
+            if (in_array(\Core\Data\Roles::membership($t, $e, $key), ['current', 'manual'], true)) $card->add('X-ADDRESSBOOKSERVER-MEMBER', 'urn:uuid:' . self::cardUid($t, $e, $o));
+        }
+        return $card->serialize();
+    }
+
+    /** Zeilen der Gruppen-Karten (getCards/getCard), Schlüssel = Liste */
+    private static function groupRows(array $t, array $entries): array
+    {
+        if (!self::hasGroups($t)) return [];
+        $out = [];
+        $mod = strtotime((string) ($t['updated_at'] ?? '')) ?: time();
+        foreach ($entries as [$e]) $mod = max($mod, strtotime((string) ($e['updated_at'] ?? '')) ?: 0);
+        foreach (\Core\Data\AddressBook::lists($t) as $k => $label) {
+            $data = self::groupCard($t, (string) $k, $label, $entries);
+            $out[(string) $k] = ['uri' => self::groupUri((string) $k), 'lastmodified' => $mod, 'etag' => Dav::etag($data), 'size' => strlen($data), 'carddata' => $data];
+        }
+        return $out;
+    }
+
+    /** Liste zur Adresse einer Gruppen-Karte oder null */
+    private static function groupKey(array $t, string $uri): ?string
+    {
+        if (!self::hasGroups($t) || !preg_match('~^liste-([a-z0-9_-]+)\.vcf$~', $uri, $m)) return null;
+        return isset(\Core\Data\AddressBook::lists($t)[$m[1]]) ? $m[1] : null;
+    }
+
+    /**
+     * Mitglieder einer Gruppen-Karte aus der App übernehmen: neu aufgeführte Kontakte der Liste zuordnen, fehlende entfernen
+     * (Core\Data\AddressBook::assign – mit Revision, Rechten, Bearbeitungssperre; entfernen beendet die Funktion in der Liste).
+     * @return array{added: int, removed: int}
+     */
+    public static function applyGroup(array $t, string $key, array $entries, string $cardData): array
+    {
+        try {
+            $card = Reader::read($cardData, Reader::OPTION_FORGIVING);
+        } catch (\Throwable $ex) {
+            throw new BadRequest('Ungültige vCard: ' . $ex->getMessage());
+        }
+        $want = [];
+        foreach ($card->select('X-ADDRESSBOOKSERVER-MEMBER') as $p) $want[strtolower((string) preg_replace('~^urn:uuid:~i', '', trim((string) $p)))] = true;
+        $add = $remove = [];
+        foreach ($entries as [$e, $o]) {
+            if (\Core\Data\Shared::isForeign($t, $e)) continue;
+            $in = in_array(\Core\Data\Roles::membership($t, $e, $key), ['current', 'manual'], true);
+            $should = isset($want[strtolower(self::cardUid($t, $e, $o))]);
+            if ($should && !$in) $add[] = (int) $e['id'];
+            if (!$should && $in) $remove[] = (int) $e['id'];
+        }
+        $a = $add ? \Core\Data\AddressBook::assign($t, $add, $key, true) : ['changed' => 0, 'errors' => []];
+        $r = $remove ? \Core\Data\AddressBook::assign($t, $remove, $key, false) : ['changed' => 0, 'errors' => []];
+        if ($a['errors'] || $r['errors']) throw new BadRequest('Gruppe: ' . implode(' ', [...$a['errors'], ...$r['errors']]));
+        return ['added' => $a['changed'], 'removed' => $r['changed']];
     }
 
     private function find(array $t, string $uri): array
@@ -108,6 +207,7 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
     public function getCard($addressBookId, $cardUri)
     {
         $t = $this->table($addressBookId);
+        if (($key = self::groupKey($t, (string) $cardUri)) !== null) return self::groupRows($t, $this->entries($t))[$key] ?? false;
         [$e, $o] = $this->find($t, (string) $cardUri);
         return $e ? $this->row($t, $e, $o) : false;
     }
@@ -117,6 +217,8 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
         $t = $this->table($addressBookId);
         if (!Dav::canWrite($t)) throw new Forbidden('Nur lesender Zugriff.');
         if (Dav::objectByUri($t['handle'], (string) $cardUri)) throw new BadRequest('Kontakt existiert bereits.');
+        // Gruppen (Listen) legt nur das CMS an – eine in der App neue Gruppe wäre sonst ein Kontakt ohne Namen
+        if (self::groupKey($t, (string) $cardUri) !== null || preg_match('~X-ADDRESSBOOKSERVER-KIND:\s*group~i', (string) $cardData)) throw new Forbidden('Listen werden im CMS angelegt (Adressbuch → Neue Liste).');
         // Adresse eines vorhandenen, für Apps nicht sichtbaren Eintrags (Entwurf bei „Nur veröffentlichte Einträge“) nicht neu belegen
         if (Dav::reservedUri($t, (string) $cardUri, 'vcf')) throw new Forbidden('Kontakt ist im CMS nicht veröffentlicht – nur dort bearbeitbar.');
         [$in, $uid] = self::parse($t, null, (string) $cardData);
@@ -131,6 +233,10 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
     {
         $t = $this->table($addressBookId);
         if (!Dav::canWrite($t)) throw new Forbidden('Nur lesender Zugriff.');
+        if (($key = self::groupKey($t, (string) $cardUri)) !== null) {
+            self::applyGroup($t, $key, $this->entries($t), (string) $cardData);
+            return null;
+        }
         [$e, $o] = $this->find($t, (string) $cardUri);
         if (!$e) throw new NotFound('Kontakt nicht gefunden.');
         if (\Core\Data\Shared::isForeign($t, $e)) throw new Forbidden('Kontakt einer anderen Website – nur lesbar.');
@@ -145,6 +251,7 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
     {
         $t = $this->table($addressBookId);
         if (!Dav::canWrite($t)) throw new Forbidden('Nur lesender Zugriff.');
+        if (self::groupKey($t, (string) $cardUri) !== null) throw new Forbidden('Listen werden im CMS gelöscht.');
         [$e, $o] = $this->find($t, (string) $cardUri);
         if (!$e) return false;
         if (\Core\Data\Shared::isForeign($t, $e)) throw new Forbidden('Kontakt einer anderen Website – nur lesbar.');
@@ -190,7 +297,7 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
     }
 
     /** Felder mit verschachtelten Werten (JSON: Blöcke, Kombifelder, Gruppen) – nicht als Text abbildbar, daher nie X-MYCMS-* */
-    private const NESTED = ['blocks', 'mediatext', 'person', 'faq', 'address', 'downloads', 'group', 'recurrence'];
+    private const NESTED = ['blocks', 'mediatext', 'person', 'faq', 'address', 'downloads', 'group', 'recurrence', 'roles'];
 
     /** Felder, die als X-MYCMS-* ausgegeben werden (alles, was nicht zugeordnet ist, ohne verschachtelte Felder) */
     private static function extraFields(array $t, array $map): array

@@ -19,6 +19,14 @@ if (!$t) {
     if (is_editing()) echo '<div class="' . e($wrap) . '"><p class="dl-empty">Bitte in der Seitenleiste eine Tabelle wählen.</p></div>';
     return;
 }
+// In den Inhaltsblöcken eines Eintrags (Core\Data\EntryBlocks): höchstens eine Ebene (keine Liste in den Einträgen einer Liste, auch
+// nicht über andere Tabellen), dieser Eintrag selbst nicht in der Liste, „aufgerufener Eintrag“ = dieser Eintrag, Links auf seine Seite
+$host = \Core\Data\EntryBlocks::current();
+$listGuard = \Core\Data\EntryBlocks::enterList();
+if (!$listGuard) {
+    if (is_editing()) echo '<div class="' . e($wrap) . '"><p class="dl-empty">' . e(__('Datenliste in einer Datenliste: wird nicht ausgegeben (höchstens eine Ebene).')) . '</p></div>';
+    return;
+}
 // Gewählte Felder dieser Tabelle (ohne Präfix); Standard: Titel, Bild, Beschreibung
 $fields = [];
 foreach ((array) ($d['fields'] ?? []) as $v) {
@@ -48,12 +56,15 @@ if (str_starts_with((string) ($d['filter_field'] ?? ''), $pfx)) {
         // Kontext-Filter auf Detailseiten: verknüpft mit / gleich wie der aufgerufene Eintrag
         $val = !$ctx ? null : ($op === 'current' ? $ctx['entry']['id'] : ($ctx['entry'][$ff] ?? null));
         if (is_array($val)) $val = $val[0] ?? null;
+        // Funktionen (Core\Data\Roles): „verknüpft mit dem aufgerufenen Eintrag“ = Funktion mit Verknüpfung entry:{tabelle}:{id}
+        if ($op === 'current' && $ctx && (Tables::field($t, $ff)['type'] ?? '') === \Core\Data\Roles::TYPE) $val = 'entry:' . $ctx['table']['handle'] . ':' . (int) $ctx['entry']['id'];
         $o['where'] = [[$ff, '=', $val === null || $val === '' ? '-1' : (string) $val]];
     } elseif (trim((string) ($d['filter_value'] ?? '')) !== '') {
         $o['where'] = [[$ff, $op, trim((string) $d['filter_value'])]];
     }
 }
 if (!empty($d['exclude_current']) && $ctx && $ctx['table']['handle'] === $t['handle']) $o['exclude'] = $ctx['entry']['id'];
+if ($host && $host['table']['handle'] === $t['handle']) $o['exclude'] = $host['entry']['id'];   // Liste im Eintrag: nie sich selbst
 if (str_starts_with((string) ($d['sort_field'] ?? ''), $pfx)) $o['sort'] = substr($d['sort_field'], strlen($pfx));
 if (!empty($d['sort_dir'])) $o['dir'] = $d['sort_dir'];
 // Geteilte Tabellen: Quelle (leer = wie für die Website eingestellt), hervorgehobene Einträge zuerst
@@ -61,7 +72,15 @@ if (!empty($d['source'])) $o['source'] = (string) $d['source'];
 if (!empty($d['featured_first'])) $o['featured_first'] = true;
 // Besucher-Filter: Schaltflächen je Auswahlfeld, Suche, A–Z (Verzeichnis, Mitglieder, Partner …)
 $query = (array) (app()->request?->query ?? []);
-$layout = in_array($d['layout'] ?? '', ['cards', 'list', 'compact', 'table', 'directory'], true) ? $d['layout'] : 'cards';
+$layout = in_array($d['layout'] ?? '', ['cards', 'list', 'compact', 'table', 'directory', 'chapters'], true) ? $d['layout'] : 'cards';
+// Wissensbereich (Tabellenart knowledge, Core\Data\Knowledge): Kapitelnummern vor dem Titel, Darstellung „Kapitel“ = Inhaltsverzeichnis
+$know = \Core\Data\Knowledge::is($t);
+$kcfg = $know ? \Core\Data\Knowledge::config($t) : null;
+$ktree = $know ? \Core\Data\Knowledge::tree($t) : null;
+if ($layout === 'chapters' && !$know) $layout = 'list';
+// Mehrere Optionen je Filter (Kontrollkästchen), Trefferauszug, Glossar-Treffer: Stile css/list-filter.css ('@kfilter', auch nach dem Nachladen)
+$multi = !empty($d['visitor_multi']);
+if ($multi || !empty($d['search_excerpt']) || !empty($d['search_glossary']) || $know) app()->theme->markUsed('@kfilter');
 // A–Z: nur ohne Blättern (Sprungmarken auf dieser Seite) und nicht als Tabelle; sortiert nach dem Titel
 $az = !empty($d['az_index']) && empty($d['paginate']) && $layout !== 'table';
 $vcands = [];   // eingestellte Filterfelder [name => Feld]
@@ -88,26 +107,43 @@ if ($vcands || !empty($d['visitor_search']) || $az) {
     $az = $az && $enough;
     foreach ($enough ? $vcands : [] as $vn => $vfd) {
         $vopts = (array) ($vfd['options'] ?? []);
-        $want = is_string($query[$vn] ?? null) && array_key_exists($query[$vn], $vopts) ? $query[$vn] : null;
+        // Mehrfach: ?feld[]=a&feld[]=b – innerhalb eines Feldes „eine davon“, über Felder hinweg „alle Bedingungen“
+        $want = \Core\Blocks\ListFilter::selection($query[$vn] ?? null, $vopts, $multi);
         $buttons = \Core\Blocks\ListFilter::buttons($vopts, $facets['counts'][$vn] ?? [], $d, $want);
         if (!$buttons) continue;   // ausgeblendete Leiste: Auswahl aus der Adresse wird ignoriert
-        $sel = $want !== null && isset($buttons[$want]) ? $want : null;
-        $vfilters[$vn] = ['field' => $vfd, 'options' => $buttons, 'sel' => $sel];
-        if ($sel !== null) $o['where'] = array_merge((array) ($o['where'] ?? []), [[$vn, '=', $sel]]);
+        $chosen = array_values(array_filter($want, fn($k) => isset($buttons[$k])));
+        $sel = $multi ? $chosen : ($chosen[0] ?? null);
+        $vfilters[$vn] = ['field' => $vfd, 'options' => $buttons, 'sel' => $sel, 'counts' => $facets['counts'][$vn] ?? []];
+        if ($chosen) $o['where'] = array_merge((array) ($o['where'] ?? []), [$multi ? [$vn, 'in', $chosen] : [$vn, '=', $chosen[0]]]);
     }
 }
 $vq = $vsearch && is_string($query['q'] ?? null) ? trim(mb_substr($query['q'], 0, 80)) : '';
 if ($vq !== '') { $o['q'] = $vq; $o['q_public'] = true; }   // Besucher-Suche: nie in „Nie öffentlich“-Feldern
-$filtering = $vq !== '' || array_filter(array_column($vfilters, 'sel'), fn($v) => $v !== null);
+$filtering = $vq !== '' || array_filter(array_column($vfilters, 'sel'), fn($v) => $v !== null && $v !== []);
 if ($az && ($tf = (string) ($t['settings']['title_field'] ?? '')) !== '') { $o['sort'] = $tf; $o['dir'] = 'asc'; }
-$o = $extend($o);
+$o = \Core\Data\Roles::listQuery($t, $d, $extend($o));   // Adressbuch: beendete Funktionen schon in der Abfrage (Blättern, Anzahl)
 $rows = \Core\Data\Exposure::publicRows($t, Entries::query($t, $o));   // Stellenangebote: abgelaufene fehlen schon hier (Core\Data\Jobs, Entries::where)
+// Adressbuch mit Funktionen (Core\Data\Roles): Filter nach Liste → deren Funktion, Detailseite eines verknüpften Eintrags → die
+// verknüpfte Funktion, sonst die Hauptfunktion (in position); beendete Funktionen der gefilterten Liste fallen heraus
+$rows = \Core\Data\Roles::listRows($t, $d, $rows, empty($o['sort']) && !$az);
+// Wissen ohne eigene Sortierung: Lesereihenfolge des Kapitelbaums (Bereich, Oberkapitel, Reihenfolge)
+if ($know && empty($d['sort_field']) && !$az) {
+    $kpos = array_flip($ktree['order']);
+    usort($rows, fn($x, $y) => ($kpos[(int) $x['id']] ?? PHP_INT_MAX) <=> ($kpos[(int) $y['id']] ?? PHP_INT_MAX));
+}
+$knum = fn(array $e) => $kcfg && $kcfg['numbers'] && ($n = (string) ($ktree['nodes'][(int) $e['id']]['number'] ?? '')) !== '' ? '<span class="dl-knum">' . e($n) . '</span> ' : '';
+// Suche: Trefferauszug je Eintrag, passende Glossarbegriffe als eigene Gruppe (websiteweites Glossar)
+$excerpt = fn(array $e) => $vq !== '' && !empty($d['search_excerpt']) ? \Core\Data\Knowledge::excerpt($t, $e, $vq) : '';
+$glossHits = $vq !== '' && !empty($d['search_glossary']) ? \Core\Data\Knowledge::glossaryHits($vq) : [];
+// Darstellung „Kapitel“: ohne Suche/Filter das Inhaltsverzeichnis, sonst die Treffer als Liste
+$tocMode = $layout === 'chapters' && !$filtering;
+if ($layout === 'chapters' && $filtering) $layout = 'list';
 // „Abschnitt ausblenden, wenn nichts da ist“: für Besucher keine Ausgabe – die Hülle (partials/section) entfällt dann
 if (!$rows && !empty($d['hide_empty']) && !is_editing() && !$filtering) return;
 $jobs = \Core\Data\Jobs::is($t);
 if (!empty($d['link_detail'])) \Core\StructuredData::itemList($t, $rows, strip_emphasis((string) ($d['title'] ?? '')));   // schema.org ItemList
 $pages = !empty($d['paginate']) && $limit ? (int) ceil(Entries::count($t, $o) / $limit) : 1;
-$link = fn(array $e) => !empty($d['link_detail']) ? Entries::href($t, $e) : null;
+$link = fn(array $e) => !empty($d['link_detail']) ? ($know ? \Core\Data\Knowledge::href($t, $e) : Entries::href($t, $e)) : null;   // Wissen: Verweis-Kapitel → Seite
 $hTag = !empty($d['title']) ? 'h3' : 'h2';
 // Bilder einpassen (Logos auf einer Kachel) statt füllen: Standard im Verzeichnis
 $fit = (string) ($d['image_fit'] ?? '');
@@ -123,8 +159,8 @@ $chips = function (array $e, string $f) use ($t, $tone): string {
     return '<span class="dl-chips">' . trim($h) . '</span>';
 };
 // Adresse mit den aktiven Besucher-Filtern (Schaltflächen, Blättern); $set überschreibt, null entfernt
-$keep = array_filter(array_map(fn($v) => $v['sel'], $vfilters), fn($v) => $v !== null) + ($vq !== '' ? ['q' => $vq] : []);
-$here = app()->currentPage ? \Core\Pages::url(app()->currentPage) : url('/');
+$keep = array_filter(array_map(fn($v) => $v['sel'], $vfilters), fn($v) => $v !== null && $v !== []) + ($vq !== '' ? ['q' => $vq] : []);
+$here = ($host ? Entries::url($host['table'], $host['entry']) : null) ?? (app()->currentPage ? \Core\Pages::url(app()->currentPage) : url('/'));
 $qs = function (array $set) use ($keep, $here, $b): string {
     $p = array_filter($set + $keep, fn($v) => $v !== null && $v !== '');
     return $here . ($p ? '?' . http_build_query($p) : '') . '#' . $b->domId();
@@ -155,7 +191,7 @@ $colLabel = fn(string $f) => match (true) {
 };
 ?>
 <?php // Filtern, Suche, Blättern ohne Seitenwechsel (Core\Live::region – Links/Formulare mit data-live-nav, ohne JS normale Links)
-$reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?>
+$reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : '';   // im Eintrag: normale Links (Block steht nicht auf der Seite) ?>
 <div class="<?= e($wrap) ?> dl dl--<?= e($layout) ?>"<?= $reload ?>>
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
   <header class="dl-head">
@@ -165,7 +201,30 @@ $reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?
   </header>
   <?php endif; ?>
 
-  <?php if ($vfilters || $vsearch): $qid = $b->domId() . '-q'; ?>
+  <?php if (($vfilters || $vsearch) && $multi): $qid = $b->domId() . '-q'; // Mehrfach-Filter: ein GET-Formular mit Suche und Kontrollkästchen ?>
+  <form class="dl-tools dl-tools--multi" role="search" method="get" data-live-nav action="<?= e($here . '#' . $b->domId()) ?>" aria-label="<?= e(lt('Suchen und filtern')) ?>">
+    <?php if ($vsearch): ?>
+    <div class="dl-search">
+      <label class="dl-search__label" for="<?= e($qid) ?>"><?= e(lt('In der Liste suchen')) ?></label>
+      <span class="dl-search__row"><input class="dl-search__input" id="<?= e($qid) ?>" type="search" name="q" value="<?= e($vq) ?>" maxlength="80" autocomplete="off" enterkeyhint="search" data-live-input><button class="dl-search__btn" type="submit"><?= e(lt('Suchen')) ?></button></span>
+    </div>
+    <?php endif; ?>
+    <?php foreach ($vfilters as $vn => $vf): $vl = Tables::label($vf['field']); ?>
+    <fieldset class="dl-mfilter">
+      <legend class="dl-filter__label"><?= e($vl) ?></legend>
+      <ul class="dl-mfilter__list" role="list">
+        <?php foreach ($vf['options'] as $k => $l): $cid = $b->domId() . '-f-' . $vn . '-' . preg_replace('~[^a-z0-9_-]~i', '', (string) $k); $on = in_array((string) $k, (array) $vf['sel'], true); $n = (int) ($vf['counts'][(string) $k] ?? 0); ?>
+        <li><input class="dl-mcheck" type="checkbox" id="<?= e($cid) ?>" name="<?= e($vn) ?>[]" value="<?= e((string) $k) ?>"<?= $on ? ' checked' : '' ?> data-live-change><label class="dl-fchip dl-fchip--check <?= e($tone($vf['field'], (string) $k)) ?>" for="<?= e($cid) ?>"><?= e(Tables::optionLabel($vf['field'], (string) $k)) ?><?php if ($n): ?> <span class="dl-fchip__n"><span class="dl-sr">(</span><?= $n ?><span class="dl-sr"> <?= e(lt('Einträge')) ?>)</span></span><?php endif; ?></label></li>
+        <?php endforeach; ?>
+      </ul>
+    </fieldset>
+    <?php endforeach; ?>
+    <?php if ($vfilters): ?><p class="dl-mfilter__apply"><button class="dl-search__btn" type="submit"><?= e(lt('Filter anwenden')) ?></button></p><?php endif; ?>
+    <?php if ($filtering): $total = $limit ? Entries::count($t, $o) : count($rows); ?>
+    <p class="dl-count" role="status"><span data-live-count><?= e($total === 1 ? lt('1 Treffer') : lt('{n} Treffer', ['n' => $total])) ?></span> · <a href="<?= e($here . '#' . $b->domId()) ?>" data-live-nav><?= e(lt('Filter zurücksetzen')) ?></a></p>
+    <?php endif; ?>
+  </form>
+  <?php elseif ($vfilters || $vsearch): $qid = $b->domId() . '-q'; ?>
   <div class="dl-tools">
     <?php if ($vsearch): ?>
     <form class="dl-search" role="search" method="get" data-live-nav action="<?= e($here . '#' . $b->domId()) ?>">
@@ -188,7 +247,15 @@ $reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?
   </div>
   <?php endif; ?>
 
-  <?php if (!$rows && $filtering): ?>
+  <?php if ($glossHits): $gid = $b->domId() . '-gl'; ?>
+  <section class="dl-gloss" aria-labelledby="<?= e($gid) ?>">
+    <h2 class="dl-gloss__h" id="<?= e($gid) ?>"><?= e(lt('Im Glossar')) ?></h2>
+    <dl class="dl-gloss__list"><?php foreach ($glossHits as $g): ?><div><dt><?= $g['url'] ? '<a href="' . e($g['url']) . '">' . e($g['term']) . '</a>' : e($g['term']) ?></dt><dd><?= \Core\Search\Text::mark($g['short'], \Core\Search\Text::words($vq)) ?></dd></div><?php endforeach; ?></dl>
+  </section>
+  <?php endif; ?>
+  <?php if ($tocMode && $rows): ?>
+  <?= \Core\Data\Knowledge::tocHtml($t, $ktree, 'h2') ?>
+  <?php elseif (!$rows && $filtering): ?>
   <p class="dl-empty"><?= e(lt('Keine Einträge für diese Auswahl.')) ?> <a href="<?= e($here . '#' . $b->domId()) ?>"><?= e(lt('Alle anzeigen')) ?></a></p>
   <?php elseif (!$rows): ?>
   <p class="dl-empty"><?= e($d['empty_text'] ?: lt('Zurzeit gibt es hier keine Einträge.')) ?><?= is_editing() ? ' <small>(nur veröffentlichte Einträge erscheinen)</small>' : '' ?></p>
@@ -228,8 +295,9 @@ $reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?
       <div class="dl-body">
         <?php $meta = $jobs && ($js = \Core\Data\Jobs::summary($t, $e)) !== '' ? [e($js)] : []; foreach ($other as $f) { if ($chipField($f)) continue; if (in_array(Tables::field($t, $f)['type'] ?? 'date', ['date', 'datetime', 'select', 'time'], true) || $f === 'published_at') { $h = Entries::html($t, $e, $f); if ($h !== '') $meta[] = $h; } } ?>
         <?php if ($meta): ?><p class="dl-meta"><?= implode('<span aria-hidden="true"> · </span>', $meta) ?></p><?php endif; ?>
-        <?php if ($showTitle): ?><<?= $hTag ?> class="dl-name<?= $titleClamp ?>"><?= $url ? '<a href="' . e($url) . '" class="dl-link">' . e($title) . '</a>' : e($title) ?></<?= $hTag ?>><?php endif; ?>
-        <?php foreach ($other as $f): $type = Tables::field($t, $f)['type'] ?? 'date'; if (in_array($type, ['date', 'datetime', 'select', 'time'], true) || $chipField($f)) continue; [$clamp, $html] = Clamp::text($t, $e, $f, $d); if ($html === '') continue; ?>
+        <?php if ($showTitle): ?><<?= $hTag ?> class="dl-name<?= $titleClamp ?>"><?= $knum($e) ?><?= $url ? '<a href="' . e($url) . '" class="dl-link">' . e($title) . '</a>' : e($title) ?></<?= $hTag ?>><?php endif; ?>
+        <?php if (($ex = $excerpt($e)) !== ''): ?><p class="dl-excerpt"><?= $ex ?></p><?php endif; ?>
+        <?php foreach ($other as $f): $type = Tables::field($t, $f)['type'] ?? 'date'; if (in_array($type, ['date', 'datetime', 'select', 'time'], true) || $chipField($f) || ($ex !== '' && in_array($type, ['text', 'textarea', 'richtext'], true))) continue; [$clamp, $html] = Clamp::text($t, $e, $f, $d); if ($html === '') continue; ?>
         <div class="dl-f dl-f--<?= e($type) ?><?= $clamp ?>"><?= $html ?></div>
         <?php endforeach; ?>
         <?php foreach ($other as $f): if (!$chipField($f) || ($ch = $chips($e, $f)) === '') continue; ?>
@@ -243,7 +311,7 @@ $reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?
   <?php endforeach; ?>
   <?php endif; ?>
 
-  <?php if ($pages > 1): $base = app()->currentPage ? \Core\Pages::url(app()->currentPage) : url('/'); ?>
+  <?php if ($pages > 1): $base = $here; ?>
   <nav class="dl-pager" aria-label="<?= e(lt('Seiten')) ?>">
     <?php if ($page > 1): ?><a href="<?= e($keep ? $qs(['seite' => $page > 2 ? $page - 1 : null]) : $base . ($page > 2 ? '?seite=' . ($page - 1) : '')) ?>" data-live-nav rel="prev">← <?= e(lt('Neuere')) ?></a><?php endif; ?>
     <span><?= e(lt('Seite {page} von {pages}', ['page' => $page, 'pages' => $pages])) ?></span>

@@ -37,7 +37,7 @@ use Core\Pages;
 final class ListTemplates
 {
     /** Grundformen (Stufe 2: „custom“ = frei gestaltet) – Vorschaubild je Grundform */
-    public const BASES = ['cards', 'list', 'compact', 'table', 'directory', 'custom'];
+    public const BASES = ['cards', 'list', 'compact', 'table', 'directory', 'chapters', 'custom'];
 
     /** Felder, die immer beim Block bleiben: Inhalt und Auswahl der Einträge */
     public const BLOCK_KEYS = ['eyebrow', 'title', 'intro', 'table', 'limit', 'template', 'filter_field', 'filter_op', 'filter_value', 'exclude_current',
@@ -70,6 +70,8 @@ final class ListTemplates
         foreach ((array) ($def['fields'] ?? []) as $f) {
             $n = $f['name'] ?? null;
             if (!is_string($n) || ($f['type'] ?? '') === 'heading' || str_starts_with($n, '_') || in_array($n, $keep, true)) continue;
+            // Zusatzfelder eines Blockfelds bleiben bei ihm, z. B. „Ohne Lightbox öffnen“ am Button-Link (more_link_nolb, Core\VideoLinks)
+            if (str_ends_with($n, \Core\VideoLinks::SUFFIX) && in_array(substr($n, 0, -strlen(\Core\VideoLinks::SUFFIX)), $keep, true)) continue;
             $out[] = $n;
         }
         return $out;
@@ -408,6 +410,10 @@ final class ListTemplates
             $out[] = ['name' => __('Team mit Foto'), 'options' => ['layout' => 'cards', 'columns' => '4', 'ratio' => '3:4', 'image_fit' => 'cover',
                 'fields' => array_values(array_filter(['_title', $img, $role])), 'link_detail' => ($t['settings']['route'] ?? '') !== '']];
         }
+        if (\Core\Data\Knowledge::is($t)) {   // Wissensbereich: Inhaltsverzeichnis mit Suche, Trefferauszug und Glossar
+            $out[] = ['name' => __('Kapitel mit Suche'), 'options' => ['layout' => 'chapters', 'visitor_search' => true, 'search_excerpt' => true,
+                'search_glossary' => true, 'link_detail' => true]];
+        }
         if (Calendar::enabled($t)) {
             $start = (string) (Calendar::config($t)['start'] ?? '');
             if ($start !== '') $out[] = ['name' => __('Termine der Reihe nach'), 'options' => ['layout' => 'compact', 'sort_field' => $start, 'sort_dir' => 'asc', 'link_detail' => true]];
@@ -470,6 +476,11 @@ final class ListTemplates
                 foreach ([4, 23, 42] as $x) $s .= $r($x, 14, 18, 18, 'i') . $r($x, 35, 14, 3, 't') . $r($x, 41, 10, 4, 'c', 2);
                 foreach ([4, 23, 42] as $x) $s .= $r($x, 49, 18, 10, 'i');
                 break;
+            case 'chapters':   // Kapitel eines Wissensbereichs: nummerierte Bereiche mit eingerückten Kapiteln
+                foreach ([[4, 'c'], [14, 'b'], [22, 'b'], [32, 'c'], [42, 'b'], [50, 'b']] as [$y, $c]) {
+                    $s .= $c === 'c' ? $r(4, $y, 6, 6, 'i', 1) . $r(14, $y + 1, 40, 4, 't', 1) : $r(14, $y + 1, 4, 4, 'i', 1) . $r(22, $y + 1, 34, 3, 'b', 1);
+                }
+                break;
             case 'custom':
                 $s .= $r(4, 4, 56, 22, 'i') . $r(4, 30, 26, 4, 't') . $r(4, 38, 56, 3) . $r(4, 44, 40, 3) . $r(4, 52, 18, 6, 'c', 3);
                 break;
@@ -484,7 +495,7 @@ final class ListTemplates
     public static function baseLabel(string $base): string
     {
         return match ($base) {
-            'list' => __('Liste mit Bild'), 'compact' => __('Kompakte Liste'), 'table' => __('Tabelle'), 'directory' => __('Verzeichnis'),
+            'list' => __('Liste mit Bild'), 'compact' => __('Kompakte Liste'), 'table' => __('Tabelle'), 'directory' => __('Verzeichnis'), 'chapters' => __('Kapitel'),
             'custom' => __('Frei gestaltet'), default => __('Karten mit Bild'),
         };
     }
@@ -562,6 +573,10 @@ final class ListTemplates
         $keys = self::keys($def);
         foreach (['layout', 'fields', 'columns', 'ratio', 'visitor_filter', 'sort_field', 'link_detail'] as $k) $eq("Vorlagen-Feld $k", in_array($k, $keys, true), true);
         foreach (self::BLOCK_KEYS as $k) $eq("Blockfeld $k bleibt beim Block", in_array($k, $keys, true), false);
+        foreach (['visitor_multi', 'search_excerpt', 'search_glossary'] as $k) if (in_array($k, $names, true)) $eq("Vorlagen-Feld $k (Wissensbereich)", in_array($k, $keys, true), true);
+        $nolb = self::keys(['fields' => [['name' => 'more_link', 'type' => 'link'], ['name' => 'more_link' . \Core\VideoLinks::SUFFIX, 'type' => 'bool'], ['name' => 'layout', 'type' => 'select']]]);
+        $eq('„Ohne Lightbox“ am Button-Link bleibt beim Block', $nolb, ['layout']);
+        $eq('Grundform Kapitel', self::baseOf(['layout' => 'chapters']), 'chapters');
         $head = array_values(array_filter($def['fields'], fn($f) => ($f['type'] ?? '') === 'heading' && ($f['label'] ?? '') === 'Darstellung'))[0] ?? [];
         $eq('Abschnitt „Darstellung“ nur ohne Vorlage sichtbar', $head['show_if']['template'] ?? null, ['']);
         $sort = array_values(array_filter($def['fields'], fn($f) => ($f['name'] ?? '') === 'sort_field'))[0] ?? [];
@@ -626,6 +641,8 @@ final class ListTemplates
             $eq('Vorschlag Team (Bild + Funktion)', in_array(__('Team mit Foto'), $sug, true), true);
             $t2 = ['fields' => [['name' => 'titel', 'type' => 'text', 'label' => 'Titel']]] + $t;
             $eq('Ohne Bild/Auswahl: nur Karten, Kompakt, Tabelle', count(self::suggestions($t2)), 3);
+            $kt = ['settings' => ['kind' => 'knowledge'] + $t['settings']] + $t;
+            if (\Core\Data\Knowledge::is($kt)) $eq('Wissensbereich: Vorschlag „Kapitel mit Suche“', in_array(__('Kapitel mit Suche'), array_column(self::suggestions($kt), 'name'), true), true);
             // Kit-Vorlagen (theme.php → list_templates)
             self::$kitOverride = ['gross' => ['name' => 'Groß', 'options' => ['layout' => 'cards', 'columns' => '2'], 'default' => true],
                 'nur_andere' => ['name' => 'Andere', 'tables' => ['gibt_es_nicht'], 'options' => []],

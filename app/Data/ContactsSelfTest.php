@@ -50,7 +50,7 @@ final class ContactsSelfTest
             $def['fields'][] = ['label' => 'Durchwahl', 'name' => 'durchwahl', 'type' => 'text', 'exposure' => ['mode' => 'editor', 'web' => 0, 'vcard' => 0, 'ics' => 0]];
             [$clean, $err] = Tables::validate($def);
             $eq('Vorlage gültig', $err, []);
-            $eq('Art und Version', [$clean['settings']['kind'] ?? null, $clean['settings']['kind_version'] ?? null], ['contacts', 1]);
+            $eq('Art und Version', [$clean['settings']['kind'] ?? null, $clean['settings']['kind_version'] ?? null], ['contacts', Kinds::version(Kinds::CONTACTS)]);
             Tables::create($clean);
             $made[] = $h;
             $t = $load($h);

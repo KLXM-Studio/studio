@@ -10,7 +10,7 @@ return [
         'reload' => true,   // Filtern, Suche, Blättern ohne Seitenwechsel (Core\Live::region, live.js)
         // Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“, Darstellungsfelder nur ohne Vorlage – gilt auch für Kits, die den Block übernehmen
         'list_template' => true,
-        'help' => 'Gibt Einträge einer Datentabelle aus (z. B. Aktuelles, Team, Produkte) – mit Feldauswahl, Filter, Sortierung und Link zur Detailseite.',
+        'help' => 'Gibt Einträge einer Datentabelle aus (z. B. Aktuelles, Team, Produkte) – mit Feldauswahl, Filter, Sortierung und Link zur Detailseite. Auch in den Inhaltsblöcken eines Eintrags möglich: Dann bezieht sich „aufgerufener Eintrag“ auf diesen Eintrag, er selbst erscheint nicht in der Liste, und eine Datenliste in den gelisteten Einträgen wird nicht ausgegeben (höchstens eine Ebene).',
         'fields' => [
             ['name' => 'eyebrow', 'label' => 'Dachzeile (optional)', 'type' => 'text', 'width' => 'half'],
             ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'width' => 'half'],
@@ -23,8 +23,9 @@ return [
             ['name' => 'fields', 'label' => 'Angezeigte Felder', 'type' => 'datafields',
                 'help' => 'Reihenfolge wie in der Tabelle. Das erste Bildfeld wird zum Kartenbild, der Titel zum Link.'],
             ['name' => 'layout', 'label' => 'Darstellung', 'type' => 'select', 'required' => true, 'default' => 'cards', 'width' => 'half',
-                'options' => ['cards' => 'Karten', 'list' => 'Liste mit Bild', 'compact' => 'Kompakte Liste', 'table' => 'Tabelle', 'directory' => 'Verzeichnis (Logo-Kachel, Etiketten)'],
-                'help' => '„Verzeichnis“: für Mitglieder, Partner, Anbieter – das Bild (Logo) steht eingepasst auf einer Kachel, Auswahlfelder erscheinen als farbige Etiketten.'],
+                'options' => ['cards' => 'Karten', 'list' => 'Liste mit Bild', 'compact' => 'Kompakte Liste', 'table' => 'Tabelle', 'directory' => 'Verzeichnis (Logo-Kachel, Etiketten)',
+                    'chapters' => 'Kapitel (Inhaltsverzeichnis eines Wissensbereichs)'],
+                'help' => '„Verzeichnis“: für Mitglieder, Partner, Anbieter – das Bild (Logo) steht eingepasst auf einer Kachel, Auswahlfelder erscheinen als farbige Etiketten. „Kapitel“: für Tabellen der Art „Wissen“ – Bereiche und Kapitel mit Nummern; bei Suche oder Filter die Treffer als Liste.'],
             ['name' => 'highlight_field', 'label' => 'Zeilen hervorheben, wenn …', 'type' => 'datafield', 'types' => ['bool'], 'width' => 'half', 'empty_label' => '– keine –',
                 'show_if' => ['layout' => ['table']], 'help' => 'Ein Ja/Nein-Feld der Tabelle, z. B. „Summenzeile“ – diese Zeilen erscheinen fett. Zahlenfelder stehen in der Tabelle rechtsbündig.'],
             ['name' => 'table_sort', 'label' => 'Spalten sortierbar', 'type' => 'bool', 'default' => false, 'width' => 'half', 'show_if' => ['layout' => ['table']],
@@ -56,6 +57,12 @@ return [
                 'help' => 'Z. B. Region.'],
             ['name' => 'visitor_search', 'label' => 'Suchfeld über der Liste', 'type' => 'bool', 'default' => false, 'width' => 'half',
                 'help' => 'Durchsucht die Textfelder der Tabelle.'],
+            ['name' => 'visitor_multi', 'label' => 'Mehrere Optionen je Filter wählbar', 'type' => 'bool', 'default' => false, 'width' => 'half',
+                'help' => 'Kontrollkästchen statt Schaltflächen: z. B. zwei Schlagworte zugleich. Innerhalb eines Filters genügt eine der gewählten Optionen, beide Filter-Reihen gelten zusammen.'],
+            ['name' => 'search_excerpt', 'label' => 'Trefferauszug bei der Suche', 'type' => 'bool', 'default' => false, 'width' => 'half',
+                'help' => 'Zeigt unter jedem Treffer die Textstelle mit dem Suchwort (markiert).'],
+            ['name' => 'search_glossary', 'label' => 'Passende Glossarbegriffe zeigen', 'type' => 'bool', 'default' => false, 'width' => 'half',
+                'help' => 'Bei einer Suche stehen passende Begriffe aus dem Glossar der Website als eigene Gruppe über den Treffern (Funktion „Glossar“).'],
             ['name' => 'az_index', 'label' => 'A–Z-Sprungleiste (alphabetisch gruppiert)', 'type' => 'bool', 'default' => false, 'width' => 'half',
                 'help' => 'Sortiert nach dem Titel und gruppiert nach Anfangsbuchstaben – nur ohne seitenweises Blättern.'],
             ...\Core\Blocks\ListFilter::fields(),   // „Filter erst ab … Einträgen“, nur Optionen mit Treffern
@@ -306,6 +313,31 @@ return [
             ...\Core\Maps::blockFields(),
         ],
     ],
+    // Interaktives Bild (Core\Hotspots): Bild mit nummerierten Markierungen – hier gepflegt oder aus einer Tabelle (Vorlage „Interaktive Bilder“)
+    'hotspots' => [
+        'label' => 'Interaktives Bild', 'icon' => 'crosshair', 'group' => 'Medien',
+        'description' => 'Bild mit nummerierten Markierungen – ein Klick zeigt Titel, Text, Link oder Glossar-Begriff.',
+        'nestable' => true,   // in einer Spalte des Blocks „Layout“ erlaubt (Core\Layout)
+        'help' => 'Ein Bild aus der Mediathek mit Markierungen: Punkte oder Flächen, die per Klick oder Tastatur ein Hinweisfenster öffnen. Auf dem Telefon stehen alle Markierungen zusätzlich als Liste unter dem Bild. Hier gepflegt oder aus der Tabelle „Interaktive Bilder“ – dann an mehreren Stellen (auch im Netzwerk) dasselbe Bild.',
+        'fields' => [
+            ...\Core\MediaBlocks::headFields(),
+            ['type' => 'heading', 'label' => 'Bild & Markierungen'],
+            ['name' => 'source', 'label' => 'Quelle', 'type' => 'select', 'required' => true, 'default' => 'here', 'width' => 'half',
+                'options' => ['here' => 'Hier pflegen', 'table' => 'Aus einer Datentabelle (Eintrag wählen)'],
+                'help' => '„Aus einer Datentabelle“: einmal pflegen, an mehreren Stellen zeigen – Vorlage „Interaktive Bilder“ unter Daten → Neue Tabelle.'],
+            ['name' => 'entry', 'label' => 'Eintrag', 'type' => 'link', 'width' => 'half', 'show_if' => ['source' => ['table']],
+                'help' => 'Eintrag einer Tabelle mit Feld „Markierungen“ wählen (Struktur-Browser → Datentabellen).'],
+            ['name' => 'image', 'label' => 'Bild', 'type' => 'media', 'show_if' => ['source' => ['here']],
+                'help' => 'Alt-Text aus der Mediathek. Auch Grafiken (SVG) sind möglich.'],
+            ['name' => 'hotspots', 'label' => 'Markierungen', 'type' => 'hotspots', 'image_field' => 'image', 'show_if' => ['source' => ['here']]],
+            ['type' => 'heading', 'label' => 'Darstellung', 'collapse' => true, 'summary' => 'Liste unter dem Bild, Breite'],
+            ['name' => 'list', 'label' => 'Liste der Markierungen unter dem Bild', 'type' => 'select', 'required' => true, 'default' => 'auto', 'width' => 'half',
+                'options' => ['auto' => 'Auf schmalen Bildschirmen (Telefon)', 'always' => 'Immer'],
+                'help' => 'Die Liste (Nummer, Titel, Text) ist immer für Screenreader da; auf großen Bildschirmen zeigt sie sich bei Bedarf.'],
+            ['name' => 'width', 'label' => 'Breite', 'type' => 'select', 'required' => true, 'default' => 'normal', 'width' => 'half',
+                'options' => ['normal' => 'Inhaltsbreite', 'text' => 'Textbreite (wie Fließtext)']],
+        ],
+    ],
     'gallery' => [
         'label' => 'Bildergalerie', 'icon' => 'images', 'group' => 'Medien',
         'description' => 'Bilder als Raster, Mosaik oder in Zeilen – per Klick groß ansehen.',
@@ -468,12 +500,16 @@ return [
                 'show_if' => ['source' => ['filter']]],
             ['name' => 'filter_values', 'label' => '… einen dieser Werte hat', 'type' => 'textarea', 'rows' => 2, 'max' => 600, 'width' => 'half',
                 'show_if' => ['source' => ['filter']],
-                'help' => 'Einer je Zeile oder durch Komma getrennt, z. B. „Vorstand, Kassenwart“. Auswahlfelder: Beschriftung oder Kurzname; Textfelder: enthält.'],
+                'help' => 'Einer je Zeile oder durch Komma getrennt, z. B. „Vorstand, Kassenwart“. Auswahlfelder: Beschriftung oder Kurzname; Textfelder: enthält. Adressbuch-Feld „Funktionen“: Liste oder Funktion – leer auf einer Detailseite = Personen mit einer Funktion, die mit diesem Eintrag verknüpft ist.'],
             ['name' => 'sort_field', 'label' => 'Sortieren nach', 'type' => 'datafield', 'system' => true, 'width' => 'half', 'empty_label' => '– wie in der Tabelle eingestellt –',
                 'show_if' => ['source' => ['filter']], 'help' => '„Reihenfolge“ = Ihre Reihenfolge von Hand in der Tabelle.'],
             ['name' => 'sort_dir', 'label' => 'Richtung', 'type' => 'select', 'default' => '', 'width' => 'half', 'show_if' => ['source' => ['filter']],
                 'options' => ['' => 'wie eingestellt', 'asc' => 'aufsteigend (A–Z, 1–9)', 'desc' => 'absteigend (Z–A, 9–1)']],
             ['name' => 'limit', 'label' => 'Höchstens', 'type' => 'number', 'default' => 0, 'width' => 'half', 'show_if' => ['source' => ['filter']], 'help' => '0 = alle'],
+            // Adressbücher mit Funktionen (Core\Data\Roles): beendete Funktionen einer Liste
+            ['name' => 'former', 'label' => 'Ehemalige (Funktion beendet)', 'type' => 'select', 'default' => '', 'width' => 'half', 'show_if' => ['source' => ['filter']],
+                'options' => ['' => 'nicht zeigen', 'below' => 'darunter als „Ehemalige“'],
+                'help' => 'Nur bei Adressbüchern mit Funktionen und einem Filter nach Liste: Personen, deren Funktion in dieser Liste beendet ist („bis“ vergangen).'],
             ['name' => 'items', 'label' => 'Personen', 'type' => 'repeater', 'item_label' => 'Person', 'title_field' => 'person', 'max_items' => 30,
                 'show_if' => ['source' => ['manual']], 'fields' => [
                 ['name' => 'person', 'label' => 'Person', 'type' => 'link', 'required' => true,
@@ -628,6 +664,8 @@ return [
             ['name' => 'letters', 'label' => 'Buchstaben-Navigation', 'type' => 'bool', 'default' => true, 'width' => 'half'],
             ['name' => 'category', 'label' => 'Nur Begriffe der Kategorie (optional)', 'type' => 'text', 'width' => 'half'],
             ['name' => 'show_category', 'label' => 'Kategorie anzeigen', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'mentions', 'label' => '„Erwähnt in“ zeigen (bei „Aufgerufener Begriff“)', 'type' => 'bool', 'default' => false, 'width' => 'half',
+                'show_if' => ['view' => ['term']], 'help' => 'Listet Wissenseinträge, die den Begriff verknüpfen, und Seiten, in denen er vorkommt.'],
         ],
     ],
 ];

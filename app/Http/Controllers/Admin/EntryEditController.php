@@ -46,6 +46,11 @@ final class EntryEditController extends AdminController
             return Response::fail($why, 403);
         }
         $in = (array) ($r->post['f'] ?? []);
+        // Wissen: neue Bereiche/Schlagworte aus der Seitenleiste als Optionen anlegen (Core\Data\Knowledge::applyNewOptions)
+        if (\Core\Data\Knowledge::is($t)) {
+            $in = \Core\Data\Knowledge::applyNewOptions($t, $in);
+            $t = \Core\Data\Tables::find($t['handle']) ?? $t;
+        }
         $partial = !empty($r->post['partial']);                 // einzelne Felder aus dem Text: übrige behalten ihren Wert
         if ($partial && $e) {
             $in = array_intersect_key($in, array_flip(array_column($t['fields'], 'name')));

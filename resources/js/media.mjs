@@ -54,7 +54,7 @@ function close() {
 let dlg = null, img, txt, cnt;
 let items = [], idx = 0, opener;
 function lb() {
-  const el = d.querySelector('dialog.cms-lb');
+  const el = d.querySelector('dialog.cms-lb:not(.cms-lb--video)');   // Video-Lightbox (js/video-lightbox.js) hat einen eigenen Dialog
   if (el && el !== dlg) {
     dlg = el; img = dlg.querySelector('img'); [txt, cnt] = dlg.querySelectorAll('figcaption span');
     dlg.addEventListener('click', e => {

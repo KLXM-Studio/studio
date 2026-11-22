@@ -50,6 +50,13 @@ if (($d['view'] ?? 'list') === 'term') {
     <?php if ($host !== ''): ?>
     <p class="glx-source"><a href="<?= e($term['link']) ?>" rel="noopener external"><?= e(lt('Mehr erfahren')) ?>: <?= e(preg_replace('~^www\.~', '', $host)) ?> <span aria-hidden="true">↗</span></a></p>
     <?php endif; ?>
+    <?php // „Erwähnt in“ (Option): Wissenseinträge mit Verknüpfung auf den Begriff, dann Seiten und Einträge, in denen er vorkommt (Core\Data\Knowledge::mentions)
+    if (!empty($d['mentions']) && ($mentions = \Core\Data\Knowledge::mentions((int) $term['id']))): ?>
+    <section class="glx-mentions" aria-labelledby="<?= e($b->domId()) ?>-mentions" data-glossary="off">
+      <h2 class="glx-mentions__h" id="<?= e($b->domId()) ?>-mentions"><?= e(lt('Erwähnt in')) ?></h2>
+      <ul class="glx-mentions__list"><?php foreach ($mentions as $m): ?><li><a href="<?= e($m['url']) ?>"><?= e($m['title']) ?></a></li><?php endforeach; ?></ul>
+    </section>
+    <?php endif; ?>
   </article>
 </div>
 <?php

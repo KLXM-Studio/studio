@@ -17,7 +17,7 @@ use Core\Sanitizer;
 final class Templates
 {
     /** Kurznamen der Vorlagen ohne Angabe von --handle */
-    private const HANDLES = ['jobs' => 'stellen', 'applications' => 'bewerbungen', 'events' => 'termine', 'blog' => 'aktuelles', 'inbox' => 'anfragen', 'contacts' => 'kontakte', 'calendar' => 'kalender', 'places' => 'orte'];
+    private const HANDLES = ['jobs' => 'stellen', 'applications' => 'bewerbungen', 'events' => 'termine', 'blog' => 'aktuelles', 'inbox' => 'anfragen', 'contacts' => 'kontakte', 'calendar' => 'kalender', 'places' => 'orte', 'knowledge' => 'wissen', 'hotspots' => 'interaktive_bilder'];
 
     /**
      * Tabelle aus einer Vorlage anlegen bzw. ergänzen. $o: handle, name, slug (Adresse der Detailseiten, '' = keine),
@@ -92,7 +92,7 @@ final class Templates
             elseif (str_contains($route, '/')) $log("! Übersichtsseite /{$route}: mehrstufige Adresse – bitte die Seite im Seitenbaum anlegen.");
             else {
                 $log($pfx . "+ Übersichtsseite /{$route} (Datenliste, nicht im Menü)");
-                if (!$dry && $t) Jobs::is($t) ? Jobs::makeListPage($t) : self::makeListPage($t);
+                if (!$dry && $t) Jobs::is($t) ? Jobs::makeListPage($t) : (Knowledge::is($t) ? Knowledge::makeListPage($t) : self::makeListPage($t));
             }
         }
         if (!empty($o['detail'])) {

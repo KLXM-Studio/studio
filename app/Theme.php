@@ -108,6 +108,10 @@ final class Theme
             if (isset($b['background']) && !isset($this->backgrounds()[$b['background']])) unset($b['background']);
             $this->blocks[$type] ??= $b + ['type' => $type, 'label' => $type];
         }
+        // Video-Links in der Lightbox (Core\VideoLinks): an Link-Feldern „Ohne Lightbox öffnen“ – nur bei eingeschalteter Einstellung
+        if (VideoLinks::on()) {
+            foreach ($this->blocks as $type => $b) $this->blocks[$type]['fields'] = VideoLinks::blockFields((array) ($b['fields'] ?? []));
+        }
         // Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“ für Blöcke mit 'list_template' => true (Kern-Datenliste, Kopien in Kits)
         foreach ($this->blocks as $type => $b) {
             if (Blocks\ListTemplates::supports($b)) $this->blocks[$type] = Blocks\ListTemplates::decorate($b, (string) $type);
@@ -343,7 +347,8 @@ final class Theme
     public function settingsGroups(): array
     {
         // Hinweisbalken: Zeitraum und Darstellung ergänzt der Core (Core\Notice)
-        return Notice::extendGroups($this->def['settings']['groups'] ?? []);
+        // … und unter „Darstellung“ die Video-Lightbox (Core\VideoLinks)
+        return VideoLinks::extendGroups(Notice::extendGroups($this->def['settings']['groups'] ?? []));
     }
 
     public function settingsTitle(): string
@@ -511,7 +516,9 @@ final class Theme
                 if (($b['type'] ?? '') !== 'entry_blocks') continue;
                 $eb = ($b['tunes']['section']['visible'] ?? true) === false ? [] : \Core\Data\EntryBlocks::forContext((array) ($b['data'] ?? []));
                 if (app()->contentSlot) return $this->renderBlocks(array_slice($blocks, 0, $i)) . \Core\Data\EntryBlocks::SLOT . $this->renderBlocks(array_slice($blocks, $i + 1));
-                $mid = $eb ? $this->renderBlocks($eb) : '';
+                // Kontext für Datenlisten im Eintrag (Filter „aufgerufener Eintrag“, Ausschluss, Rekursionsschutz): Core\Data\EntryBlocks::within
+                $ectx = app()->entry;
+                $mid = $eb ? ($ectx ? \Core\Data\EntryBlocks::within($ectx['table'], $ectx['entry'], fn() => $this->renderBlocks($eb)) : $this->renderBlocks($eb)) : '';
                 if ($mid !== '' && ($attr = \Core\Data\EntryBlocks::editAttr((array) ($b['data'] ?? []))) !== '') $mid = '<div class="eb-entry"' . $attr . '>' . $mid . '</div>';
                 return $this->renderBlocks(array_slice($blocks, 0, $i)) . $mid . $this->renderBlocks(array_slice($blocks, $i + 1));
             }
@@ -710,6 +717,8 @@ final class Theme
         }
         // Block ohne Ausgabe (z. B. leere Liste mit „ausblenden, wenn leer“): kein leerer Abschnitt mit Hintergrund
         if (trim($inner) === '' && !app()->editing) return '';
+        // Video-Links: Buttons mit „Ohne Lightbox öffnen“ kennzeichnen (Core\VideoLinks; Einstellung aus = unverändert)
+        if (!app()->editing) $inner = VideoLinks::optOut($inner, $block->data);
         if (app()->editing && $block->parent === null && $block->inRow() && $this->rowable($block)) {
             // Editor (Vorschau je Block): Block „neben dem vorigen“ schon als Zelle einer Reihe – Hintergrund/Abstände der Reihe
             // und „Karte ja/nein“ setzt editor.js (layoutRows) nach dem ersten Block der Reihe
@@ -890,6 +899,10 @@ final class Theme
         if (($types === null || array_intersect(['data_list', 'data_fields'], $types)) && array_filter(\Core\Combo::TYPES, fn($c) => \Core\Data\Tables::usesType($c))) $out[] = $this->coreCss('combo.css');
         // Vor / Zurück auf Detailseiten (Kern-Block entry_nav) – Kit kann css/entry-nav.css mitbringen
         if ($types === null || in_array('entry_nav', $types, true)) $out[] = $this->coreCss('entry-nav.css');
+        // Wissensbereich (Core\Data\Knowledge): Rahmen der Detailseite ('@knowledge') bzw. Suche/Filter/Kapitel der Datenliste ('@kfilter')
+        // – nur über den Kit-Vertrag --kit-*; ein Kit kann css/knowledge.css bzw. css/list-filter.css mitbringen. Nicht beim Bearbeiten.
+        if ($types !== null && in_array('@knowledge', $types, true)) $out[] = $this->coreCss('knowledge.css');
+        if ($types !== null && in_array('@kfilter', $types, true)) $out[] = $this->coreCss('list-filter.css');
         // Termin-Aktionen (Block event_actions; Fragment event-actions meldet sich auch aus „Datensatz-Felder“) – Kit kann css/event-actions.css mitbringen
         if ($types === null || in_array('event_actions', $types, true)) $out[] = $this->coreCss('event-actions.css');
         // Kalender-Blöcke (Monatsübersicht, Nächste Termine) – Theme kann css/calendar.css mitbringen
@@ -908,6 +921,10 @@ final class Theme
         if (($types === null || in_array('dials', $types, true)) && !empty($this->blocks['dials']['core'])) {
             $out[] = $this->coreCss('dials.css');
         }
+        // Interaktives Bild (Kern-Block hotspots; Feldtyp „Markierungen“ in Datenliste/Datensatz-Feldern) – Variablen --hs-* aus den
+        // --kit-*-Farben, oder eigene css/hotspots.css des Kits
+        if ($types === null || in_array(Hotspots::TYPE, $types, true)
+            || (array_intersect(['data_list', 'data_fields'], $types) && \Core\Data\Tables::usesType(Hotspots::TYPE))) $out[] = $this->coreCss('hotspots.css');
         // Personen (Kern-Block people) – Kit kann css/people.css mitbringen
         // … auch in Inhaltsblöcken von Einträgen (entry_blocks, z. B. Ansprechpersonen je Gruppe)
         if ($types === null || array_intersect(['people', 'entry_blocks'], $types)) $out[] = $this->coreCss('people.css');
@@ -975,6 +992,12 @@ final class Theme
         return array_values(array_unique($types));
     }
 
+    /** Adresse eines Kern-Stylesheets, das ein Skript nachlädt (z. B. Core\VideoLinks) – das Kit kann es mit css/{datei} ersetzen */
+    public function coreStylesheet(string $file): string
+    {
+        return $this->coreCss($file);
+    }
+
     /** Kern-Stylesheet – oder die gleichnamige Datei des Kits (public/assets/kits/{name}/css/…), falls vorhanden */
     private function coreCss(string $file): string
     {
@@ -989,6 +1012,8 @@ final class Theme
         // Kern-Skript für sortierbare Tabellen (Datenliste → „Spalten sortierbar“; Komponente von NativeCSS, resources/js/table-sort.js)
         // – für jedes Kit, nur mit Merkmal '@tablesort'
         if (in_array('@tablesort', $types, true)) $out[] = asset('js/table-sort.js');
+        // Wissensbereich: Kapitelmenü als Schublade (Telefon, Modus „Fokus“), mitlaufende Abschnitte – Kern-Skript für jedes Kit
+        if (in_array('@knowledge', $types, true)) $out[] = asset('js/knowledge.js');
         foreach ($this->def['conditional_css'] ?? [] as $file => $needs) {
             if (str_ends_with($file, '.js') && array_intersect($needs, $types)) {
                 $out[] = $this->asset($file);

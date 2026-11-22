@@ -190,13 +190,23 @@
  *   data:convert <tabelle> --kind=contacts|calendar [--map=quelle:ziel[beschriftung+|-],…] [--apply] | --revert | --drop-legacy
  *                                                     Tabelle an Ort und Stelle in ein Adressbuch bzw. einen Kalender mit Serien umwandeln
  *                                                     (Standard: Probelauf mit Bericht)
+ *   data:kind-upgrade <tabelle> [--to=N] [--dry-run|--apply] | --revert
+ *                                                     Grundschema einer Tabellenart heben (nur additiv), z. B. Adressbuch v1 → v2
+ *                                                     (Funktionen je Person aus Funktion + Listen); Standard: Probelauf
  *   calendar:reindex [<tabelle>…] [--all] [--status]  Vorkommens-Index der Kalender neu aufbauen (Cron täglich) bzw. Stand zeigen
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
  *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
  *                                                     Termin-Aktionen (In den Kalender, Vorkommen, Fremd-Links)
+ *   data:import-pages <pfad|seiten-id> [--table=kurzname] [--keep=id|slug,…] [--blocks=typ,…] [--apply] | --revert
+ *                                                     Seitenzweig in einen Wissensbereich umstellen (Tabellenart „Wissen“): Unterseiten →
+ *                                                     Kapitel mit Oberkapitel und Reihenfolge, Seiten offline ins Archiv, Links und 301-
+ *                                                     Weiterleitungen, Datenliste „Kapitel“ auf der Startseite (Standard: Probelauf);
+ *                                                     --keep: Seiten bleiben, Kapitel vom Typ „Verweis“; --blocks: erlaubte Blöcke beim Anlegen
+ *   knowledge:selftest                                Selbsttest Wissensbereich: Kapitelbaum, Nummern, Abschnitte, Ansicht (Layout-Modi), Suche mit
+ *                                                     Auszug, Glossar-Treffer, Mehrfach-Filter, Schlagworte, data:import-pages mit Zurückdrehen
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
  *                 [--with-list-page] [--dry-run]     Tabelle aus Vorlage anlegen bzw. ergänzen (wie „Neue Tabelle aus Vorlage“; wiederholbar):
- *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), jobs (Stellenangebote, Google for Jobs) + Eingang
+ *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), knowledge (Wissen), jobs (Stellenangebote, Google for Jobs) + Eingang
  *                                                     „Bewerbungen“, faq, inbox, applications
  *   jobs:from-page <seite-id|pfad> [--table=…] [--title="…"] [--slug=…] [--employment=vollzeit,teilzeit] [--posted=JJJJ-MM-TT]
  *                 [--no-redirect] [--no-links] [--dry-run]
@@ -1488,7 +1498,7 @@ switch ($cmd) {
         $res = Core\Data\SchemaPanel::selftest(in_array('--roundtrip', $args, true));
         // Verwendungszweck (Ableitung, Passung) und – ohne --roundtrip – der Assistent „Neue Tabelle“ je Zweck (vorübergehende Tabellen)
         // … dazu Abschnitte und Freitext im Formular (Core\Data\LayoutSelfTest, vorübergehende Tabelle)
-        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest()] as $x) {
+        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data(), Core\Data\RolesSelfTest::run()] as $x) {
             $res['ok'] += $x['ok'];
             array_push($res['fails'], ...$x['fails']);
         }
@@ -1521,6 +1531,26 @@ switch ($cmd) {
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         break;
 
+    case 'data:kind-upgrade':
+        // Grundschema einer Tabellenart auf eine neuere Version heben (Core\Data\KindUpgrade) – Standard: Probelauf
+        $handle = (string) ($args[0] ?? '');
+        if ($handle === '' || str_starts_with($handle, '--')) {
+            fwrite(STDERR, "Aufruf: data:kind-upgrade <tabelle> [--to=N] [--dry-run|--apply] | --revert\n"); exit(1);
+        }
+        $t = Core\Data\Tables::find($handle) ?? (fwrite(STDERR, "Tabelle „{$handle}“ gibt es nicht.\n") && exit(1));
+        try {
+            if (in_array('--revert', $args, true)) { foreach (Core\Data\KindUpgrade::revert($t) as $l) echo "$l\n"; break; }
+            $to = null;
+            foreach ($args as $a) if (preg_match('~^--to=(\d+)$~', $a, $m)) $to = (int) $m[1];
+            $plan = Core\Data\KindUpgrade::plan($t, $to);
+            foreach (Core\Data\KindUpgrade::report($plan, $t) as $l) echo "$l\n";
+            if (!$plan['ok']) exit(1);
+            if (!in_array('--apply', $args, true) || in_array('--dry-run', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply ausführen.\n"; break; }
+            echo "\n";
+            foreach (Core\Data\KindUpgrade::apply($t, $plan) as $l) echo "$l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
     case 'calendar:reindex':
         // Vorkommens-Index der Kalender (Core\Data\Occurrences) neu aufbauen – täglich per Cron (rollierendes Fenster), nach Importen
         if (Core\Cli::flag($args, 'all')) exit(Core\Cli::eachSite($cmd, $args));
@@ -1537,6 +1567,36 @@ switch ($cmd) {
         $res = Core\Data\CalendarSelfTest::run();
         $eva = Core\Data\EventActionsSelfTest::run();   // Termin-Aktionen (In den Kalender, Abonnieren, Fremd-Links, Vorkommen)
         $res = ['ok' => $res['ok'] + $eva['ok'], 'fails' => [...$res['fails'], ...$eva['fails']]];
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'data:import-pages':
+        // Seitenzweig → Wissensbereich (Core\Data\KnowledgeImport) – Standard: Probelauf mit Plan
+        $ref = (string) ($args[0] ?? '');
+        if ($ref === '' || str_starts_with($ref, '--')) { fwrite(STDERR, "Aufruf: data:import-pages <pfad|seiten-id> [--table=kurzname] [--keep=id|slug,…] [--blocks=typ,…] [--apply] | --revert\n"); exit(1); }
+        $root = Core\Data\KnowledgeImport::root($ref) ?? (fwrite(STDERR, "Seite „{$ref}“ nicht gefunden.\n") && exit(1));
+        try {
+            if (in_array('--revert', $args, true)) { foreach (Core\Data\KnowledgeImport::revert($root) as $l) echo "$l\n"; break; }
+            $handle = '';
+            $io = [];
+            foreach ($args as $a) {
+                if (str_starts_with($a, '--table=')) $handle = substr($a, 8);
+                if (preg_match('~^--(keep|blocks)=(.*)$~s', $a, $m)) $io[$m[1]] = array_values(array_filter(array_map('trim', explode(',', $m[2]))));
+            }
+            $plan = Core\Data\KnowledgeImport::plan($root, $handle, $io);
+            foreach (Core\Data\KnowledgeImport::report($plan) as $l) echo "$l\n";
+            if (!$plan['ok']) exit(1);
+            if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply übernehmen.\n"; break; }
+            echo "\n";
+            foreach (Core\Data\KnowledgeImport::apply($plan) as $l) echo "$l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
+    case 'knowledge:selftest':
+        $res = Core\Data\Knowledge::selftest();
+        $db = Core\Data\KnowledgeSelfTest::run();   // mit vorübergehender Tabelle und Seiten
+        $res = ['ok' => $res['ok'] + $db['ok'], 'fails' => [...$res['fails'], ...$db['fails']]];
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);
