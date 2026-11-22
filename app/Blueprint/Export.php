@@ -347,7 +347,7 @@ final class Export
             // Probelauf: Plan ohne Paket
             $shown = array_intersect_key($src, array_flip(['org.name', 'org.short', 'region.name', 'region.short', 'org.domain']));
             $report[] = 'Quelle erkannt: ' . (implode(', ', array_map(fn($k, $v) => $k . ' = ' . $v, array_keys($shown), $shown)) ?: '–');
-            foreach ($review as $rv) $report[] = '  ! ' . $rv['title'] . ' (' . $rv['where'] . '): ' . $rv['reason'] . ($rv['sample'] !== '' ? ' – „' . $rv['sample'] . '“' : '');
+            foreach ($review as $rv) $report[] = '  ! ' . Placeholders::readable($rv['title']) . ' (' . $rv['where'] . '): ' . $rv['reason'] . ($rv['sample'] !== '' ? ' – „' . Placeholders::readable($rv['sample']) . '“' : '');
             $report[] = 'Probelauf – kein Paket geschrieben (ohne --check exportieren).';
             return ['path' => '', 'manifest' => $manifest, 'report' => $report];
         }
@@ -477,14 +477,14 @@ final class Export
             if ($placeRe) {
                 $n = 0;
                 foreach (preg_split('~</p>|<br\s*/?>|</li>|</h\d>|\n{2,}~i', $s) ?: [] as $para) {
-                    $pt = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($para), ENT_QUOTES, 'UTF-8')));
-                    $pt = (string) preg_replace(Placeholders::PATTERN, ' ', $pt);
+                    $pv = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($para), ENT_QUOTES, 'UTF-8')));   // Auszug mit Platzhaltern
+                    $pt = (string) preg_replace(Placeholders::PATTERN, ' ', $pv);
                     $found = [];
                     foreach ($placeRe as $re) if (preg_match_all($re, $pt, $pm)) foreach ($pm[1] as $p) $found[$p] = true;
                     if (!$found || ++$n > 5) continue;
                     $key = $where . "\x1Fplaces\x1F" . md5($pt);
                     $items[$key] ??= ['where' => $where, 'link' => $link, 'title' => $title, 'reason' => 'Absatz ist auf ' . $regionName . ' bezogen („' . implode('“, „', array_slice(array_keys($found), 0, 5)) . '“) – bitte für die eigene Region neu schreiben',
-                        'sample' => mb_strimwidth($pt, 0, 160, '…')];
+                        'sample' => mb_strimwidth($pv, 0, 160, '…')];
                 }
             }
             foreach ($hits as [$needle, $reason]) {
@@ -517,11 +517,16 @@ final class Export
             }
         }
         $names = array_column($tables, 'name', 'handle');
+        $titleFields = [];
+        foreach ($tables as $t) $titleFields[(string) $t['handle']] = (string) ($t['settings']['title_field'] ?? '');
         foreach ($entries as $h => $set) {
             foreach ((array) ($set['rows'] ?? []) as $r) {
                 $where = 'entry:' . $h . ':' . (int) ($r['id'] ?? 0);
+                // Titel der Stelle: Titel des Eintrags (Aufgabe „Text an Ihre Organisation anpassen: Regionalgruppe Nord“), sonst Tabelle #ID
+                $et = '';
+                foreach (array_filter([$titleFields[$h] ?? '', 'titel', 'title', 'name']) as $tf) if (is_string($r[$tf] ?? null) && trim((string) $r[$tf]) !== '') { $et = mb_strimwidth(trim(strip_tags((string) $r[$tf])), 0, 80, '…'); break; }
                 foreach (array_keys($r) as $c) if (isset($skipFields[$h . '.' . $c])) unset($r[$c]);   // Felder mit Flächen (Gebietskarten)
-                $walk($r, fn(string $s) => $check($s, $where, '/admin/data/' . $h . '/' . (int) ($r['id'] ?? 0), ($names[$h] ?? $h) . ' #' . (int) ($r['id'] ?? 0)));
+                $walk($r, fn(string $s) => $check($s, $where, '/admin/data/' . $h . '/' . (int) ($r['id'] ?? 0), $et !== '' ? $et : ($names[$h] ?? $h) . ' #' . (int) ($r['id'] ?? 0)));
             }
         }
         foreach ($settings as $k => $v) $walk($v, fn(string $s) => $check($s, 'setting:' . $k, '/admin/settings', 'Einstellung ' . $k));

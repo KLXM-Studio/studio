@@ -60,6 +60,20 @@ final class References
         }, $s);
     }
 
+    /** Aufgaben zu den Einträgen (Link /admin/data/{tabelle}/{id}, z. B. „Text an Ihre Organisation anpassen: …“): Namen im Titel nachziehen */
+    public static function renameTasks(array $refs): int
+    {
+        $n = 0;
+        foreach ($refs as $r) {
+            $link = '/admin/data/' . $r['handle'] . '/' . (int) $r['id'];
+            foreach (app()->db->fetchAll('SELECT id, title FROM tasks WHERE link = ?', [$link]) as $t) {
+                $new = str_replace((string) $r['old'], (string) $r['new'], (string) $t['title']);
+                if ($new !== $t['title']) { app()->db->update('tasks', ['title' => $new], 'id = ?', [(int) $t['id']]); $n++; }
+            }
+        }
+        return $n;
+    }
+
     /** Zeigt eine Adresse auf einen der Einträge? (entry:tabelle:id oder …/slug) */
     private static function target(string $href, array $refs): ?array
     {

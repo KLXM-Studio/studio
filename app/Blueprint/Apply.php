@@ -230,8 +230,8 @@ final class Apply
         foreach ((array) ($m['review'] ?? []) as $rv) {
             if (!is_array($rv) || !isset($rv['title'], $rv['where'])) continue;
             $w = (string) $rv['where'];
-            $byWhere[$w] ??= ['title' => Placeholders::fill((string) $rv['title'], $values), 'link' => (string) ($rv['link'] ?? ''), 'body' => []];
-            $byWhere[$w]['body'][] = (string) ($rv['reason'] ?? '') . (($rv['sample'] ?? '') !== '' ? "\n„" . Placeholders::fill((string) $rv['sample'], $values) . '“' : '');
+            $byWhere[$w] ??= ['title' => Placeholders::readable(Placeholders::fill((string) $rv['title'], $values)), 'link' => (string) ($rv['link'] ?? ''), 'body' => []];
+            $byWhere[$w]['body'][] = (string) ($rv['reason'] ?? '') . (($rv['sample'] ?? '') !== '' ? "\n„" . Placeholders::readable(Placeholders::fill((string) $rv['sample'], $values)) . '“' : '');
         }
         foreach ($byWhere as $t) {
             QuickConfig::addTask(__('Text an Ihre Organisation anpassen: {title}', ['title' => mb_strimwidth($t['title'], 0, 80, '…')]), implode("\n\n", $t['body']), $t['link'], $actor);

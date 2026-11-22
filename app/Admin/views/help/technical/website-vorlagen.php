@@ -96,7 +96,8 @@
   <code>fields</code> – <code>tabelle.feld</code> mit Flächen, nicht geprüft; <code>entries</code> – neutrale Titel je Eintrag (Adresse neu). Die Namen
   ersetzt <code>Core\Blueprint\References</code> nur an echten Verweisen: Links (<code>data-link="entry:tabelle:id"</code> bzw. Adresse mit dem Slug –
   Linktext und Slug), Linkfelder mit Beschriftung (<code>button_link</code>/<code>button_label</code> …), Werte genau gleich dem Namen. Fließtext nie;
-  Erweiterungen nutzen dieselbe Klasse beim Regionswechsel.
+  Erweiterungen nutzen dieselbe Klasse beim Regionswechsel (<code>References::renameTasks()</code> zieht Aufgaben mit Link auf den Eintrag nach).
+  Titel einer Stelle ist der Titel des Eintrags (Titelfeld, sonst titel/title/name); Auszüge zeigen Platzhalter lesbar (<code>Placeholders::readable()</code>).
   Ohne Erweiterung bleibt die Prüfung wie bisher – als <code>manifest.review</code>
   {where, link, title, reason, sample}; beim Anlegen je Stelle eine Aufgabe „Text an Ihre Organisation anpassen“. Das Impressum der Quelle wird durch
   <code>Export::IMPRINT</code> ersetzt – mit <code>{{org.representatives}}</code> und <code>{{org.responsible}}</code> (Schritt Organisation, CLI

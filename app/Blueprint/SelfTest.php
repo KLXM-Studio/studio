@@ -151,6 +151,10 @@ final class SelfTest
             str_starts_with((string) ($by('page:5')[0] ?? ''), 'Absatz ist auf Musterland bezogen („Beispielburg“)'), $by('entry:gruppen:1')], [1, true, true, []]);
         [, $rv0] = Export::review([['id' => 4, 'title' => 'Gruppen', 'content_published' => ['blocks' => [['type' => 'richtext', 'data' => ['text' => '<p>Treffen in Musterhausen und Beispielburg.</p>']]]]]], [], [], [], ['region.name' => 'Musterland']);
         $eq('Ortsnamen: ohne Erweiterung wie bisher', $rv0, []);
+        $eq('Platzhalter lesbar im Auszug', Placeholders::readable('In {{region.short}} leben 526 Menschen beim {{org.short}}'), 'In [Region] leben 526 Menschen beim [Kurzname]');
+        [, $rv3] = Export::review([], ['gruppen' => ['rows' => [['id' => 7, 'titel' => 'Gruppe Nord', 'text' => '<p>Wandern in der Testheide und in {{region.name}}</p>']]]], [], [['handle' => 'gruppen', 'name' => 'Gruppen', 'settings' => ['title_field' => 'titel']]],
+            ['region.name' => 'Musterland'], $areas);
+        $eq('Titel der Stelle = Titel des Eintrags, Auszug mit Platzhalter', [$rv3[0]['title'] ?? '', $rv3[0]['sample'] ?? ''], ['Gruppe Nord', 'Wandern in der Testheide und in {{region.name}}']);
         // Neutrale Namen nur an echten Verweisen – Landschaftsname im Fließtext bleibt und wird gemeldet
         $rs = References::selftest();
         $ok += $rs['ok'];

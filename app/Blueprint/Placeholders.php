@@ -42,6 +42,12 @@ final class Placeholders
         return '{{' . $key . '}}';
     }
 
+    /** Platzhalter lesbar anzeigen (Bericht, --check): {{region.short}} → [Region], {{org.short}} → [Kurzname] – Zusatz in Klammern entfällt */
+    public static function readable(string $s): string
+    {
+        return (string) preg_replace_callback(self::PATTERN, fn($m) => '[' . trim((string) preg_replace('~\s*\(.*\)$~u', '', self::label($m[1]))) . ']', $s);
+    }
+
     /** Bezeichnung (übersetzt) eines Platzhalters, eigene aus dem Manifest gehen vor */
     public static function label(string $key, array $custom = []): string
     {
