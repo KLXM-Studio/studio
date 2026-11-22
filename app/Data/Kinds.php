@@ -29,7 +29,7 @@ final class Kinds
     /** Wissen: Kapitel eines Wissensbereichs/Handbuchs mit Bereich, Oberkapitel, Nummer, Schlagworten (Core\Data\Knowledge) */
     public const KNOWLEDGE = 'knowledge';
     /** Aktuelle Version des Grundschemas je Art */
-    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1, self::KNOWLEDGE => 1];
+    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1, self::KNOWLEDGE => 2];
     /** Feste Kalender-Zuordnung der Art calendar (settings.calendar → Grundfelder) */
     public const CALENDAR_MAP = ['start' => 'beginn', 'end' => 'ende', 'all_day' => 'ganztaegig', 'recurrence' => 'wiederholung', 'location' => 'ort',
         'description' => 'beschreibung', 'category' => 'kategorie'];
@@ -179,6 +179,11 @@ final class Kinds
                 ['name' => 'autor', 'label' => 'Autor/in', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'geprueft_am', 'label' => 'Zuletzt geprüft', 'type' => 'date', 'width' => 'half', 'since' => 1,
                     'help' => 'Wann der Inhalt zuletzt fachlich geprüft wurde – steht unter dem Kapitel.'],
+                // Version 2: Bild des Kapitels (Karten, Teilen, Kopf der Detailseite) und Kapitel als Verweis auf eine Seite
+                ['name' => 'bild', 'label' => 'Bild', 'type' => 'media', 'width' => 'half', 'since' => 2,
+                    'help' => 'Optional: Bild des Kapitels für Übersicht, Teilen und den Kopf der Seite.'],
+                ['name' => 'verweis', 'label' => 'Verweis auf Seite', 'type' => 'link', 'width' => 'half', 'since' => 2,
+                    'help' => 'Optional: Das Kapitel ist dann ein Verweis – Navigation, Inhaltsverzeichnis, Suche und Vor/Zurück führen auf diese Seite, die Kapitel-Adresse leitet dorthin weiter. Inhalt bleibt leer.'],
             ],
             default => [],
         };
@@ -292,9 +297,9 @@ final class Kinds
         if ($kind === self::KNOWLEDGE) {
             return [
                 ['label' => 'Kapitel', 'name' => 'abschnitt_kapitel', 'type' => 'section'],
-                ...$pick('titel', 'bereich', 'oberkapitel', 'kapitelnummer', 'anreisser', 'inhalt'),
+                ...$pick('titel', 'bereich', 'oberkapitel', 'kapitelnummer', 'anreisser', 'bild', 'inhalt'),
                 ['label' => 'Zuordnung', 'name' => 'abschnitt_zuordnung', 'type' => 'section', 'style' => 'collapsed'],
-                ...$pick('schlagworte', 'verwandt', 'begriffe', 'autor', 'geprueft_am'),
+                ...$pick('schlagworte', 'verwandt', 'begriffe', 'autor', 'geprueft_am', 'verweis'),
             ];
         }
         if ($kind !== self::CONTACTS) return [];

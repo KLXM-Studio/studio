@@ -193,10 +193,11 @@
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
  *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
  *                                                     Termin-Aktionen (In den Kalender, Vorkommen, Fremd-Links)
- *   data:import-pages <pfad|seiten-id> [--table=kurzname] [--apply] | --revert
+ *   data:import-pages <pfad|seiten-id> [--table=kurzname] [--keep=id|slug,…] [--blocks=typ,…] [--apply] | --revert
  *                                                     Seitenzweig in einen Wissensbereich umstellen (Tabellenart „Wissen“): Unterseiten →
  *                                                     Kapitel mit Oberkapitel und Reihenfolge, Seiten offline ins Archiv, Links und 301-
- *                                                     Weiterleitungen, Datenliste „Kapitel“ auf der Startseite (Standard: Probelauf)
+ *                                                     Weiterleitungen, Datenliste „Kapitel“ auf der Startseite (Standard: Probelauf);
+ *                                                     --keep: Seiten bleiben, Kapitel vom Typ „Verweis“; --blocks: erlaubte Blöcke beim Anlegen
  *   knowledge:selftest                                Selbsttest Wissensbereich: Kapitelbaum, Nummern, Abschnitte, Ansicht (Layout-Modi), Suche mit
  *                                                     Auszug, Glossar-Treffer, Mehrfach-Filter, Schlagworte, data:import-pages mit Zurückdrehen
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
@@ -1549,13 +1550,17 @@ switch ($cmd) {
     case 'data:import-pages':
         // Seitenzweig → Wissensbereich (Core\Data\KnowledgeImport) – Standard: Probelauf mit Plan
         $ref = (string) ($args[0] ?? '');
-        if ($ref === '' || str_starts_with($ref, '--')) { fwrite(STDERR, "Aufruf: data:import-pages <pfad|seiten-id> [--table=kurzname] [--apply] | --revert\n"); exit(1); }
+        if ($ref === '' || str_starts_with($ref, '--')) { fwrite(STDERR, "Aufruf: data:import-pages <pfad|seiten-id> [--table=kurzname] [--keep=id|slug,…] [--blocks=typ,…] [--apply] | --revert\n"); exit(1); }
         $root = Core\Data\KnowledgeImport::root($ref) ?? (fwrite(STDERR, "Seite „{$ref}“ nicht gefunden.\n") && exit(1));
         try {
             if (in_array('--revert', $args, true)) { foreach (Core\Data\KnowledgeImport::revert($root) as $l) echo "$l\n"; break; }
             $handle = '';
-            foreach ($args as $a) if (str_starts_with($a, '--table=')) $handle = substr($a, 8);
-            $plan = Core\Data\KnowledgeImport::plan($root, $handle);
+            $io = [];
+            foreach ($args as $a) {
+                if (str_starts_with($a, '--table=')) $handle = substr($a, 8);
+                if (preg_match('~^--(keep|blocks)=(.*)$~s', $a, $m)) $io[$m[1]] = array_values(array_filter(array_map('trim', explode(',', $m[2]))));
+            }
+            $plan = Core\Data\KnowledgeImport::plan($root, $handle, $io);
             foreach (Core\Data\KnowledgeImport::report($plan) as $l) echo "$l\n";
             if (!$plan['ok']) exit(1);
             if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply übernehmen.\n"; break; }

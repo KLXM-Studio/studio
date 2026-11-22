@@ -129,7 +129,7 @@ if (!$rows && !empty($d['hide_empty']) && !is_editing() && !$filtering) return;
 $jobs = \Core\Data\Jobs::is($t);
 if (!empty($d['link_detail'])) \Core\StructuredData::itemList($t, $rows, strip_emphasis((string) ($d['title'] ?? '')));   // schema.org ItemList
 $pages = !empty($d['paginate']) && $limit ? (int) ceil(Entries::count($t, $o) / $limit) : 1;
-$link = fn(array $e) => !empty($d['link_detail']) ? Entries::href($t, $e) : null;
+$link = fn(array $e) => !empty($d['link_detail']) ? ($know ? \Core\Data\Knowledge::href($t, $e) : Entries::href($t, $e)) : null;   // Wissen: Verweis-Kapitel → Seite
 $hTag = !empty($d['title']) ? 'h3' : 'h2';
 // Bilder einpassen (Logos auf einer Kachel) statt füllen: Standard im Verzeichnis
 $fit = (string) ($d['image_fit'] ?? '');
