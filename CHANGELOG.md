@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kit NativeCSS: nur ein Untermenü offen
+- Die Untermenüs der Kopfleiste teilen sich `name="ncss-nav"` – öffnet man eines, schließt das andere (auch ohne Skript).
+  Klick daneben und Escape schließen das offene Untermenü, der Fokus kehrt zum Menüpunkt zurück.
+
 ### Karten in den Farben des Kits
 - Kits können die Karte über CSS-Variablen (`--map-land`, `--map-water`, `--map-green`, `--map-road`, `--map-road-major`, `--map-building`,
   `--map-label`, `--map-label-halo`) einfärben; `map.mjs` färbt die Ebenen des Stils nach jedem Laden um, auch im Dunkelmodus.

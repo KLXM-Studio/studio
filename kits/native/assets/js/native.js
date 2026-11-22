@@ -10,3 +10,12 @@
 import '../../vendor/ncss/js/command-fallback.js';
 import '../../vendor/ncss/js/dialog-light-dismiss.js';
 import '../../vendor/ncss/js/nav.js';
+
+// Untermenüs der Kopfleiste (<details name="ncss-nav">): Klick daneben und Escape schließen das offene – der gemeinsame Name sorgt
+// schon ohne Skript dafür, dass nur eines offen ist
+const openDrops = () => document.querySelectorAll('.ncss-topbar details.ncss-nav-dropdown[open]');
+document.addEventListener('click', e => { for (const d of openDrops()) if (!d.contains(e.target)) d.open = false; });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  for (const d of openDrops()) { d.open = false; d.querySelector('summary')?.focus(); }
+});

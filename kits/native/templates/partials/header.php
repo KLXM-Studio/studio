@@ -5,7 +5,8 @@
  * js/nav.js misst nach)
  * dasselbe Markup als Off-Canvas-<dialog> (command="show-modal" – ohne Skript in aktuellen Browsern, js/native.js ergänzt den
  * Ersatz, „Klick daneben schließt“ und das Schließen nach einem Link); Untermenüs als <details> mit „Übersicht“ als erstem
- * Eintrag (Muster von NativeCSS). Escape schließt den Dialog, der Fokus kehrt zur Schaltfläche zurück (Browser).
+ * Eintrag (Muster von NativeCSS) – gemeinsamer name="ncss-nav": nur eines ist offen; Klick daneben und Escape schließen es (js/native.js).
+ * Escape schließt den Dialog, der Fokus kehrt zur Schaltfläche zurück (Browser).
  * Werkzeuge: Kopfbereich-Aktionen (Suche, Handlungsaufruf …, Core\HeaderActions), Sprachen (ab drei als Aufklappmenü – Kern),
  * Hell/Dunkel-Schalter (Design), Darstellungs-Knopf für Besucher (Design, Standard aus).
  * @var bool $prefs
@@ -38,7 +39,7 @@ $item = static function (array $m) use ($cur, $sub, $ovw): string {
     if (!$m['children']) {
         return '<li class="ncss-nav-item"><a href="' . e($m['href']) . '"' . $cur($m) . ($m['active'] ? ' data-active' : '') . '>' . e($m['label']) . '</a></li>';
     }
-    return '<li class="ncss-nav-item"><details class="ncss-nav-dropdown"' . ($m['active'] ? ' data-active' : '') . '><summary>' . e($m['label']) . '</summary>'
+    return '<li class="ncss-nav-item"><details class="ncss-nav-dropdown" name="ncss-nav"' . ($m['active'] ? ' data-active' : '') . '><summary>' . e($m['label']) . '</summary>'
         . '<ul class="ncss-nav-submenu">' . $ovw($m) . $sub($m['children'], 2) . '</ul></details></li>';
 };
 ?>
