@@ -222,6 +222,7 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
         // Adresse eines vorhandenen, für Apps nicht sichtbaren Eintrags (Entwurf bei „Nur veröffentlichte Einträge“) nicht neu belegen
         if (Dav::reservedUri($t, (string) $cardUri, 'vcf')) throw new Forbidden('Kontakt ist im CMS nicht veröffentlicht – nur dort bearbeitbar.');
         [$in, $uid] = self::parse($t, null, (string) $cardData);
+        if (\Core\Data\Kinds::isContacts($t)) $in[\Core\Data\VCards::UID] = $uid;   // UID der App am Kontakt (vCard-Export, Import-Abgleich)
         $in['status'] = Dav::tableSettings($t)['status'] === 'draft' || ($t['settings']['workflow'] && !Dav::can('data.publish', $t)) ? 'draft' : 'published';
         [$id, $errors] = Entries::save($t, null, $in);
         if ($errors) throw new BadRequest('Ungültige Eingaben: ' . implode(' ', $errors));
@@ -308,131 +309,19 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
             && !\Core\Combo::isMulti($f['type'])));
     }
 
-    /** vCard-Eigenschaft je Mehrfachfeld des Grundschemas */
-    private const MULTI_PROPS = ['telefon' => ['phones', 'TEL'], 'email' => ['emails', 'EMAIL'], 'adresse' => ['addresses', 'ADR'], 'web' => ['urls', 'URL']];
-
-    /** Kontakt (Art contacts) → vCard ohne Zuordnung: Grundschema fest, Mehrfachfelder beschriftet, Listen = CATEGORIES */
-    private static function contactCard(array $t, array $e, VCard $card): void
+    /**
+     * Kontakt (Art contacts) → vCard ohne Zuordnung: Grundschema fest (Core\Data\VCards::card – dieselbe Abbildung wie der
+     * vCard-Export), Mehrfachfelder beschriftet, Listen = CATEGORIES. $offset: Nummer der letzten Gruppe itemN der Zusatzzeilen.
+     */
+    private static function contactCard(array $t, array $e, VCard $card, int $offset = 0): void
     {
-        $e = \Core\Data\Exposure::forApps($t, $e);
-        $s = fn(string $k) => trim(strip_tags((string) (is_scalar($e[$k] ?? null) ? $e[$k] : '')));
-        $isOrg = !empty($e['ist_firma']) && $s('firma') !== '';
-        $fn = $s('name') ?: Entries::title($t, $e);
-        $card->add('FN', $fn);
-        $card->add('N', $isOrg ? ['', '', '', '', ''] : ($s('nachname') . $s('vorname') !== '' ? [$s('nachname'), $s('vorname'), '', $s('praefix'), ''] : self::splitName($fn)));
-        if ($s('firma') !== '') $card->add('ORG', array_values(array_filter([$s('firma'), $s('abteilung')], fn($x) => $x !== '')));
-        if ($isOrg) $card->add('X-ABSHOWAS', 'COMPANY');
-        if ($s('position') !== '') $card->add('TITLE', $s('position'));
-        $n = 0;
-        foreach (self::MULTI_PROPS as $field => [$type, $prop]) {
-            if ((Tables::field($t, $field)['type'] ?? '') !== $type) continue;
-            foreach (\Core\Combo::items($e[$field] ?? null) as $i) {
-                if (\Core\Combo::itemText($type, $i) === '') continue;
-                $val = $prop === 'ADR' ? ['', '', trim((string) ($i['street'] ?? '')), trim((string) ($i['city'] ?? '')), '', trim((string) ($i['zip'] ?? '')), trim((string) ($i['country'] ?? ''))]
-                    : trim((string) $i['value']);
-                $types = \Core\Combo::VCARD_TYPES[$type][(string) ($i['label'] ?? '')] ?? null;
-                if ($types !== null) {
-                    $card->add($prop, $val, ['TYPE' => $types]);
-                    continue;
-                }
-                $n++;
-                // Gruppe „itemN.“: Wert und Apple-Beschriftung gehören zusammen
-                $card->add("item$n.$prop", $val, $prop === 'EMAIL' ? ['TYPE' => ['INTERNET']] : []);
-                $card->add("item$n.X-ABLABEL", \Core\Combo::labelText($type, $i, true));
-            }
-        }
-        if (($note = $s('notiz')) !== '' && Tables::field($t, 'notiz')) $card->add('NOTE', $note);
-        if (preg_match('~^\d{4}-\d{2}-\d{2}$~', $s('geburtstag'))) $card->add('BDAY', $s('geburtstag'), ['VALUE' => 'DATE']);
-        if (!empty($e['foto']) && ($jpeg = self::photo((int) $e['foto']))) $card->add('PHOTO', $jpeg, ['ENCODING' => 'b', 'TYPE' => 'JPEG']);
-        if (($lf = Tables::field($t, 'listen')) && ($cats = array_values(array_filter(array_map(fn($k) => Tables::optionLabel($lf, (string) $k, Lang::default()), (array) ($e['listen'] ?? [])))))) {
-            $card->add('CATEGORIES', $cats);
-        }
+        \Core\Data\VCards::card($t, \Core\Data\Exposure::forApps($t, $e), $card, ['offset' => $offset]);
     }
 
-    /**
-     * vCard → Felder eines Kontakts (Art contacts). Mehrfachfelder: Beschriftung aus TYPE bzw. X-ABLabel (eigene Beschriftung,
-     * wenn unbekannt); „Öffentlich“ nur, wenn dieselbe Angabe vorher schon öffentlich war (neue/geänderte Angaben sind intern).
-     */
+    /** vCard → Felder eines Kontakts (Core\Data\VCards::fields): neue/geänderte Angaben sind nie von selbst öffentlich */
     private static function contactIn(array $t, ?array $e, VCard $card): array
     {
-        $in = [];
-        $n = isset($card->N) ? array_pad($card->N->getParts(), 5, '') : ['', '', '', '', ''];
-        $fn = trim((string) ($card->FN ?? ''));
-        $org = isset($card->ORG) ? array_pad($card->ORG->getParts(), 2, '') : ['', ''];
-        $in['nachname'] = trim((string) $n[0]);
-        $in['vorname'] = trim((string) $n[1]);
-        $in['praefix'] = trim((string) $n[3]);
-        $in['firma'] = trim((string) $org[0]);
-        $in['abteilung'] = trim((string) $org[1]);
-        $in['position'] = trim((string) ($card->TITLE ?? ''));
-        $in['ist_firma'] = strtoupper(trim((string) ($card->{'X-ABSHOWAS'} ?? ''))) === 'COMPANY';
-        // Anzeigename: FN der App, außer er ist nur „Vorname Nachname“ (dann bildet ihn das CMS selbst)
-        $in['name'] = $fn !== '' && $fn !== trim($in['vorname'] . ' ' . $in['nachname']) && $fn !== trim($in['praefix'] . ' ' . $in['vorname'] . ' ' . $in['nachname']) ? $fn : '';
-        $labels = [];
-        foreach ($card->children() as $p) {
-            if ($p instanceof \Sabre\VObject\Property && strtoupper($p->name) === 'X-ABLABEL' && $p->group) $labels[strtolower((string) $p->group)] = (string) $p;
-        }
-        foreach (self::MULTI_PROPS as $field => [$type, $prop]) {
-            if ((Tables::field($t, $field)['type'] ?? '') !== $type) continue;
-            $before = [];
-            foreach (\Core\Combo::items($e[$field] ?? null) as $i) $before[self::itemKey($type, $i)] = $i['public'] ?? false;
-            $items = [];
-            foreach ($card->select($prop) as $p) {
-                $types = array_map('strtoupper', isset($p['TYPE']) ? $p['TYPE']->getParts() : []);
-                $ab = $p->group ? ($labels[strtolower((string) $p->group)] ?? null) : null;
-                $item = ['label' => self::labelFrom($type, $types, $ab)];
-                if ($item['label'] === \Core\Combo::CUSTOM) $item['label_custom'] = self::appleLabel((string) $ab);
-                if ($prop === 'ADR') {
-                    $a = array_pad($p->getParts(), 7, '');
-                    $item += ['street' => trim((string) $a[2]), 'zip' => trim((string) $a[5]), 'city' => trim((string) $a[3]), 'country' => trim((string) $a[6])];
-                } else {
-                    $item['value'] = trim(preg_replace('~^(tel|mailto):~i', '', (string) $p) ?? '');
-                }
-                if (\Core\Combo::itemText($type, $item) === '') continue;
-                $item['public'] = $before[self::itemKey($type, $item)] ?? ($type === 'addresses' ? '0' : false);
-                $items[] = $item;
-            }
-            $in[$field] = $items;
-        }
-        $in['notiz'] = trim(str_replace("\r", '', (string) ($card->NOTE ?? '')));
-        $b = (string) ($card->BDAY ?? '');
-        $in['geburtstag'] = preg_match('~^(\d{4})-?(\d{2})-?(\d{2})~', $b, $m) ? "$m[1]-$m[2]-$m[3]" : '';
-        if (($lf = Tables::field($t, 'listen')) && isset($card->CATEGORIES)) $in['listen'] = self::optionKey($lf, $card->CATEGORIES->getParts());
-        if (!$e) $in[\Core\Data\Kinds::PUBLIC_FIELD] = false;   // neu aus der App: nie von selbst auf der Website
-        return $in;
-    }
-
-    /** Vergleichsschlüssel einer Angabe (Ziffern einer Nummer, E-Mail klein, Adresse ohne Leerraum) */
-    private static function itemKey(string $type, array $i): string
-    {
-        $v = \Core\Combo::itemText($type, $i);
-        return $type . ':' . ($type === 'phones' ? preg_replace('~[^\d+]~', '', $v) : mb_strtolower((string) preg_replace('~\s+~u', '', $v)));
-    }
-
-    /** Beschriftung aus vCard-TYPE bzw. X-ABLabel (Teile übernommen aus KLXM/contacts VCard/Labels, MIT) */
-    private static function labelFrom(string $type, array $types, ?string $ab): string
-    {
-        if ($ab !== null && trim($ab) !== '') {
-            $text = self::appleLabel($ab);
-            foreach (\Core\Combo::LABELS[$type] as $k => $de) if (mb_strtolower($text) === mb_strtolower($de) || mb_strtolower($text) === mb_strtolower(lt($de)) || strtolower($text) === $k) return $k;
-            return \Core\Combo::CUSTOM;
-        }
-        $has = fn(string $x) => in_array($x, $types, true);
-        return match ($type) {
-            'phones' => match (true) { $has('FAX') => 'fax', $has('CELL') || $has('IPHONE') => 'mobile', $has('MAIN') => 'main', $has('HOME') => 'home', $has('WORK') => 'work', default => 'other' },
-            'urls' => $has('HOME') ? 'home' : ($has('WORK') ? 'work' : 'homepage'),
-            default => $has('HOME') ? 'home' : ($has('WORK') ? 'work' : 'other'),
-        };
-    }
-
-    /** Apple-Beschriftung „_$!<Mobile>!$_“ → „Mobile“, sonst der Text */
-    private static function appleLabel(string $ab): string
-    {
-        $ab = trim($ab);
-        if (preg_match('~^_\$!<(.+)>!\$_$~', $ab, $m)) {
-            return ['Mobile' => 'mobile', 'Home' => 'home', 'Work' => 'work', 'Main' => 'main', 'Other' => 'other', 'HomePage' => 'homepage'][$m[1]] ?? $m[1];
-        }
-        return $ab;
+        return \Core\Data\VCards::fields($t, $e, $card);
     }
 
     private static function fieldText(array $f, mixed $v): string
@@ -454,8 +343,10 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
         $v = fn(string $k) => isset($map[$k]) && $map[$k] !== '' ? trim(strip_tags((string) ($e[$map[$k]] ?? ''))) : '';
         $card = new VCard(['VERSION' => '3.0', 'PRODID' => '-//KLXM//' . CMS_NAME . ' ' . CMS_VERSION . '//DE', 'UID' => $o['uid'] ?? self::uid($t, $e)]);
         $contacts = \Core\Data\Kinds::isContacts($t);
+        // Kontakte: Zusatzzeilen aus vCard-Import bzw. App (_vcard_extra) – bekannt (auch leer) = maßgeblich statt der Rohdaten
+        $extra = $contacts ? \Core\Data\VCards::extraProps(is_string($e[\Core\Data\VCards::EXTRA] ?? null) ? $e[\Core\Data\VCards::EXTRA] : null) : [];
         if ($contacts) {
-            self::contactCard($t, $e, $card);
+            self::contactCard($t, $e, $card, \Core\Data\VCards::groupOffset($extra));
             $map = [];
         } else {
             $family = $v('n_family');
@@ -493,8 +384,9 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
             $val = self::fieldText($f, $e[$f['name']] ?? null);
             if ($val !== '' && $val !== '0' || $f['type'] === 'bool') $card->add(self::xName($f['name']), $val);
         }
+        foreach ($extra as $p) $card->add(clone $p);
         $card->add('REV', gmdate('Ymd\THis\Z', strtotime((string) $e['updated_at']) ?: time()));
-        if (empty($o['raw'])) return $card->serialize();
+        if (empty($o['raw']) || ($contacts && is_string($e[\Core\Data\VCards::EXTRA] ?? null))) return $card->serialize();
 
         try {
             $raw = Reader::read($o['raw'], Reader::OPTION_FORGIVING);
@@ -533,22 +425,7 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
     /** Bild aus der Mediathek als JPEG (max. 400 px) */
     private static function photo(int $id): ?string
     {
-        $m = Media::find($id);
-        if (!$m || !str_starts_with((string) $m['mime'], 'image/')) return null;
-        $dir = !empty($m['_pool']) ? \Core\MediaPools::mediaDir((string) $m['_pool']) : site()->mediaDir();
-        $file = rtrim($dir, '/') . '/' . $m['file'];
-        if (!is_file($file) || !function_exists('imagecreatefromstring')) return null;
-        $img = @imagecreatefromstring((string) file_get_contents($file));
-        if (!$img) return null;
-        $w = imagesx($img);
-        $h = imagesy($img);
-        $s = min(1, 400 / max($w, $h));
-        $out = imagecreatetruecolor(max(1, (int) round($w * $s)), max(1, (int) round($h * $s)));
-        imagefill($out, 0, 0, imagecolorallocate($out, 255, 255, 255));
-        imagecopyresampled($out, $img, 0, 0, 0, 0, imagesx($out), imagesy($out), $w, $h);
-        ob_start();
-        imagejpeg($out, null, 82);
-        return (string) ob_get_clean();
+        return \Core\Data\VCards::photoJpeg($id);
     }
 
     /** vCard → Feldwerte; $s = Einstellungen der Tabelle (Standard: gespeicherte). @return array{0: array, 1: string} */
@@ -562,6 +439,8 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
         if (!$card instanceof VCard) throw new BadRequest('Erwartet wird eine vCard.');
         if (\Core\Data\Kinds::isContacts($t)) {
             $in = self::contactIn($t, $e, $card);
+            // Unbekannte Eigenschaften (Spitzname, Jahrestage …) verlustfrei am Eintrag – auch für vCard-Export und Netzwerk
+            if (($x = \Core\Data\VCards::extra($t, $card)) !== null) $in[\Core\Data\VCards::EXTRA] = $x;
             $map = [];
         } else {
             $map = ($s ?? Dav::tableSettings($t))['map'];
@@ -679,63 +558,16 @@ final class CardBackend extends \Sabre\CardDAV\Backend\AbstractBackend
 
     // ------------------------------------------------------------------ Namen
 
-    /** Titel/Anrede vor dem Namen: Dr., Prof., Dr. med., Dipl.-Ing., Priv.-Doz., h. c., Herr, Frau … */
-    private static function isPrefix(string $w): bool
-    {
-        return (bool) preg_match('~^(?:(?:dr|prof|med|dent|vet|rer|nat|pol|oec|phil|jur|theol|habil|soc|sc|mult|ing|mag|apl|univ|hon|em|hr|fr|mr|mrs|ms)\.'
-            . '|(?:dr|prof)\.(?:\p{L}+\.)+|\p{L}+\.-\p{L}+\.?|h\.c\.|e\.h\.|herr|frau|pd)$~iu', $w);
-    }
-
-    /** Zusatz nach dem Namen (nach Komma oder am Ende): M.A., B.Sc., MBA, LL.M., Ph.D., jun., sen., III … */
-    private static function isSuffix(string $w): bool
-    {
-        return (bool) preg_match('~^(?:(?:[mb]\.\s?(?:a|sc|eng|ed)\.|[mb]sc|mba|ll\.\s?[mb]\.|ph\.\s?d\.|phd|mdb|mdl|jun\.|jr\.|sen\.|sr\.|ii|iii|iv)[\s,]*)+$~iu', $w);
-    }
-
-    /** Nachnamen-Partikel (nur klein geschrieben): von, van, de, zu, von der, van den, … */
-    private static function isParticle(string $w): bool
-    {
-        return in_array($w, ['von', 'van', 'vom', 'zu', 'zum', 'zur', 'und', 'de', 'der', 'den', 'des', 'del', 'della', 'di', 'da', 'du', 'dos', 'das',
-            'le', 'la', 'ten', 'ter', 'op', 'af', 'av', 'y'], true);
-    }
-
-    /**
-     * Ganzer Name → N-Teile [Nachname, Vorname, weitere, Präfix, Suffix]: letztes Wort = Nachname (mit Partikeln davor: „von der Leyen“),
-     * der Rest Vorname; führende Titel/Anreden als Präfix, Zusätze am Ende als Suffix; „Musterfrau, Erika“ = Nachname, Vorname.
-     * @return array{0: string, 1: string, 2: string, 3: string, 4: string}
-     */
+    /** Ganzer Name → N-Teile [Nachname, Vorname, weitere, Präfix, Suffix] (Core\Data\VCards::splitName) */
     public static function splitName(string $fn): array
     {
-        $fn = trim((string) preg_replace('~\s+~u', ' ', $fn));
-        if ($fn === '') return ['', '', '', '', ''];
-        $suffix = [];
-        $family = null;
-        if (preg_match('~^(.+?),\s*(.+)$~u', $fn, $m)) {
-            if (self::isSuffix($m[2])) {
-                [$fn, $suffix] = [$m[1], [$m[2]]];
-            } elseif (!str_contains($m[2], ',')) {
-                [$family, $fn] = [$m[1], $m[2]];          // „Musterfrau, Erika“ bzw. „Musterfrau, Dr. Erika“
-            }
-        }
-        $w = explode(' ', $fn);
-        $prefix = [];
-        while (count($w) > ($family === null ? 1 : 0) && self::isPrefix($w[0])) $prefix[] = array_shift($w);
-        if ($family === null) {
-            while (count($w) > 1 && self::isSuffix((string) end($w))) array_unshift($suffix, (string) array_pop($w));
-            $last = [(string) array_pop($w)];
-            while (count($w) > 1 && self::isParticle((string) end($w))) array_unshift($last, (string) array_pop($w));
-            $family = implode(' ', $last);
-        }
-        return [$family, implode(' ', $w), '', implode(' ', $prefix), implode(' ', $suffix)];
+        return \Core\Data\VCards::splitName($fn);
     }
 
-    /** N-Teile → ganzer Name („Prof. Dr. Erika Musterfrau, M.A.“); leer ohne Vor- und Nachname */
+    /** N-Teile → ganzer Name (Core\Data\VCards::joinName) */
     public static function joinName(array $n): string
     {
-        $n = array_map(fn($x) => trim((string) $x), array_pad(array_values($n), 5, ''));
-        if ($n[0] === '' && $n[1] === '') return '';
-        $name = implode(' ', array_filter([$n[3], $n[1], $n[2], $n[0]], fn($x) => $x !== ''));
-        return $n[4] !== '' ? $name . ', ' . $n[4] : $name;
+        return \Core\Data\VCards::joinName($n);
     }
 
     /** Auswahl-Kurznamen zu Texten (Kurzname, Beschriftung oder Übersetzung, ohne Groß/klein) */

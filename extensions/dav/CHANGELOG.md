@@ -1,5 +1,16 @@
 # Changelog – Erweiterung „dav“
 
+## 1.8.0 (2026-11-22)
+
+- **Adressbücher (Art „contacts“) mit derselben Abbildung wie der vCard-Austausch des Core** (`Core\Data\VCards::card()`/`fields()`,
+  Namen über `VCards::splitName/joinName`) – vCard-Import, -Export und CardDAV verhalten sich gleich.
+- **Zusatzangaben bleiben erhalten:** unbekannte Eigenschaften (Spitzname, Jahrestage, soziale Profile …) aus der App landen in der
+  Core-Spalte `_vcard_extra` und gehen wieder hinaus; ist sie gesetzt, gilt sie statt der Rohdaten. Gruppen `itemN` der Angaben
+  zählen hinter denen der Zusatzangaben weiter. Neue Kontakte aus Apps speichern ihre UID (`_uid`).
+- **Alt-Tabellen unverändert:** Inhaltstabellen mit „Als Adressbuch/Kalender nutzen“ und freier Zuordnung verhalten sich bitgleich;
+  `dav:selftest` vergleicht Ausgabe und Rückweg mit den festgehaltenen Ausgaben aus 1.7.0 (`src/LegacySelfTest.golden.json`).
+- Braucht Core mit `Core\Data\VCards` (Stufe „Austausch“).
+
 ## 1.7.0 (2026-11-22)
 
 - **Listen als Gruppen** (Adressbücher mit Funktionen, Core-Grundschema contacts v2): je Liste eine Gruppen-Karte `liste-{schlüssel}.vcf`

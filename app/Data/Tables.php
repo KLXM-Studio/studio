@@ -842,6 +842,11 @@ final class Tables
             $t->addColumn(Series::UID, 'string', ['length' => 255, 'notnull' => false]);
             $t->addIndex([Series::SERIES], $name . '_series');
         }
+        // Adressbücher (Art contacts, Core\Data\VCards): UID aus Apps/Import und unbekannte vCard-Eigenschaften – bleiben, wenn einmal da
+        if (Kinds::isContacts($table) || in_array(VCards::EXTRA, $cols, true)) {
+            if (!Kinds::isCalendar($table) && !in_array(Series::SERIES, $cols, true)) $t->addColumn(VCards::UID, 'string', ['length' => 255, 'notnull' => false]);
+            $t->addColumn(VCards::EXTRA, 'text', ['notnull' => false]);
+        }
         foreach ($table['fields'] as $f) {
             $kind = self::TYPES[$f['type']][1] ?? 'string';
             if ($kind === 'pivot' || $kind === 'layout') continue;   // eigene Verknüpfungstabelle bzw. Gestaltung – keine Spalte

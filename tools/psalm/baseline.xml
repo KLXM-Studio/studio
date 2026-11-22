@@ -114,6 +114,16 @@
       <code><![CDATA['  neues Medium: #' . $mid . ' ' . ($m['original_name'] ?: $m['file']) . (!empty($m['pool_ref']) ? " (Verweis auf Pool {$m['_pool']})" : '') . "\n"]]></code>
     </TaintedTextWithQuotes>
   </file>
+  <file src="../../app/Data/Exchange.php">
+    <TaintedFile>
+      <code><![CDATA[(string) $f['tmp_name']]]></code>
+    </TaintedFile>
+  </file>
+  <file src="../../app/Data/VCards.php">
+    <TaintedFile>
+      <code><![CDATA[$file]]></code>
+    </TaintedFile>
+  </file>
   <file src="../../app/Data/DataForms.php">
     <TaintedFile>
       <code><![CDATA[$path]]></code>

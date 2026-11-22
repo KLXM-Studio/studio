@@ -542,6 +542,8 @@ final class Calendar
     /** Stabile UID eines Eintrags für iCal/CalDAV */
     public static function uid(array $table, array $e): string
     {
+        // Kalender und Adressbücher mit Grundschema: UID aus Kalender-/Adressbuch-App bzw. Import (Spalte _uid) bleibt die UID
+        if (($k = Kinds::of($table)) !== 'content' && in_array($k, [Kinds::CALENDAR, Kinds::CONTACTS], true) && trim((string) ($e[Series::UID] ?? '')) !== '') return (string) $e[Series::UID];
         // Geteilte Tabellen: auf allen Websites dieselbe UID (Host der Eigentümer-Website)
         $host = Tables::isShared($table)
             ? (parse_url(Shared::siteInfo($table['shared']['owner'], $table['shared']['key'])['url'], PHP_URL_HOST) ?: $table['shared']['owner'] . '.shared')
