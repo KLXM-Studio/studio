@@ -10,6 +10,13 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Datenliste: Kapitelnummern nur im Zusammenhang; Push-Glocke auf farbigen Abschnitten
+- Neue Option „Kapitelnummern zeigen“ (Automatisch · An · Aus) bei Wissensbereichen. „Automatisch“ zeigt die Nummer nur in der Darstellung
+  „Kapitel“ und auf der Übersichtsseite des Wissensbereichs – Listen wie „Im Fokus“ auf der Startseite zeigen keine Zahl ohne Zusammenhang.
+- Benachrichtigungen abonnieren: Auf Abschnitten mit Akzent-, Zweit- oder dunklem Hintergrund nimmt die Glocke die Schriftfarbe des
+  Abschnitts an (`--push-accent-on`), statt in der Akzentfarbe unsichtbar zu werden.
+- *EN:* Data list: chapter numbers only in context (auto/on/off). Push subscribe: bell icon readable on coloured sections.
+
 ### Wissensbereich über die Vorlage gestalten, mehrere Detailseiten-Vorlagen (`Core\Data\DetailTemplates`)
 - **Mehrere Detailseiten-Vorlagen je Tabelle** (alle Tabellen mit Detailseiten): Daten → Tabelle → Detailseiten-Vorlagen – anlegen
   (Kopie, „Kopf wie Seiten“, mitgeliefert, leer), umbenennen, Standard, löschen; Zuordnung je Eintrag, Oberkapitel (vererbt an

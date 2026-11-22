@@ -282,6 +282,16 @@ final class Knowledge
         return $p && ($p['status'] === 'published' || app()->auth->check()) ? Pages::url($p) : null;
     }
 
+    /** Ist die gerade ausgegebene Seite die Übersichtsseite dieses Wissensbereichs (Seite unter der Adresse der Tabelle)? */
+    public static function onOverview(array $t): bool
+    {
+        $route = trim((string) ($t['settings']['route'] ?? ''), '/');
+        $cur = app()->currentPage;
+        if ($route === '' || !$cur) return false;
+        $p = Pages::byPath($route);
+        return $p !== null && (int) $p['id'] === (int) ($cur['id'] ?? 0);
+    }
+
     /** Übersicht gefiltert nach einem Schlagwort (Besucher-Filter der Datenliste, ?schlagworte=…) */
     public static function tagHref(array $t, string $key): ?string
     {
