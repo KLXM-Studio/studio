@@ -48,6 +48,8 @@ final class Placement
     /** Daten des Blocks für die Tabelle (Überschrift optional) */
     public static function blockData(array $t, ?string $type, string $title = ''): array
     {
+        // Wissen: Inhaltsverzeichnis mit Suche (Auszug, Glossar) und Filtern nach Bereich und Schlagworten (Core\Data\Knowledge::listBlock)
+        if ($type === 'data_list' && Knowledge::is($t)) return ['title' => $title] + Knowledge::listBlock($t);
         return match ($type) {
             'data_form' => ['title' => $title, 'table' => $t['handle'], 'form_width' => 'text', 'form_align' => 'left'],
             default => ['title' => $title, 'table' => $t['handle'], 'fields' => [], 'layout' => 'cards', 'columns' => '3', 'ratio' => '16:10', 'limit' => 0,

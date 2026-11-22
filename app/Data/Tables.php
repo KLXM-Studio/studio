@@ -58,6 +58,8 @@ final class Tables
         'iban' => ['IBAN (Bankverbindung)', 'string', 'bank'],
         // Wiederholbare Gruppe: Liste gleichartiger Einträge (z. B. mehrere Medikamente) – JSON-Array von Objekten
         'group' => ['Wiederholbare Gruppe', 'text', 'copy'],
+        // Interaktives Bild: Markierungen auf dem Bildfeld des Eintrags (Core\Hotspots, Format Version 1 als JSON)
+        'hotspots' => ['Markierungen (Interaktives Bild)', 'text', 'crosshair'],
         // Gestaltung des Formulars (keine Daten, keine Spalte – Spaltentyp „layout“): Abschnitt mit Überschrift, Freitext
         'section' => ['Abschnitt (Überschrift)', 'layout', 'layout'],
         'content' => ['Freitext', 'layout', 'article'],
@@ -369,10 +371,11 @@ final class Tables
         }
         $inbox = $kind === 'inbox';
         // Grundschema der Art (Kontakte): fehlende System-Felder ergänzen, Typ fest (Core\Data\Kinds::enforceInput)
-        // Version: neue Tabellen und Umwandlungen die aktuelle, bestehende behalten ihre bis data:kind-upgrade (Core\Data\KindUpgrade)
+        // Version: neue Tabellen, Umwandlungen und Arten mit AUTO_UPGRADE (Wissen) die aktuelle; bestehende behalten ihre bis
+        // data:kind-upgrade (Core\Data\KindUpgrade) – Eingabe _kind_version setzt sie ausdrücklich (Upgrade, Rückweg)
         $kindVersion = !Kinds::isSpecial($kind) ? 0 : max(1, min(Kinds::version($kind), (int) (isset($in['_kind_version']) ? $in['_kind_version']
-            : ($existing && Kinds::of($existing) === $kind && !isset($in['_kind']) ? Kinds::tableVersion($existing) : Kinds::version($kind)))));
-        if (Kinds::isSpecial($kind)) $in['fields'] = Kinds::enforceInput($kind, (array) ($in['fields'] ?? []), $errors, $kindVersion);
+            : ($existing && Kinds::of($existing) === $kind && !isset($in['_kind']) && !in_array($kind, Kinds::AUTO_UPGRADE, true) ? Kinds::tableVersion($existing) : Kinds::version($kind)))));
+        if (Kinds::isSpecial($kind)) $in['fields'] = Kinds::enforceInput($kind, (array) ($in['fields'] ?? []), $errors, $handle, $kindVersion);
         $fields = [];
         $seen = [];
         $rawFields = [];
@@ -543,6 +546,8 @@ final class Tables
         }
         // Version des Grundschemas (nur additiv; data:convert/Upgrade ergänzen neue Grundfelder) und Stand einer Umwandlung
         if (Kinds::isSpecial($kind)) $settings['kind_version'] = $kindVersion;
+        // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
+        if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? [])));
         $conv = $in['_convert'] ?? ($s['convert'] ?? ($existing['settings']['convert'] ?? null));
         if (is_array($conv) && $conv) $settings['convert'] = $conv;
         // Website-Suche je Tabelle (Core\Search\TableSearch) – ohne Formularabschnitt bleibt die bisherige Einstellung

@@ -42,6 +42,7 @@ final class AssetDocs
         'notfound.css' => ['Seite „Nicht gefunden“', 'cms-404', 'Theme::conditionalCss (not_found)', ['--nf-']],
         'sections.css' => ['Abschnitte: Vollbild, Hintergrundbild', 'sec-, sec__', 'Theme::conditionalCss (Abschnitts-Optionen)', ['--cms-overlay-']],
         'embed.css' => ['Video (Zwei-Klick-Lösung): neutrale Grundlage', 'vembed', 'Theme::conditionalCss (video, Fragment video-embed) – nur ohne eigene Kit-Stile für .vembed; Kit-Datei ersetzt sie', []],
+        'video-lightbox.css' => ['Video-Links in der Lightbox', 'cms-lb--video, cms-lb__', 'js/video-lightbox.js (Core\\VideoLinks, nur Seiten mit Video-Links bei eingeschalteter Einstellung) – Kit-Datei ersetzt sie', ['--cms-lb-']],
         'layout.css' => ['Block „Layout“ (Spalten)', 'lay-', 'Theme::conditionalCss (layout)', ['--lay-']],
         'rows.css' => ['Alte Reihen (Tune row)', 'sec-', 'Theme::conditionalCss (nur alte Inhalte)', ['--row-']],
         'search.css' => ['Website-Suche, Vorschläge', 'srch, sf, ssug', 'Suchseite und Suchfeld im Kopf', ['--se-']],

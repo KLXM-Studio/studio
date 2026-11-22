@@ -60,6 +60,7 @@ if (str_starts_with((string) ($d['sort_field'] ?? ''), $pfx)) $o['sort'] = subst
 if (!empty($d['sort_dir'])) $o['dir'] = $d['sort_dir'];
 if (!empty($d['source'])) $o['source'] = (string) $d['source'];
 if (!empty($d['featured_first'])) $o['featured_first'] = true;
+$o = \Core\Data\Roles::listQuery($t, $d, $o);   // Adressbuch: beendete Funktionen schon in der Abfrage
 $rows = \Core\Data\Exposure::publicRows($t, Entries::query($t, $o));   // ohne „Nie öffentlich“-Felder
 $rows = \Core\Data\Roles::listRows($t, $d, $rows, empty($o['sort']));   // Adressbuch: passende Funktion je Person, beendete fallen heraus
 if (!$rows && !empty($d['hide_empty']) && !is_editing()) return;

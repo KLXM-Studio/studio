@@ -6,7 +6,8 @@
  *
  * Neu laden auf Aktion (Core\Live::region): [data-live-region] mit data-live-src. Links [data-live-nav] und GET-Formulare
  * [data-live-nav] holen den Block mit ihren Parametern neu und tauschen ihn aus (pushState); Eingabefelder [data-live-input]
- * nach einer Pause (data-live-delay, Standard 600 ms; ab data-live-min Zeichen, Standard 2; replaceState). Zurück/Vor lädt passend nach. Fokus bleibt im Feld bzw.
+ * nach einer Pause (data-live-delay, Standard 600 ms; ab data-live-min Zeichen, Standard 2; replaceState), Kontrollkästchen [data-live-change] sofort
+ * (pushState). Zurück/Vor lädt passend nach. Fokus bleibt im Feld bzw.
  * geht an den Block, Ansage über eine Statuszeile (aria-live). Fehler → normaler Seitenaufruf.
  */
 (() => {
@@ -171,6 +172,14 @@ function cmsLiveRegions(me) {
     const v = inp.value.trim();
     if (v.length > 0 && v.length < (+inp.dataset.liveMin || 2)) return;
     timer = setTimeout(() => load(regionOf(document.getElementById(inp.id) || inp) || region, formUrl(f), 'replace', false), v === '' ? 0 : (+inp.dataset.liveDelay || 600));
+  });
+  // Kontrollkästchen/Auswahl [data-live-change] (Mehrfach-Filter der Datenliste): sofort neu laden, Zustand in der Adresse (pushState)
+  document.addEventListener('change', (e) => {
+    const inp = e.target.closest?.('[data-live-change]');
+    const f = inp?.form, region = inp && regionOf(inp);
+    if (!f || !region || !f.matches('[data-live-nav]')) return;
+    clearTimeout(timer);
+    load(region, formUrl(f), 'push', false);
   });
   addEventListener('popstate', () => {
     if (location.search === lastSearch) return;   // nur Sprungmarke geändert

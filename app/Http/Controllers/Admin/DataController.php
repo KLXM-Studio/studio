@@ -60,6 +60,14 @@ final class DataController extends AdminController
             ['label' => 'Antwort', 'type' => 'richtext', 'required' => 1, 'searchable' => 1],
             ['label' => 'Thema', 'type' => 'select', 'in_list' => 1, 'options' => "Allgemein"],
         ], 'title' => 'frage', 'image' => '', 'desc' => ''],
+        // Interaktive Bilder (Core\Hotspots): Bild mit Markierungen – eingesetzt mit dem Block „Interaktives Bild“ (Quelle „aus der Tabelle“),
+        // so an mehreren Stellen und – als geteilte Tabelle – im Netzwerk nutzbar
+        'hotspots' => ['name' => 'Interaktive Bilder', 'singular' => 'Interaktives Bild', 'icon' => 'crosshair', 'route' => '', 'sort' => ['titel', 'asc'], 'fields' => [
+            ['label' => 'Titel', 'type' => 'text', 'required' => 1, 'in_list' => 1, 'searchable' => 1],
+            ['label' => 'Bild', 'type' => 'media', 'required' => 1, 'in_list' => 1, 'help' => 'Alt-Text und Bildnachweis kommen aus der Mediathek.'],
+            ['label' => 'Markierungen', 'type' => 'hotspots', 'help' => 'Ins Bild klicken setzt eine Markierung; je Markierung Titel, Text, Link oder Glossar-Begriff.'],
+            ['label' => 'Notiz (intern)', 'type' => 'textarea'],
+        ], 'title' => 'titel', 'image' => 'bild', 'desc' => ''],
         // Eingang: verschlüsselte Anfragen (Core\Data\Inbox) – Einträge nur über das öffentliche Formular, lesen unter „Anfragen“
         'inbox' => ['name' => 'Anfragen', 'singular' => 'Anfrage', 'icon' => 'envelope-simple', 'route' => '', 'sort' => ['created_at', 'desc'], 'kind' => 'inbox',
             'purpose' => 'inbox', 'fields' => [
@@ -126,6 +134,8 @@ final class DataController extends AdminController
                 $all['jobs'] = \Core\Data\Jobs::preset();
             }
             // Adressbuch: Tabellenart „contacts“ mit festem Grundschema (Core\Data\Kinds) – Freigabe je Kontakt und je Angabe
+            // Wissen: Tabellenart „knowledge“ (Core\Data\Knowledge) – Kapitel mit Bereich, Oberkapitel, Nummern, Schlagworten
+            if ($k === 'faq') $all['knowledge'] = \Core\Data\Knowledge::preset();
             if ($k === 'team') $all['contacts'] = ['name' => 'Adressbuch', 'singular' => 'Kontakt', 'icon' => 'address-book', 'route' => 'kontakte', 'sort' => ['nachname', 'asc'],
                 'kind' => \Core\Data\Kinds::CONTACTS, 'schema_type' => 'Person', 'fields' => \Core\Data\Kinds::presetFields(\Core\Data\Kinds::CONTACTS),
                 'title' => 'name', 'image' => 'foto', 'desc' => 'position'];
@@ -350,6 +360,7 @@ final class DataController extends AdminController
                 'purpose' => $p ? \Core\Data\Purpose::ofPreset($p) : 'content']];
         if (!empty($p['schema_type'])) $def['settings']['schema_type'] = $p['schema_type'];
         if (isset($p['jobs'])) $def['settings']['jobs'] = $p['jobs'] + \Core\Data\Jobs::DEFAULTS;
+        if (isset($p['knowledge'])) $def['settings']['knowledge'] = (array) $p['knowledge'];
         if (($p['kind'] ?? '') === 'inbox') {
             $def['settings']['form'] = ['enabled' => true] + (array) ($p['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
             $def['settings']['inbox'] = (array) ($p['inbox'] ?? []) + \Core\Data\Inbox::DEFAULTS;
@@ -511,6 +522,7 @@ final class DataController extends AdminController
     public static function makeTemplate(array $t): int
     {
         if (\Core\Data\Jobs::is($t)) return \Core\Data\Jobs::makeTemplate($t);   // Stellen: Eckdaten + Bewerbungsformular
+        if (\Core\Data\Knowledge::is($t)) return \Core\Data\Knowledge::makeTemplate($t);   // Wissen: Kopf, Anreißer, Inhaltsblöcke (Rahmen: Knowledge::frame)
         // Adressbuch (Core\Data\Kinds): Porträt mit allen Feldern – Foto, Funktion, Kontakt-Knöpfe aus freigegebenen Angaben, Vita …
         if (\Core\Data\Kinds::isContacts($t)) {
             $id = Pages::create(['slug' => '_vorlage-' . $t['handle'], 'title' => $t['name'] . ' – Detailseite', 'type' => 'template',
@@ -656,6 +668,13 @@ final class DataController extends AdminController
         $in = (array) ($r->post['f'] ?? []);
         $in['slug'] = $r->str('slug');
         $in['status'] = $r->str('status');
+        // Wissen: neue Bereiche/Schlagworte als Optionen anlegen (Core\Data\Knowledge::applyNewOptions) – dann mit der neuen Definition speichern
+        if (\Core\Data\Knowledge::is($t)) {
+            $optErr = null;
+            $in = \Core\Data\Knowledge::applyNewOptions($t, $in, $optErr);
+            if ($optErr !== null) app()->session->flash('error', $optErr);
+            $t = $this->table($handle);
+        }
         if (Tables::isShared($t)) {
             if ($id !== null && ($cur = Entries::find($t, (int) $id)) && Shared::isForeign($t, $cur)) {
                 throw new HttpException(403, __('Dieser Eintrag gehört zu einer anderen Website und lässt sich hier nicht ändern.'));

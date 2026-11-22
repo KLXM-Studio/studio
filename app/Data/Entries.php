@@ -175,6 +175,10 @@ final class Entries
             $ids = array_values(array_filter(array_map('intval', (array) $o['ids'])));
             $where[] = $ids ? 'id IN (' . implode(',', $ids) . ')' : '1 = 0';
         }
+        // Mehrere Einträge ausschließen (z. B. Personen mit beendeter Funktion, Core\Data\Roles::listQuery) – Sprache bleibt wie gewählt
+        if (!empty($o['exclude_ids']) && ($xids = array_values(array_filter(array_map('intval', (array) $o['exclude_ids']))))) {
+            $where[] = 'id NOT IN (' . implode(',', $xids) . ')';
+        }
         // Kalender mit Serien (Art calendar): abweichende Einzeltermine (Core\Data\Series) erscheinen nicht als eigene Einträge in Listen,
         // Suche, Sitemap, Feeds und Verwaltung – nur über ihre Serie bzw. die Vorkommen. 'overrides' => true: mit, 'only': nur sie; Abfrage
         // nach IDs: mit
@@ -261,6 +265,19 @@ final class Entries
             [$f, $op, $v] = array_pad(array_values((array) $w), 3, '');
             if (!in_array($f, $names, true) || $v === '' || $v === null) continue;
             $field = Tables::field($table, (string) $f);
+            // „eine von“ (Besucher-Filter mit Mehrfachauswahl, Datenliste): Auswahl = eine der Optionen, Mehrfachauswahl = enthält eine davon
+            if ($op === 'in') {
+                $vals = array_values(array_unique(array_filter(array_map('strval', (array) $v), fn($x) => $x !== '')));
+                if (!$vals) continue;
+                if (($field['type'] ?? '') === 'multiselect') {
+                    $where[] = '(' . implode(' OR ', array_fill(0, count($vals), "$f LIKE ?")) . ')';
+                    foreach ($vals as $x) $params[] = '%' . json_encode($x, JSON_UNESCAPED_UNICODE) . '%';
+                } else {
+                    $where[] = "$f IN (" . implode(',', array_fill(0, count($vals), '?')) . ')';
+                    array_push($params, ...$vals);
+                }
+                continue;
+            }
             // Verknüpfungen: Wert = ID, Slug oder Titel des verknüpften Eintrags
             if (in_array($field['type'] ?? '', ['relation', 'relations'], true)) {
                 $target = Tables::findContent($field['target'] ?? '');
@@ -337,6 +354,8 @@ final class Entries
                 $r[$f['name']] = self::groupRows($f, $r[$f['name']] ?? null);
             } elseif ($f['type'] === 'mediatext') {
                 $r[$f['name']] = \Core\Fields::mediaTextSections($r[$f['name']] ?? null, !empty($f['sections']));
+            } elseif ($f['type'] === \Core\Hotspots::TYPE) {
+                $r[$f['name']] = \Core\Hotspots::normalize($r[$f['name']] ?? null);
             } elseif (\Core\Combo::is($f['type'])) {
                 $r[$f['name']] = \Core\Combo::items($r[$f['name']] ?? null);
             } elseif ($f['type'] === EntryBlocks::TYPE) {
@@ -374,6 +393,7 @@ final class Entries
             }
             if ($f['type'] === 'media') $def['accept'] = 'visual';   // Medienfelder: Bild oder Video (Media::visual)
             if ($f['type'] === 'mediatext') $def['sections'] = !empty($f['sections']);   // „Mehrere Abschnitte“
+            if ($f['type'] === \Core\Hotspots::TYPE) $def['image_field'] = (string) \Core\Hotspots::imageField($table, $f);   // Marker-Editor: Bild des Eintrags
             if (\Core\Combo::is($f['type'])) $def = \Core\Combo::schema($f, $table) + $def;
             if ($f['type'] === EntryBlocks::TYPE) $def['blocks'] = (array) ($f['blocks'] ?? []);   // erlaubte Blocktypen   // Kombifeld: Eingabe als Wiederholer mit festen Unterfeldern
             if ($f['type'] === 'datetime' && Calendar::enabled($table)) {
@@ -433,7 +453,13 @@ final class Entries
                 + (($f['style'] ?? '') === 'collapsed' ? ['collapse' => true, 'count' => true] : []);   // eingeklappt mit Zählung (Core\Fields)
             elseif ($type === 'content') $out[] = ['type' => 'heading', 'label' => '', 'html' => \Core\Sanitizer::block((string) ($f['text'] ?? ''))];
             elseif ($contacts && Exposure::isWebsiteOnly($f) && isset($f['name'], $data[$f['name']])) $web[] = $data[$f['name']];
-            elseif (isset($f['name'], $data[$f['name']])) $out[] = $data[$f['name']];
+            elseif (isset($f['name'], $data[$f['name']])) {
+                $out[] = $data[$f['name']];
+                // Wissen (Core\Data\Knowledge::addOptions): neue Bereiche/Schlagworte direkt beim Eintrag anlegen – vorhandene sind Vorschläge
+                if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true)) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
+                    'label' => $f['name'] === 'bereich' ? __('Neuer Bereich') : __('Neue Schlagworte'), 'width' => 'half', 'maxlength' => 300,
+                    'help' => $f['name'] === 'bereich' ? __('Nur ausfüllen, wenn der Bereich oben noch fehlt – er wird angelegt und gewählt.') : __('Durch Komma getrennt, z. B. „Wald, Jagdrecht“. Vorhandene Schlagworte oben ankreuzen.')];
+            }
         }
         if ($web) $out = [...$out, ['type' => 'heading', 'label' => __('Für die Website'), 'help' => __('Erscheint nur auf der Website (je nach Freigabe des Kontakts) – nicht in Adressbuch-Apps, Visitenkarten oder Exporten.')], ...$web];
         return $out;
@@ -564,6 +590,7 @@ final class Entries
             $row[$f['name']] = match (true) {
                 $f['type'] === 'multiselect' => json_encode(array_values((array) $v), JSON_UNESCAPED_UNICODE),
                 $f['type'] === 'group', \Core\Combo::is($f['type']), $f['type'] === EntryBlocks::TYPE => $v ? json_encode(array_values((array) $v), JSON_UNESCAPED_UNICODE) : null,
+                $f['type'] === \Core\Hotspots::TYPE => ($hs = \Core\Hotspots::normalize($v)) && $hs['items'] ? json_encode($hs, JSON_UNESCAPED_UNICODE) : null,
                 $f['type'] === 'mediatext' => ($secs = \Core\Fields::mediaTextSections($v, !empty($f['sections']))) ? json_encode($secs, JSON_UNESCAPED_UNICODE) : null,
                 $f['type'] === 'bool' => $v ? 1 : 0,
                 in_array($f['type'], ['media', 'file', 'relation'], true) => $v !== null && $v !== '' ? (int) $v : null,
@@ -944,6 +971,9 @@ final class Entries
             'geo' => ($o['plain'] ?? false) ? e((string) $v) : \Core\Maps::render(['point' => $v, 'label' => self::title($table, $e), 'height' => 's']),
             'relation', 'relations' => self::relationHtml($f, is_array($v) ? $v : [(int) $v], $o),
             'group' => self::groupHtml($f, $v),
+            // Interaktives Bild: Bild aus dem Bildfeld des Eintrags mit den Markierungen (Kurzfassung: Titel der Markierungen)
+            \Core\Hotspots::TYPE => !\Core\Hotspots::normalize($v)['items'] ? '' : (!empty($o['plain']) ? e(implode(', ', array_filter(array_column(\Core\Hotspots::normalize($v)['items'], 'title'))))
+                : \Core\Hotspots::render(($img = \Core\Hotspots::imageField($table, $f)) ? (int) ($e[$img] ?? 0) : null, $v, ['label' => self::title($table, $e)])),
             EntryBlocks::TYPE => !empty($o['plain']) ? e(EntryBlocks::summary($v)) : EntryBlocks::render(EntryBlocks::items($v)),
             'person', 'faq', 'address', 'downloads', 'phones', 'emails', 'addresses', 'urls' => !empty($o['plain']) ? e(\Core\Combo::summary($f, $v)) : \Core\Combo::html($f, $v),
             // Funktionen je Person (Core\Data\Roles): aktuelle Funktionen mit Gremium und Verknüpfung

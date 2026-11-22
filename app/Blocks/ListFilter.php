@@ -73,7 +73,7 @@ final class ListFilter
      * die Optionen). Leeres Ergebnis = keine Filterleiste. $selected (aus der Adresse) bleibt bei sichtbarer Leiste stehen.
      * $kit: Kit-Vorgabe statt der des aktiven Kits (Selbsttest).
      */
-    public static function buttons(array $options, array $counts, array $d, ?string $selected = null, ?array $kit = null): array
+    public static function buttons(array $options, array $counts, array $d, string|array|null $selected = null, ?array $kit = null): array
     {
         $c = self::config($d, $kit);
         $used = [];
@@ -81,12 +81,26 @@ final class ListFilter
             if ($c['all'] || (int) ($counts[(string) $k] ?? 0) > 0) $used[(string) $k] = $l;
         }
         if (count($used) < $c['buttons']) return [];
-        if ($selected === null || isset($used[$selected]) || !array_key_exists($selected, $options)) return $used;
+        // Mehrfachauswahl (Datenliste „Mehrere Optionen je Filter“): alle gewählten bleiben stehen
+        $keep = array_values(array_filter(array_map('strval', (array) $selected), fn($s) => !isset($used[$s]) && array_key_exists($s, $options)));
+        if (!$keep) return $used;
         $out = [];
         foreach ($options as $k => $l) {
-            if (isset($used[(string) $k]) || (string) $k === $selected) $out[(string) $k] = $l;
+            if (isset($used[(string) $k]) || in_array((string) $k, $keep, true)) $out[(string) $k] = $l;
         }
         return $out;
+    }
+
+    /**
+     * Auswahl aus der Adresse: ein Wert (?feld=a) bzw. mit $multi mehrere (?feld[]=a&feld[]=b, auch ?feld=a,b) – nur bekannte Optionen,
+     * Reihenfolge wie die Optionen. @return list<string>
+     */
+    public static function selection(mixed $raw, array $options, bool $multi): array
+    {
+        $vals = is_array($raw) ? $raw : (is_string($raw) ? ($multi ? explode(',', $raw) : [$raw]) : []);
+        $vals = array_map(fn($v) => is_scalar($v) ? trim((string) $v) : '', $vals);
+        $out = array_values(array_filter(array_map('strval', array_keys($options)), fn($k) => in_array($k, $vals, true)));
+        return $multi ? $out : array_slice($out, 0, 1);
     }
 
     /** Regel 3 für Gruppen ohne Zählung (A–Z-Buchstaben, Kategorien aus den Einträgen selbst): genug für eine Leiste? */

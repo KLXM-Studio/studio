@@ -322,6 +322,7 @@ return [
                     'help' => 'Kurz und klein (< 8 MB). Startet nur ohne „Bewegung reduzieren“ und hat eine Pause-Schaltfläche. Das Bild dient als Standbild.'],
                 ['name' => 'overlay', 'label' => 'Abdunkelung (nur „Vollflächig“)', 'type' => 'select', 'required' => true, 'default' => 'strong', 'width' => 'half', 'variants' => ['fullbleed'],
                     'options' => ['strong' => 'Stark (empfohlen)', 'medium' => 'Mittel', 'gradient' => 'Verlauf von unten']],
+                ...\Core\Blocks\Hero::fields('video_toggle', ['fullbleed']),   // Video-Schalter: Symbol | Symbol mit Text
                 ['name' => 'bleed_height', 'label' => 'Höhe (nur „Vollflächig“)', 'type' => 'select', 'required' => true, 'default' => 'tall', 'width' => 'half', 'variants' => ['fullbleed'],
                     'options' => ['tall' => 'Hoch (fast bildschirmfüllend)', 'medium' => 'Mittel', 'low' => 'Niedrig (Seitenkopf)']],
                 ['name' => 'bleed_motion', 'label' => 'Bewegung des Bildes (nur „Vollflächig“)', 'type' => 'select', 'required' => true, 'default' => 'none', 'width' => 'half', 'variants' => ['fullbleed'],

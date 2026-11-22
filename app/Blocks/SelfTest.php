@@ -18,8 +18,11 @@ use Core\Block;
  * (Besucher und Bearbeiten-Modus, gleich wie Kit-Export), keine Inline-Styles/Skripte.
  * Besucher-Filter in Listen (Core\Blocks\ListFilter, Entries::facets): ab … Einträgen, nur Optionen mit Treffern, ab zwei Knöpfen,
  * Auswahl aus der Adresse, Kit-Vorgabe, Ausgabe der Datenliste.
+ * Interaktives Bild (Core\HotspotsSelfTest::render): Popover, Reihenfolge, Liste, SVG-Flächen, CSP, Block in fluid/native/praxis.
  * Geänderte Standardwerte (Core\Blocks\DefaultChanges): bisheriger Zustand für gespeicherte Blöcke, verschachtelt, idempotent,
  * Objekte bleiben Objekte, neue Blöcke bekommen den neuen Standard.
+ * Video-Links in der Lightbox (Core\VideoLinks): Erkennung der Adressen, Ausgabe bei ausgeschalteter Einstellung unverändert,
+ * Kennzeichnung und Skript bei eingeschalteter, Ausnahmen (Zwei-Klick-Link, noscript), „Ohne Lightbox“ je Button und im Rich-Text.
  */
 final class SelfTest
 {
@@ -52,10 +55,93 @@ final class SelfTest
             $t->defaultChanges();
             $t->templateComments();
             $t->scrolly();
+            $t->hotspots();
+            $t->videoToggle();
+            $t->videoLinks();
         } finally {
             app()->editing = $prev;
         }
         return ['ok' => $t->ok, 'fails' => $t->fails];
+    }
+
+    /** Video-Links in der Lightbox (Core\VideoLinks) – Einstellung über VideoLinks::$force, nichts wird gespeichert */
+    private function videoLinks(): void
+    {
+        $V = \Core\VideoLinks::class;
+        $yt = ['provider' => 'youtube', 'id' => 'abcdefghijk'];
+        foreach (['https://www.youtube.com/watch?v=abcdefghijk', 'https://youtube.com/watch?feature=share&v=abcdefghijk&t=10s', 'http://m.youtube.com/watch?v=abcdefghijk',
+            'https://www.youtube.com/shorts/abcdefghijk', 'https://youtu.be/abcdefghijk?si=x', 'https://www.youtube.com/watch?v=abcdefghijk&amp;t=5'] as $u) {
+            $this->assert($V::parse($u) === $yt, "Video-Links: erkannt $u");
+        }
+        $this->assert($V::parse('https://vimeo.com/123456789') === ['provider' => 'vimeo', 'id' => '123456789'], 'Video-Links: vimeo.com/ID erkannt');
+        foreach (['https://www.youtube.com/embed/abcdefghijk', 'https://www.youtube.com/@kanal', 'https://www.youtube.com/playlist?list=PL1', 'https://vimeo.com/channels/staff',
+            'https://vimeo.com/12345', 'https://example.org/watch?v=abcdefghijk', 'https://youtube.com.example.org/watch?v=abcdefghijk', 'abcdefghijk',
+            'mailto:x@youtu.be', '/watch?v=abcdefghijk'] as $u) {
+            $this->assert($V::parse($u) === null, "Video-Links: nicht erkannt $u");
+        }
+        $html = '<main><a class="btn" href="https://www.youtube.com/watch?v=abcdefghijk&amp;t=3" target="_blank" rel="noopener">A</a> <a href="https://youtu.be/abcdefghijk">B</a>'
+            . ' <a href="https://vimeo.com/123456789" data-video-lb="off">C</a> <a href="https://example.org/">D</a>'
+            . ' <a class="vembed__ext" href="https://www.youtube.com/watch?v=abcdefghijk">E</a><noscript><a href="https://youtu.be/abcdefghijk">F</a></noscript></main></body>';
+        $prev = [$V::$force, $V::$forceHint];
+        try {
+            $V::$force = false;
+            $this->assert($V::inject($html) === $html, 'Video-Links: Einstellung aus → Ausgabe unverändert');
+            $this->assert($V::optOut($html, ['button_link' => 'https://youtu.be/abcdefghijk', 'button_link_nolb' => true]) === $html, 'Video-Links: aus → „ohne Lightbox“ ändert nichts');
+            $V::$force = true;
+            $V::$forceHint = false;
+            $out = $V::inject($html);
+            $this->assert(substr_count($out, 'data-video-lb="youtube" data-video-id="abcdefghijk"') === 2, 'Video-Links: an → Button und Text-Link gekennzeichnet');
+            $this->assert(str_contains($out, 'href="https://vimeo.com/123456789" data-video-lb="off">C'), 'Video-Links: data-video-lb="off" bleibt unberührt');
+            $this->assert(str_contains($out, '<a href="https://example.org/">D</a>'), 'Video-Links: andere Links unverändert');
+            $this->assert(str_contains($out, '<a class="vembed__ext" href="https://www.youtube.com/watch?v=abcdefghijk">E</a>') && str_contains($out, '<noscript><a href="https://youtu.be/abcdefghijk">F</a></noscript>'), 'Video-Links: Zwei-Klick-Link und noscript ausgenommen');
+            $this->assert(substr_count($out, 'data-cms-video-lb') === 1 && str_contains($out, 'js/video-lightbox.js') && !str_contains($out, 'data-hint'), 'Video-Links: Skript einmal eingebunden (ohne Zwei-Klick-Hinweis)');
+            $this->assert($V::inject($out) === $out, 'Video-Links: zweimal einbinden ändert nichts');
+            $this->assert($V::inject('<main><a href="https://example.org/">x</a></main></body>') === '<main><a href="https://example.org/">x</a></main></body>', 'Video-Links: Seite ohne Video-Links → kein Skript');
+            $V::$forceHint = true;
+            $this->assert(str_contains($V::inject($html), 'data-hint="1"'), 'Video-Links: Zwei-Klick-Hinweis eingeschaltet → data-hint');
+            $V::$forceHint = false;
+            // „Ohne Lightbox“ je Button: genaue Adresse zuerst, sonst Anbieter + ID
+            $two = '<a class="btn" href="https://www.youtube.com/shorts/abcdefghijk">1</a><a class="btn" href="https://youtu.be/abcdefghijk">2</a>';
+            $o = $V::optOut($two, ['button_link' => 'https://www.youtube.com/shorts/abcdefghijk', 'button2_link' => 'https://youtu.be/abcdefghijk', 'button2_link_nolb' => true]);
+            $this->assert($o === '<a class="btn" href="https://www.youtube.com/shorts/abcdefghijk">1</a><a class="btn" href="https://youtu.be/abcdefghijk" data-video-lb="off">2</a>', 'Video-Links: „ohne Lightbox“ nur am betroffenen Button');
+            $o = $V::optOut('<a href="https://www.youtube.com/watch?v=abcdefghijk&amp;rel=0">x</a>', ['items' => [['url' => 'https://youtu.be/abcdefghijk', 'url_nolb' => '1']]]);
+            $this->assert(str_contains($o, 'data-video-lb="off"'), 'Video-Links: „ohne Lightbox“ in Wiederholgruppe, umgeschriebene Adresse über die ID');
+            $this->assert($V::optOut($two, ['button_link' => 'https://youtu.be/abcdefghijk', 'button_link_nolb' => false]) === $two, 'Video-Links: nicht angehakt → unverändert');
+            $this->assert(!str_contains($V::inject($V::optOut($two, ['button2_link' => 'https://youtu.be/abcdefghijk', 'button2_link_nolb' => true])), 'data-video-id="abcdefghijk">2'), 'Video-Links: ausgenommener Button bekommt keine Lightbox');
+            // Zusatzfelder an Link-Feldern (auch in Wiederholgruppen), nur einmal
+            $f = $V::blockFields([['name' => 'button_link', 'type' => 'link'], ['name' => 'items', 'type' => 'repeater', 'fields' => [['name' => 'url', 'type' => 'link']]], ['name' => 'title', 'type' => 'text']]);
+            $this->assert(array_column($f, 'name') === ['button_link', 'button_link_nolb', 'items', 'title'] && ($f[1]['show_if'] ?? null) === ['button_link' => ['~video']] && ($f[1]['type'] ?? '') === 'bool', 'Video-Links: Zusatzfeld hinter dem Link-Feld, sichtbar nur bei Video-Adresse');
+            $this->assert(array_column($f[2]['fields'], 'name') === ['url', 'url_nolb'] && $V::blockFields($f) === $f, 'Video-Links: Zusatzfeld in Wiederholgruppen, nicht doppelt');
+            // Echte Block-Ausgabe des aktiven Kits: an → nur Button 1 ausgenommen; aus → gleich wie ohne Angabe
+            $th = app()->theme;
+            $type = null;
+            foreach ($th->blocks() as $t => $def) {
+                if (in_array($t, ['cta', 'hero', 'media_text'], true) && in_array('button_link', array_column((array) ($def['fields'] ?? []), 'name'), true)) { $type = $t; break; }
+            }
+            if ($type !== null) {
+                $data = ['title' => 'T', 'text' => '', 'button_label' => 'Film', 'button_link' => 'https://youtu.be/abcdefghijk', 'button2_label' => 'Zwei', 'button2_link' => 'https://vimeo.com/123456789'];
+                $render = function (array $d) use ($th, $type): string {
+                    $b = $th->makeBlock(['id' => 'vlselftest', 'type' => $type, 'data' => $d]);
+                    return $b ? $th->renderBlock($b) : '';
+                };
+                $V::$force = false;
+                $plain = $render($data);
+                $this->assert($plain !== '' && $render($data + ['button_link_nolb' => true]) === $plain, "Video-Links: Block $type bei ausgeschalteter Einstellung gleich");
+                $V::$force = true;
+                $on = $render($data + ['button_link_nolb' => true]);
+                $this->assert((bool) preg_match('~href="https://youtu\.be/abcdefghijk"[^>]*data-video-lb="off"~', $on) && !str_contains($on, 'vimeo.com/123456789" data-video-lb="off"'), "Video-Links: Block $type – nur Button 1 ausgenommen");
+            }
+            // Website-Einstellungen: unter „Darstellung“
+            $g = $V::extendGroups([['id' => 'darstellung', 'label' => 'Darstellung', 'fields' => [['name' => 'logo', 'type' => 'media']]]]);
+            $this->assert(in_array($V::SETTING, array_column($g[0]['fields'], 'name'), true) && in_array($V::HINT, array_column($g[0]['fields'], 'name'), true), 'Video-Links: Einstellungen in der Gruppe „Darstellung“');
+            $g = $V::extendGroups([['id' => 'stammdaten', 'fields' => []]]);
+            $this->assert(count($g) === 2 && $g[1]['id'] === 'darstellung', 'Video-Links: Kit ohne „Darstellung“ → eigene Gruppe');
+        } finally {
+            [$V::$force, $V::$forceHint] = $prev;
+        }
+        // Rich-Text-Vertrag: nur data-video-lb="off" bleibt
+        $this->assert(\Core\Sanitizer::block('<p><a href="https://youtu.be/abcdefghijk" data-video-lb="off">x</a></p>') === '<p><a href="https://youtu.be/abcdefghijk" data-video-lb="off">x</a></p>', 'Video-Links: Rich-Text behält data-video-lb="off"');
+        $this->assert(\Core\Sanitizer::block('<p><a href="https://youtu.be/abcdefghijk" data-video-lb="youtube" data-video-id="x">x</a></p>') === '<p><a href="https://youtu.be/abcdefghijk">x</a></p>', 'Video-Links: andere Werte und data-video-id fallen weg');
     }
 
     /**
@@ -111,6 +197,14 @@ final class SelfTest
         } finally {
             $cache->setValue(null, $prev);
         }
+    }
+
+    /** Interaktives Bild (Core\Hotspots): Ausgabe, CSP, Block in den Kits – Core\HotspotsSelfTest::render */
+    private function hotspots(): void
+    {
+        $r = \Core\HotspotsSelfTest::render();
+        $this->ok += $r['ok'];
+        array_push($this->fails, ...$r['fails']);
     }
 
     /** Erster Block (Bild mit Vorrang), Seitenüberschrift (Core\Headings), Leistungs-Hinweise von kit:check */
@@ -668,6 +762,54 @@ final class SelfTest
             $b = app()->theme->makeBlock(['id' => 'n', 'type' => 'media_text', 'data' => []]);
             $this->assert(($b?->data['valign'] ?? null) === 'follow', 'Standardwerte: neuer Text + Bild-Block bekommt „Mitlaufen“');
         }
+    }
+
+    /**
+     * Play/Pause-Schalter für Hintergrundvideos (Core\Blocks\Hero::videoToggle – fluid-Einstieg, Core-Hero, MediaTracks):
+     * zugänglicher Name im Text (kein aria-pressed), beide Symbole aus dem Symbolsatz, Option Symbol/Symbol mit Text, Stylesheet und
+     * Skript einmal je Seite; Symbol je Zustand über CSS (.is-paused → Play) und hero.mjs (läuft → nicht .is-paused, „anhalten“).
+     */
+    private function videoToggle(): void
+    {
+        Hero::resetOnce();
+        $h = Hero::videoToggle('x__toggle');
+        $this->assert(str_contains($h, 'class="x__toggle hx-toggle hx-vt hx-vt--icon is-paused" data-hero-video-toggle hidden'), 'Video-Schalter: Klassen, verborgen ohne Skript, Ausgangszustand angehalten');
+        $this->assert(!str_contains($h, 'aria-pressed') && !str_contains($h, 'aria-label'), 'Video-Schalter: kein aria-pressed, Name aus dem Text');
+        $this->assert(str_contains($h, 'title="Hintergrundvideo abspielen"')
+            && str_contains($h, '<span class="hx-vt__label" data-l-pause="Hintergrundvideo anhalten" data-l-play="Hintergrundvideo abspielen">Hintergrundvideo abspielen</span>'),
+            'Video-Schalter: Text „abspielen“ (angehalten) mit beiden Beschriftungen für hero.mjs');
+        $this->assert((bool) preg_match('~<svg class="ico hx-ico hx-ico--pause"[^>]*aria-hidden="true"[^>]*><use href="[^"]*#i-pause"/></svg>~', $h)
+            && (bool) preg_match('~<svg class="ico hx-ico hx-ico--play"[^>]*aria-hidden="true"[^>]*><use href="[^"]*#i-play"/></svg>~', $h),
+            'Video-Schalter: Symbole „pause“ und „play“ aus dem Symbolsatz, dekorativ');
+        $this->assert(substr_count($h, 'video-toggle.css') === 1 && substr_count($h, 'hero.mjs') === 1, 'Video-Schalter: Stylesheet und Skript beim ersten Schalter');
+        $t = Hero::videoToggle('y', 'text');
+        $this->assert(str_contains($t, 'hx-vt--text') && !str_contains($t, 'video-toggle.css') && !str_contains($t, 'hero.mjs'), 'Video-Schalter: „Symbol mit Text“, Stylesheet/Skript nur einmal je Seite');
+        $this->assert(str_contains(Hero::videoToggle('z', 'unsinn'), 'hx-vt--icon') && Hero::toggleMode(null) === 'icon', 'Video-Schalter: unbekannter Stil → Symbol');
+        // Symbol je Zustand: CSS zeigt bei .is-paused das Play-, sonst das Pause-Symbol; hero.mjs setzt .is-paused = !läuft und „anhalten“ beim Laufen
+        $css = (string) @file_get_contents(ROOT . '/resources/css/video-toggle.css');
+        $js = (string) @file_get_contents(ROOT . '/resources/js/hero.mjs');
+        $this->assert(str_contains($css, '.hx-vt .hx-ico--play,.hx-vt.is-paused .hx-ico--pause{display:none}') && str_contains($css, '.hx-vt.is-paused .hx-ico--play{display:block}'),
+            'Video-Schalter: läuft → Pause-Symbol, angehalten → Play-Symbol (CSS)');
+        $this->assert(str_contains($js, "playing ? l.dataset.lPause : l.dataset.lPlay") && str_contains($js, "btn.classList.toggle('is-paused', !playing)"),
+            'Video-Schalter: hero.mjs wechselt Text und Zustand passend');
+        $this->assert(str_contains($css, 'min-width:var(--hx-vt-size,2.75rem)') && str_contains($css, ':focus-visible'), 'Video-Schalter: mind. 44 px, Fokusring');
+        // Feld „Video-Schalter“ bei den Video-Feldern des Core-Hero und einzeln für Kits mit eigenem Videofeld
+        $f = array_column(Hero::fields('video', ['video']), null, 'name')['video_toggle'] ?? null;
+        $g = Hero::fields('video_toggle', ['fullbleed'])[0] ?? null;
+        $this->assert($f && $f['default'] === 'icon' && array_keys($f['options']) === ['icon', 'text'] && $g && $g['variants'] === ['fullbleed'],
+            'Video-Schalter: Feld mit Symbol (Standard) | Symbol mit Text');
+        // Dekoratives Video (MediaTracks) nutzt denselben Schalter
+        $m = ['id' => 0, 'file' => 'selbsttest/schleife.mp4', 'mime' => 'video/mp4', 'decorative' => 1, 'variants_json' => null];
+        $d = \Core\MediaTracks::decorativeVideo($m);
+        $this->assert(str_contains($d, 'data-hero-video-box') && str_contains($d, 'media-player__toggle hx-toggle hx-vt hx-vt--icon') && !str_contains($d, 'aria-pressed'),
+            'Video-Schalter: dekoratives Video (MediaTracks) mit gemeinsamem Schalter');
+        // Bearbeitungsmodus: weder Stylesheet noch Skript (Schalter bleibt verborgen)
+        Hero::resetOnce();
+        app()->editing = true;
+        $e = Hero::videoToggle('x');
+        app()->editing = false;
+        $this->assert(!str_contains($e, 'video-toggle.css') && !str_contains($e, 'hero.mjs'), 'Video-Schalter: im Bearbeitungsmodus ohne Stylesheet/Skript');
+        Hero::resetOnce();
     }
 
     private function assert(bool $cond, string $label): void

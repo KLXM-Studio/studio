@@ -32,6 +32,7 @@
 @import "./_mailsettings.css";   /* E-Mail-Versand: nummerierte Gruppen, wirksamer Absender (system/_mail.php, network/_email.php) */
 @import "./_settingsui.css";   /* Einstellungsseiten: Geltung, Warnhinweis, wirksamer Wert, Letzte Änderungen (Fields::renderGroups) */
 @import "./_toast.css";   /* Meldungen (Toast), gemeinsam mit editor.shadow.css */
+@import "./_hotspots.css";   /* Marker-Editor „Interaktives Bild“ (Feldtyp „hotspots“, resources/js/_hotspots.js) */
 @import "./_datetime.css";   /* Datums-/Zeitauswahl a11y_datetime (resources/js/_datetime.js), auch in admin.shadow.css */
 /* ==========================================================================
    Admin-Oberfläche (Core). Nutzt dieselbe Schrift und Farbwelt wie das Theme.

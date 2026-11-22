@@ -25,6 +25,7 @@ use Core\Search\Search;
  *   Hero::search($d)               Suchfeld (Core\Search, Vorschläge beim Tippen); '' ohne Website-Suche
  *   Hero::chips($d)                Vorschläge unter dem Suchfeld: [['label', 'href']]
  *   Hero::video($d)                ['media' => Standbild + <video>, 'toggle' => Pause-Schaltfläche] oder null
+ *   Hero::videoToggle($class, $mode)  Play/Pause-Schalter allein (Kits mit eigenem <video data-hero-video>; auch MediaTracks)
  *   Hero::compare($d, $sizes)      Vorher/Nachher mit Schieberegler (input range) oder '' (auch Block „Vorher/Nachher“ der Kits)
  *   Hero::marquee($text, $class)   Laufzeile mit Pause-Schaltfläche (läuft nur mit Skript, nie bei „Bewegung reduzieren“)
  *   Hero::dials($b, $d)            Kern-Kennzahlen (app/Blocks/dials.php) ohne eigenen Container
@@ -33,17 +34,28 @@ use Core\Search\Search;
  *   Hero::map($d)                  Karte mit dem Standort aus „Website“ (Core\Maps, ohne Cookies)
  *   Hero::lines($s), Hero::pairs($s)  Zeilen bzw. „Bezeichnung: Wert“-Paare aus einem Textfeld
  *
- * Skript: public/assets/js/hero.mjs (≈ 1 KB, nur mit Video, Vorher/Nachher oder Laufzeile). Keine Inline-Styles/-Skripte.
+ * Skript: public/assets/js/hero.mjs (≈ 1,7 KB, nur mit Video, Vorher/Nachher oder Laufzeile), Video-Schalter dazu css/video-toggle.css.
+ * Keine Inline-Styles/-Skripte.
  */
 final class Hero
 {
     private static bool $script = false;
+    private static bool $toggleCss = false;
+
+    /** Darstellung des Video-Schalters: nur Symbol (Standard) oder Symbol mit sichtbarem Text */
+    public const TOGGLE_MODES = ['icon' => 'Symbol', 'text' => 'Symbol mit Text'];
+
+    /** Feld „Video-Schalter“ (Block-Einstellung neben Abdunkelung) – Hero::fields('video'|'video_toggle', $variants) */
+    private const TOGGLE_FIELD = ['name' => 'video_toggle', 'label' => 'Video-Schalter', 'type' => 'select', 'required' => true, 'default' => 'icon', 'width' => 'half',
+        'options' => self::TOGGLE_MODES,
+        'help' => 'Runder Knopf unten rechts zum Anhalten und Abspielen. „Symbol mit Text“ zeigt zusätzlich „Hintergrundvideo anhalten“ bzw. „abspielen“.'];
 
     // ------------------------------------------------------------------ Feld-Voreinstellungen
 
     /**
      * Feld-Voreinstellungen je Baustein; $variants = Varianten, bei denen die Felder erscheinen.
-     * Bausteine: search, video, figures, dates, form, map, compare, gallery, quote, cards, marquee
+     * Bausteine: search, video, video_toggle (nur der Schalter-Stil, für Kits mit eigenem Videofeld), figures, dates, form, map,
+     * compare, gallery, quote, cards, marquee
      */
     public static function fields(string $part, array $variants): array
     {
@@ -62,7 +74,9 @@ final class Hero
                 ['name' => 'overlay', 'label' => 'Abdunkelung über Bild und Video', 'type' => 'select', 'required' => true, 'default' => 'strong', 'width' => 'half',
                     'options' => ['strong' => 'Stark (empfohlen)', 'medium' => 'Mittel', 'gradient' => 'Verlauf von unten'],
                     'help' => 'Hält die Schrift lesbar (Kontrast), auch wenn das Video helle Stellen hat.'],
+                self::TOGGLE_FIELD,
             ],
+            'video_toggle' => [self::TOGGLE_FIELD],
             'figures' => [
                 ['name' => 'items', 'label' => 'Kennzahlen (3–4 empfohlen)', 'type' => 'repeater', 'item_label' => 'Kennzahl', 'title_field' => 'value', 'max_items' => 4,
                     'help' => 'Nur belegbare Zahlen. Füllstand leer = aus Prozentwert berechnet, sonst neutrale Skala.', 'fields' => [
@@ -212,10 +226,51 @@ final class Hero
             . '<video class="' . e($c) . '__el" data-hero-video muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"'
             . '>'   // kein poster: das Standbild liegt darunter, ein Poster lüde dasselbe Bild ein zweites Mal
             . '<source src="' . e(Media::url($vid)) . '" type="' . e((string) $vid['mime']) . '"></video>';
-        $toggle = '<button type="button" class="' . e($c) . '__toggle hx-toggle" data-hero-video-toggle hidden>' . self::pauseIcons()
-            . '<span data-l-pause="' . e(lt('Hintergrundvideo anhalten')) . '" data-l-play="' . e(lt('Hintergrundvideo abspielen')) . '">'
-            . e(lt('Hintergrundvideo anhalten')) . '</span></button>' . self::script();
+        $toggle = self::videoToggle($c . '__toggle', (string) ($o['toggle'] ?? $d['video_toggle'] ?? 'icon'));
         return ['media' => $media, 'toggle' => $toggle];
+    }
+
+    /** Gültiger Stil des Video-Schalters ('icon' oder 'text'; alles andere = 'icon') */
+    public static function toggleMode(mixed $mode): string
+    {
+        return $mode === 'text' ? 'text' : 'icon';
+    }
+
+    /**
+     * Play/Pause-Schalter für ein Hintergrundvideo – gemeinsam für Core-Hero, die Einstiege der Kits und dekorative Videos
+     * (MediaTracks). Runder Symbol-Knopf (Symbole „pause“/„play“ aus dem Symbolsatz), zugänglicher Name im Text daneben:
+     * visuell versteckt ($mode 'icon') oder sichtbar ('text'); hero.mjs wechselt Text, title und .is-paused mit dem Zustand
+     * (läuft → Pause-Symbol + „anhalten“, angehalten → Play-Symbol + „abspielen“). Kein aria-pressed: der Name sagt die Aktion.
+     * Ohne Skript bleibt der Knopf verborgen (hidden). Stile: public/assets/css/video-toggle.css (einmal je Seite, Kit kann
+     * css/video-toggle.css mitbringen), Tokens --hx-vt-* (Größe, Fläche, Rand, Abstand) im Entwicklerhandbuch.
+     * $class: Klasse(n) des Kits für Position/Feinschliff, z. B. „hero-bleed__pause“.
+     */
+    public static function videoToggle(string $class = '', string $mode = 'icon'): string
+    {
+        $mode = self::toggleMode($mode);
+        $pause = lt('Hintergrundvideo anhalten');
+        $play = lt('Hintergrundvideo abspielen');
+        // Ausgangszustand „angehalten“: das Video läuft erst, wenn das Skript es startet
+        return '<button type="button" class="' . e(trim($class . ' hx-toggle hx-vt hx-vt--' . $mode)) . ' is-paused" data-hero-video-toggle hidden title="' . e($play) . '">'
+            . icon('pause', ['class' => 'hx-ico hx-ico--pause']) . icon('play', ['class' => 'hx-ico hx-ico--play'])
+            . '<span class="hx-vt__label" data-l-pause="' . e($pause) . '" data-l-play="' . e($play) . '">' . e($play) . '</span></button>'
+            . self::toggleCss() . self::script();
+    }
+
+    /** Einmal je Seite: Stylesheet des Video-Schalters (Kit-Datei css/video-toggle.css ersetzt die des Kerns; nicht im Bearbeitungsmodus) */
+    private static function toggleCss(): string
+    {
+        if (self::$toggleCss || is_editing()) return '';
+        self::$toggleCss = true;
+        $t = isset(app()->theme) ? app()->theme : null;
+        $href = $t && $t->hasAsset('css/video-toggle.css') ? $t->asset('css/video-toggle.css') : asset('css/video-toggle.css');
+        return '<link rel="stylesheet" href="' . e($href) . '">';
+    }
+
+    /** Nur für Selbsttests: „einmal je Seite“ zurücksetzen */
+    public static function resetOnce(): void
+    {
+        self::$script = self::$toggleCss = false;
     }
 
     // ------------------------------------------------------------------ Vorher/Nachher

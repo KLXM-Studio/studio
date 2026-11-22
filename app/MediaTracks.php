@@ -517,8 +517,8 @@ final class MediaTracks
     /**
      * Dekoratives Video: <video muted loop playsinline aria-hidden="true" tabindex="-1"> ohne Bedienelemente, ohne Textspuren.
      * Abgespielt wird nur mit Skript, sichtbar und ohne „Bewegung reduzieren“ (public/assets/js/hero.mjs); dann erscheint eine
-     * beschriftete Pause-Schaltfläche (WCAG 2.2.2). Ohne Skript bleibt das Standbild (Poster) stehen.
-     * $opt: class (Rahmen, Standard „media-player“; dazu immer „media-player--decorative“)
+     * Play/Pause-Schalter (WCAG 2.2.2, Core\Blocks\Hero::videoToggle). Ohne Skript bleibt das Standbild (Poster) stehen.
+     * $opt: class (Rahmen, Standard „media-player“; dazu immer „media-player--decorative“), toggle ('icon' | 'text')
      */
     public static function decorativeVideo(array $m, array $opt = []): string
     {
@@ -527,9 +527,7 @@ final class MediaTracks
             . '<video data-hero-video muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"'
             . ($poster ? ' poster="' . e(Media::url($poster, 1200)) . '"' : '') . '>'
             . '<source src="' . e(Media::url($m)) . '" type="' . e((string) $m['mime']) . '"></video>'
-            . '<button type="button" class="hx-toggle" data-hero-video-toggle hidden>'
-            . '<span data-l-pause="' . e(lt('Hintergrundvideo anhalten')) . '" data-l-play="' . e(lt('Hintergrundvideo abspielen')) . '">'
-            . e(lt('Hintergrundvideo anhalten')) . '</span></button></figure>' . \Core\Blocks\Hero::script();
+            . \Core\Blocks\Hero::videoToggle('media-player__toggle', (string) ($opt['toggle'] ?? 'icon')) . '</figure>';
     }
 
     // ================================================================= Verwaltung (JSON)

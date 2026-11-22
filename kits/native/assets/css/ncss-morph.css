@@ -8,6 +8,12 @@
   .nv-morph .ncss-morph-media > picture { display: block; overflow: clip; }
   .nv-morph .ncss-morph-media > picture > img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: 0; }
   .nv-morph .ncss-morph-media > video { display: block; object-fit: cover; }
+  /* Video-Schalter (Kern, .hx-vt) im Medium: im Scroll-Modus wandert er mit der unteren Ecke des Mediums mit (wie .ncss-video-bg-toggle) */
+  @supports (animation-timeline: view()) {
+    @container ncss-morph (width >= 40rem) and style(--_ncss-morph-motion: on) {
+      .nv-morph .ncss-morph-media > .hx-vt { --hx-vt-y: calc((100cqb - var(--_ncss-morph-h)) / 2 + var(--ncss-space-sm)); }
+    }
+  }
   .nv-morph .ncss-morph-content > * { margin: 0; }
   .nv-morph .ncss-morph-content > * + * { margin-block-start: var(--f-s-m); }
 }

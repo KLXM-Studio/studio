@@ -270,12 +270,58 @@ final class Roles
     public static function listRows(array $t, array $d, array $rows, bool $order = true): array
     {
         if (!self::has($t)) return $rows;
+        return self::arrange($t, $rows, self::listContext($t, $d), $order)[0];
+    }
+
+    /** Zusammenhang einer Datenliste aus ihrem Filter (Feld, Bedingung, Wert) – listRows() und listQuery() */
+    public static function listContext(array $t, array $d): array
+    {
         $pfx = $t['handle'] . '.';
         $ff = str_starts_with((string) ($d['filter_field'] ?? ''), $pfx) ? substr((string) $d['filter_field'], strlen($pfx)) : '';
         $op = (string) ($d['filter_op'] ?? '=');
         $ctx = self::context($t, $ff, in_array($op, ['current', 'same', '!='], true) ? [] : array_filter([trim((string) ($d['filter_value'] ?? ''))]));
         if ($op === 'current' && $ff === (string) self::field($t)['name'] && !empty($ctx['ref'])) $ctx['ref_filter'] = true;
-        return self::arrange($t, $rows, $ctx, $order)[0];
+        return $ctx;
+    }
+
+    /**
+     * Abfrage einer Datenliste ergänzen: Einträge, die nur über beendete (bzw. erst beginnende) Funktionen in der gefilterten Liste
+     * bzw. beim verknüpften Eintrag stehen, schon in SQL ausschließen ('exclude_ids') – so stimmen Anzahl, Blättern und Zähler.
+     */
+    public static function listQuery(array $t, array $d, array $o): array
+    {
+        if (!self::has($t)) return $o;
+        $ids = self::endedIds($t, self::listContext($t, $d));
+        if ($ids) $o['exclude_ids'] = array_values(array_unique([...(array) ($o['exclude_ids'] ?? []), ...$ids]));
+        return $o;
+    }
+
+    /**
+     * IDs der Einträge, die im Zusammenhang $ctx (Filter nach Liste bzw. verknüpftem Eintrag) nicht (mehr) dazugehören, obwohl die
+     * gespeicherten Werte noch passen: Funktion beendet oder noch nicht begonnen, nicht von Hand zugeordnet. Eine Abfrage (id, listen,
+     * funktionen), Prüfung wie arrange().
+     * @return list<int>
+     */
+    public static function endedIds(array $t, array $ctx): array
+    {
+        $f = self::field($t);
+        $lists = array_map('strval', (array) ($ctx['lists'] ?? []));
+        $ref = !empty($ctx['ref_filter']) ? (string) ($ctx['ref'] ?? '') : '';
+        if (!$f || (!$lists && $ref === '')) return [];
+        $col = (string) $f['name'];
+        $hasListen = Tables::field($t, 'listen') !== null;
+        $out = [];
+        foreach (Tables::db($t)->fetchAll("SELECT id, $col AS f" . ($hasListen ? ', listen' : '') . " FROM {$t['table']} WHERE $col IS NOT NULL AND $col != ''") as $r) {
+            $e = [$col => $r['f'], 'listen' => $hasListen ? (json_decode((string) ($r['listen'] ?? ''), true) ?: []) : []];
+            if ($lists) {
+                $states = array_map(fn($l) => self::membership($t, $e, $l), $lists);
+                $in = in_array('current', $states, true) || in_array('manual', $states, true);
+                if (!$in && array_intersect($states, ['former', 'future'])) $out[] = (int) $r['id'];
+            } elseif (in_array(self::refMembership($t, $e, $ref), ['former', 'future'], true)) {
+                $out[] = (int) $r['id'];
+            }
+        }
+        return $out;
     }
 
     /** Hauptfunktion frisch in position (öffentliche Ausgabe, Apps) – Tabellen ohne Funktionen bzw. Einträge ohne Funktionen unverändert */

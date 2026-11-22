@@ -143,6 +143,11 @@ final class RolesSelfTest
             app()->entry = null;
             $list = $render(['id' => 'qafnlist2', 'type' => 'data_list', 'data' => ['table' => $h, 'layout' => 'table', 'fields' => ["$h._title", "$h.position"], 'filter_field' => "$h.listen", 'filter_value' => 'vorstand']]);
             $eq('Datenliste (HTML) Filter Vorstand: Funktionen der Liste, beendete fehlen', [str_contains($list, 'Stellv. Vorsitz'), str_contains($list, 'Kassenwart'), str_contains($list, 'Mustermann')], [true, false, false]);
+            // Liste noch nicht neu gespeichert (Funktion seither beendet): schon die Abfrage lässt ihn weg – Anzahl und Blättern stimmen
+            Tables::db($t)->update($t['table'], ['listen' => json_encode(['beirat', 'vorstand'])], 'id = :id', ['id' => $b]);
+            $lq = ['filter_field' => "$h.listen", 'filter_op' => '=', 'filter_value' => 'vorstand'];
+            $eq('Datenliste: beendete Funktion schon in der Abfrage weg (Anzahl, Blättern)', [Entries::count($t, ['where' => [['listen', '=', 'vorstand']]]),
+                Entries::count($t, Roles::listQuery($t, $lq, ['where' => [['listen', '=', 'vorstand']]])), Roles::listQuery($t, $lq, [])['exclude_ids'] ?? []], [3, 2, [$b]]);
             $vc = (new \Core\Http\Controllers\VCardController())->person(new Request('GET', "/vcard/$h/{$ra['slug']}.vcf", [], [], [], []), $h, (string) $ra['slug']);
             $eq('Visitenkarte: TITLE = Hauptfunktion', [$vc->status, (bool) preg_match('~\r\nTITLE:Vorsitz\r\n~', $vc->body)], [200, true]);
             $vb = \Core\VCard::person($t, $rb);

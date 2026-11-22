@@ -19,7 +19,8 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (sortiert nach „Reihenfolge“), auf der Detailseite eines verknüpften Eintrags die verknüpfte Funktion, sonst die Hauptfunktion.
   Beendete Funktionen („bis“ vergangen) erscheinen dort nicht mehr; Block „Personen“ wahlweise mit Abschnitt „Ehemalige“. Filter
   „Funktionen“ ohne Wert bzw. „verknüpft mit dem aufgerufenen Eintrag“ = Ansprechpersonen des aufgerufenen Eintrags. Kits mit eigener
-  Datenliste (editorial, frameworks) ebenso.
+  Datenliste (editorial, frameworks) ebenso. Beendete Funktionen fallen schon in der Abfrage heraus (`Entries::query` Option
+  `exclude_ids`) – Anzahl und Blättern stimmen.
 - **Adressbuch-Ansicht:** Funktionen nach Gremium gruppiert mit Verknüpfung und Amtszeit, „Ehemalige Funktionen“; Zähler und Listen
   ohne beendete Funktionen; „Aus Liste entfernen“ beendet die Funktion in der Liste. Bearbeiten in der Verwaltung und auf der Website
   (Seitenleiste „Bearbeiten: Funktionen“).
@@ -32,6 +33,68 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   people block and data list show the matching role per context (list filter, linked entry's detail page), ended roles drop out
   (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
   `data:kind-upgrade` with dry run and revert.
+
+### Wissensbereich / Handbuch (Tabellenart „Wissen“, `Core\Data\Knowledge`)
+- **Neue Tabellenart `knowledge`** (Vorlage „Wissen“ im Assistenten, `data:template knowledge`): Kapitel als Einträge mit Bereich,
+  Oberkapitel (Kapitelbaum, 3+ Ebenen), Reihenfolge, Kapitelnummer (automatisch „2.1.3“, überschreibbar), Anreißer, Inhaltsblöcken,
+  Schlagworten, verwandten Kapiteln, Glossarbegriffen, Autor/in und „Zuletzt geprüft“. Grundschema versioniert, nur additiv; Rechte,
+  Workflow, Versionen, Suche, API und Teilen im Netzwerk wie bei allen Datentabellen. Neue Bereiche und Schlagworte direkt im Eintrag.
+- **Ansicht der Kapitel** (`Knowledge::frame`, `css/knowledge.css`, `js/knowledge.js`): Seitenleiste mit Suche und Kapiteln, Brotkrumen
+  (auch JSON-LD), Nummer in der Überschrift, „In diesem Kapitel“ aus den Zwischenüberschriften (mitlaufend), Schlagworte als Links zur
+  gefilterten Übersicht, „Begriffe in diesem Kapitel“, „Verwandte Kapitel“, Zurück/Weiter mit `rel="prev|next"`. **Layouts** je
+  Tabelle: Klassisch, Kompakt, Fokus (Schublade), Handbuch (Abschnitte rechts ab 1200 px), Handbuch kompakt. Telefon: Kapitelmenü als
+  Schublade, Knopf „Kapitel“ unten links. Nur Kit-Tokens (`--kit-*`), ohne Kit-Anpassung in fluid, native und allen Kits; axe ohne
+  Fund, Sprunglink, Landmarken, `aria-current`, Fokusführung, ohne JavaScript bedienbar.
+- **Datenliste erweitert** (gemeinsame Regel `Core\Blocks\ListFilter`): Darstellung **„Kapitel“** (Inhaltsverzeichnis mit Nummern),
+  **mehrere Optionen je Filter** als Kontrollkästchen (`?feld[]=…`, innerhalb eines Filters „eine davon“, Filter-Reihen zusammen;
+  Zustand in der Adresse, Zurück-Taste, ohne JavaScript per Formular), **Trefferauszug** mit markiertem Suchwort und **Glossarbegriffe**
+  als eigene Treffergruppe. Neue Bedingung `in` in `Entries::conditions()`, `live.js` lädt bei `[data-live-change]` sofort nach.
+- **Glossar bleibt websiteweit:** Wissenseinträge verknüpfen nur Begriffe des einen Glossars; der Block „Glossar“ zeigt auf der
+  Begriffsseite optional **„Erwähnt in“** (Wissenseinträge und Seiten).
+- **Umstieg** `php bin/console data:import-pages <zweig> [--apply] | --revert`: Seitenzweig → Wissensbereich mit Probelauf, Kapitelbaum
+  aus dem Seitenbaum, Archiv der alten Seiten, umgestellten Verweisen und 301-Weiterleitungen; vollständig zurückdrehbar. Blöcke der
+  Seiten, die in Kapiteln wählbar sind (auch von Erweiterungen), werden im Feld „Inhalt“ freigeschaltet; `--blocks=…` legt die Auswahl
+  beim Anlegen fest. Seiten mit nicht übertragbaren Blöcken (Datenliste u. a.) schlägt der Plan für **`--keep=…`** vor: Sie bleiben
+  Seiten und werden **Kapitel vom Typ „Verweis“** (Feld „Verweis auf Seite“, `page:ID`) – mit Nummer in Seitenleiste,
+  Inhaltsverzeichnis, Suche und Vor/Zurück, Kapitel-Adresse per 301 auf die Seite. Das Bild des Seitenkopfs wird das Bild des Kapitels.
+- **Grundschema Version 2** (nur additiv): Felder „Bild“ und „Verweis auf Seite“; vorhandene Wissenstabellen bekommen sie leer beim
+  nächsten Speichern des Schemas bzw. beim Umstieg (`Knowledge::upgrade`), Einträge bleiben unverändert.
+- Selbsttest `knowledge:selftest`; Handbuch → Wissensbereich & Handbuch, Entwicklerhandbuch → Wissensbereich.
+- *EN:* New table kind “Knowledge” for manuals and knowledge bases: chapters with areas, parent chapters, automatic (overridable)
+  chapter numbers, content blocks, keywords, related chapters and glossary terms. Detail pages get a sidebar with search and chapters,
+  “In this chapter” from the subheadings, keywords, related chapters and previous/next, in five layouts (Classic, Compact, Focus,
+  Manual, Compact manual) with an off-canvas drawer on phones – styled only via kit tokens, accessible, works without JavaScript. The
+  data list block gains a “Chapters” layout, multi-select filters (state in the URL), search excerpts and glossary hits. The glossary
+  stays site-wide (optional “Mentioned in” on term pages). `data:import-pages` converts a page branch with dry run and full revert; it unlocks block types used on the pages, takes
+  `--blocks=…` for new tables and suggests `--keep=…` for pages with non-transferable blocks, which stay pages and become “link”
+  chapters (schema version 2 adds optional “Image” and “Link to page” fields, additive only).
+  Self-test `knowledge:selftest`.
+### Interaktives Bild: Block, Feldtyp „Markierungen“, Vorlage „Interaktive Bilder“ (`Core\Hotspots`)
+- **Block „Interaktives Bild“** (Gruppe Medien, in Layout-Spalten erlaubt): Bild aus der Mediathek (auch SVG/Grafik) mit
+  nummerierten Markierungen – Punkte oder Flächen (Kreis, Rechteck, Vieleck). Ein Klick bzw. Enter öffnet ein Hinweisfenster
+  (Popover-API wie das Glossar) mit Titel, kurzem Rich-Text (über `Core\Sanitizer`, keine Bilder), optional Link (Core-Linkauswahl)
+  und Glossar-Begriff (Kurz-Erklärung + „Mehr im Glossar“). Tab-Reihenfolge = Nummern, Escape schließt und gibt den Fokus zurück,
+  Flächen per Klick, „Bewegung reduzieren“ beachtet. Unter dem Bild die **Liste aller Markierungen** (Nummer, Titel, Text): auf
+  schmalen Flächen sichtbar, sonst für Screenreader (mit Fokus sichtbar) – oder „immer“. Alt-Text aus der Mediathek.
+- **Quelle „hier pflegen“ oder „aus einer Datentabelle“** (Eintrag wählen, `entry:{tabelle}:{id}`): Vorlage **„Interaktive Bilder“**
+  (Titel, Bild, Markierungen) unter Daten → Neue Tabelle bzw. `data:template hotspots` – einmal pflegen, an mehreren Stellen und
+  als geteilte Tabelle im Netzwerk zeigen. Mit „Gemeinsame Bausteine“ wie jeder Block nutzbar.
+- **Feldtyp „Markierungen“ (`hotspots`)** für Blöcke und Datentabellen mit **Marker-Editor**: Klick ins Bild setzt eine Markierung,
+  Ziehen verschiebt Punkte, Ecken und Eckpunkte; Tastatur: Pfeile (Umschalt 5 %, Alt 0,1 %), Entf, Enter, Bild auf/ab; Ansagen über
+  eine Live-Region. Reihenfolge, Löschen und Angaben in der Wiederholgruppe darunter.
+- **Datenformat Version 1** (`{"v":1,"items":[…]}`, Koordinaten in % des Bildes): `point`, `circle` (r in % der Breite), `rect`
+  (x/y = linke obere Ecke, w/h), `poly` (`points` [[x,y],…]); je Markierung `title`, `text`, `link`, `link_label`, `term`, `icon`, `id`.
+  `Hotspots::normalize()` bereinigt jede Eingabe (auch JSON, ältere Marker-Listen).
+- **Andockstelle für Editoren** `Extension::hotspotEditor()` (z. B. ein Grafik-Editor zum Zeichnen von Flächen): Knopf im Feld,
+  eingebettetes Fenster, Austausch per `postMessage` (`klxm-hotspot-editor` ↔ `klxm-hotspots`); JavaScript-Schnittstelle
+  `CMSAdmin.hotspots.get/set`. Gestaltung über `css/hotspots.css` des Kerns mit `--kit-*`-Farben (Variablen `--hs-*`), Kits können
+  eine eigene `css/hotspots.css` mitbringen. Lage der Knöpfe CSP-konform über Klassen, genau per CSSOM (`js/hotspots.js`).
+- Selbsttests in `data:selftest`, `blocks:selftest`, `extensions:selftest`; Handbuch → Alle Blöcke, Entwicklerhandbuch → Blöcke.
+- *EN:* New core block “Interactive image”: an image from the media library with numbered hotspots (points, circles, rectangles,
+  polygons) that open popovers with title, short rich text, optional link and glossary term; keyboard and screen reader friendly,
+  list of hotspots below the image on phones. Maintained in the block or taken from a data table entry (template “Interactive
+  images”, shareable across the network). New field type `hotspots` with a marker editor (click, drag, keyboard), versioned
+  data format v1 and the integration point `Extension::hotspotEditor()` for external editors.
 
 ### Links: reine Anker bleiben auf der Seite
 - Ein Link-Feld mit `#anker` springt auf der aktuellen Seite, auch wenn der Anker keine Sprungmarke eines Blocks ist (Überschrift,
@@ -62,6 +125,51 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   duplicate check (“Already there?”) or a search for any term. Saved with a revision, permission as for editing the entry, no
   duplicate spellings (case and spaces ignored; ß/ss, accent and hyphen variants can be added); recognised immediately (live highlight when viewing, “On this page” when
   editing). Shared glossary: own terms only, a hint names the owning website for others.
+
+### Hintergrundvideo: Play/Pause-Schalter als Symbol (`Core\Blocks\Hero::videoToggle`)
+- **Runder Symbol-Knopf** unten rechts statt der ausgeschriebenen Schaltfläche „Hintergrundvideo anhalten“: läuft das Video,
+  zeigt er das Pause-Symbol, angehalten das Play-Symbol (vorher zeigte der laufende Zustand fälschlich ein Play-Symbol).
+  Mindestens 44 × 44 px, halbtransparente dunkle Fläche mit hellem Rand (Symbol ≥ 3:1 auf jedem Videobild), doppelter Fokusring.
+  Der zugängliche Name wechselt mit dem Zustand („Hintergrundvideo anhalten“ / „… abspielen“, auch als `title`), kein `aria-pressed`.
+- **Ein gemeinsamer Schalter** für den Einstieg „Vollflächig“ der Kits fluid, foto, galerie und NativeCSS (dort auch Video
+  „Morphing“), den Core-Hero (`Hero::video()`, Kits glas, essenz) und dekorative Videos (`MediaTracks::decorativeVideo()`):
+  Markup aus `Hero::videoToggle()`, Verhalten aus `hero.mjs`, Aussehen aus `css/video-toggle.css` (einmal je Seite). Die
+  Kit-Skripte `fluid/js/bgvideo.js`, der Videoteil in `site.js` von foto/galerie und `components/video-bg` von NativeCSS im
+  Kit native entfallen.
+- **„Bewegung reduzieren“ einheitlich:** Das Video startet nicht von selbst (auch nicht bei „Daten sparen“ oder
+  `<html data-motion="reduce">` des Darstellungs-Knopfs), der Knopf ist trotzdem da und bietet „abspielen“ an; vorher blieb er
+  in fluid, foto, galerie und beim Core-Hero verborgen. Die Wahl der Besucherin gilt, bis sie wieder klickt.
+- **Option je Block „Video-Schalter“:** „Symbol“ (Standard) oder „Symbol mit Text“ (Symbol plus sichtbarer, wechselnder Text) –
+  in `Hero::fields('video', …)`, einzeln `Hero::fields('video_toggle', [varianten])`; für dekorative Videos `['toggle' => 'text']`.
+- **Tokens** `--hx-vt-size`, `--hx-vt-icon`, `--hx-vt-bg`, `--hx-vt-bg-hover`, `--hx-vt-fg`, `--hx-vt-border`, `--hx-vt-border-width`,
+  `--hx-vt-radius`, `--hx-vt-x`, `--hx-vt-y`, `--hx-vt-focus`, `--hx-vt-focus-halo`, `--hx-vt-focus-width`, `--hx-vt-font-size`;
+  Kit native setzt sie aus den NativeCSS-Tokens, essenz behält seine Geräte-Taste. Symbole `play` und `pause` neu im Symbolsatz.
+- Selbsttest in `blocks:selftest`; Handbuch → Blöcke → Einstieg, Entwicklerhandbuch → Kits → Video-Schalter, CSS & JS, Medien.
+- *EN:* Background video toggle is now a round, accessible play/pause icon button (pause icon while playing, play icon when paused;
+  name and `title` switch between “Pause background video” and “Play background video”, no `aria-pressed`), at least 44 × 44 px with a
+  translucent dark fill, light border and double focus ring. One shared implementation (`Hero::videoToggle()`, `hero.mjs`,
+  `css/video-toggle.css`) for the full-bleed heroes of fluid, foto, galerie and NativeCSS (incl. the morphing video), the core hero
+  (glas, essenz) and decorative videos. With reduced motion or data saving the video no longer starts by itself but the button is shown
+  in its “play” state. New per-block option “Video button: Icon | Icon with text”; styling via `--hx-vt-*` tokens.
+### Video-Links in der Lightbox (`Core\VideoLinks`)
+- **Website-Einstellungen → Darstellung → „Video-Links in Lightbox öffnen“** (Standard aus): Buttons und Links auf
+  YouTube- und Vimeo-Videos (`youtube.com/watch?v=…`, `youtu.be/…`, `youtube.com/shorts/…`, `vimeo.com/ID`) öffnen den Player
+  in der Lightbox des Kerns (`dialog.cms-lb--video`, 16:9, auf dem Telefon volle Breite) – über `youtube-nocookie.com` bzw.
+  `player.vimeo.com` mit `dnt=1`, Autoplay nach dem Klick; Esc oder Kreuz schließt, das iframe wird entfernt, der Fokus kehrt
+  zum Link zurück. Gilt für alle Kits, Kern-Blöcke und den Rich-Text ohne Änderung der Vorlagen (Kennzeichnung beim Ausliefern).
+- **Nur mit Einwilligung:** Das Skript prüft bei jedem Klick `window.cmsConsent.embed(anbieter)` (consent_kit) bzw. ohne Dienst
+  die Freigabe „Videos künftig direkt laden“ des Video-Blocks. Ohne Einwilligung bleibt es ein normaler Link ohne Anfrage beim
+  Anbieter; optional „Ohne Einwilligung Zwei-Klick-Hinweis in der Lightbox zeigen“ (Standard aus, Vorschaubild nur aus dem
+  lokalen Zwischenspeicher).
+- **Ausnehmen:** an Link-Feldern der Blöcke „Video ohne Lightbox öffnen (normaler Link)“ (Zusatzfeld `{feld}_nolb`, sichtbar
+  bei Video-Adressen; Bedingung `show_if` `'~video'`), im Rich-Text dieselbe Option in der Linkauswahl (`data-video-lb="off"`,
+  Sanitizer-Vertrag). Skript (`js/video-lightbox.js`, 3,7 KB) und Stile (`css/video-lightbox.css`, vom Kit ersetzbar) laden
+  nur auf Seiten mit Video-Links. Ist die Einstellung aus, bleibt die Ausgabe unverändert.
+- Selbsttest in `blocks:selftest`; Handbuch → Einstellungen → Video-Links in der Lightbox, Entwicklerhandbuch → Medien.
+- *EN:* New website setting “Open video links in a lightbox” (off by default): links and buttons to YouTube/Vimeo videos open
+  the player in the core lightbox – only after consent (consent_kit `cmsConsent.embed()` or the video block’s “always load”),
+  checked on every click; otherwise a normal link with no request to the provider. Optional two-click notice, per-button and
+  per-link opt-out. Output is unchanged while the setting is off.
 
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:

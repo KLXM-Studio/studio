@@ -246,6 +246,8 @@ final class StructuredData
                 foreach (Pages::ancestors($list) as $a) $out[] = [$a['title'], abs_url(Pages::url($a))];
                 $out[] = [$list['title'], abs_url(Pages::url($list))];
             }
+            // Wissen (Core\Data\Knowledge): Oberkapitel zwischen Übersicht und Kapitel
+            if (Data\Knowledge::is($table)) array_push($out, ...Data\Knowledge::crumbs($table, $entry));
             if ($u = Entries::url($table, $entry)) $out[] = [Entries::title($table, $entry), $base . $u];   // Brotkrumen: immer auf dieser Website
             return count($out) > 1 ? $out : [];
         }
