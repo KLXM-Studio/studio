@@ -323,7 +323,43 @@ final class Pages
 
     public static function hasUnpublished(array $page): bool
     {
-        return ($page['content_draft'] ?? null) !== null && $page['content_draft'] !== ($page['content_published'] ?? null);
+        $draft = $page['content_draft'] ?? null;
+        if ($draft === null) return false;
+        $pub = $page['content_published'] ?? null;
+        if ($pub === null) return true;
+        return $draft !== $pub && self::contentDiffers((string) $draft, (string) $pub);
+    }
+
+    /**
+     * Unterscheiden sich zwei Seiteninhalte (Editor.js-JSON) wirklich? Zeitstempel, Version und Block-IDs zählen nicht –
+     * ein Entwurf, der nur neue Block-IDs hat (Import, Skript, Einfügen), gilt nicht als „geändert – nicht veröffentlicht“.
+     */
+    public static function contentDiffers(string $a, string $b): bool
+    {
+        if ($a === $b) return false;
+        // Nur IDs von Blöcken weglassen (Blockliste und verschachtelte „blocks“-Listen, z. B. Spalten) – IDs in Blockdaten
+        // (Markierungen, Listeneinträge) bleiben, sie sind Inhalt.
+        $norm = fn(string $json) => json_encode(self::stripBlockIds((array) (json_decode($json, true)['blocks'] ?? [])), JSON_UNESCAPED_UNICODE);
+        return $norm($a) !== $norm($b);
+    }
+
+    /** Blockliste ohne Block-IDs (rekursiv in „blocks“-Listen der Blockdaten) */
+    private static function stripBlockIds(array $list): array
+    {
+        foreach ($list as $i => $b) {
+            if (!is_array($b)) continue;
+            unset($b['id']);
+            $list[$i] = self::stripNested($b);
+        }
+        return $list;
+    }
+
+    private static function stripNested(array $v): array
+    {
+        foreach ($v as $k => $x) {
+            if (is_array($x)) $v[$k] = $k === 'blocks' && array_is_list($x) ? self::stripBlockIds($x) : self::stripNested($x);
+        }
+        return $v;
     }
 
     /** Alle Anker einer Seite (für Link-Autocomplete & Link-Auflösung) */

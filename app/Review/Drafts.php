@@ -69,8 +69,7 @@ final class Drafts
     {
         if (($p['content_draft'] ?? null) === null || ($p['content_published'] ?? null) === null) return false;
         if ($p['content_draft'] === $p['content_published']) return false;
-        $b = fn(string $json) => json_encode(json_decode($json, true)['blocks'] ?? []);
-        return $b((string) $p['content_draft']) !== $b((string) $p['content_published']);
+        return \Core\Pages::contentDiffers((string) $p['content_draft'], (string) $p['content_published']);
     }
 
     /**

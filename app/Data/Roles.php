@@ -433,8 +433,11 @@ final class Roles
     private static function used(array $t, string $col): array
     {
         $out = [];
+        // Definition noch ohne gespeicherte Tabelle (Designer, Vorlage, Selbsttest): keine Vorschläge aus Daten
+        $name = $t['table'] ?? (!empty($t['handle']) ? 'data_' . $t['handle'] : null);
+        if ($name === null || empty($t['id'])) return [];
         try {
-            foreach (Tables::db($t)->fetchAll("SELECT $col AS v FROM {$t['table']} WHERE $col IS NOT NULL AND $col != '' LIMIT 500") as $r) {
+            foreach (Tables::db($t)->fetchAll("SELECT $col AS v FROM {$name} WHERE $col IS NOT NULL AND $col != '' LIMIT 500") as $r) {
                 foreach (self::items($r['v']) as $i) if ($i['funktion'] !== '') $out[$i['funktion']] = true;
                 if (count($out) >= 40) break;
             }

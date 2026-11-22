@@ -40,6 +40,11 @@ final class Permissions
                 // Externe Quellen (Core\Sources) – zusätzlich Funktion „sources“ der Website
                 'sources.manage' => __('Externe Quellen einrichten und abrufen (Feeds, APIs, OpenImmo)'),
             ],
+            // Gestaltung (Core\Blocks\ListTemplates): Listen-Vorlagen anlegen, ändern, als Standard setzen – Redaktion wählt sie nur aus.
+            // Später zusätzlich Varianten/Abstände und Sperren von Blöcken (Plan „Rollen“); neu, darum keine Rolle außer admin von selbst
+            __('Gestaltung') => [
+                'design.blocks' => __('Blöcke gestalten: Listen-Vorlagen anlegen, ändern und als Standard festlegen'),
+            ],
             __('Eingang') => [
                 'requests.read' => __('Online-Anfragen lesen (mit Schlüssel)'),
                 'requests.manage' => __('Anfragen erledigen und löschen'),

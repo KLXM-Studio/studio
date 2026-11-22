@@ -180,6 +180,34 @@ foreach ($rows as $e) {
   </ol>
   <p><b>Kit-Vorgabe</b> in <code>theme.php</code>: <code>'list_filter' =&gt; ['min' =&gt; 0, 'options' =&gt; 'all', 'min_buttons' =&gt; 1]</code> gilt für Blöcke ohne eigene Angabe (filter_min leer, filter_options leer) und stellt das frühere Verhalten her – so hält es das Kit praxis. Felder für eigene Blöcke: <code>...\Core\Blocks\ListFilter::fields(['variants' =&gt; ['list']])</code>. Selbsttest: <code>blocks:selftest</code> (Regeln, Kit-Vorgabe, <code>Entries::facets</code>, Ausgabe der Datenliste).</p>
 
+  <h3 id="listen-vorlagen">Listen-Vorlagen (<code>Core\Blocks\ListTemplates</code>)</h3>
+  <p>Eine Listen-Vorlage ist ein benannter Satz der <b>Darstellungs-Optionen</b> eines Listenblocks für eine Tabelle. Stufe 1: gespeicherte Optionssätze für <code>data_list</code>; der visuelle Designer (Grundform <code>custom</code>, <code>elements_json</code>) baut später auf derselben Tabelle auf.</p>
+  <ul>
+    <li><b>Teilnahme:</b> Blockdefinition mit <code>'list_template' =&gt; true</code> (Kern-<code>data_list</code>; Kits, die den Kern-Block kopieren wie editorial, erben es). <code>Theme</code> ruft beim Laden <code>ListTemplates::decorate()</code>: fügt das Feld <code>template</code> (Feldtyp <code>listtemplate</code>) nach <code>limit</code> ein und setzt an alle Vorlagen-Felder <code>'show_if' =&gt; ['template' =&gt; ['']]</code> – Abschnitte, die nur aus Vorlagen-Feldern bestehen, bekommen die Bedingung am Kopf (<code>show_if</code> wirkt auch an aufklappbaren Abschnitten, <code>Fields::renderForm</code>). Werte bleiben gespeichert.</li>
+    <li><b>Welche Felder gehören zur Vorlage?</b> <code>ListTemplates::keys($def)</code> = alle benannten Felder außer <code>BLOCK_KEYS</code> (eyebrow, title, intro, table, limit, template, filter_field/op/value, exclude_current, paginate, source, featured_first, more_label, more_link, empty_text, hide_empty, skip). Weitere Blockfelder: <code>'list_template' =&gt; ['keep' =&gt; ['mein_feld']]</code>. Felder, die ein Kit ergänzt (z. B. <code>filter_nav</code> in editorial), gehören automatisch zur Vorlage.</li>
+    <li><b>Rendern:</b> <code>Theme::makeBlock()</code> legt bei gesetztem <code>template</code> die Werte der Vorlage über die Blockdaten (<code>ListTemplates::resolve/apply</code>; fehlende Optionen = Standard des Feldes, Werte von <code>datafield</code>/<code>datafields</code> bekommen das Präfix <code>tabelle.</code>). Jeder Kit-Renderer (<code>blocks/data_list.php</code>) bekommt normale Blockdaten – nichts zu ändern. Leeres <code>template</code> (alle bestehenden Blöcke) oder eine fehlende Vorlage: Daten unverändert. Darum keine <code>DefaultChanges</code>-Umstellung nötig.</li>
+    <li><b>Speicher:</b> Tabelle <code>list_templates</code> je Website (<code>table_handle, block, tkey, name, base, options_json, elements_json, locked, is_default, shared, preview, created_by, created_at, updated_at</code>, eindeutig je Tabelle/Block/Schlüssel). Optionen ohne Tabellen-Präfix. <code>create/update/setDefault/duplicate/delete</code> leeren den Seiten-Cache; <code>delete</code> lehnt ab, solange <code>usage()</code> Seiten findet (Entwurf oder veröffentlicht, auch in Layout-Spalten).</li>
+    <li><b>Vorschläge:</b> <code>suggestions($t)</code> nach Feldern der Tabelle; <code>seed($t)</code> legt sie beim ersten Öffnen (Verwaltung, Seitenleiste) einmal an – Merker <code>sys.list_templates_seeded</code>, gelöschte kommen nicht wieder, nie beim Rendern.</li>
+    <li><b>Standard je Tabelle:</b> <code>defaultKey($t)</code> – Standard der Website, sonst <code>default</code> einer Kit-/Erweiterungs-Vorlage. Wirkt nur auf neue Blöcke: Seitenleiste (<code>data-new</code>, nach Wahl der Tabelle, <code>resources/js/_listtpl.js</code>) und <code>Placement::blockData()</code>.</li>
+    <li><b>Recht:</b> <code>design.blocks</code> (Gruppe „Gestaltung“) für <code>/admin/data/{tabelle}/vorlagen</code> und <code>POST /admin/api/list-templates</code> („Als Vorlage speichern“, JSON <code>{type, table, name, data}</code> → <code>{key, name, table, svg, options}</code>). Auswählen: wer den Block bearbeitet. Das Recht wird mit „Rollen: Erlaubte Blöcke, Gestaltung“ erweitert.</li>
+  </ul>
+  <p><b>Vorlagen im Kit oder in einer Erweiterung</b> – nur lesbar, in der Verwaltung mit „Duplizieren“ übernehmbar:</p>
+<pre><code>// theme.php
+'list_templates' =&gt; [
+    'team' =&gt; [
+        'name' =&gt; 'Team mit Porträt',
+        'block' =&gt; 'data_list',                  // Standard
+        'tables' =&gt; ['team'],                    // optional: nur diese Tabellen
+        'requires' =&gt; ['media'],                  // optional: nur Tabellen mit Feldern dieser Typen
+        'default' =&gt; true,                       // Standard, solange die Website keinen eigenen hat
+        'options' =&gt; ['layout' =&gt; 'cards', 'columns' =&gt; '4', 'ratio' =&gt; '3:4', 'image_fit' =&gt; 'cover',
+                      'fields' =&gt; ['_title', 'foto', 'funktion'], 'link_detail' =&gt; true],
+    ],
+],
+// Erweiterung (Core\Extension): $this-&gt;filter('list_templates', fn(array $list, array $ctx) =&gt; $list + ['karten' =&gt; […]]);
+//   $ctx = ['table' =&gt; Tabelle, 'block' =&gt; 'data_list']</code></pre>
+  <p>Schlüssel im Block: <code>kit:team</code> bzw. <code>ext:karten</code> (Name <code>[a-z0-9_-]</code>); Optionen wie die Felder des Blocks, Feldnamen ohne Präfix. Selbsttest: <code>php bin/console listtemplates:selftest --site=…</code> (Anwenden, Übernehmen aus Block, Standard, Kit-Vorlagen, Löschschutz, Rechte, unverändert ohne Vorlage).</p>
+
   <h3>Detailseiten &amp; Feldbindung</h3>
   <p>Eine Vorlage ist eine Seite mit <code>type = template</code> und <code>template_for = handle</code>. Beim Aufruf von <code>/{url-basis}/{slug}</code> setzt der Router <code>app()-&gt;entry</code> und rendert die Vorlage. Vor dem Rendern jedes Blocks (<code>Theme::bindEntry</code>):</p>
   <ul>

@@ -2,7 +2,7 @@
 /**
  * Bereichsnavigation „Daten“: Tabellen (mit Anzahl Einträge), unter der aktuellen Tabelle ihre Ansichten und Einstellungen.
  * Das Layout zeigt sie links anstelle der Hauptnavigation (breite Bildschirme), sonst oben in der Seite (resources/js/_drill.js).
- * @var string $cur  index|list|calendar|entry|new-entry|schema|new|place|subscribe  @var ?array $active  aktuelle Tabelle
+ * @var string $cur  index|list|calendar|entry|new-entry|schema|new|place|subscribe|templates  @var ?array $active  aktuelle Tabelle
  */
 use Core\Data\Entries;
 use Core\Data\Tables;
@@ -39,6 +39,8 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
           if ($schema && \Core\Data\Shared::canSchema($t)) $subs[] = [url($base . '/schema'), __('Felder & Einstellungen'), $cur === 'schema'];
           // Einsetzen: Block auf einer Seite, Seite anlegen, Verwendungen (Core\Data\Placement) – nicht für interne Listen
           if ($schema && \Core\Data\Placement::blockType($t) !== null) $subs[] = [url($base . '/einsetzen'), __('Einsetzen'), $cur === 'place'];
+          // Listen-Vorlagen (Core\Blocks\ListTemplates): gespeicherte Darstellungen der Datenliste – Recht „Blöcke gestalten“
+          if (can(\Core\Blocks\ListTemplates::PERMISSION) && \Core\Data\Placement::blockType($t) === 'data_list' && app()->theme->block('data_list')) $subs[] = [url($base . '/vorlagen'), __('Listen-Vorlagen'), $cur === 'templates'];
           // Abonnieren per App: Kalender- und Kontakte-Tabellen (Core\Data\Subscriptions)
           if ($edit && \Core\Data\Subscriptions::kind($t) !== null) $subs[] = [url($base . '/abonnieren'), __('Abonnieren'), $cur === 'subscribe'];
           // Einstellungsseiten von Funktionen/Erweiterungen zu dieser Tabelle (Core\AdminPages, 'table' => …), z. B. Glossar

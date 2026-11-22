@@ -32,6 +32,7 @@ final class Filters
         'presence.object' => ['array{allowed: bool, last: ?array{user_id: ?int, created_at: string}}', 'type, id (z. B. graphic, media:12)', 'Eigene Arten für „Wer arbeitet gerade wo“ (Core\\Http\\Controllers\\Admin\\PresenceController): darf die Person das Objekt bearbeiten, wer hat zuletzt gespeichert. Kern-Arten page und entry laufen nicht durch den Filter.'],
         'subscriptions.apps' => ['list<array{key, label, url, user, password, help}> weitere Zugänge eines Abos', 'table, scope (public|internal), token (Klartext nur direkt nach dem Anlegen, sonst null)', 'Seite „Abonnieren“ einer Tabelle: weitere Zugänge für Apps nennen (z. B. CardDAV der Erweiterung dav mit dem Abo-Token als Passwort).'],
         'rowmenu.actions' => ['list<array{label: string, href: string, icon?: string}> weitere Punkte im Zeilenmenü', 'kind (entry), table, id', 'Zeilenmenü der Verwaltung (Core\\RowMenu) um eigene Aktionen ergänzen – stehen vor „Löschen“; nur Pfade dieser Installation (/…), Rechte prüft die Ziel-Route.'],
+        'list_templates' => ['array<string, array{name, options, tables?, requires?, default?, block?}> Listen-Vorlagen (nur lesbar, Schlüssel im Block ext:{name})', 'table, block (Blocktyp, z. B. data_list)', 'Vorlagen für Listenblöcke vordefinieren (Core\\Blocks\\ListTemplates) – wie theme.php → list_templates.'],
         'data_list.query' => ['array $options für Entries::query (where, order, limit, q …)', 'table, block (Daten des Blocks)', 'Abfrage des Blocks „Datenliste“ ändern (z. B. zusätzliche Bedingung).'],
     ];
 

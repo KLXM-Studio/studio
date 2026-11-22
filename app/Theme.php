@@ -112,6 +112,10 @@ final class Theme
         if (VideoLinks::on()) {
             foreach ($this->blocks as $type => $b) $this->blocks[$type]['fields'] = VideoLinks::blockFields((array) ($b['fields'] ?? []));
         }
+        // Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“ für Blöcke mit 'list_template' => true (Kern-Datenliste, Kopien in Kits)
+        foreach ($this->blocks as $type => $b) {
+            if (Blocks\ListTemplates::supports($b)) $this->blocks[$type] = Blocks\ListTemplates::decorate($b, (string) $type);
+        }
         // Standardwerte der Theme-Einstellungen registrieren
         app()->settings->registerDefaults(Fields::defaults($this->settingsFields()));
     }
@@ -636,6 +640,10 @@ final class Theme
             return null;
         }
         $data = array_replace(Fields::defaults($def['fields']), is_array($b['data'] ?? null) ? $b['data'] : []);
+        // Gewählte Listen-Vorlage: ihre Darstellung über die Blockdaten legen (ohne Vorlage unverändert, Core\Blocks\ListTemplates)
+        if (!empty($def['list_template']) && ($data['template'] ?? '') !== '') {
+            $data = Blocks\ListTemplates::resolve($data, $def, $def['type']);
+        }
         if (app()->entry) {
             $data = self::bindEntry($data, $def['fields']);
         }
