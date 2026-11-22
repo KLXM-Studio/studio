@@ -273,6 +273,8 @@ final class SiteController
         if (!$app->editing) $html = \Core\Push\Visitor::inject($html);
         // PDF-Links: Auswahl „Anzeigen | Herunterladen“ (Core\PdfLinks) – Skript nur, wenn die Seite solche Links hat
         if (!$app->editing) $html = \Core\PdfLinks::inject($html);
+        // Video-Links (YouTube/Vimeo) in der Lightbox nach Einwilligung (Core\VideoLinks) – Einstellung aus: Ausgabe unverändert
+        if (!$app->editing) $html = \Core\VideoLinks::inject($html);
         // Infografiken mit Design-Farben: Hell/Dunkel-Schalter und dunkle Abschnitte (Core\Graphics\Themed) – auch beim Bearbeiten
         $html = \Core\Graphics\Themed::inject($html);
         // Bewegte Grafiken: Skript nur bei Auslöser „sobald sichtbar“, Klick, Hotspots, Zählen oder Schleifen (Core\Graphics\Motion)

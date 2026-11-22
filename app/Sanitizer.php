@@ -208,6 +208,8 @@ final class Sanitizer
             . ($ref !== '' ? ' data-link="' . htmlspecialchars($ref, ENT_QUOTES) . '"' : '')
             . ($title !== '' ? ' title="' . htmlspecialchars(mb_substr($title, 0, 200), ENT_QUOTES) . '"' : '')
             . ($blank ? ' target="_blank" rel="noopener"' : '')
+            // Video-Link ohne Lightbox (Core\VideoLinks, Linkauswahl „Ohne Lightbox öffnen“) – nur der Wert „off“
+            . (strtolower(trim($a->getAttribute('data-video-lb'))) === 'off' ? ' data-video-lb="off"' : '')
             . (preg_match('~^media:\d+$~', $ref) ? ' download' : '')   // Datei-Link „Download“ (PDF „Anzeigen“: media:ID:viewer)
             . self::pdfAttrs($ref) . '>' . $inner . '</a>';
     }

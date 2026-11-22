@@ -108,6 +108,10 @@ final class Theme
             if (isset($b['background']) && !isset($this->backgrounds()[$b['background']])) unset($b['background']);
             $this->blocks[$type] ??= $b + ['type' => $type, 'label' => $type];
         }
+        // Video-Links in der Lightbox (Core\VideoLinks): an Link-Feldern „Ohne Lightbox öffnen“ – nur bei eingeschalteter Einstellung
+        if (VideoLinks::on()) {
+            foreach ($this->blocks as $type => $b) $this->blocks[$type]['fields'] = VideoLinks::blockFields((array) ($b['fields'] ?? []));
+        }
         // Standardwerte der Theme-Einstellungen registrieren
         app()->settings->registerDefaults(Fields::defaults($this->settingsFields()));
     }
@@ -339,7 +343,8 @@ final class Theme
     public function settingsGroups(): array
     {
         // Hinweisbalken: Zeitraum und Darstellung ergänzt der Core (Core\Notice)
-        return Notice::extendGroups($this->def['settings']['groups'] ?? []);
+        // … und unter „Darstellung“ die Video-Lightbox (Core\VideoLinks)
+        return VideoLinks::extendGroups(Notice::extendGroups($this->def['settings']['groups'] ?? []));
     }
 
     public function settingsTitle(): string
@@ -702,6 +707,8 @@ final class Theme
         }
         // Block ohne Ausgabe (z. B. leere Liste mit „ausblenden, wenn leer“): kein leerer Abschnitt mit Hintergrund
         if (trim($inner) === '' && !app()->editing) return '';
+        // Video-Links: Buttons mit „Ohne Lightbox öffnen“ kennzeichnen (Core\VideoLinks; Einstellung aus = unverändert)
+        if (!app()->editing) $inner = VideoLinks::optOut($inner, $block->data);
         if (app()->editing && $block->parent === null && $block->inRow() && $this->rowable($block)) {
             // Editor (Vorschau je Block): Block „neben dem vorigen“ schon als Zelle einer Reihe – Hintergrund/Abstände der Reihe
             // und „Karte ja/nein“ setzt editor.js (layoutRows) nach dem ersten Block der Reihe
@@ -973,6 +980,12 @@ final class Theme
             foreach ((array) ($this->blocks[$type]['uses'][$variant] ?? []) as $u) $types[] = (string) $u;
         }
         return array_values(array_unique($types));
+    }
+
+    /** Adresse eines Kern-Stylesheets, das ein Skript nachlädt (z. B. Core\VideoLinks) – das Kit kann es mit css/{datei} ersetzen */
+    public function coreStylesheet(string $file): string
+    {
+        return $this->coreCss($file);
     }
 
     /** Kern-Stylesheet – oder die gleichnamige Datei des Kits (public/assets/kits/{name}/css/…), falls vorhanden */

@@ -9343,4 +9343,11 @@ return [
     '„{text}“ steht schon im Glossar – bei „{term}“.' => '“{text}” is already in the glossary – under “{term}”.',
     // Interaktives Bild (Core\Hotspots)
     'Im Grafik-Editor öffnen' => 'Open in graphics editor',
+    // Video-Links in der Lightbox (Core\VideoLinks)
+    'Video-Links' => 'Video links',
+    'Video-Links in Lightbox öffnen' => 'Open video links in a lightbox',
+    'Links und Buttons auf YouTube- oder Vimeo-Videos öffnen den Player in einer Lightbox auf der Website – nur, wenn Besucher in den Dienst eingewilligt haben (Cookie-Einwilligung bzw. „Videos künftig direkt laden“). Ohne Einwilligung bleibt es ein normaler Link. Einzelne Buttons und Links lassen sich ausnehmen.' => 'Links and buttons pointing to YouTube or Vimeo videos open the player in a lightbox on the website – only if visitors have consented to the service (cookie consent or “always load videos directly”). Without consent it stays a normal link. Individual buttons and links can be excluded.',
+    'Ohne Einwilligung Zwei-Klick-Hinweis in der Lightbox zeigen' => 'Without consent, show a two-click notice in the lightbox',
+    'Statt den Link normal zu öffnen, erklärt die Lightbox zuerst, dass der Anbieter Daten erhält; das Video lädt erst nach Klick. Vorschaubild nur, wenn es lokal zwischengespeichert ist.' => 'Instead of opening the link normally, the lightbox first explains that the provider receives data; the video only loads after a click. Preview image only if it is cached locally.',
+    'Video ohne Lightbox öffnen (normaler Link)' => 'Open video without lightbox (normal link)',
 ];

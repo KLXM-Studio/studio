@@ -25,6 +25,7 @@ import { layerBox, ui } from './_shadow.js';
 import { t } from './_i18n.js';
 import { ico } from './_icons.js';
 import { esc } from './_html.js';
+import { isVideoUrl } from './_videourl.js';
 
 const d = document;
 const RECENT_KEY = 'cms-links-recent';
@@ -188,6 +189,7 @@ function build() {
           <label><input type="radio" name="cms-lp-pdf" data-lp-viewer checked> <span>${ico('eye')} ${esc(t('Anzeigen'))}</span></label>
           <label><input type="radio" name="cms-lp-pdf" data-lp-download> <span>${ico('download-simple')} ${esc(t('Download'))}</span></label></fieldset>
         <label class="lp__check" data-lp-richonly><input type="checkbox" data-lp-blank> ${esc(t('In neuem Tab öffnen'))}</label>
+        <label class="lp__check" data-lp-vlb-wrap hidden><input type="checkbox" data-lp-vlb> ${esc(t('Video ohne Lightbox öffnen (normaler Link)'))}</label>
         <label class="f lp__title" data-lp-richonly><span>${esc(t('Linktitel (optional, erscheint beim Überfahren)'))}</span><input type="text" data-lp-title maxlength="200"></label>
       </div>
       <p class="lp__error" data-lp-error role="alert" hidden></p>
@@ -291,6 +293,11 @@ function wire() {
 
 function err(msg) { const p = q('[data-lp-error]'); p.textContent = msg || ''; p.hidden = !msg; }
 
+/** Rich-Text, Web-Adresse auf ein YouTube-/Vimeo-Video: Option „ohne Lightbox“ (data-video-lb="off", Core\VideoLinks) */
+const videoLbOn = () => !!(ui('#cms-links[data-video-lb]') || layerBox().querySelector('#cms-links[data-video-lb]'));   // Einstellung an
+function videoOpt() {
+  q('[data-lp-vlb-wrap]').hidden = !(state && state.mode === 'rich' && state.tab === 'url' && videoLbOn() && isVideoUrl(q('[data-lp-url]').value));
+}
 function tab(name, focusField) {
   state.tab = name;
   qa('[role=tab]').forEach(b => { const on = b.dataset.lpTab === name; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
@@ -298,10 +305,12 @@ function tab(name, focusField) {
   if (name === 'file' && !state.fitems) loadFiles();
   err('');
   showPicked();
+  videoOpt();
   if (focusField) (name === 'search' ? viewField() : q(`[data-lp-${name}]`))?.focus();
 }
 
 function hint(kind) {
+  if (kind === 'url') videoOpt();
   const el = q(`[data-lp-msg="${kind}"]`), v = q(`[data-lp-${kind}]`).value;
   if (!v.trim()) { el.textContent = kind === 'url' ? t('Auch interne Pfade (/seite) und Anker (#abschnitt) sind möglich.') : ''; el.classList.remove('is-warn', 'is-error'); return; }
   const r = kind === 'url' ? normalizeUrl(v) : kind === 'mail' ? normalizeMail(v, q('[data-lp-subject]').value) : normalizeTel(v);
@@ -709,7 +718,9 @@ function showPicked() {
 
 /** Ergebnis des Dialogs: {href, ref, value, label, kind, newTab, title} oder {error} */
 function result() {
-  const extra = { newTab: q('[data-lp-blank]').checked, title: q('[data-lp-title]').value.trim() };
+  const extra = { newTab: q('[data-lp-blank]').checked, title: q('[data-lp-title]').value.trim(),
+    // Einstellung aus: gespeicherte Angabe unverändert lassen
+    noLightbox: q('[data-lp-vlb-wrap]').hidden ? !videoLbOn() && !!state.current?.noLightbox : q('[data-lp-vlb]').checked };
   if (state.tab === 'search' || state.tab === 'file') {
     let it = state.picked;
     if (!it && state.tab === 'file') return state.current ? { ...state.current, ...extra, keep: true } : { error: t('Bitte eine Datei wählen oder hochladen.') };
@@ -756,6 +767,7 @@ export function openLinkPicker(opts = {}) {
     q('[data-lp-blank]').checked = !!cur?.newTab;
     q('[data-lp-blank]').onchange = () => { if (state) state.blankTouched = true; };
     q('[data-lp-title]').value = cur?.title || '';
+    q('[data-lp-vlb]').checked = !!cur?.noLightbox;
     for (const k of ['q', 'filter', 'url', 'mail', 'subject', 'tel', 'file']) q(`[data-lp-${k}]`).value = '';
     q('[data-lp-viewer]').checked = true;   // PDF: Standard „Anzeigen“
     q('[data-lp-flist]').innerHTML = '';

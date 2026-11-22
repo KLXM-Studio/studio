@@ -119,6 +119,25 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   `css/video-toggle.css`) for the full-bleed heroes of fluid, foto, galerie and NativeCSS (incl. the morphing video), the core hero
   (glas, essenz) and decorative videos. With reduced motion or data saving the video no longer starts by itself but the button is shown
   in its “play” state. New per-block option “Video button: Icon | Icon with text”; styling via `--hx-vt-*` tokens.
+### Video-Links in der Lightbox (`Core\VideoLinks`)
+- **Website-Einstellungen → Darstellung → „Video-Links in Lightbox öffnen“** (Standard aus): Buttons und Links auf
+  YouTube- und Vimeo-Videos (`youtube.com/watch?v=…`, `youtu.be/…`, `youtube.com/shorts/…`, `vimeo.com/ID`) öffnen den Player
+  in der Lightbox des Kerns (`dialog.cms-lb--video`, 16:9, auf dem Telefon volle Breite) – über `youtube-nocookie.com` bzw.
+  `player.vimeo.com` mit `dnt=1`, Autoplay nach dem Klick; Esc oder Kreuz schließt, das iframe wird entfernt, der Fokus kehrt
+  zum Link zurück. Gilt für alle Kits, Kern-Blöcke und den Rich-Text ohne Änderung der Vorlagen (Kennzeichnung beim Ausliefern).
+- **Nur mit Einwilligung:** Das Skript prüft bei jedem Klick `window.cmsConsent.embed(anbieter)` (consent_kit) bzw. ohne Dienst
+  die Freigabe „Videos künftig direkt laden“ des Video-Blocks. Ohne Einwilligung bleibt es ein normaler Link ohne Anfrage beim
+  Anbieter; optional „Ohne Einwilligung Zwei-Klick-Hinweis in der Lightbox zeigen“ (Standard aus, Vorschaubild nur aus dem
+  lokalen Zwischenspeicher).
+- **Ausnehmen:** an Link-Feldern der Blöcke „Video ohne Lightbox öffnen (normaler Link)“ (Zusatzfeld `{feld}_nolb`, sichtbar
+  bei Video-Adressen; Bedingung `show_if` `'~video'`), im Rich-Text dieselbe Option in der Linkauswahl (`data-video-lb="off"`,
+  Sanitizer-Vertrag). Skript (`js/video-lightbox.js`, 3,7 KB) und Stile (`css/video-lightbox.css`, vom Kit ersetzbar) laden
+  nur auf Seiten mit Video-Links. Ist die Einstellung aus, bleibt die Ausgabe unverändert.
+- Selbsttest in `blocks:selftest`; Handbuch → Einstellungen → Video-Links in der Lightbox, Entwicklerhandbuch → Medien.
+- *EN:* New website setting “Open video links in a lightbox” (off by default): links and buttons to YouTube/Vimeo videos open
+  the player in the core lightbox – only after consent (consent_kit `cmsConsent.embed()` or the video block’s “always load”),
+  checked on every click; otherwise a normal link with no request to the provider. Optional two-click notice, per-button and
+  per-link opt-out. Output is unchanged while the setting is off.
 
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:

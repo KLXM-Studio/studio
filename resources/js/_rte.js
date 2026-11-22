@@ -384,7 +384,7 @@ const Rich = {
   async link(area) {
     const sel = selOf(area), range = rangeIn(area)?.cloneRange() || null;
     const a = up(area, n => n.tagName === 'A');
-    const cur = a ? { href: a.getAttribute('href') || '', ref: a.dataset.link || '', newTab: a.target === '_blank', title: a.title || '' } : null;
+    const cur = a ? { href: a.getAttribute('href') || '', ref: a.dataset.link || '', newTab: a.target === '_blank', title: a.title || '', noLightbox: a.dataset.videoLb === 'off' } : null;
     const picked = range && !range.collapsed ? hrefFor(range.toString(), true) : null;
     if (!a && picked) {   // markierte E-Mail- oder Web-Adresse: gleich verlinken (Betreff, neuer Tab o. Ä. später über „Link“)
       Rich.insertLink(area, { href: picked, label: range.toString().trim() }, range);
@@ -400,7 +400,7 @@ const Rich = {
   },
   /**
    * Link in ein bearbeitbares Element setzen – gemeinsame Logik für die Linkauswahl und Werkzeuge (CMSAdmin.tools, ctx.insertLink).
-   * res: {href, ref (z. B. entry:glossar:12), label (Linktext ohne Markierung), newTab, title}. range: Auswahl (sonst die aktuelle),
+   * res: {href, ref (z. B. entry:glossar:12), label (Linktext ohne Markierung), newTab, title, noLightbox (data-video-lb="off")}. range: Auswahl (sonst die aktuelle),
    * a: vorhandener Link zum Ändern. Markierter Text wird zum Link, sonst wird label als neuer Link an der Schreibmarke eingefügt.
    */
   insertLink(area, res, range = null, a = null) {
@@ -412,6 +412,8 @@ const Rich = {
       if (res.ref) el.dataset.link = res.ref; else el.removeAttribute('data-link');
       if (res.newTab) { el.target = '_blank'; el.rel = 'noopener'; } else { el.removeAttribute('target'); el.removeAttribute('rel'); }
       if (res.title) el.title = res.title; else el.removeAttribute('title');
+      // Video-Link ohne Lightbox (Core\VideoLinks; Sanitizer erlaubt nur den Wert „off“)
+      if (res.noLightbox) el.dataset.videoLb = 'off'; else el.removeAttribute('data-video-lb');
     };
     if (a) { apply(a); return; }
     if (range && !range.collapsed) {

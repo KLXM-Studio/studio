@@ -449,7 +449,7 @@ php bin/console site:create kanzlei www.kanzlei.de kanzlei   # als eigene Websit
   <p><b>Blockdaten aus Kit-Skripten ändern (<code>CMSEditor.block(node)</code>):</b> liefert für ein Element in einem Block <code>{ type, id, def, get(pfad?), set({ 'pfad.mit.punkten': wert }) }</code> oder <code>null</code>. <code>set()</code> schreibt die Werte in die Blockdaten, markiert die Seite als geändert (Rückgängig/Wiederholen inklusive), frischt eine offene Seitenleiste auf und zeichnet die Vorschau neu (Promise, danach <code>cms:block-preview</code>). Beispiel: Kit „foto“ (<code>js/editor-photos.js</code>) – Fotos und Videos per Drag &amp; Drop hochladen (<code>CMSMedia.Uploader</code>) und an die Liste eines Blocks anhängen, umsortieren, entfernen.</p>
   <p><b>Bedingte Felder (<code>show_if</code>):</b> Ein Feld erscheint nur, wenn andere Felder bestimmte Werte haben – auch in
     Wiederholgruppen (Felder derselben Zeile). <code>'show_if' =&gt; ['kind' =&gt; ['image', '']]</code> (mehrere Felder = alle müssen passen;
-    <code>'*'</code> = ausgefüllt, <code>''</code> = leer), <code>'/variant'</code> = Feld des Blocks statt der eigenen Zeile, eine Liste
+    <code>'*'</code> = ausgefüllt, <code>''</code> = leer, <code>'~video'</code> = Adresse eines YouTube-/Vimeo-Videos wie <code>Core\VideoLinks::parse</code>), <code>'/variant'</code> = Feld des Blocks statt der eigenen Zeile, eine Liste
     <code>[['kind' =&gt; ['image']], ['/variant' =&gt; ['grid']]]</code> = eine Bedingung genügt. Nur Anzeige: ausgeblendete Werte bleiben
     erhalten und werden gespeichert (Datentabellen nutzen <code>visible_if</code>, siehe Daten).</p>
   <h3 id="blockauswahl">Blockauswahl: Kurzbeschreibung und Vorschaugrafik – <code>Core\Blocks\Picker</code></h3>

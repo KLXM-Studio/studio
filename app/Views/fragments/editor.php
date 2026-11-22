@@ -66,4 +66,4 @@ if ($content) {
   </details>
 </aside>
 <input type="hidden" id="adm-csrf" value="<?= e(\Core\Csrf::token()) ?>">
-<datalist id="cms-links" data-endpoint="<?= e(url('/admin/api/links')) ?>"></datalist>
+<datalist id="cms-links" data-endpoint="<?= e(url('/admin/api/links')) ?>"<?= \Core\VideoLinks::on() ? ' data-video-lb' : '' /* Linkauswahl: Option „Video ohne Lightbox“ */ ?>></datalist>
