@@ -150,9 +150,12 @@ final class Library
             Package::remove(self::path($name) . '/' . $version);
             throw new \RuntimeException(trim((string) $out) ?: __('Export fehlgeschlagen.'));
         }
-        $m['versions'][] = ['version' => $version, 'date' => date('Y-m-d'), 'note' => $note, 'demo' => $m['demo'], 'by' => $by, 'at' => date('c')];
+        // Bericht des Exports (Bilder als Platzhalter, Texte zum Anpassen) bleibt bei der Version – Hinweise für die nächste
+        $report = array_values(array_filter(array_map('rtrim', explode("\n", (string) $out)), fn($l) => trim($l) !== ''));
+        $m['versions'][] = ['version' => $version, 'date' => date('Y-m-d'), 'note' => $note, 'demo' => $m['demo'], 'by' => $by, 'at' => date('c'),
+            'report' => array_slice($report, 0, 80)];
         self::save($m);
-        return ['version' => $version, 'report' => array_values(array_filter(array_map('trim', explode("\n", (string) $out))))];
+        return ['version' => $version, 'report' => $report];
     }
 
     /** Bildformate des Vorschaubilds */

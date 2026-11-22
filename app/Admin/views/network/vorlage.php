@@ -59,7 +59,8 @@ $pick = (array) $b['pick'];
   <h2 id="bp-ver-h"><?= icon('clock-counter-clockwise') ?> <?= e(__('Versionen')) ?></h2>
   <ol class="bp-versions" reversed>
     <?php foreach ($b['versions'] as $v): ?>
-    <li><strong><?= e($v['version']) ?></strong> <span class="adm-muted"><?= e(\Core\Format::admin()->date((int) strtotime((string) ($v['date'] ?? 'now')))) ?><?= !empty($v['by']) ? ' · ' . e((string) $v['by']) : '' ?></span><br><?= e((string) ($v['note'] ?? '')) ?></li>
+    <li><strong><?= e($v['version']) ?></strong> <span class="adm-muted"><?= e(\Core\Format::admin()->date((int) strtotime((string) ($v['date'] ?? 'now')))) ?><?= !empty($v['by']) ? ' · ' . e((string) $v['by']) : '' ?></span><br><?= e((string) ($v['note'] ?? '')) ?>
+      <?php if (!empty($v['report'])): ?><details class="bp-report"><summary class="adm-link"><?= e(__('Bericht des Exports: Bilder und Texte')) ?></summary><pre class="net-cli"><?= e(implode("\n", array_map('strval', (array) $v['report']))) ?></pre></details><?php endif; ?></li>
     <?php endforeach; ?>
   </ol>
   <form method="post" action="<?= e($base . '/version') ?>" class="bp-form" novalidate><?= csrf_field() ?>

@@ -130,6 +130,9 @@ final class SelfTest
             [['handle' => 't', 'fields' => [['name' => 'x', 'type' => 'text'], ['name' => 'y', 'type' => 'date']], 'settings' => []]], [['rkey' => 'presse', 'permissions_json' => '["pages.edit"]']], [], []);
         $d = Diff::compare($s1, $s2);
         $eq('Vergleich: neue Seite, Feld, Rolle', [$d['added']['pages'], $d['added']['fields'], $d['added']['roles'], Diff::any(Diff::compare($s2, $s2))], [['-:/b'], ['t.y'], ['presse'], false]);
+        $pal = Palette::selftest();
+        $ok += $pal['ok'];
+        array_push($fails, ...$pal['fails']);
         $c = Copy::selftest();
         $ok += $c['ok'];
         array_push($fails, ...$c['fails']);
@@ -162,7 +165,14 @@ final class SelfTest
             $eq('Paket: kein Passwort, kein Name, keine E-Mail/Telefon/IBAN der Testdaten', [str_contains($raw, self::SECRET), str_contains($raw, self::PERSON[1]),
                 str_contains($raw, self::MAIL), str_contains($raw, '7654321'), str_contains($raw, '0532 0130'), str_contains($raw, 'konto.selftest@')], [false, false, false, false, false, false]);
             $eq('Paket: keine Domain der Quelle, Platzhalter statt Name', [str_contains($raw, 'bpst-verein.example.com'), str_contains($raw, '{{org.name}}')], [false, true]);
-            $eq('Neue Website aus der Vorlage', $run(['site:create', $dst, $dst . '.localhost', '--blueprint=' . $pkg, '--name=Neuer Musterverein', '--short=NMV', '--region=Hessen', '--color=#B00020']), 0);
+            $eq('Paket: Region der Quelle als Platzhalter (Langname, Abkürzung)', [str_contains($raw, '{{region.name}}'), str_contains($raw, '{{region.short}}'), str_contains($raw, 'Gruppen in NRW')], [true, true, false]);
+            $eq('Paket: Personen aus den Daten auch im Fließtext ersetzt', [str_contains($raw, 'Wahrnamig'), str_contains($raw, 'Klarname')], [false, false]);
+            $man = (array) json_decode((string) @file_get_contents($pkg . '/manifest.json'), true);
+            $eq('Paket: Stellen zum Anpassen (Wortteil, Zahlen zur Region)', [count(array_filter((array) ($man['review'] ?? []), fn($r) => str_contains((string) $r['reason'], 'Wortteil'))) > 0,
+                count(array_filter((array) ($man['review'] ?? []), fn($r) => str_contains((string) $r['reason'], 'Zahlen'))) > 0], [true, true]);
+            $eq('Paket: Impressum als Vorlage (keine Person der Quelle)', str_contains($raw, 'Vorstand bzw. Geschäftsführung ergänzen'), true);
+            $eq('Probelauf --check schreibt kein Paket', $run(['site:blueprint', $src, '--out=' . $pkg . '-check', '--check']) === 0 && !is_dir($pkg . '-check') && str_contains($out, 'Probelauf'), true);
+            $eq('Neue Website aus der Vorlage', $run(['site:create', $dst, $dst . '.localhost', '--blueprint=' . $pkg, '--name=Neuer Musterverein', '--short=NMV', '--region=06', '--color=#B00020']), 0);
             if ($fails) echo $out;
             $eq('Ziel: Struktur, Demo, Wartung, Platzhalter', $run(['blueprint:selftest', '--step=check', '--pkg=' . $pkg, '--site=' . $dst]), 0);
             echo $out;
@@ -242,7 +252,12 @@ final class SelfTest
                     'pass' => self::SECRET, 'encryption' => 'tls', 'verify_peer' => true, 'from' => 'konto.selftest@bpst-verein.example.com', 'from_name' => 'Bpst']);
                 $app->db->insert('users', ['email' => 'konto.selftest@bpst-verein.example.com', 'name' => 'Konrad Kontoinhaber', 'password_hash' => password_hash(self::SECRET, PASSWORD_DEFAULT), 'role' => 'admin', 'created_at' => now()]);
                 $home = (int) $app->db->fetchValue('SELECT id FROM pages WHERE is_home = 1');
-                $blocks = [['id' => 'bpst000001', 'type' => 'richtext', 'data' => ['text' => '<p>Willkommen beim Bpst Verein Echtstadt e. V.! Fragen an ' . self::MAIL . ' oder ' . self::PHONE . '. Spenden: ' . self::IBAN . ' [# intern: ' . self::PERSON[1] . ' #]</p>'], 'tunes' => []]];
+                $blocks = [['id' => 'bpst000001', 'type' => 'richtext', 'data' => ['text' => '<p>Willkommen beim Bpst Verein Echtstadt e. V.! Fragen an ' . self::MAIL . ' oder ' . self::PHONE . '. Spenden: ' . self::IBAN . ' [# intern: ' . self::PERSON[1] . ' #]</p>'], 'tunes' => []],
+                    ['id' => 'bpst000002', 'type' => 'richtext', 'data' => ['title' => 'Gruppen in NRW', 'text' => '<p>In Nordrhein-Westfalen gibt es 42 Gruppen. BVE ist NRW-weit aktiv, auch in nordrhein-westfälischen Schulen. Ansprechpartnerin ist Waltraud Wahrnamig.</p>'], 'tunes' => []]];
+                $app->settings->set('org.region', 'Nordrhein-Westfalen');
+                $imp = \Core\Pages::create(['slug' => 'impressum-test', 'title' => 'Impressum', 'status' => 'published'], \Core\Pages::sanitizeBlocks([['id' => 'bpst000003', 'type' => 'richtext',
+                    'data' => ['text' => '<p>Verantwortlich: ' . implode(' ', self::PERSON) . ', Echtweg 9</p>'], 'tunes' => ['section' => []]]]));
+                $app->settings->set('imprint_page', $imp);
                 $app->db->update('pages', ['content_published' => json_encode(['blocks' => $blocks]), 'content_draft' => json_encode(['blocks' => $blocks]), 'status' => 'published'], 'id = :id', ['id' => $home]);
                 $log = fn(string $m) => fwrite(STDERR, $m . "\n");
                 $t = \Core\Kit\Demo::table(['handle' => 'personen', 'name' => 'Personen', 'settings' => ['kind' => Kinds::CONTACTS], 'fields' => Kinds::presetFields(Kinds::CONTACTS)], $log);
@@ -278,6 +293,15 @@ final class SelfTest
                 $home = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1');
                 $eq('Startseite mit neuem Namen', str_contains($home, 'Neuer Musterverein'), true);
                 $eq('Akzentfarbe gesetzt und lesbar', \Core\Contrast::ratio((string) (\Core\Design::values()['accent'] ?? '#000000'), '#FFFFFF') >= 4.5, true);
+                $dv = \Core\Design::values();
+                $eq('Palette: dunkle Abschnitte und Flächen aus der Farbe, weiße Schrift ≥ 7, Fläche mit Text ≥ 4,5', [isset($dv['dark_section']) ? strtoupper((string) $dv['dark_section']) !== '#0E1022' : true,
+                    !isset($dv['dark_section']) || \Core\Contrast::ratio('#FFFFFF', (string) $dv['dark_section']) >= 7, !isset($dv['surface']) || \Core\Contrast::ratio((string) $dv['surface'], (string) ($dv['text'] ?? '#2B2F3A')) >= 4.5], [true, true, true]);
+                $st = QuickConfig::state();
+                $eq('Werte aus site:create erledigen Erscheinungsbild und Gebiet', [!empty($st['done']['look']), !empty($st['done']['region']), (string) app()->settings->get('org.region')], [true, true, 'Hessen']);
+                $tasks = array_column(app()->db->fetchAll('SELECT title FROM tasks'), 'title');
+                $eq('Aufgabe „Text an Ihre Organisation anpassen“ mit neuer Region', count(array_filter($tasks, fn($t) => str_starts_with((string) $t, 'Text an Ihre Organisation anpassen: '))) >= 1, true);
+                $home = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1');
+                $eq('Region im Text ersetzt (Langname und Abkürzung)', [str_contains($home, 'In Hessen gibt es'), str_contains($home, 'Gruppen in Hessen')], [true, true]);
                 $eq('Demo gekennzeichnet', array_sum(Demo::counts()) >= 4, true);
                 break;
             case 'grow':

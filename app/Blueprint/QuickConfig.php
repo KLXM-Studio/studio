@@ -33,6 +33,48 @@ final class QuickConfig
         'Niedersachsen' => '52.64, 9.85', 'Nordrhein-Westfalen' => '51.43, 7.66', 'Rheinland-Pfalz' => '50.12, 7.31', 'Saarland' => '49.40, 6.95',
         'Sachsen' => '51.10, 13.20', 'Sachsen-Anhalt' => '51.95, 11.69', 'Schleswig-Holstein' => '54.22, 9.70', 'Thüringen' => '50.86, 11.05',
     ];
+    /** Amtlicher Gemeindeschlüssel (Land, zweistellig) → Bundesland – Gebietskarten nutzen die Schlüssel, --region=06 geht auch */
+    public const REGION_CODES = ['01' => 'Schleswig-Holstein', '02' => 'Hamburg', '03' => 'Niedersachsen', '04' => 'Bremen', '05' => 'Nordrhein-Westfalen',
+        '06' => 'Hessen', '07' => 'Rheinland-Pfalz', '08' => 'Baden-Württemberg', '09' => 'Bayern', '10' => 'Saarland', '11' => 'Berlin',
+        '12' => 'Brandenburg', '13' => 'Mecklenburg-Vorpommern', '14' => 'Sachsen', '15' => 'Sachsen-Anhalt', '16' => 'Thüringen'];
+    /** Gängige Abkürzungen der Bundesländer (Platzhalter {{region.short}}); zweistellige werden beim Export nicht automatisch ersetzt */
+    public const REGION_SHORT = ['Schleswig-Holstein' => 'SH', 'Hamburg' => 'HH', 'Niedersachsen' => 'NDS', 'Bremen' => 'HB', 'Nordrhein-Westfalen' => 'NRW',
+        'Hessen' => 'HE', 'Rheinland-Pfalz' => 'RLP', 'Baden-Württemberg' => 'BW', 'Bayern' => 'BY', 'Saarland' => 'SL', 'Berlin' => 'BE',
+        'Brandenburg' => 'BB', 'Mecklenburg-Vorpommern' => 'MV', 'Sachsen' => 'SN', 'Sachsen-Anhalt' => 'ST', 'Thüringen' => 'TH'];
+
+    /**
+     * Region aus einer Eingabe: Bundesland (auch Abkürzung wie „NRW“ oder Schlüssel „05“) oder freie Angabe.
+     * @return array{name: string, short: string, code: ?string}
+     */
+    public static function region(string $in): array
+    {
+        $in = trim($in);
+        $name = ctype_digit($in) ? (self::REGION_CODES[str_pad($in, 2, '0', STR_PAD_LEFT)] ?? null) : null;
+        if ($name === null) foreach (self::REGION_SHORT as $n => $s) if (strcasecmp($in, $s) === 0 || strcasecmp($in, $n) === 0 || ($s === 'NRW' && strcasecmp($in, 'NW') === 0)) { $name = $n; break; }
+        if ($name === null) return ['name' => $in, 'short' => $in, 'code' => null];
+        // Zweistellige Abkürzungen („HE“) liest kaum jemand – dann der Name
+        $short = mb_strlen(self::REGION_SHORT[$name]) >= 3 ? self::REGION_SHORT[$name] : $name;
+        return ['name' => $name, 'short' => $short, 'code' => (string) array_search($name, self::REGION_CODES, true)];
+    }
+
+    /**
+     * Rückmeldungen der Erweiterungen (Filter blueprint.apply / blueprint.region): Texte werden Meldungen, Einträge
+     * ['task' => Titel, 'link' => '/admin/…', 'body' => …] werden Aufgaben. @return list<string>
+     */
+    public static function handleLines(mixed $lines, ?array $user = null): array
+    {
+        $out = [];
+        foreach (is_array($lines) ? $lines : [] as $l) {
+            if (is_string($l)) { $out[] = $l; continue; }
+            if (is_array($l) && trim((string) ($l['task'] ?? '')) !== '') {
+                self::task(mb_substr(trim((string) $l['task']), 0, 180), (string) ($l['body'] ?? __('Offener Punkt aus der Schnelleinrichtung der Website-Vorlage.')),
+                    (string) ($l['link'] ?? ''), \Core\Tasks\Tasks::actor($user, $user ? 'admin' : 'cli'));
+                $out[] = __('Aufgabe angelegt: {title}', ['title' => (string) $l['task']]);
+            }
+        }
+        return $out;
+    }
+
     /** Felder des Schritts „Organisation“: Eingabe → Platzhalter */
     public const ORG_FIELDS = ['name' => 'org.name', 'short' => 'org.short', 'claim' => 'org.claim', 'legal_form' => 'org.legal_form', 'register' => 'org.register',
         'street' => 'org.street', 'zip' => 'org.zip', 'city' => 'org.city', 'phone' => 'org.phone', 'email' => 'org.email'];
@@ -93,6 +135,19 @@ final class QuickConfig
         self::save($s);
     }
 
+    /** Schritt als erledigt merken (z. B. Werte schon aus site:create) */
+    public static function markDone(string $step, array $values = []): void
+    {
+        if (in_array($step, self::STEPS, true)) self::done($step, $values);
+    }
+
+    /** Aufgabe aus der Vorlage anlegen (einmal je Titel, solange offen) */
+    public static function addTask(string $title, string $body, string $link, array $actor): void
+    {
+        if (\Core\Tasks\Tasks::cleanLink($link) === false) $link = '';
+        self::task($title, $body, $link, $actor);
+    }
+
     /** Werte der Platzhalter (bisher gesammelt) */
     public static function values(): array
     {
@@ -109,7 +164,7 @@ final class QuickConfig
         return match ($step) {
             'org' => self::saveOrg($in),
             'look' => self::saveLook($in),
-            'region' => self::saveRegion($in),
+            'region' => self::saveRegion($in, $user),
             'network' => self::saveNetwork($in, $user),
             'accounts' => self::saveAccounts($in, $user),
             'demo' => self::saveDemo($in),
@@ -128,6 +183,8 @@ final class QuickConfig
         $values = [];
         $errors = [];
         foreach (self::ORG_FIELDS as $f => $key) if (array_key_exists($f, $in)) $values[$key] = self::clean($in[$f], $f === 'claim' ? 240 : 191);
+        // Vorbelegung aus site:create (--name, --short …) gilt, wenn die Eingabe das Feld nicht nennt – nicht erneut abfragen
+        if (!array_key_exists('name', $in)) $values['org.name'] = (string) (self::values()['org.name'] ?? '');
         if (($values['org.name'] ?? '') === '') $errors['name'] = __('Bitte den Namen der Organisation angeben.');
         if (($values['org.email'] ?? '') !== '' && !filter_var($values['org.email'], FILTER_VALIDATE_EMAIL)) $errors['email'] = __('Ungültige E-Mail-Adresse.');
         foreach ((array) (app()->settings->get(Apply::KEY, [])['placeholders'] ?? []) as $k => $p) {
@@ -154,32 +211,23 @@ final class QuickConfig
         if (trim((string) ($in['color'] ?? '')) !== '') {
             $c = \Core\Design::color($in['color']);
             if ($c === null) return ['errors' => ['color' => __('Bitte eine Farbe als #RRGGBB angeben.')], 'messages' => []];
-            $r = self::setAccent($c);
-            $msg[] = $r['adjusted'] ? __('Akzentfarbe übernommen – für gute Lesbarkeit leicht abgedunkelt ({color}).', ['color' => $r['color']]) : __('Akzentfarbe übernommen.');
+            $variant = isset(Palette::VARIANTS[(string) ($in['palette'] ?? '')]) ? (string) $in['palette'] : 'balanced';
+            $r = self::setAccent($c, $variant);
+            $msg[] = $r['adjusted'] ? __('Farben übernommen (Palette „{palette}“) – Akzent für gute Lesbarkeit angepasst ({color}).', ['palette' => Palette::label($variant), 'color' => $r['color']])
+                : __('Farben übernommen (Palette „{palette}“).', ['palette' => Palette::label($variant)]);
+            self::done('look', ['look.palette' => $variant, 'look.color' => $c]);
         }
         self::done('look');
         return ['errors' => [], 'messages' => $msg ?: [__('Erscheinungsbild bleibt wie in der Vorlage.')]];
     }
 
     /**
-     * Akzentfarbe setzen: Design-Wert „accent“ des Kits (lesbar auf dem Hintergrund, sonst abgedunkelt), dazu – falls vorhanden –
-     * kräftige Variante, Schrift auf Akzent und dunkler Wert. @return array{color: string, adjusted: bool, ratio: float}
+     * Farben aus der Akzentfarbe setzen (Core\Blueprint\Palette): Akzent und alle abhängigen Farben des Kits hell und dunkel,
+     * je Token mit Kontrastprüfung. Nur in dieser (neuen) Website. @return array{color: string, adjusted: bool, set: list<string>, fixed: list<string>}
      */
-    public static function setAccent(string $color): array
+    public static function setAccent(string $color, string $variant = 'balanced'): array
     {
-        $tokens = \Core\Design::tokens();
-        if (!isset($tokens['accent'])) return ['color' => $color, 'adjusted' => false, 'ratio' => 0.0];
-        $vals = \Core\Design::values();
-        $bg = \Core\Design::color($vals['background'] ?? '') ?? '#FFFFFF';
-        $fixed = \Core\Design::readable($color, $bg, 4.5);
-        $vals['accent'] = $fixed;
-        if (isset($tokens['accent']['dark'])) $vals['accent@dark'] = \Core\Contrast::mix('#FFFFFF', $fixed, 45);
-        if (isset($tokens['accent_strong'])) $vals['accent_strong'] = \Core\Contrast::mix('#000000', $fixed, 18);
-        if (isset($tokens['on_accent'])) $vals['on_accent'] = \Core\Contrast::ratio('#FFFFFF', $fixed) >= 4.5 ? '#FFFFFF' : '#111111';
-        app()->settings->set('design.' . app()->theme->name, \Core\Design::normalize($vals));
-        \Core\Design::override(null);
-        \Core\PageCache::clear();
-        return ['color' => $fixed, 'adjusted' => $fixed !== $color, 'ratio' => round(\Core\Contrast::ratio($fixed, $bg), 2)];
+        return Palette::apply($color, $variant);
     }
 
     /** Logo aus einer Datei in die Mediathek und als Logo des Kits (Einstellung „logo“) – Fehlertext oder null */
@@ -195,18 +243,22 @@ final class QuickConfig
         return null;
     }
 
-    private static function saveRegion(array $in): array
+    private static function saveRegion(array $in, ?array $user = null): array
     {
-        $region = self::clean($in['region'] ?? '', 120);
-        if ($region === '') return ['errors' => ['region' => __('Bitte eine Region wählen oder eingeben.')], 'messages' => []];
-        $values = ['region.name' => $region];
+        $raw = self::clean($in['region'] ?? '', 120);
+        if ($raw === '') return ['errors' => ['region' => __('Bitte eine Region wählen oder eingeben.')], 'messages' => []];
+        $r = self::region($raw);
+        $region = $r['name'];
+        $values = ['region.name' => $region, 'region.short' => $r['short']];
         Apply::applyParams([], array_merge(self::values(), $values));
         app()->settings->set('org.region', $region);
         // Kartenpunkt der Organisation (Feld „geo“ des Kits) auf die Mitte des Bundeslands, solange keiner gesetzt ist
         if (isset(self::REGIONS[$region]) && trim((string) app()->settings->get('geo', '')) === '') app()->settings->set('geo', self::REGIONS[$region]);
-        $lines = \Core\Extensions::filter('blueprint.region', [], ['region' => $region, 'blueprint' => app()->settings->get(Apply::KEY, [])]);
+        // Erweiterungen (z. B. Gebietskarten: Ausschnitt der Region, Beispiel-Zuordnung, Aufgabe „Gebiete zuordnen“)
+        $lines = \Core\Extensions::filter('blueprint.region', [], ['region' => $region, 'code' => $r['code'], 'short' => $r['short'], 'blueprint' => app()->settings->get(Apply::KEY, []),
+            'values' => array_merge(self::values(), $values)]);
         self::done('region', $values);
-        return ['errors' => [], 'messages' => array_merge([__('Gebiet „{region}“ gespeichert.', ['region' => $region])], is_array($lines) ? array_values(array_filter($lines, 'is_string')) : [])];
+        return ['errors' => [], 'messages' => array_merge([__('Gebiet „{region}“ gespeichert.', ['region' => $region])], self::handleLines($lines, $user))];
     }
 
     private static function saveNetwork(array $in, ?array $user): array

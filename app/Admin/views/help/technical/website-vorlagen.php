@@ -40,6 +40,7 @@
       und Tabellen mit öffentlichem Formular. Verknüpfungen nur zwischen exportierten Einträgen.</li>
     <li><b>Bilder:</b> nur mit Urheber und freier Lizenz (<code>Export::FREE_LICENSE</code>), sonst beim Anlegen ein Platzhalterbild (Tag <code>vorlage-platzhalter</code>);
       Medien-IDs in Blöcken über die Schlüssel-Regel von <code>ContentSync::isMediaKey()</code>.</li>
+    <li><b>Personen der Quelle</b> (<code>Anonymizer::personNames()</code>): Namen aus Konten, Kontakten, Personenfeldern und Kombifeldern „Ansprechperson“ werden in allen Texten (Seiten, Einstellungen, Einträge, Abschnitte der Erweiterungen) durch Platzhalter-Personen ersetzt und im Paket geprüft.</li>
     <li><b>Prüfung</b> (<code>Export::audit()</code>): Nach dem Schreiben wird das Paket gegen E-Mail-Adressen und Namen der Konten, Zugangsdaten der
       E-Mail-Konten, Werte geheimer Einstellungen, <code>app_key</code>, Domains, Abonnenten, Einladungen und Aufgaben der Quelle sowie gegen
       E-Mail-Adressen und IBANs allgemein geprüft – bei einem Fund wird es verworfen (Meldung nennt Art und Datei, nie den Wert).</li>
@@ -59,11 +60,37 @@
   <h3 id="blueprint-schnell">Schnelleinrichtung</h3>
   <p><code>QuickConfig::start()</code> setzt <code>sys.quick_config</code> {open, steps, done, values} und den Wartungsmodus; die Übersicht leitet Personen
   mit <code>system.manage</code> nach <code>/admin/schnelleinrichtung</code> (mit <code>?uebersicht=1</code> nicht). Schritte <code>QuickConfig::STEPS</code>:
-  org, look (<code>setAccent()</code>: Design-Wert <code>accent</code> per <code>Design::readable()</code> auf mindestens 4,5 : 1, dazu accent@dark,
-  accent_strong, on_accent; <code>setLogo()</code>), region (<code>org.region</code>, Kartenpunkt <code>geo</code> je Bundesland, Filter <code>blueprint.region</code>),
+  org, look (<code>setAccent()</code> → <code>Palette::apply()</code>, siehe „Farben aus der Akzentfarbe“; <code>setLogo()</code>), region (<code>org.region</code>, Kartenpunkt <code>geo</code> je Bundesland, Filter <code>blueprint.region</code>),
   network, accounts (<code>Invites</code>), demo, mail (<code>Mail\Accounts::saveStandard</code> bzw. Netzwerk-Konto, Testmail), legal (Platzhalter,
   Aufgaben „Bitte prüfen“). <code>finish()</code> legt <code>checklist()</code> als Aufgaben an und beendet den Wartungsmodus. CLI:
   <code>site:quick-config --site=… [--step=… --feld=wert] [--finish]</code>. Health meldet eine offene Schnelleinrichtung als Hinweis.</p>
+
+  <h3 id="blueprint-palette">Farben aus der Akzentfarbe (<code>Core\Blueprint\Palette</code>)</h3>
+  <p><code>Palette::derive($farbe, $variante)</code> leitet aus einer Farbe alle abhängigen Werte ab – <code>accent</code>, <code>accent_strong</code>,
+  <code>on_accent</code>, <code>highlight</code>, <code>secondary</code>, <code>on_secondary</code>, <code>surface</code>, <code>line</code>, <code>dark_section</code>, je mit
+  <code>@dark</code> –, Varianten <code>balanced</code>, <code>vivid</code>, <code>calm</code>, <code>contrast</code> (HSL, Mischen mit Schwarz/Weiß bzw. dem Hintergrund).
+  <code>Palette::forKit()</code> setzt nur Tokens, die das aktive Kit hat (fluid, native und Kits mit diesen Namen), und prüft danach jeden Wert gegen die
+  Kontrast-Vorgabe seines Tokens (<code>contrast</code> =&gt; with, min, dark_with) mit <code>Design::readable()</code>. <code>Palette::apply()</code> speichert in
+  <code>design.{kit}</code> der aktuellen (neuen) Website; die Quelle bleibt unverändert. Die Schnelleinrichtung zeigt die Varianten mit Vorschau
+  (<code>GET /admin/schnelleinrichtung/paletten?color=</code>, <code>resources/js/_quickconfig.js</code>); <code>site:create --color=#… [--palette=…]</code>.
+  Selbsttest: fünf Farben × vier Varianten (Akzent und Fläche mit Text ≥ 4,5, zweite Farbe ≥ 3, dunkle Abschnitte mit weißer Schrift ≥ 7, dunkel).</p>
+
+  <h3 id="blueprint-texte">Texte der Quelle, Bilder, Probelauf</h3>
+  <p>Region der Quelle: <code>--region=</code> beim Export, sonst Einstellung <code>org.region</code>, sonst Filter <code>blueprint.source</code> (z. B. Ausschnitt einer
+  Gebietskarte). <code>QuickConfig::region()</code> kennt Bundesländer, Abkürzungen ab drei Zeichen (NRW, NDS, RLP) und Landesschlüssel. <code>Export::review()</code>
+  zählt die Platzhalter und meldet Stellen, die nicht eindeutig ersetzt werden konnten: Angabe der Quelle als Wortteil bzw. Wortstamm der Region
+  („NRW-weit“, „nordrhein-westfälisch“) und Zahlen neben <code>{{region.*}}</code> (ohne Jahreszahlen, Datum, Uhrzeit) – als <code>manifest.review</code>
+  {where, link, title, reason, sample}; beim Anlegen je Stelle eine Aufgabe „Text an Ihre Organisation anpassen“. Das Impressum der Quelle wird durch
+  <code>Export::IMPRINT</code> (Platzhalter, Redaktionsnotizen) ersetzt. Bilder, die Platzhalter werden, stehen mit Grund (<code>Export::mediaReason()</code>:
+  missing, pool, license, credit, both) in <code>manifest.media_report</code> und im Bericht der Version (<code>meta.json → versions[].report</code>).
+  <code>site:blueprint … --check</code>: Plan ohne Paket.</p>
+
+  <h3 id="blueprint-zweiter-schritt">Zweiter Schritt: Erweiterungen und Gebiet</h3>
+  <p>Nach <code>blueprint:apply</code> startet <code>blueprint:apply-ext</code> als eigener Prozess: Erst dann laufen die gerade eingeschalteten Erweiterungen
+  (Tabellen angelegt) und bekommen <code>blueprint.apply</code> mit <code>ctx.values</code> (Platzhalter). Danach der Schritt Gebiet aus <code>--region</code>
+  (Filter <code>blueprint.region</code> mit <code>code</code>, <code>short</code>, <code>values</code>). Rückgaben der Filter: Texte als Meldung, Einträge
+  <code>['task' =&gt; …, 'link' =&gt; …, 'body' =&gt; …]</code> als Aufgabe (<code>QuickConfig::handleLines()</code>). Werte aus <code>site:create</code> sind Vorbelegung:
+  Farbe/Logo erledigen „Erscheinungsbild“, Region „Gebiet“, verbundene Netzwerk-Tabellen „Netzwerk“; Name/Kurzname belegen „Organisation“ vor.</p>
 
   <h3 id="blueprint-updates">Versionen und Vorschläge</h3>
   <p><code>Diff::signature()</code> bildet den Fingerabdruck der Struktur (Seiten nach Sprache und Pfad, Tabellen mit Feldtypen, Rollen mit Rechten,

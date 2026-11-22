@@ -15,10 +15,19 @@
   <ul>
     <li><b>Angaben der Organisation werden Platzhalter:</b> Name, Kurzname, Claim, Anschrift, Telefon, E-Mail und Domain der Quelle stehen im
       Paket als <code>{{org.name}}</code>, <code>{{org.city}}</code> usw. – auch in Seitentexten. Beim Anlegen und in der Schnelleinrichtung
-      werden sie mit Ihren Angaben gefüllt.</li>
+      werden sie mit Ihren Angaben gefüllt. Ebenso die Region der Quelle – Langname und gängige Abkürzung („Nordrhein-Westfalen“, „NRW“) werden
+      <code>{{region.name}}</code> bzw. <code>{{region.short}}</code>.</li>
+    <li><b>Texte zum Anpassen:</b> Steht die Quelle nur als Wortteil oder in anderer Form im Text („NRW-weit“, „nordrhein-westfälisch“) oder nennt
+      ein Absatz Zahlen zur Region (Anzahl der Gruppen, Statistik), ersetzt die Vorlage nichts selbst. Die neue Website bekommt dafür je Stelle die
+      Aufgabe „Text an Ihre Organisation anpassen“ mit Link. Das <b>Impressum</b> der Quelle geht nie mit – die Vorlage enthält ein Impressum mit
+      Platzhaltern und Hinweisen. Vorab prüfen: <code>php bin/console site:blueprint &lt;website&gt; --check</code> zeigt den Plan, ohne ein Paket zu schreiben.</li>
+    <li><b>Bilder:</b> Der Bericht jeder Version (Versionen → „Bericht des Exports“) nennt die Bilder, die als Platzhalter ersetzt werden, mit Grund.
+      Damit eine Vorlage echte Beispielbilder bekommt, in der Quelle unter Medien → Bild → Rechte eine freie Lizenz (z. B. „Pixabay-Lizenz“) und den
+      Urheber eintragen und eine neue Version erstellen.</li>
     <li><b>Demoinhalte</b> (wählbar: wenige, alle oder keine): immer anonymisiert – Personen werden Platzhalter („Erika Musterfrau“),
       Organisationen „Beispiel-Organisation“, Kontaktangaben Beispielwerte, Termine liegen relativ zu heute in der Zukunft. Bilder nur, wenn sie
-      frei sind (Lizenz wie Pixabay/Pexels und Urheber), sonst ein neutrales Platzhalterbild. Redaktionsnotizen fallen weg.</li>
+      frei sind (Lizenz wie Pixabay/Pexels und Urheber), sonst ein neutrales Platzhalterbild. Redaktionsnotizen fallen weg. Namen von Personen aus
+      Konten und Daten (Kontakte, Ansprechpersonen) werden auch in Seitentexten und Einstellungen durch Platzhalter-Personen ersetzt.</li>
     <li><b>Netzwerk-Tabellen</b> (z. B. ein geteiltes Glossar) werden nicht kopiert: Die neue Website wird eingeladen und tritt bei.</li>
     <li>Vor dem Speichern prüft das System das ganze Paket auf Geheimnisse und personenbezogene Daten der Quelle. Gibt es einen Fund,
       entsteht kein Paket.</li>
@@ -38,7 +47,8 @@
 
   <h3 id="vorlagen-neue-website">Neue Website aus einer Vorlage</h3>
   <p>In der Vorlage „Neue Website aus Vorlage“: Kurzname, Domains und – optional – Name, Kurzname, Region und Farbe. Die Website entsteht mit
-  dem Kit der Vorlage im <b>Wartungsmodus</b>; Besucher sehen „Diese Website wird gerade eingerichtet“. Das erste Konto legen Sie wie gewohnt
+  dem Kit der Vorlage im <b>Wartungsmodus</b>. Angaben beim Anlegen gelten in der Schnelleinrichtung als erledigt bzw. vorbelegt (Farbe und Logo:
+  Erscheinungsbild; Region: Gebiet; Name und Kurzname: Organisation); Besucher sehen „Diese Website wird gerade eingerichtet“. Das erste Konto legen Sie wie gewohnt
   über <code>/admin/setup</code> mit dem angezeigten Setup-Token an oder öffnen die Website als Netzwerk-Administration.</p>
 
   <h3 id="schnelleinrichtung">Schnelleinrichtung</h3>
@@ -47,10 +57,13 @@
   <ol>
     <li><b>Organisation:</b> Name, Kurzname, Claim, Rechtsform, Registereintrag, Anschrift, Telefon, E-Mail – erscheinen im Impressum, im
       Fußbereich, in den Kontaktdaten und als Absendername der E-Mails.</li>
-    <li><b>Erscheinungsbild:</b> Logo und Akzentfarbe mit Vorschau; ist die Farbe zu hell für weiße Schrift, wird sie beim Speichern so weit
-      abgedunkelt, dass der Kontrast mindestens 4,5 : 1 beträgt.</li>
-    <li><b>Gebiet:</b> Region bzw. Bundesland – setzt den Kartenpunkt der Organisation und „In deiner Nähe“; mit der Erweiterung Gebietskarten
-      auch die zuständigen Gebiete.</li>
+    <li><b>Erscheinungsbild:</b> Logo und Akzentfarbe. Aus der Farbe entstehen alle Farben der Website – Kopf und dunkle Abschnitte, getönte
+      Flächen, Linien, zweite Farbe, hell und dunkel. Zur Wahl stehen vier Paletten (Ausgewogen, Kräftig, Ruhig, Hoher Kontrast) mit Vorschau.
+      Jede Farbe wird so angepasst, dass Text darauf lesbar bleibt (Text mindestens 4,5 : 1, Bedienelemente 3 : 1). Die Website der Vorlage bleibt
+      unverändert.</li>
+    <li><b>Gebiet:</b> Region bzw. Bundesland (auch „NRW“ oder der Landesschlüssel „05“) – setzt den Kartenpunkt der Organisation und „In deiner
+      Nähe“ und ersetzt die Region in den Texten. Mit der Erweiterung Gebietskarten zeigen die Karten das neue Land; die Beispiel-Gebiete bekommen
+      einzelne Kreise, dazu entsteht die Aufgabe „Gebiete zuordnen“.</li>
     <li><b>Netzwerk:</b> den geteilten Tabellen der Vorlage beitreten.</li>
     <li><b>Konten:</b> die ersten Personen mit Rolle einladen.</li>
     <li><b>Demoinhalte:</b> behalten oder entfernen (auch später mit <code>site:demo-remove</code>).</li>

@@ -74,8 +74,16 @@ final class Export
         $app = app();
         $report = [];
         $setting = fn(string $k) => $app->settings->get($k);
-        $src = Placeholders::sourceValues($setting, (string) (site()->hosts()[0] ?? ''));
-        $anon = new Anonymizer($src);
+        // Region der Quelle: Angabe beim Export, sonst Einstellung org.region, sonst von Erweiterungen (z. B. Ausschnitt der Gebietskarte)
+        $srcRegion = trim((string) ($o['region'] ?? ''));
+        if ($srcRegion === '') {
+            $fromExt = \Core\Extensions::filter('blueprint.source', [], ['site' => site()->key]);
+            $srcRegion = is_array($fromExt) ? trim((string) ($fromExt['region'] ?? '')) : '';
+        }
+        $src = Placeholders::sourceValues($setting, (string) (site()->hosts()[0] ?? ''), $srcRegion);
+        // Personen der Quelle (Konten, Kontakte, Personenfelder): in allen Texten Platzhalter-Personen, im Paket geprüft (audit)
+        $persons = Anonymizer::personNames();
+        $anon = new Anonymizer($src, 0, $persons);
         $files = [];
         $copies = [];   // Dateien, die unverändert ins Paket kopiert werden: Pfad im Paket → Quelldatei
         $media = [];   // alte ID → ['demo' => bool] (Verwendung)
@@ -119,6 +127,13 @@ final class Export
             foreach (['title', 'nav_title', 'meta_title', 'meta_description'] as $c) if (is_string($p[$c] ?? null)) $p[$c] = $anon->text($p[$c]);
             if ((int) ($p['og_image'] ?? 0) > 0) $media[(int) $p['og_image']] ??= ['demo' => false];
             $pages[] = $p;
+        }
+        // Impressum: Text der Quelle nennt verantwortliche Personen – stattdessen Vorlage mit Platzhaltern und Redaktionsnotizen
+        $imprintId = (int) ($app->settings->get('imprint_page') ?: $app->settings->get('impressum_seite'));
+        foreach ($pages as $i => $p) {
+            if ($imprintId <= 0 || (int) $p['id'] !== $imprintId) continue;
+            $pages[$i] = self::imprintTemplate($p);
+            $report[] = 'Impressum: Text durch eine Vorlage mit Platzhaltern ersetzt (Personen der Quelle gehen nicht mit)';
         }
         $report[] = 'Seiten: ' . count(array_filter($pages, fn($p) => $p['type'] === 'page')) . ' Seiten, ' . count(array_filter($pages, fn($p) => $p['type'] !== 'page')) . ' Vorlagen';
 
@@ -221,11 +236,16 @@ final class Export
         // ---------------------------------------------------------------- Medien: nur freie mit Urheber, sonst Platzhalter
         $mediaRows = [];
         $placeholderIds = [];
+        $mediaReport = [];   // Bilder, die Platzhalter werden – mit Grund (Bericht: so bekommt eine Vorlage echte Beispielbilder)
         foreach ($media as $id => $use) {
             $m = \Core\Media::find((int) $id);
-            $free = $m && empty($m['deleted_at']) && trim((string) ($m['credit'] ?? '')) !== '' && preg_match(self::FREE_LICENSE, (string) ($m['license'] ?? '')) === 1
-                && empty($m['pool_ref']) && is_file(\Core\Media::path($m));
-            if (!$free) { $placeholderIds[] = (int) $id; continue; }
+            $reason = self::mediaReason($m);
+            if ($reason !== null) {
+                $placeholderIds[] = (int) $id;
+                $mediaReport[] = ['id' => (int) $id, 'name' => $m ? $anon->text((string) ($m['title'] ?: $m['original_name'] ?: $m['file'])) : '#' . (int) $id, 'reason' => $reason,
+                    'fixable' => in_array($reason, ['license', 'credit', 'both'], true)];
+                continue;
+            }
             $ext = strtolower(pathinfo((string) $m['file'], PATHINFO_EXTENSION));
             $rel = 'demo/media/' . (int) $id . '.' . $ext;
             if (Package::cleanPath($rel) === null) { $placeholderIds[] = (int) $id; continue; }
@@ -238,6 +258,7 @@ final class Export
                 'focus_x' => (int) ($m['focus_x'] ?? 50), 'focus_y' => (int) ($m['focus_y'] ?? 50), 'demo' => (bool) $use['demo']];
         }
         $report[] = 'Bilder: ' . count($mediaRows) . ' frei mit Urheber, ' . count($placeholderIds) . ' werden Platzhalter';
+        array_push($report, ...self::mediaReportLines($mediaReport));
 
         // ---------------------------------------------------------------- Projekt-Hinweise (Kit-Guide der Website)
         $guide = 0;
@@ -289,12 +310,27 @@ final class Export
             'counts' => ['pages' => count($pages), 'tables' => count($tables), 'roles' => count($roles), 'media' => count($mediaRows), 'guide' => $guide],
             'changelog' => array_values((array) ($o['changelog'] ?? [['version' => $version, 'date' => date('Y-m-d'), 'note' => (string) ($o['note'] ?? 'Erste Version')]])),
         ];
+        // Texte der Quelle: was ersetzt wurde und was die neue Website von Hand anpassen sollte (beim Anlegen: Aufgaben)
+        [$replaced, $review] = self::review($pages, $entries, $settings, $tables, $src);
+        $manifest['review'] = $review;
+        $manifest['media_report'] = $mediaReport;
+        $report[] = 'Texte: ' . ($replaced ? implode(', ', array_map(fn($k, $n) => '{{' . $k . '}} ' . $n . '×', array_keys($replaced), $replaced)) : 'keine Angaben der Quelle gefunden')
+            . ' · ' . count($review) . ' Stellen zum Anpassen';
+        $report[] = 'Personen der Quelle: ' . $anon->personHits . ' Nennungen durch Platzhalter-Personen ersetzt (' . count($persons) . ' Namen aus Konten und Daten bekannt)';
+        if (!empty($o['check'])) {
+            // Probelauf: Plan ohne Paket
+            $shown = array_intersect_key($src, array_flip(['org.name', 'org.short', 'region.name', 'region.short', 'org.domain']));
+            $report[] = 'Quelle erkannt: ' . (implode(', ', array_map(fn($k, $v) => $k . ' = ' . $v, array_keys($shown), $shown)) ?: '–');
+            foreach ($review as $rv) $report[] = '  ! ' . $rv['title'] . ' (' . $rv['where'] . '): ' . $rv['reason'] . ($rv['sample'] !== '' ? ' – „' . $rv['sample'] . '“' : '');
+            $report[] = 'Probelauf – kein Paket geschrieben (ohne --check exportieren).';
+            return ['path' => '', 'manifest' => $manifest, 'report' => $report];
+        }
 
         // Paket schreiben (bei ZIP zuerst in ein temporäres Verzeichnis), dann prüfen
         $dir = $zip ? Package::tempDir() . '/pkg' : $out;
         try {
             Package::write($dir, $manifest, $files, $copies);
-            $findings = self::audit($dir);
+            $findings = self::audit($dir, $persons);
             if ($findings) throw new \RuntimeException("Paket verworfen – möglicherweise vertrauliche Angaben:\n  " . implode("\n  ", $findings));
             if ($zip) Package::zip($dir, $out);
         } catch (\Throwable $e) {
@@ -304,6 +340,127 @@ final class Export
         if ($zip) self::discard($dir, true);
         $report[] = 'Prüfung auf Geheimnisse und personenbezogene Daten: ohne Fund';
         return ['path' => $out, 'manifest' => $manifest, 'report' => $report];
+    }
+
+    /** Impressum der Vorlage: Angaben als Platzhalter, Personen als Redaktionsnotiz (unsichtbar auf der Website) */
+    public const IMPRINT = '<p><strong>{{org.name}}</strong><br>{{org.street}}<br>{{org.zip}} {{org.city}}</p>'
+        . '<p>Telefon: {{org.phone}}<br>E-Mail: {{org.email}}</p>'
+        . '<p>Rechtsform: {{org.legal_form}}<br>Registereintrag: {{org.register}}</p>'
+        . '<p>Vertreten durch: [# Vorstand bzw. Geschäftsführung ergänzen #]</p>'
+        . '<p>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: [# Name und Anschrift ergänzen #]</p>';
+
+    /** Seite „Impressum“: erster Textblock (richtext) bekommt die Vorlage, weitere Textblöcke entfallen; andere Blöcke bleiben */
+    private static function imprintTemplate(array $p): array
+    {
+        foreach (['content_published', 'content_draft'] as $c) {
+            if (!is_array($p[$c] ?? null)) continue;
+            $blocks = [];
+            $done = false;
+            foreach ((array) ($p[$c]['blocks'] ?? []) as $b) {
+                if (($b['type'] ?? '') === 'richtext') {
+                    if ($done) continue;
+                    $b['data'] = ['text' => self::IMPRINT, 'intro' => '', 'title' => ''] + (array) ($b['data'] ?? []);
+                    $b['data']['text'] = self::IMPRINT;
+                    $b['data']['intro'] = '';
+                    $done = true;
+                }
+                $blocks[] = $b;
+            }
+            if (!$done) $blocks[] = ['id' => substr(bin2hex(random_bytes(6)), 0, 10), 'type' => 'richtext', 'data' => ['text' => self::IMPRINT], 'tunes' => []];
+            $p[$c]['blocks'] = $blocks;
+        }
+        return $p;
+    }
+
+    /**
+     * Warum ein Bild nicht ins Paket geht (null = es geht mit): missing (gelöscht/fehlt), pool (geteilter Pool), license (Urheber da,
+     * Lizenz fehlt oder ist nicht frei), credit (freie Lizenz, Urheber fehlt), both (beides fehlt).
+     */
+    public static function mediaReason(?array $m): ?string
+    {
+        if (!$m || !empty($m['deleted_at']) || !is_file(\Core\Media::path($m))) return 'missing';
+        if (!empty($m['pool_ref'])) return 'pool';
+        $credit = trim((string) ($m['credit'] ?? '')) !== '';
+        $free = preg_match(self::FREE_LICENSE, (string) ($m['license'] ?? '')) === 1;
+        if ($credit && $free) return null;
+        return $credit ? 'license' : ($free ? 'credit' : 'both');
+    }
+
+    /** Bericht der Platzhalter-Bilder: Gründe, welche mitgehen könnten und wie man sie markiert @return list<string> */
+    public static function mediaReportLines(array $rows): array
+    {
+        if (!$rows) return [];
+        $why = ['missing' => 'Datei fehlt', 'pool' => 'aus einem geteilten Medien-Pool', 'license' => 'Lizenz fehlt oder ist nicht frei',
+            'credit' => 'Urheber fehlt', 'both' => 'Lizenz und Urheber fehlen'];
+        $fix = array_values(array_filter($rows, fn($r) => $r['fixable']));
+        $out = ['Platzhalter statt Bild (' . count($rows) . '):'];
+        foreach (array_slice($rows, 0, 25) as $r) $out[] = '  - #' . $r['id'] . ' ' . mb_strimwidth($r['name'], 0, 60, '…') . ': ' . ($why[$r['reason']] ?? $r['reason']);
+        if (count($rows) > 25) $out[] = '  … und ' . (count($rows) - 25) . ' weitere';
+        if ($fix) $out[] = 'Könnten mitgehen (' . count($fix) . '): in der Quelle unter Medien → Bild → Rechte eine freie Lizenz (z. B. „Pixabay-Lizenz“, „Pexels-Lizenz“, „CC0“) und den Urheber eintragen, dann neue Version exportieren.';
+        return $out;
+    }
+
+    /**
+     * Texte nach Angaben der Quelle durchsuchen (nach dem Ersetzen durch Platzhalter): gezählte Platzhalter je Schlüssel und Stellen
+     * zum Anpassen – Name, Kurzname, Region oder Domain als Wortteil („NRW-weit“, „ÖJV-Landesverein“), Adjektive der Region
+     * („nordrhein-westfälisch“) und Zahlen neben Angaben der Quelle (Statistik, Anzahl der Gruppen).
+     * @return array{0: array<string, int>, 1: list<array{where: string, link: string, title: string, reason: string, sample: string}>}
+     */
+    public static function review(array $pages, array $entries, array $settings, array $tables, array $src): array
+    {
+        $counts = [];
+        $items = [];
+        $needles = [];
+        foreach (['org.name', 'org.short', 'region.name', 'region.short', 'org.domain'] as $k) {
+            if (!isset($src[$k])) continue;
+            $needles[$src[$k]] = $k;
+            // Wortstamm der Region für Adjektive („Nordrhein…“, „Hess…“, „Bayer…“)
+            if ($k === 'region.name') {
+                $first = explode('-', $src[$k])[0];
+                if (mb_strlen($first) >= 5) $needles[mb_substr($first, 0, max(4, mb_strlen($first) - 2))] = $k;
+            }
+        }
+        $check = function (string $s, string $where, string $link, string $title) use (&$counts, &$items, $needles): void {
+            if ($s === '' || count($items) >= 100) return;
+            foreach (Placeholders::found($s) as $k) $counts[$k] = ($counts[$k] ?? 0) + preg_match_all('~\{\{\s*' . preg_quote($k, '~') . '\s*\}\}~', $s);
+            $plain = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($s), ENT_QUOTES, 'UTF-8')));
+            $rest = (string) preg_replace(Placeholders::PATTERN, ' ', $plain);
+            $hits = [];
+            $found = array_keys(array_filter($needles, fn($k, $n) => mb_stripos($rest, (string) $n) !== false, ARRAY_FILTER_USE_BOTH));
+            if ($found) $hits[] = [(string) $found[0], 'Angabe der Quelle als Wortteil oder in anderer Form („' . implode('“, „', array_map('strval', $found)) . '“) – bitte an die Organisation anpassen'];
+            // Zahlen neben der Region (Anzahl der Gruppen, Mitglieder, Statistik) – Jahreszahlen, Datum und Uhrzeit zählen nicht
+            if (preg_match('~\{\{\s*region\.[a-z_]+\s*\}\}~', $plain)) {
+                $nums = preg_match_all('~(?<![\d.:/-])\d{2,}(?:[.,]\d+)?(?![\d.:/-]|\s*(?:Uhr|h\b))~u', $rest, $mm) ? array_filter($mm[0], fn($n) => !preg_match('~^(19|20)\d\d$~', $n)) : [];
+                if ($nums) $hits[] = [(string) reset($nums), 'Zahlen und Angaben zur Region (z. B. Anzahl, Statistik) – bitte für die eigene Organisation prüfen'];
+            }
+            foreach ($hits as [$needle, $reason]) {
+                $pos = (int) mb_stripos($plain, $needle);
+                $sample = mb_substr($plain, max(0, $pos - 40), 90);
+                $key = $where . "\x1F" . $reason;
+                if (!isset($items[$key])) $items[$key] = ['where' => $where, 'link' => $link, 'title' => $title, 'reason' => $reason, 'sample' => trim($sample)];
+            }
+        };
+        $walk = function (mixed $v, callable $fn) use (&$walk): void {
+            if (is_string($v)) { $fn($v); return; }
+            if (is_array($v)) foreach ($v as $x) $walk($x, $fn);
+        };
+        foreach ($pages as $p) {
+            $where = 'page:' . (int) $p['id'];
+            $title = (string) ($p['title'] ?? $where);
+            foreach (['title', 'nav_title', 'meta_title', 'meta_description', 'content_published'] as $c) {
+                $walk($p[$c] ?? null, fn(string $s) => $check($s, $where, $where, $title));
+            }
+        }
+        $names = array_column($tables, 'name', 'handle');
+        foreach ($entries as $h => $set) {
+            foreach ((array) ($set['rows'] ?? []) as $r) {
+                $where = 'entry:' . $h . ':' . (int) ($r['id'] ?? 0);
+                $walk($r, fn(string $s) => $check($s, $where, '/admin/data/' . $h . '/' . (int) ($r['id'] ?? 0), ($names[$h] ?? $h) . ' #' . (int) ($r['id'] ?? 0)));
+            }
+        }
+        foreach ($settings as $k => $v) $walk($v, fn(string $s) => $check($s, 'setting:' . $k, '/admin/settings', 'Einstellung ' . $k));
+        ksort($counts);
+        return [$counts, array_values($items)];
     }
 
     /** Verworfenes Paket entfernen: temporäres Verzeichnis bzw. das von write() angelegte Ziel (war leer oder neu) */
@@ -338,7 +495,7 @@ final class Export
      * Paket auf Geheimnisse und personenbezogene Daten prüfen: E-Mail-Adressen der Konten und der Grundeinstellungen, Werte geheimer
      * Einstellungen, Schlüssel der Website, IBANs, Abonnenten, Domains der Website. @return list<string> Funde (ohne die Werte selbst)
      */
-    public static function audit(string $dir): array
+    public static function audit(string $dir, array $persons = []): array
     {
         $needles = [];
         $add = function (string $kind, mixed $v) use (&$needles): void {
@@ -358,6 +515,7 @@ final class Export
             if (is_string($v)) $add('Wert einer geschützten Einstellung', $v);
         }
         $add('Schlüssel der Website', (string) app()->config->get('app_key'));
+        foreach ($persons as $p) $add('Name einer Person aus den Daten', $p);
         foreach (site()->hosts() as $h) if (str_contains($h, '.') && !preg_match('~\.(localhost|test)(:\d+)?$~', $h)) $add('Domain der Website', preg_replace('~^www\.~', '', $h));
         foreach (['newsletter_subscribers' => 'email', 'members_access' => 'email', 'user_invites' => 'email', 'tasks' => 'title'] as $tbl => $col) {
             try {

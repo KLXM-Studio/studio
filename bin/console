@@ -41,11 +41,12 @@
  *   site:list                                         Websites dieser Installation
  *   site:create <key> <domain,…> [kit] [--content=ask|full|empty]
  *                                                     Neue Website (eigene Datenbank, Medien, Benutzer)
- *   site:create <key> <domain,…> --blueprint=<name|name@version|paket> [--name=… --short=… --color=#… --logo=datei --region=…]
+ *   site:create <key> <domain,…> --blueprint=<name|name@version|paket> [--name=… --short=… --color=#… --palette=balanced|vivid|calm|contrast --logo=datei --region=…]
  *              [--params=datei.json] [--no-network] [--no-quick-config]
  *                                                     Neue Website aus einer Website-Vorlage (Core\Blueprint): Struktur, Demoinhalte,
  *                                                     Beitritt zu den Netzwerk-Tabellen, danach Schnelleinrichtung (Wartungsmodus bis dahin)
  *   site:blueprint <key> --out=ordner|datei.zip [--demo=anonym|none|full] [--name=…] [--title=…] [--version=1.0.0] [--per-table=3]
+ *              [--region=Land] [--check]   (--check: Probelauf mit Plan – Platzhalter, Stellen zum Anpassen, Bilder; kein Paket)
  *                                                     Website-Vorlage exportieren: Kit, Design, Einstellungen (Whitelist), Seitenbaum, Tabellen,
  *                                                     Rollen, Hinweise, Netzwerk-Bezüge; Demo anonymisiert; prüft auf Geheimnisse/Personendaten
  *   blueprint:list | blueprint:propose <name> | blueprint:update [--apply]
@@ -588,6 +589,7 @@ switch ($cmd) {
 
     case 'site:blueprint':
     case 'blueprint:apply':
+    case 'blueprint:apply-ext':
     case 'blueprint:list':
     case 'blueprint:propose':
     case 'blueprint:update':

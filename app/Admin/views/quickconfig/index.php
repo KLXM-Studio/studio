@@ -63,19 +63,28 @@ $custom = array_filter($placeholders, fn($p) => is_array($p) && ($p['step'] ?? '
     </form>
 
     <?php elseif ($step === 'look'): ?>
-    <p class="adm-muted"><?= e(__('Logo und Akzentfarbe. Die Farbe wird bei Bedarf so angepasst, dass Text darauf gut lesbar bleibt (mindestens 4,5 : 1).')) ?></p>
+    <p class="adm-muted"><?= e(__('Logo und Farbe. Aus der Akzentfarbe entstehen alle Farben der Website – dunkle Abschnitte, Kopf, Flächen, Linien, zweite Farbe, hell und dunkel. Jede Farbe wird so angepasst, dass Text darauf gut lesbar bleibt.')) ?></p>
     <form method="post" action="<?= e($act('look')) ?>" enctype="multipart/form-data" class="qc-form" novalidate><?= csrf_field() ?>
       <div class="qc-grid">
         <div class="f"><label for="qc-logo"><?= e(__('Logo')) ?></label><input id="qc-logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" aria-describedby="qc-logo-h">
           <p class="f-help" id="qc-logo-h"><?= e($logo ? __('Ein Logo ist gesetzt – eine neue Datei ersetzt es.') : __('PNG, JPEG, WebP oder SVG. Ohne Logo zeigt die Website den Kurznamen.')) ?></p></div>
-        <?php if ($hasAccent): ?>
+        <?php if ($hasAccent): $palVal = (string) ($values['look.palette'] ?? 'balanced'); ?>
         <div class="f f--half"><label for="qc-color"><?= e(__('Akzentfarbe')) ?></label>
-          <input id="qc-color" name="color" type="color" value="<?= e($accent !== '' ? strtolower($accent) : '#0f766e') ?>" data-qc-color aria-describedby="qc-contrast"></div>
-        <div class="f f--half qc-preview" data-qc-preview style="--qc-a: <?= e($accent !== '' ? $accent : '#0F766E') ?>">
+          <input id="qc-color" name="color" type="color" value="<?= e(strtolower($pickColor)) ?>" data-qc-color data-qc-palettes="<?= e(url('/admin/schnelleinrichtung/paletten')) ?>" aria-describedby="qc-contrast">
+          <p class="f-help" id="qc-contrast" data-qc-contrast aria-live="polite"></p></div>
+        <fieldset class="qc-pals" data-qc-pals><legend><?= e(__('Palette')) ?></legend>
+          <?php foreach ($palettes as $p): ?>
+          <label class="qc-pal"><input type="radio" name="palette" value="<?= e($p['key']) ?>"<?= $p['key'] === $palVal ? ' checked' : '' ?> data-qc-colors="<?= e((string) json_encode($p['colors'])) ?>">
+            <span class="qc-pal__sw" aria-hidden="true"><?php foreach (['accent', 'secondary', 'dark_section', 'surface'] as $sw): ?><i data-sw="<?= e($sw) ?>" style="background: <?= e((string) ($p['colors'][$sw] ?? 'transparent')) ?>"></i><?php endforeach; ?></span>
+            <span class="qc-pal__t"><strong><?= e($p['label']) ?></strong> <span class="adm-muted"><?= e($p['description']) ?></span></span></label>
+          <?php endforeach; ?>
+        </fieldset>
+        <div class="f qc-preview" data-qc-preview aria-hidden="true">
           <span class="qc-preview__label"><?= e(__('Vorschau')) ?></span>
-          <span class="qc-preview__btn"><?= e(__('Mitglied werden')) ?></span>
-          <a class="qc-preview__link" href="#" tabindex="-1" aria-hidden="true"><?= e(__('Mehr erfahren')) ?></a>
-          <p class="f-help" id="qc-contrast" data-qc-contrast aria-live="polite"></p>
+          <div class="qc-pv__head"><b><?= e((string) ($values['org.short'] ?? '') ?: __('Ihr Verein')) ?></b><span><?= e(__('Start')) ?> · <?= e(__('Termine')) ?> · <?= e(__('Kontakt')) ?></span></div>
+          <div class="qc-pv__hero"><b><?= e(__('Gemeinsam unterwegs')) ?></b><span class="qc-preview__btn"><?= e(__('Mitglied werden')) ?></span></div>
+          <div class="qc-pv__card"><b><?= e(__('Nächster Termin')) ?></b><span><?= e(__('Treffen der Regionalgruppe')) ?></span><a class="qc-preview__link" href="#" tabindex="-1"><?= e(__('Mehr erfahren')) ?></a></div>
+          <div class="qc-pv__dark"><?= e(__('Dunkler Abschnitt mit weißer Schrift')) ?></div>
         </div>
         <?php else: ?>
         <p class="adm-inline-box"><?= e(__('Dieses Kit hat keine einstellbare Akzentfarbe – Farben unter Design.')) ?></p>

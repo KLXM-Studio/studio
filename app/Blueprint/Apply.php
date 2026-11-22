@@ -201,11 +201,8 @@ final class Apply
         }
         if ($ext) $app->settings->set(\Core\Extensions::UI_KEY, $ext + (array) $app->settings->get(\Core\Extensions::UI_KEY, []));
         if ($later) $report[] = 'Erweiterungen offen: ' . implode(', ', $later);
-        $sections = (array) Package::read($dir, 'structure/extensions.json');
-        if ($sections) {
-            $lines = \Core\Extensions::filter('blueprint.apply', [], ['sections' => $sections, 'params' => $params, 'manifest' => $m]);
-            foreach (is_array($lines) ? $lines : [] as $l) if (is_string($l)) $report[] = 'Erweiterung: ' . $l;
-        }
+        // Abschnitte der Erweiterungen spielt der zweite Schritt ein (applyExtensions, eigener Prozess): erst dann laufen die gerade
+        // eingeschalteten Erweiterungen und haben ihre Tabellen
 
         // ---------------------------------------------------------------- Angaben der neuen Website, Platzhalter
         $values = self::values($params, $m);
@@ -219,11 +216,54 @@ final class Apply
         $app->settings->set(self::DEMO_KEY, ['entries' => $demoIds, 'media' => $demoMedia]);
         if (empty($o['no_quick_config'])) {
             QuickConfig::start((array) ($m['quick_config']['steps'] ?? QuickConfig::STEPS), $values);
+            // Werte aus site:create sind Vorbelegung: Farbe/Logo erledigen „Erscheinungsbild“ (Gebiet erledigt applyExtensions)
+            if (!empty($params['color']) || !empty($params['logo'])) QuickConfig::markDone('look', array_filter(['look.color' => (string) ($params['color'] ?? ''),
+                'look.palette' => (string) ($params['palette'] ?? '')]));
         }
+        // Stellen, die die Vorlage nicht automatisch anpassen konnte (Export::review) → Aufgaben „Text an Ihre Organisation anpassen“
+        $actor = \Core\Tasks\Tasks::actor(null, 'cli', __('Website-Vorlage'));
+        // Eine Aufgabe je Stelle (Seite, Eintrag, Einstellung) mit allen Gründen; Titel und Auszüge mit den Angaben der neuen Website
+        $byWhere = [];
+        foreach ((array) ($m['review'] ?? []) as $rv) {
+            if (!is_array($rv) || !isset($rv['title'], $rv['where'])) continue;
+            $w = (string) $rv['where'];
+            $byWhere[$w] ??= ['title' => Placeholders::fill((string) $rv['title'], $values), 'link' => (string) ($rv['link'] ?? ''), 'body' => []];
+            $byWhere[$w]['body'][] = (string) ($rv['reason'] ?? '') . (($rv['sample'] ?? '') !== '' ? "\n„" . Placeholders::fill((string) $rv['sample'], $values) . '“' : '');
+        }
+        foreach ($byWhere as $t) {
+            QuickConfig::addTask(__('Text an Ihre Organisation anpassen: {title}', ['title' => mb_strimwidth($t['title'], 0, 80, '…')]), implode("\n\n", $t['body']), $t['link'], $actor);
+        }
+        if ($byWhere) $report[] = 'Aufgaben „Text an Ihre Organisation anpassen“: ' . count($byWhere);
         \Core\Fonts::requestSync();
         \Core\PageCache::clear();
         Tables::flush();
         return ['report' => $report, 'network' => (array) ($m['network'] ?? []), 'open' => $open];
+    }
+
+    /**
+     * Zweiter Schritt (blueprint:apply-ext, eigener Prozess nach dem Einspielen): die jetzt eingeschalteten Erweiterungen spielen ihre
+     * Abschnitte ein (Filter blueprint.apply), danach das Gebiet aus den Parametern (Schritt „Gebiet“ der Schnelleinrichtung, Filter
+     * blueprint.region). Rückmeldungen als Bericht bzw. Aufgaben. @return list<string>
+     */
+    public static function applyExtensions(string $package, array $params = []): array
+    {
+        $pkg = Package::open($package);
+        try {
+            $lines = [];
+            $sections = (array) Package::read($pkg['dir'], 'structure/extensions.json');
+            if ($sections) {
+                $res = \Core\Extensions::filter('blueprint.apply', [], ['sections' => $sections, 'params' => $params, 'manifest' => $pkg['manifest'],
+                    'values' => array_merge(self::values($params, $pkg['manifest']), QuickConfig::values())]);
+                foreach (QuickConfig::handleLines($res) as $l) $lines[] = 'Erweiterung: ' . $l;
+            }
+            if (trim((string) ($params['region'] ?? '')) !== '' && QuickConfig::open()) {
+                $res = QuickConfig::saveStep('region', ['region' => (string) $params['region']]);
+                array_push($lines, ...$res['messages']);
+            }
+            return $lines;
+        } finally {
+            if ($pkg['temp']) Package::remove($pkg['dir']);
+        }
     }
 
     /** Darf eine Vorlage diese Einstellung setzen? Whitelist (Export::SYS_SETTINGS), Felder des Kits ohne Geheimnisse, Design-Werte */
@@ -297,7 +337,11 @@ final class Apply
         foreach ((array) ($m['quick_config']['placeholders'] ?? []) as $k => $p) if (is_array($p) && trim((string) ($p['default'] ?? '')) !== '') $v[(string) $k] = (string) $p['default'];
         if (trim((string) ($params['name'] ?? '')) !== '') $v['org.name'] = trim((string) $params['name']);
         if (trim((string) ($params['short'] ?? '')) !== '') $v['org.short'] = trim((string) $params['short']);
-        if (trim((string) ($params['region'] ?? '')) !== '') $v['region.name'] = trim((string) $params['region']);
+        if (trim((string) ($params['region'] ?? '')) !== '') {
+            $r = QuickConfig::region((string) $params['region']);
+            $v['region.name'] = $r['name'];
+            $v['region.short'] = $r['short'];
+        }
         foreach ((array) ($params['values'] ?? []) as $k => $x) if (is_string($k) && preg_match('~^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$~', $k) && is_scalar($x)) $v[$k] = trim((string) $x);
         $host = (string) (site()->hosts()[0] ?? '');
         if ($host !== '' && !isset($v['org.domain'])) $v['org.domain'] = (string) preg_replace(['~:\d+$~', '~^www\.~'], '', $host);
@@ -317,7 +361,7 @@ final class Apply
         foreach (['legal_form' => 'org.legal_form', 'register' => 'org.register', 'region' => 'region.name'] as $s => $key) {
             if (isset($values[$key])) $app->settings->set('org.' . $s, $values[$key]);
         }
-        if (($c = \Core\Design::color($params['color'] ?? '')) !== null) QuickConfig::setAccent($c);
+        if (($c = \Core\Design::color($params['color'] ?? '')) !== null) QuickConfig::setAccent($c, (string) ($params['palette'] ?? 'balanced'));
         if (!empty($params['logo']) && is_file((string) $params['logo'])) QuickConfig::setLogo((string) $params['logo']);
         $open = Placeholders::applySite($values)['open'];
         // Angaben der Organisation ohne Wert: leer statt „{{org.short}}“ im Kopf – das Kit zeigt dann seinen Rückfall (z. B. den Namen);
