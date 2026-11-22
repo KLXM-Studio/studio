@@ -117,18 +117,26 @@ final class Diff
     {
         $labels = ['pages' => __('Seiten'), 'tables' => __('Tabellen'), 'fields' => __('Felder'), 'roles' => __('Rollen'), 'lists' => __('Listen-Vorlagen'), 'blocks' => __('eigene Blöcke')];
         $out = [];
+        // Seiten lesbar: „-:/mitmachen“ → „/mitmachen“, „en:/about“ → „/about (en)“, Vorlagen „tpl:tabelle:slug“ → „Vorlage tabelle“
+        $show = fn(string $p, string $k): string => $p !== 'pages' ? $k : (string) preg_replace_callback('~^([^:]+):(.*)$~', function ($m) {
+            $where = str_starts_with($m[2], 'tpl:') ? __('Vorlage') . ' ' . explode(':', $m[2])[1] : $m[2];
+            return $where . ($m[1] !== '-' ? ' (' . $m[1] . ')' : '');
+        }, $k);
         foreach (self::PARTS as $p) {
-            if ($d['added'][$p]) $out[] = '+ ' . $labels[$p] . ': ' . implode(', ', array_slice($d['added'][$p], 0, 8)) . (count($d['added'][$p]) > 8 ? ' …' : '');
-            if ($d['removed'][$p]) $out[] = '− ' . $labels[$p] . ': ' . implode(', ', array_slice($d['removed'][$p], 0, 8)) . (count($d['removed'][$p]) > 8 ? ' …' : '');
+            $add = array_map(fn($k) => $show($p, (string) $k), $d['added'][$p]);
+            $rem = array_map(fn($k) => $show($p, (string) $k), $d['removed'][$p]);
+            if ($add) $out[] = '+ ' . $labels[$p] . ': ' . implode(', ', array_slice($add, 0, 8)) . (count($add) > 8 ? ' …' : '');
+            if ($rem) $out[] = '− ' . $labels[$p] . ': ' . implode(', ', array_slice($rem, 0, 8)) . (count($rem) > 8 ? ' …' : '');
         }
         foreach (array_slice($d['changed'], 0, 8) as $c) $out[] = '~ ' . $c;
         return $out;
     }
 
     /** Vorschlag in die aktuelle Website legen (vom Netzwerk ausgerollt) */
-    public static function propose(string $name, string $version, string $package, array $diff): void
+    public static function propose(string $name, string $version, array $diff): void
     {
-        app()->settings->set(self::PROPOSAL_KEY, ['name' => $name, 'version' => $version, 'package' => $package, 'diff' => $diff, 'created_at' => date('c')]);
+        // Nur Name und Version – das Paket liegt in der Bibliothek (Core\Blueprint\Library), kein Pfad in der Datenbank
+        app()->settings->set(self::PROPOSAL_KEY, ['name' => $name, 'version' => $version, 'diff' => $diff, 'created_at' => date('c')]);
     }
 
     public static function proposal(): ?array
@@ -142,10 +150,11 @@ final class Diff
      * neue Seiten (als Entwurf, nicht im Menü), Rollen, Listen-Vorlagen, eigene Blöcke. Entfallenes und Geändertes bleibt (Hinweis).
      * @return list<string>
      */
-    public static function applyProposal(): array
+    public static function applyProposal(?string $package = null): array
     {
         $p = self::proposal() ?? throw new \RuntimeException(__('Kein Vorschlag vorhanden.'));
-        $pkg = Package::open((string) $p['package']);
+        $package ??= Library::packageDir((string) $p['name'], (string) $p['version']) ?? throw new \RuntimeException(__('Kein Vorschlag vorhanden.'));
+        $pkg = Package::open($package);
         try {
             $dir = $pkg['dir'];
             $db = app()->db;

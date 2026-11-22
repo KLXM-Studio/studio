@@ -77,6 +77,7 @@ final class Export
         $src = Placeholders::sourceValues($setting, (string) (site()->hosts()[0] ?? ''));
         $anon = new Anonymizer($src);
         $files = [];
+        $copies = [];   // Dateien, die unverändert ins Paket kopiert werden: Pfad im Paket → Quelldatei
         $media = [];   // alte ID → ['demo' => bool] (Verwendung)
 
         // ---------------------------------------------------------------- Einstellungen
@@ -226,7 +227,10 @@ final class Export
             $ext = strtolower(pathinfo((string) $m['file'], PATHINFO_EXTENSION));
             $rel = 'demo/media/' . (int) $id . '.' . $ext;
             if (Package::cleanPath($rel) === null) { $placeholderIds[] = (int) $id; continue; }
-            $files[$rel] = ['copy' => \Core\Media::path($m)];
+            // Quelle aus dem Medienordner der Website und dem geprüften Dateinamen (keine Pool-Dateien, siehe oben)
+            $file = Package::cleanPath((string) $m['file']);
+            if ($file === null) { $placeholderIds[] = (int) $id; continue; }
+            $copies[$rel] = site()->mediaDir() . '/' . $file;
             $mediaRows[] = ['id' => (int) $id, 'file' => $rel, 'name' => basename((string) ($m['original_name'] ?: $m['file'])), 'alt' => $anon->text((string) $m['alt']),
                 'title' => $anon->text((string) ($m['title'] ?? '')), 'credit' => (string) $m['credit'], 'license' => (string) $m['license'],
                 'focus_x' => (int) ($m['focus_x'] ?? 50), 'focus_y' => (int) ($m['focus_y'] ?? 50), 'demo' => (bool) $use['demo']];
@@ -239,7 +243,7 @@ final class Export
             $base = basename($gf);
             $rel = Package::cleanPath('guide/' . $base);
             if ($rel === null || !is_file($gf)) continue;
-            $files[$rel] = str_ends_with($base, '.md') ? $anon->text((string) file_get_contents($gf)) : ['copy' => $gf];
+            if (str_ends_with($base, '.md')) $files[$rel] = $anon->text((string) file_get_contents($gf)); else $copies[$rel] = $gf;
             $guide++;
         }
 
@@ -266,7 +270,7 @@ final class Export
         $files['demo/media.json'] = $mediaRows;
         if (!empty($o['preview']) && is_file((string) $o['preview'])) {
             $pe = strtolower(pathinfo((string) $o['preview'], PATHINFO_EXTENSION));
-            if (in_array($pe, ['png', 'jpg', 'jpeg', 'webp'], true)) $files['preview.' . $pe] = ['copy' => (string) $o['preview']];
+            if (in_array($pe, ['png', 'jpg', 'jpeg', 'webp'], true)) $copies['preview.' . $pe] = (string) $o['preview'];
         }
 
         $steps = array_values(array_intersect((array) ($o['steps'] ?? QuickConfig::STEPS), QuickConfig::STEPS)) ?: QuickConfig::STEPS;
@@ -287,7 +291,7 @@ final class Export
         // Paket schreiben (bei ZIP zuerst in ein temporäres Verzeichnis), dann prüfen
         $dir = $zip ? Package::tempDir() . '/pkg' : $out;
         try {
-            Package::write($dir, $manifest, $files);
+            Package::write($dir, $manifest, $files, $copies);
             $findings = self::audit($dir);
             if ($findings) throw new \RuntimeException("Paket verworfen – möglicherweise vertrauliche Angaben:\n  " . implode("\n  ", $findings));
             if ($zip) Package::zip($dir, $out);

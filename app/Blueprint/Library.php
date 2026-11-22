@@ -20,9 +20,22 @@ use Core\Sites;
  */
 final class Library
 {
-    public static function dir(string $name = ''): string
+    /** Ordner der Bibliothek */
+    public static function dir(): string
     {
-        return ROOT . '/storage/blueprints' . ($name !== '' ? '/' . $name : '');
+        return ROOT . '/storage/blueprints';
+    }
+
+    /** Ordner einer Vorlage – nur mit Namen aus known() bzw. Package::cleanName(), nie direkt aus einer Eingabe */
+    private static function path(string $safeName): string
+    {
+        return self::dir() . '/' . $safeName;
+    }
+
+    /** Vorlage mit allen Versionen löschen */
+    public static function delete(string $name): void
+    {
+        if (($known = self::known($name)) !== null) Package::remove(self::path($known));
     }
 
     /** Alle Vorlagen (meta.json) nach Bezeichnung @return list<array> */
@@ -37,11 +50,31 @@ final class Library
         return $out;
     }
 
+    /**
+     * Vorhandener Ordner zu einem Namen (Eingabe) – der Name kommt aus dem Verzeichnis, nicht aus der Eingabe; null = gibt es nicht.
+     * Damit erreichen Eingaben nie direkt einen Dateipfad.
+     */
+    public static function known(string $name): ?string
+    {
+        if (!Package::validName($name)) return null;
+        foreach (glob(self::dir() . '/*', GLOB_ONLYDIR) ?: [] as $d) if (basename($d) === $name) return basename($d);
+        return null;
+    }
+
+    /** Vorhandene Version einer bekannten Vorlage (Name aus known()) – Ordnername aus dem Verzeichnis */
+    private static function knownVersion(string $knownName, string $version): ?string
+    {
+        if (!Package::validVersion($version)) return null;
+        foreach (glob(self::path($knownName) . '/*', GLOB_ONLYDIR) ?: [] as $d) if (basename($d) === $version) return basename($d);
+        return null;
+    }
+
     public static function get(string $name): ?array
     {
-        if (!Package::validName($name) || !is_file(self::dir($name) . '/meta.json')) return null;
-        $m = json_decode((string) file_get_contents(self::dir($name) . '/meta.json'), true);
-        return is_array($m) ? self::norm($m) : null;
+        $known = self::known($name);
+        if ($known === null || !is_file(self::path($known) . '/meta.json')) return null;
+        $m = json_decode((string) file_get_contents(self::path($known) . '/meta.json'), true);
+        return is_array($m) ? self::norm(['name' => $known] + $m) : null;
     }
 
     private static function norm(array $m): array
@@ -56,7 +89,7 @@ final class Library
 
     public static function save(array $m): void
     {
-        $dir = self::dir((string) $m['name']);
+        $dir = self::path(Package::cleanName((string) $m['name']) ?? throw new \InvalidArgumentException('name'));
         if (!is_dir($dir)) mkdir($dir, 0770, true);
         unset($m['latest']);
         $m['updated_at'] = date('c');
@@ -66,11 +99,13 @@ final class Library
     /** Verzeichnis eines Pakets (neueste Version ohne Angabe) */
     public static function packageDir(string $name, ?string $version = null): ?string
     {
-        $m = self::get($name);
+        $known = self::known($name);
+        $m = $known !== null ? self::get($known) : null;
         $version ??= $m['latest'] ?? null;
-        if (!$m || !$version || !Package::validVersion($version)) return null;
-        $d = self::dir($name) . '/' . $version;
-        return is_file($d . '/manifest.json') ? $d : null;
+        if ($known === null || !$m || !$version || !Package::validVersion($version)) return null;
+        $v = self::knownVersion($known, (string) $version);
+        $d = $v !== null ? self::path($known) . '/' . $v : '';
+        return $d !== '' && is_file($d . '/manifest.json') ? $d : null;
     }
 
     /** Vorlage oder Paketpfad auflösen (site:create --blueprint=name|pfad) */
@@ -87,8 +122,7 @@ final class Library
      */
     public static function createVersion(array $in, string $by = ''): array
     {
-        $name = (string) $in['name'];
-        if (!Package::validName($name)) throw new \InvalidArgumentException(__('Kurzname der Vorlage: a–z, 0–9 und Bindestrich, 2–48 Zeichen.'));
+        $name = Package::cleanName((string) $in['name']) ?? throw new \InvalidArgumentException(__('Kurzname der Vorlage: a–z, 0–9 und Bindestrich, 2–48 Zeichen.'));
         $source = (string) ($in['source'] ?? '');
         if (!isset(Sites::all()[$source])) throw new \InvalidArgumentException(__('Bitte eine Website als Quelle wählen.'));
         $m = self::get($name) ?? ['name' => $name, 'created_at' => date('c'), 'versions' => []];
@@ -97,8 +131,9 @@ final class Library
         $m = self::norm($m);
         $version = (string) ($in['version'] ?? '') ?: ($m['latest'] ? Package::nextVersion((string) $m['latest']) : '1.0.0');
         if (!Package::validVersion($version)) throw new \InvalidArgumentException(__('Version: z. B. 1.0.0'));
-        if (is_dir(self::dir($name) . '/' . $version)) throw new \InvalidArgumentException(__('Version {v} gibt es schon.', ['v' => $version]));
-        if (!is_dir(self::dir($name))) mkdir(self::dir($name), 0770, true);
+        $version = Package::rebuild($version, '0123456789.');
+        if (is_dir(self::path($name) . '/' . $version)) throw new \InvalidArgumentException(__('Version {v} gibt es schon.', ['v' => $version]));
+        if (!is_dir(self::path($name))) mkdir(self::path($name), 0770, true);
         $changelog = array_map(fn($v) => ['version' => $v['version'], 'date' => $v['date'] ?? '', 'note' => $v['note'] ?? ''], (array) $m['versions']);
         $note = trim((string) ($in['note'] ?? '')) ?: ($changelog ? __('Neue Version aus der Website') : __('Erste Version'));
         array_unshift($changelog, ['version' => $version, 'date' => date('Y-m-d'), 'note' => $note]);
@@ -109,10 +144,10 @@ final class Library
         if ($prev) $opts['preview'] = $prev;
         $optFile = Package::tempDir() . '/options.json';
         file_put_contents($optFile, Package::json($opts));
-        $code = Network::console(['site:blueprint', $source, '--out=' . self::dir($name) . '/' . $version, '--demo=' . $m['demo'], '--options=' . $optFile], $out);
+        $code = Network::console(['site:blueprint', $source, '--out=' . self::path($name) . '/' . $version, '--demo=' . $m['demo'], '--options=' . $optFile], $out);
         Package::remove(dirname($optFile));
         if ($code !== 0) {
-            Package::remove(self::dir($name) . '/' . $version);
+            Package::remove(self::path($name) . '/' . $version);
             throw new \RuntimeException(trim((string) $out) ?: __('Export fehlgeschlagen.'));
         }
         $m['versions'][] = ['version' => $version, 'date' => date('Y-m-d'), 'note' => $note, 'demo' => $m['demo'], 'by' => $by, 'at' => date('c')];
@@ -123,19 +158,23 @@ final class Library
     /** Vorschaubild der Vorlage (Pfad) */
     public static function previewFile(string $name): ?string
     {
-        foreach (['png', 'jpg', 'webp'] as $e) if (is_file(self::dir($name) . '/preview.' . $e)) return self::dir($name) . '/preview.' . $e;
+        $known = self::known($name);
+        if ($known === null) return null;
+        foreach (['png', 'jpg', 'webp'] as $e) if (is_file(self::path($known) . '/preview.' . $e)) return self::path($known) . '/preview.' . $e;
         return null;
     }
 
-    /** Vorschaubild speichern (nur PNG/JPEG/WebP, höchstens 4 MB) – Fehlertext oder null */
+    /** Vorschaubild aus einem Upload speichern (nur hochgeladene Dateien, PNG/JPEG/WebP, höchstens 4 MB) – Fehlertext oder null */
     public static function setPreview(string $name, string $tmp): ?string
     {
-        if (!is_file($tmp) || filesize($tmp) > 4 * 1024 * 1024) return __('Bild fehlt oder ist größer als 4 MB.');
+        if (!is_uploaded_file($tmp) || filesize($tmp) > 4 * 1024 * 1024) return __('Bild fehlt oder ist größer als 4 MB.');
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) ?: '';
         $ext = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'][$mime] ?? null;
         if (!$ext) return __('Bitte ein PNG-, JPEG- oder WebP-Bild wählen.');
-        foreach (['png', 'jpg', 'webp'] as $e) @unlink(self::dir($name) . '/preview.' . $e);
-        copy($tmp, self::dir($name) . '/preview.' . $ext);
+        $known = self::known($name);
+        if ($known === null) return __('Bild fehlt oder ist größer als 4 MB.');
+        foreach (['png', 'jpg', 'webp'] as $e) @unlink(self::path($known) . '/preview.' . $e);
+        if (!move_uploaded_file($tmp, self::path($known) . '/preview.' . $ext)) return __('Bild fehlt oder ist größer als 4 MB.');
         return null;
     }
 

@@ -19,6 +19,8 @@ final class Welcome
     public static function state(?array $user, array $query): array
     {
         if (!$user || !can('system.manage') || Onboarding::pending()) return [false, false];
+        // Website aus einer Vorlage: Die Schnelleinrichtung führt durch die ersten Schritte – das Willkommen kommt erst danach von selbst
+        if (!isset($query[self::QUERY]) && Blueprint\QuickConfig::open()) return [false, false];
         if (isset($query[self::QUERY])) return [true, false];
         $p = json_decode((string) ($user['ui_prefs'] ?? ''), true);
         $seen = is_array($p) && !empty($p['welcome']);

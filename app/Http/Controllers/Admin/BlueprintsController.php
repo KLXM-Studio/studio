@@ -167,7 +167,7 @@ final class BlueprintsController extends AdminController
                     break;
                 case 'delete':
                     if (Library::affected($name)) return $this->back($back, 'error', __('Aus dieser Vorlage stammen Websites – die Vorlage bleibt, damit Updates möglich sind.'));
-                    Package::remove(Library::dir($name));
+                    Library::delete($name);
                     Network::log('blueprint.delete', null, (string) $user['email'], $name);
                     return $this->back(self::BASE, 'success', __('Vorlage „{name}“ gelöscht.', ['name' => $name]));
                 default:

@@ -294,8 +294,8 @@ final class SelfTest
                 $diff = Diff::compare((array) ($bp['structure'] ?? []), Diff::signature($pkg['dir']));
                 $eq('Vorschlag: neues Feld und neue Seite', [$diff['added']['fields'], $diff['added']['pages']], [['personen.ehrenamt_seit'], ['-:/mitmachen']]);
                 $home = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1');
-                Diff::propose('selftest-vorlage', '1.1.0', $opt('pkg'), $diff);
-                Diff::applyProposal();
+                Diff::propose('selftest-vorlage', '1.1.0', $diff);
+                Diff::applyProposal($opt('pkg'));
                 \Core\Data\Tables::flush();
                 $eq('Feld angelegt', \Core\Data\Tables::field((array) \Core\Data\Tables::find('personen'), 'ehrenamt_seit') !== null, true);
                 $eq('Seite als Entwurf, nicht im Menü', app()->db->fetch("SELECT status, menu FROM pages WHERE slug = 'mitmachen'"), ['status' => 'draft', 'menu' => 0]);

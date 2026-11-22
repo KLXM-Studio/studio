@@ -40,12 +40,18 @@ final class Console
         }
     }
 
+    /** Ausgabe auf die Kommandozeile (Text, kein HTML) */
+    private static function out(string $s): void
+    {
+        fwrite(STDOUT, $s);
+    }
+
     /** Läuft der Befehl schon im Kontext der Website? Sonst als eigener Prozess mit --site= neu starten */
     private static function inSite(string $cmd, string $key, array $args): ?int
     {
         if (site()->key === $key) return null;
         $code = Network::console([$cmd, ...array_values(array_filter($args, fn($a) => !str_starts_with((string) $a, '--site='))), '--site=' . $key], $out);
-        echo $out;
+        self::out($out);
         return $code;
     }
 
@@ -63,8 +69,8 @@ final class Console
         if (($v = Cli::opt($args, 'per-table')) !== null) $o['per_table'] = (int) $v;
         $o['out'] ??= ROOT . '/storage/blueprints-export/' . $key . '-' . date('Ymd-His');
         $r = Export::run($o);
-        foreach ($r['report'] as $l) echo "  $l\n";
-        echo "Website-Vorlage „{$r['manifest']['name']}“ {$r['manifest']['version']}: {$r['path']}\n";
+        foreach ($r['report'] as $l) self::out("  $l\n");
+        self::out("Website-Vorlage „{$r['manifest']['name']}“ {$r['manifest']['version']}: {$r['path']}\n");
         return 0;
     }
 
@@ -97,13 +103,13 @@ final class Console
         foreach (['no-network', 'no-quick-config'] as $f) if (Cli::flag($args, $f)) $pass[] = '--' . $f;
         $code = Network::console($pass, $out);
         Package::remove(dirname($pf));
-        echo $out;
-        echo "\nWebsite „{$key}“ aus Vorlage „{$m['name']}“ {$m['version']} angelegt: " . str_replace(ROOT . '/', '', $r['file']) . "\n"
+        self::out($out);
+        self::out("\nWebsite „{$key}“ aus Vorlage „{$m['name']}“ {$m['version']} angelegt: " . str_replace(ROOT . '/', '', $r['file']) . "\n"
            . "1. Domain im Hosting auf denselben Ordner zeigen lassen (Plesk: Dokumentstamm = httpdocs/public).\n"
            . "2. Erstes Konto: https://{$hosts[0]}/admin/setup  –  Setup-Token: {$r['setup_token']}\n"
            . "   oder: php bin/console user:create <email> admin --site={$key}\n"
            . "3. Schnelleinrichtung beim ersten Anmelden (/admin/schnelleinrichtung) oder: php bin/console site:quick-config --site={$key}\n"
-           . "   Bis zum Abschluss zeigt die Website Besuchern die Wartungsseite.\n";
+           . "   Bis zum Abschluss zeigt die Website Besuchern die Wartungsseite.\n");
         return $code;
     }
 
@@ -113,25 +119,25 @@ final class Console
         if ($path === '') { fwrite(STDERR, "Aufruf: blueprint:apply <paket> --site=<neue website> [--params=datei.json]\n"); return 1; }
         $params = self::params($args);
         $r = Apply::run($path, $params, ['no_quick_config' => Cli::flag($args, 'no-quick-config'), 'force' => Cli::flag($args, 'force')]);
-        foreach ($r['report'] as $l) echo "  $l\n";
+        foreach ($r['report'] as $l) self::out("  $l\n");
         if ($r['network'] && !Cli::flag($args, 'no-network')) {
             foreach ($r['network'] as $ref) {
                 $res = Network::join(['key' => $ref['key'], 'label' => $ref['label'] ?? $ref['key'], 'handle' => $ref['handle'] ?? $ref['key']], null, $ref);
-                foreach ($res['lines'] as $l) echo "  Netzwerk: $l\n";
-                if ($res['error'] !== null) echo "  ! Netzwerk: {$res['error']} – später in der Schnelleinrichtung (Schritt Netzwerk)\n";
+                foreach ($res['lines'] as $l) self::out("  Netzwerk: $l\n");
+                if ($res['error'] !== null) self::out("  ! Netzwerk: {$res['error']} – später in der Schnelleinrichtung (Schritt Netzwerk)\n");
             }
         }
-        if ($r['open']) echo "  Offene Platzhalter: " . implode(', ', array_keys($r['open'])) . " – Schnelleinrichtung füllt sie\n";
+        if ($r['open']) self::out("  Offene Platzhalter: " . implode(', ', array_keys($r['open'])) . " – Schnelleinrichtung füllt sie\n");
         return 0;
     }
 
     private static function list(): int
     {
         $all = Library::all();
-        if (!$all) { echo "Keine Website-Vorlagen. Anlegen: Netzwerk → Website-Vorlagen oder site:blueprint <key> --out=storage/blueprints/<name>/1.0.0\n"; return 0; }
+        if (!$all) { self::out("Keine Website-Vorlagen. Anlegen: Netzwerk → Website-Vorlagen oder site:blueprint <key> --out=storage/blueprints/<name>/1.0.0\n"); return 0; }
         foreach ($all as $b) {
-            printf("%-22s %-8s %-30s Quelle: %-12s Demo: %s\n", $b['name'], $b['latest'] ?? '–', mb_strimwidth((string) $b['title'], 0, 30, '…'), $b['source'] ?: '–', $b['demo']);
-            foreach (Library::affected($b['name']) as $s) echo "    Website {$s['key']} ({$s['version']})" . ($s['proposal'] ? " · Vorschlag {$s['proposal']} offen" : '') . "\n";
+            self::out(sprintf("%-22s %-8s %-30s Quelle: %-12s Demo: %s\n", $b['name'], $b['latest'] ?? '–', mb_strimwidth((string) $b['title'], 0, 30, '…'), $b['source'] ?: '–', $b['demo']));
+            foreach (Library::affected($b['name']) as $s) self::out("    Website {$s['key']} ({$s['version']})" . ($s['proposal'] ? " · Vorschlag {$s['proposal']} offen" : '') . "\n");
         }
         return 0;
     }
@@ -145,19 +151,19 @@ final class Console
         if (($bp['name'] ?? '') !== $name) throw new \InvalidArgumentException('Diese Website stammt nicht aus der Vorlage „' . $name . '“.');
         $m = (array) json_decode((string) file_get_contents($dir . '/manifest.json'), true);
         $diff = Diff::compare((array) ($bp['structure'] ?? []), Diff::signature($dir));
-        Diff::propose($name, (string) $m['version'], $dir, $diff);
-        echo "Vorschlag {$m['version']} für " . site()->key . ": " . (implode(' · ', Diff::summary($diff)) ?: 'keine Strukturänderungen') . "\n";
+        Diff::propose($name, (string) $m['version'], $diff);
+        self::out("Vorschlag {$m['version']} für " . site()->key . ": " . (implode(' · ', Diff::summary($diff)) ?: 'keine Strukturänderungen') . "\n");
         return 0;
     }
 
     private static function update(array $args): int
     {
         $p = Diff::proposal();
-        if (!$p) { echo "Kein Vorschlag einer neuen Vorlagen-Version.\n"; return 0; }
-        echo "Vorschlag: {$p['name']} {$p['version']}\n";
-        foreach (Diff::summary((array) $p['diff']) as $l) echo "  $l\n";
-        if (!Cli::flag($args, 'apply')) { echo "Probelauf – mit --apply übernehmen (nur Hinzufügendes: Tabellen, Felder, Seiten als Entwurf, Rollen …).\n"; return 0; }
-        foreach (Diff::applyProposal() as $l) echo "  ✓ $l\n";
+        if (!$p) { self::out("Kein Vorschlag einer neuen Vorlagen-Version.\n"); return 0; }
+        self::out("Vorschlag: {$p['name']} {$p['version']}\n");
+        foreach (Diff::summary((array) $p['diff']) as $l) self::out("  $l\n");
+        if (!Cli::flag($args, 'apply')) { self::out("Probelauf – mit --apply übernehmen (nur Hinzufügendes: Tabellen, Felder, Seiten als Entwurf, Rollen …).\n"); return 0; }
+        foreach (Diff::applyProposal() as $l) self::out("  ✓ $l\n");
         return 0;
     }
 
@@ -173,23 +179,23 @@ final class Console
             if ($step === 'look' && isset($in['logo'])) { $in['logo_file'] = $in['logo']; $in['logo_name'] = basename((string) $in['logo']); }
             $res = QuickConfig::saveStep($step, $in, null);
             foreach ($res['errors'] as $f => $e) fwrite(STDERR, "  ! $f: $e\n");
-            foreach ($res['messages'] as $l) echo "  ✓ $l\n";
+            foreach ($res['messages'] as $l) self::out("  ✓ $l\n");
             if ($res['errors']) return 1;
             if (!Cli::flag($args, 'finish')) return 0;
         }
         if (Cli::flag($args, 'finish')) {
-            foreach (QuickConfig::finish(null, !Cli::flag($args, 'keep-maintenance')) as $l) echo "  $l\n";
+            foreach (QuickConfig::finish(null, !Cli::flag($args, 'keep-maintenance')) as $l) self::out("  $l\n");
             return 0;
         }
         $s = QuickConfig::state();
-        echo 'Schnelleinrichtung ' . site()->key . ': ' . ($s['open'] ? 'offen' : ($s['finished_at'] ? 'abgeschlossen ' . $s['finished_at'] : 'nicht begonnen')) . "\n";
-        foreach (QuickConfig::steps() as $st) echo '  ' . (empty($s['done'][$st]) ? '○' : '✓') . ' ' . str_pad($st, 9) . QuickConfig::label($st) . "\n";
+        self::out('Schnelleinrichtung ' . site()->key . ': ' . ($s['open'] ? 'offen' : ($s['finished_at'] ? 'abgeschlossen ' . $s['finished_at'] : 'nicht begonnen')) . "\n");
+        foreach (QuickConfig::steps() as $st) self::out('  ' . (empty($s['done'][$st]) ? '○' : '✓') . ' ' . str_pad($st, 9) . QuickConfig::label($st) . "\n");
         if ($s['open']) {
-            echo "Offene Punkte:\n";
-            foreach (QuickConfig::checklist() as $c) echo "  - {$c['title']}\n";
-            echo "Schritt speichern: site:quick-config --step=org --name=\"…\" --short=… --city=… | --step=look --color=#0F766E --logo=datei.png\n"
+            self::out("Offene Punkte:\n");
+            foreach (QuickConfig::checklist() as $c) self::out("  - {$c['title']}\n");
+            self::out("Schritt speichern: site:quick-config --step=org --name=\"…\" --short=… --city=… | --step=look --color=#0F766E --logo=datei.png\n"
                . "  --step=region --region=Nordrhein-Westfalen | --step=network --join=glossar | --step=accounts --invite=a@example.org:editor\n"
-               . "  --step=demo --demo=keep|remove | --step=mail --mode=network|smtp --host=… | --step=legal · Abschluss: --finish\n";
+               . "  --step=demo --demo=keep|remove | --step=mail --mode=network|smtp --host=… | --step=legal · Abschluss: --finish\n");
         }
         return 0;
     }
@@ -207,24 +213,24 @@ final class Console
             'anonymize' => Cli::flag($args, 'anonymize'), 'revisions' => Cli::flag($args, 'revisions'), 'quick_config' => Cli::flag($args, 'quick-config'),
             'environment' => Cli::opt($args, 'environment'), 'name' => Cli::opt($args, 'name')];
         if (!in_array($o['users'], ['none', 'copy'], true)) throw new \InvalidArgumentException('--users=none|copy');
-        foreach (Copy::run((string) $src, (string) $key, explode(',', (string) $hosts), $o) as $l) echo "  $l\n";
-        echo "Kopie „{$key}“ von „{$src}“ angelegt. Erstes Konto: https://" . explode(',', (string) $hosts)[0] . "/admin/setup bzw. user:create <email> admin --site={$key}\n";
+        foreach (Copy::run((string) $src, (string) $key, explode(',', (string) $hosts), $o) as $l) self::out("  $l\n");
+        self::out("Kopie „{$key}“ von „{$src}“ angelegt. Erstes Konto: https://" . explode(',', (string) $hosts)[0] . "/admin/setup bzw. user:create <email> admin --site={$key}\n");
         return 0;
     }
 
     private static function copyFinish(array $args): int
     {
         $o = (array) json_decode((string) @file_get_contents((string) Cli::opt($args, 'options')), true);
-        foreach (Copy::finish($o) as $l) echo "$l\n";
+        foreach (Copy::finish($o) as $l) self::out("$l\n");
         return 0;
     }
 
     private static function demoRemove(): int
     {
         $c = Demo::counts();
-        if (!$c && !Demo::state()['media']) { echo "Keine Demoinhalte auf " . site()->key . ".\n"; return 0; }
+        if (!$c && !Demo::state()['media']) { self::out("Keine Demoinhalte auf " . site()->key . ".\n"); return 0; }
         $n = Demo::remove();
-        echo "Demoinhalte entfernt: $n Einträge und Bilder (" . implode(', ', array_map(fn($h, $x) => "$h $x", array_keys($c), $c)) . ").\n";
+        self::out("Demoinhalte entfernt: $n Einträge und Bilder (" . implode(', ', array_map(fn($h, $x) => "$h $x", array_keys($c), $c)) . ").\n");
         return 0;
     }
 }

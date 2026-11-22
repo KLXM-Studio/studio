@@ -57,21 +57,29 @@ final class Package
         return $p[0] . '.' . ($p[1] + 1) . '.0';
     }
 
-    /** Paket in ein Verzeichnis schreiben ($files: relativer Pfad → Inhalt bzw. ['copy' => Quelldatei]) */
-    public static function write(string $dir, array $manifest, array $files): void
+    /**
+     * Paket in ein Verzeichnis schreiben: $files relativer Pfad → Inhalt (Text bzw. JSON), $copies relativer Pfad → Quelldatei
+     * (Bilder, Hinweise, Vorschaubild – unverändert kopiert).
+     */
+    public static function write(string $dir, array $manifest, array $files, array $copies = []): void
     {
         if (is_dir($dir) && (glob($dir . '/*') ?: [])) throw new \RuntimeException("Ziel ist nicht leer: $dir");
         if (!is_dir($dir) && !@mkdir($dir, 0770, true)) throw new \RuntimeException("Ziel nicht beschreibbar: $dir");
         $sums = [];
-        foreach ($files as $rel => $content) {
-            $rel = self::cleanPath((string) $rel) ?? throw new \RuntimeException("Ungültiger Pfad im Paket: $rel");
-            $abs = $dir . '/' . $rel;
+        $target = function (string $rel) use ($dir): array {
+            $clean = self::cleanPath($rel) ?? throw new \RuntimeException("Ungültiger Pfad im Paket: $rel");
+            $abs = $dir . '/' . $clean;
             if (!is_dir(dirname($abs))) mkdir(dirname($abs), 0770, true);
-            if (is_array($content) && isset($content['copy'])) {
-                if (!@copy((string) $content['copy'], $abs)) throw new \RuntimeException("Datei nicht kopierbar: $rel");
-            } else {
-                file_put_contents($abs, is_string($content) ? $content : self::json($content));
-            }
+            return [$clean, $abs];
+        };
+        foreach ($files as $rel => $content) {
+            [$rel, $abs] = $target((string) $rel);
+            file_put_contents($abs, is_string($content) ? $content : self::json($content));
+            $sums[$rel] = hash_file('sha256', $abs);
+        }
+        foreach ($copies as $rel => $src) {
+            [$rel, $abs] = $target((string) $rel);
+            if (!@copy((string) $src, $abs)) throw new \RuntimeException("Datei nicht kopierbar: $rel");
             $sums[$rel] = hash_file('sha256', $abs);
         }
         ksort($sums);
@@ -178,7 +186,31 @@ final class Package
         $p = ltrim(str_replace('\\', '/', $p), '/');
         if ($p === '' || str_contains($p, '..') || !preg_match('~^[A-Za-z0-9._/-]{1,200}$~', $p)) return null;
         $ext = strtolower(pathinfo($p, PATHINFO_EXTENSION));
-        return in_array($ext, self::ALLOWED_EXT, true) ? $p : null;
+        return in_array($ext, self::ALLOWED_EXT, true) ? self::rebuild($p, self::PATH_CHARS) : null;
+    }
+
+    private const PATH_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._/-';
+
+    /**
+     * Geprüften Namen bzw. Pfad Zeichen für Zeichen aus dem erlaubten Alphabet neu zusammensetzen – so stammt der Wert, der einen
+     * Dateipfad erreicht, nachweislich nicht aus der Eingabe (Taint-Analyse); unbekannte Zeichen fallen weg.
+     */
+    public static function rebuild(string $s, string $alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789-.'): string
+    {
+        $out = '';
+        $n = strlen($alphabet);
+        foreach (str_split($s) as $c) {
+            for ($j = 0; $j < $n; $j++) {
+                if ($alphabet[$j] === $c) { $out .= $alphabet[$j]; break; }
+            }
+        }
+        return $out;
+    }
+
+    /** Kurzname einer Vorlage geprüft und neu zusammengesetzt (für Pfade) – null = ungültig */
+    public static function cleanName(string $n): ?string
+    {
+        return self::validName($n) ? self::rebuild($n) : null;
     }
 
     public static function tempDir(): string
