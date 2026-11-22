@@ -67,6 +67,32 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   duplicate spellings (case and spaces ignored; ß/ss, accent and hyphen variants can be added); recognised immediately (live highlight when viewing, “On this page” when
   editing). Shared glossary: own terms only, a hint names the owning website for others.
 
+### Hintergrundvideo: Play/Pause-Schalter als Symbol (`Core\Blocks\Hero::videoToggle`)
+- **Runder Symbol-Knopf** unten rechts statt der ausgeschriebenen Schaltfläche „Hintergrundvideo anhalten“: läuft das Video,
+  zeigt er das Pause-Symbol, angehalten das Play-Symbol (vorher zeigte der laufende Zustand fälschlich ein Play-Symbol).
+  Mindestens 44 × 44 px, halbtransparente dunkle Fläche mit hellem Rand (Symbol ≥ 3:1 auf jedem Videobild), doppelter Fokusring.
+  Der zugängliche Name wechselt mit dem Zustand („Hintergrundvideo anhalten“ / „… abspielen“, auch als `title`), kein `aria-pressed`.
+- **Ein gemeinsamer Schalter** für den Einstieg „Vollflächig“ der Kits fluid, foto, galerie und NativeCSS (dort auch Video
+  „Morphing“), den Core-Hero (`Hero::video()`, Kits glas, essenz) und dekorative Videos (`MediaTracks::decorativeVideo()`):
+  Markup aus `Hero::videoToggle()`, Verhalten aus `hero.mjs`, Aussehen aus `css/video-toggle.css` (einmal je Seite). Die
+  Kit-Skripte `fluid/js/bgvideo.js`, der Videoteil in `site.js` von foto/galerie und `components/video-bg` von NativeCSS im
+  Kit native entfallen.
+- **„Bewegung reduzieren“ einheitlich:** Das Video startet nicht von selbst (auch nicht bei „Daten sparen“ oder
+  `<html data-motion="reduce">` des Darstellungs-Knopfs), der Knopf ist trotzdem da und bietet „abspielen“ an; vorher blieb er
+  in fluid, foto, galerie und beim Core-Hero verborgen. Die Wahl der Besucherin gilt, bis sie wieder klickt.
+- **Option je Block „Video-Schalter“:** „Symbol“ (Standard) oder „Symbol mit Text“ (Symbol plus sichtbarer, wechselnder Text) –
+  in `Hero::fields('video', …)`, einzeln `Hero::fields('video_toggle', [varianten])`; für dekorative Videos `['toggle' => 'text']`.
+- **Tokens** `--hx-vt-size`, `--hx-vt-icon`, `--hx-vt-bg`, `--hx-vt-bg-hover`, `--hx-vt-fg`, `--hx-vt-border`, `--hx-vt-border-width`,
+  `--hx-vt-radius`, `--hx-vt-x`, `--hx-vt-y`, `--hx-vt-focus`, `--hx-vt-focus-halo`, `--hx-vt-focus-width`, `--hx-vt-font-size`;
+  Kit native setzt sie aus den NativeCSS-Tokens, essenz behält seine Geräte-Taste. Symbole `play` und `pause` neu im Symbolsatz.
+- Selbsttest in `blocks:selftest`; Handbuch → Blöcke → Einstieg, Entwicklerhandbuch → Kits → Video-Schalter, CSS & JS, Medien.
+- *EN:* Background video toggle is now a round, accessible play/pause icon button (pause icon while playing, play icon when paused;
+  name and `title` switch between “Pause background video” and “Play background video”, no `aria-pressed`), at least 44 × 44 px with a
+  translucent dark fill, light border and double focus ring. One shared implementation (`Hero::videoToggle()`, `hero.mjs`,
+  `css/video-toggle.css`) for the full-bleed heroes of fluid, foto, galerie and NativeCSS (incl. the morphing video), the core hero
+  (glas, essenz) and decorative videos. With reduced motion or data saving the video no longer starts by itself but the button is shown
+  in its “play” state. New per-block option “Video button: Icon | Icon with text”; styling via `--hx-vt-*` tokens.
+
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:
   90 %, 100 % (Standard), 112 %, 125 %, 140 %, mit kleinem/großem „A“, Prozentanzeige und **Zurücksetzen**. Wirkt sofort ohne

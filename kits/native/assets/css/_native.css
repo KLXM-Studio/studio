@@ -27,6 +27,16 @@
     --ncss-radius-lg: calc(var(--f-radius) * 1.5);
     --ncss-container-max: calc(var(--f-wrap) + 2 * var(--f-gutter));
     color-scheme: light;
+    /* Video-Schalter des Kerns (Core\Blocks\Hero::videoToggle, css/video-toggle.css) in der Optik von NativeCSS:
+       Abstand, Rundung, Fokusring und Schrift aus den Tokens; Fläche und Rand wie components/video-bg.css */
+    --hx-vt-x: var(--ncss-space-sm);
+    --hx-vt-y: var(--ncss-space-sm);
+    --hx-vt-radius: var(--ncss-radius-full);
+    --hx-vt-bg: rgb(0 0 0 / 62%);
+    --hx-vt-bg-hover: rgb(0 0 0 / 80%);
+    --hx-vt-border: rgb(255 255 255 / 60%);
+    --hx-vt-focus-width: max(var(--ncss-focus-ring-width), 2px);
+    --hx-vt-font-size: var(--ncss-font-size-sm);
   }
   /* Dunkles Schema nur, wenn das Design es erlaubt (wie die --f-Werte) – light-dark() in NativeCSS folgt */
   html.has-dark { color-scheme: light dark; }

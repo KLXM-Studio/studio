@@ -9,8 +9,9 @@
  *  - Seitenleiste mit Menübaum: Zweige außerhalb der aktuellen Seite zuklappen, Schaltflächen mit aria-expanded
  *  - Website-Suche: Vorschläge (Kern-Skript search.js) erst beim ersten Fokus eines Suchfelds laden
  *  - Kopf „hoch“ bzw. überstehendes Logo beim Scrollen, „Nach oben“
- * Seltenes lädt nur, wenn die Seite es braucht (gleicher Ordner, gleiche Version): js/bgvideo.js (Hintergrundvideo im Einstieg
- * „vollflächig“), js/toc.js (Scrollspy im Inhaltsverzeichnis), js/nav-hover.js (Menü öffnet beim Überfahren, np-hover).
+ * Seltenes lädt nur, wenn die Seite es braucht (gleicher Ordner, gleiche Version): js/toc.js (Scrollspy im Inhaltsverzeichnis),
+ * js/nav-hover.js (Menü öffnet beim Überfahren, np-hover). Das Hintergrundvideo im Einstieg „vollflächig“ steuert das Kern-Skript
+ * hero.mjs (Core\Blocks\Hero::videoToggle).
  */
 const d = document;
 const html = d.documentElement;
@@ -18,7 +19,6 @@ html.classList.replace('no-js', 'js');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 const me = d.currentScript?.src || '';
 const need = (name, when) => { if (when && me) d.head.append(Object.assign(d.createElement('script'), { src: me.replace(/\/site\.js(?=[?#]|$)/, '/' + name + '.js') })); };
-need('bgvideo', d.querySelector('[data-bg-video]'));
 need('toc', d.querySelector('[data-scrollspy]'));
 need('nav-hover', html.classList.contains('np-hover') && matchMedia('(hover:hover) and (pointer:fine)').matches);
 

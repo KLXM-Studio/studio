@@ -63,6 +63,8 @@
     "arrow-square-out",
     "quotes",
     "play-circle",
+    "play",
+    "pause",
     "lock-key",
     "list",
     "eye",
@@ -2503,6 +2505,16 @@
           "Abspielen",
           "Play",
           "video start"
+        ],
+        "play": [
+          "Wiedergabe",
+          "Play (triangle)",
+          "abspielen start video audio"
+        ],
+        "pause": [
+          "Pause",
+          "Pause",
+          "anhalten stopp video audio"
         ],
         "music-notes": [
           "Musik",

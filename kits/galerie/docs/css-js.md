@@ -563,8 +563,8 @@ _Keine Namensraum-Ereignisse._
 | `data-avail` | blocks/artworks.php, assets/js/gallery.js |
 | `data-aw-count` | blocks/artworks.php, assets/js/gallery.js |
 | `data-aw-filter` | blocks/artworks.php, assets/js/gallery.js |
-| `data-bg-video` | blocks/hero.php, assets/js/site.js |
-| `data-bg-video-toggle` | blocks/hero.php, assets/js/site.js |
+| `data-hero-video` | blocks/hero.php |
+| `data-hero-video-box` | blocks/hero.php |
 | `data-cms-lightbox` | blocks/artwork_detail.php, functions.php |
 | `data-design-preview` | templates/layout.php |
 | `data-entry-edit` | assets/js/gallery-edit.js |
@@ -588,8 +588,6 @@ _Keine Namensraum-Ereignisse._
 | `data-header` | templates/partials/header.php, assets/js/site.js |
 | `data-id` | assets/js/gallery-edit.js |
 | `data-kind` | assets/js/gallery-edit.js |
-| `data-label-pause` | blocks/hero.php, assets/js/site.js |
-| `data-label-play` | blocks/hero.php, assets/js/site.js |
 | `data-many` | blocks/artworks.php, assets/js/gallery.js |
 | `data-mnav` | templates/partials/sheet.php, assets/js/site.js |
 | `data-one` | blocks/artworks.php, assets/js/gallery.js |
