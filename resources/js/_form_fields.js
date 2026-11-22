@@ -213,7 +213,7 @@ async function open(endpoint, from, opts = {}) {
   if (res.uiCss) setUiCss(res.uiCss);
   if (!host) await build(res);
   if (res.appearance) host.dataset.theme = res.appearance; else delete host.dataset.theme;
-  for (const [k, v] of Object.entries({ accent: res.accent?.accent, side: res.accent?.side })) { if (v) host.dataset[k] = v; else delete host.dataset[k]; }
+  for (const [k, v] of Object.entries({ accent: res.accent?.accent, side: res.accent?.side, fs: res.fs })) { if (v) host.dataset[k] = v; else delete host.dataset[k]; }
   head(res);
   mount(res);
   host.hidden = false; place();

@@ -44,6 +44,8 @@ export function initPopovers() {
     });
     filter?.addEventListener('input', () => applyFilter(pop, filter.value));
     pop.addEventListener('keydown', e => {
+      // Schieber (z. B. Schriftgröße im Konto-Menü) behält Pfeile, Pos1 und Ende
+      if (e.target.matches?.('input[type=range]')) return;
       const list = items(pop);
       const i = list.indexOf(d.activeElement);
       let n = null;

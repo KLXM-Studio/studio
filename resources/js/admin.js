@@ -45,6 +45,7 @@ import { initIconPickers, initIconGallery } from './_iconpicker.js';
 import { initTiles } from './_tiles.js';   // Auswahl als Kacheln (z. B. Raster des Layout-Blocks)
 import { ico } from './_icons.js';   // Symbolauswahl (Feldtyp „icon“, Tabellensymbol)
 import { initAccent } from './_accent.js';   // Konto → Akzentfarbe: Live-Vorschau (Core\Accent)
+import { initUiScale } from './_uiscale.js';   // Schriftgröße der Verwaltung: Schieber in Kopfleiste und Konto (Core\UiScale)
 import { initFeatures } from './_features.js';   // Funktionen & Erweiterungen: Sicherheitsbestätigung (Core\Features)
 import { initFonts } from './_fonts.js';   // Grundeinstellungen → Schriften: Proben von der eigenen Domain (Core\Fonts)
 import { Rich } from './_rte.js';   // Formatierungsleiste: Stile, Farben, Marker, Link, Menüs, Tastatur
@@ -106,6 +107,8 @@ initPagePreview();
 if (d.getElementById('aip-data')) lazy('admin-aiset').then(m => m.initAiSettings?.());
 // Konto → Akzentfarbe (_accent.js)
 initAccent();
+// Schriftgröße der Verwaltung (_uiscale.js) – Konto-Menü der Kopfleiste und Konto → Darstellung
+initUiScale(csrf);
 // Grundeinstellungen → Schriften (_fonts.js)
 initFonts();
 initFeatures();

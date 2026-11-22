@@ -83,6 +83,7 @@ final class FormFieldsController extends AdminController
             'uiCss' => ['admin' => asset('css/admin.shadow.css'), 'ui' => asset('css/editor.shadow.css')],
             'appearance' => in_array(app()->auth->user()['appearance'] ?? '', ['light', 'dark'], true) ? app()->auth->user()['appearance'] : '',
             'accent' => \Core\Accent::client(),
+            'fs' => \Core\UiScale::client(),   // Schriftgröße der Verwaltung (Core\UiScale)
             'csrf' => \Core\Csrf::token(),
             'texts' => [
                 'close' => __('Schließen'), 'cancel' => __('Abbrechen'), 'saving' => __('Speichere …'),

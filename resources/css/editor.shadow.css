@@ -6,6 +6,15 @@
    ========================================================================== */
 @import "./_toast.css";   /* Meldungen (Toast), gemeinsam mit admin.css */
 :host{all:initial}
+/* Schriftgröße der Verwaltung (Core\UiScale): Faktor am Host (data-fs wie an <html class="adm-ui">); die Maße rechnen nach dem
+   Bauen mit calc(…px*var(--adm-s,1)) (tools/adm-scale.mjs). In der Verwaltung erbt --adm-s von <html>. */
+/* Breiten-Stufen der Werkzeugleiste als Container-Abfragen am Host (editor.css: container cms-bar, Schrift 14px × Stufe):
+   em = 14px × Stufe, so schaltet die Leiste bei großer Schrift früher in die kompakte Form (1600/1280/1024 px bei 100 %). */
+:host([data-fs="90"]){--adm-s:.9}
+:host([data-fs="112"]){--adm-s:1.12}
+:host([data-fs="125"]){--adm-s:1.25}
+:host([data-fs="140"]){--adm-s:1.4}
+@media (max-width:600px){:host([data-fs="90"]){--adm-s:.95}:host([data-fs="112"]){--adm-s:1.06}:host([data-fs="125"]){--adm-s:1.125}:host([data-fs="140"]){--adm-s:1.2}}   /* Telefon: halbe Wirkung wie _uiscale.css */
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
 button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
@@ -105,14 +114,14 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 
 /* Vorlage: Vorschau mit anderem Eintrag */
 .cms-bar__pick{flex:0 100 auto;min-width:0;max-width:150px}
-@media (min-width:1600px){.cms-bar__pick{max-width:300px}}
+@container cms-bar (min-width:114.2857em){.cms-bar__pick{max-width:300px}}
 .cms-pick{display:inline-flex;align-items:center;gap:5px;max-width:100%;min-height:28px;margin:0;padding:0 10px;border:0;border-radius:999px;background:transparent;box-shadow:inset 0 0 0 1px var(--b-line);color:var(--b-ink);font:600 12px/1 Lato,"Segoe UI",Tahoma,Geneva,Verdana,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
 .cms-pick:hover,.cms-pick[aria-expanded=true]{background:var(--b-fill)}
 .cms-pick__l{color:var(--b-mute);font-weight:500}
 .cms-pick>.ico:first-child{display:none;width:16px;height:16px}
-@media (max-width:1599px){.cms-pick__l{display:none}.cms-pick>.ico:first-child{display:block}}
+@container cms-bar (max-width:114.2143em){.cms-pick__l{display:none}.cms-pick>.ico:first-child{display:block}}
 /* Vorlage (drei Modi, drei Aktionen): unter 1280 px Modus nur mit Symbolen, Status als Punkt, Eintragswahl als Symbol */
-@media (max-width:1279px){
+@container cms-bar (max-width:91.3571em){   /* 1279 px bei 100 % */
   .cms-bar--template .cms-seg__i{padding:0 11px}
   .cms-bar--template .cms-seg__i>span,.cms-bar--template .cms-chip__t,.cms-pick__t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .cms-bar--template .cms-chip{width:28px;padding:0;justify-content:center}
@@ -136,7 +145,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-bar__act{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
 .cms-bar__grp{display:inline-flex;align-items:center;gap:6px}
 /* „Bearbeiten“ steht schon im Umschalter „Ansehen | Bearbeiten“ (ab 1024 px sichtbar) – nicht doppelt (toolbar.php $segEdit) */
-@media (min-width:1024px){.cms-bar__grp.cms-bar__grp--seg{display:none}}
+@container cms-bar (min-width:73.1429em){.cms-bar__grp.cms-bar__grp--seg{display:none}}
 .cms-bar[data-bar] .cms-btn{gap:7px;min-height:36px;padding:0 16px;background:var(--b-fill);color:var(--b-ink);font-size:13.5px;font-weight:700}
 .cms-bar[data-bar] .cms-btn:hover{background:var(--b-fill-h);color:var(--b-ink)}
 .cms-bar[data-bar] .cms-btn .ico{width:16px;height:16px}
@@ -199,7 +208,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-menu__col--site{padding:2px 4px 4px;border-radius:9px;background:var(--m-soft)}
 .cms-menu__col--site .cms-menu__item:hover,.cms-menu__col--site .cms-menu__item:focus{background:var(--m-soft-hover)}
 .cms-menu__col--page:not(:has(.cms-menu__item))+.cms-menu__col--site{margin-top:0}
-@media (min-width:1024px){
+@container cms-bar (min-width:73.1429em){   /* 1024 px bei 100 % */
   #cms-more-menu.cms-menu:has(.cms-menu__col--page .cms-menu__item){display:grid;grid-template-columns:minmax(240px,1fr) minmax(220px,1fr);max-width:min(600px,calc(100vw - 16px));column-gap:6px}
   #cms-more-menu.cms-menu[hidden]{display:none}
   #cms-more-menu .cms-menu__col--page+.cms-menu__col--site{margin-top:0}
@@ -215,7 +224,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 }
 
 /* < 1024 px: Modus ins Menü „⋯“, Status als Punkt */
-@media (max-width:1023px){
+@container cms-bar (max-width:73.0714em){   /* 1023 px bei 100 % */
   .cms-bar[data-bar]{grid-template-columns:minmax(0,1fr) auto;gap:10px}
   .cms-seg{display:none}
   .cms-menu__grp.cms-menu--narrow{display:flex}

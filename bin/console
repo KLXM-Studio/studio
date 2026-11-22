@@ -113,6 +113,7 @@
  *   fonts:sync [--all] [--dry-run]                    Schriften der Kits installieren bzw. ergänzen (aktuelle Werte, Standardwerte,
  *                                                     Landingpages; --all: alle Websites) – nach jedem Deploy
  *   accent:check                                      Akzentfarben der Verwaltung auf Kontrast prüfen (WCAG AA)
+ *   uiscale:selftest                                  Selbsttest Schriftgröße der Verwaltung (Stufen, Attribute, gebaute CSS in rem)
  *
  * Betrieb & Deploy
  *   migrate [--all]                                   Datenbank auf den Stand des Codes bringen (nach jedem Deploy)
@@ -1653,6 +1654,13 @@ switch ($cmd) {
             printf("%-9s %-46s %5.2f:1  (min %.1f)  %s\n", $c['preset'], $c['check'], $c['ratio'], $c['min'], $c['ok'] ? 'ok' : 'FEHLER');
         }
         echo $bad ? "$bad Prüfungen nicht bestanden.\n" : "Alle Vorlagen bestehen WCAG AA.\n";
+        exit($bad ? 1 : 0);
+
+    case 'uiscale:selftest':
+        // Schriftgröße der Verwaltung (Core\UiScale): Stufen, Attribute, gebaute CSS (rem bzw. calc mit --adm-s)
+        $bad = 0;
+        foreach (Core\UiScale::selfTest() as [$label, $ok]) { if (!$ok) { $bad++; echo "  FEHLER: $label\n"; } }
+        echo $bad ? "  $bad Prüfungen fehlgeschlagen\n" : "  Alle Prüfungen bestanden\n";
         exit($bad ? 1 : 0);
 
     case 'blocks:selftest':

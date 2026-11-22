@@ -26,6 +26,9 @@
  *           importieren Erweiterungen über den Namen „klxm-studio/…“ (z. B. import { t } from 'klxm-studio/_i18n.js') – sie werden
  *           ins Bündel der Erweiterung übernommen.
  *
+ * Schriftgröße der Verwaltung (Core\UiScale, tools/adm-scale.mjs): Kern-CSS der Verwaltung (ADM_REM) rechnet nach dem Bauen
+ *           in rem statt px, Schatten-CSS (ADM_SCALED, abgeleitet admin.shadow.css) in calc(…px*var(--adm-s,1)) – Quellen bleiben px.
+ *
  * Auf dem Server wird weder Node noch pnpm benötigt – die gebauten Dateien liegen in /public.
  */
 import { build, context } from 'esbuild';
@@ -35,6 +38,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execSync, execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import { icons } from './icons.mjs';
+import { toRem, toScaled } from './adm-scale.mjs';
 
 const TOOLS = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(TOOLS, '..');
@@ -376,6 +380,35 @@ const adminShared = {
   },
 };
 
+/**
+ * Schriftgröße der Verwaltung (Core\UiScale): welche Kern-Stylesheets nach dem Bauen mitwachsen (tools/adm-scale.mjs).
+ * ADM_REM: nur in der Verwaltung geladen (eigenes Dokument, Wurzel html.adm-ui) → px in rem.
+ * ADM_SCALED: Schatten-Wurzeln, auch auf der Website (rem gehört dort dem Kit) → calc(px*var(--adm-s,1)).
+ * Stylesheets, die auch die Website lädt (data.css, dataform.css, media.css …), bleiben px – sonst änderte sich die Website.
+ */
+const CSS_SRC = path.join(ROOT, 'resources/css');
+const ADM_REM = new Set(['admin.css', 'account.css', 'dashboard.css', 'placeholders.css', 'tasks.css', 'invite.css', 'mailoverview.css',
+  'network.css', 'passkey.css', 'tutorials.css', 'blockdemos.css', 'welcome-modal.css', 'welcome.css', 'docs.css', 'userchat.css']);
+const ADM_SCALED = new Set(['editor.shadow.css', 'entry-panel.css', 'versions.css', 'assistant.css']);
+const admScale = {
+  name: 'adm-scale',
+  setup(b) {
+    b.onEnd(res => {
+      if (res.errors.length) return;
+      const src = b.initialOptions.entryPoints[0];
+      const name = path.basename(src);
+      const out = path.join(b.initialOptions.outdir, name);
+      if (!fs.existsSync(out)) return;
+      const css = fs.readFileSync(out, 'utf8');
+      // admin.shadow.css aus der px-Fassung ableiten, bevor admin.css auf rem umgestellt wird
+      if (name === 'admin.css') shadowCss(out, css);
+      if (ADM_REM.has(name)) fs.writeFileSync(out, toRem(css));
+      else if (ADM_SCALED.has(name)) fs.writeFileSync(out, toScaled(css));
+    });
+  },
+};
+const isAdmScaled = src => path.dirname(src) === CSS_SRC && (ADM_REM.has(path.basename(src)) || ADM_SCALED.has(path.basename(src)));
+
 const options = ([src, outdir]) => {
   const ext = extOf(src);
   const extra = ext ? (extHooks.get(ext.name).mod.esbuild?.(src) ?? {}) : {};
@@ -396,7 +429,7 @@ const options = ([src, outdir]) => {
   // Kern-Helfer für Erweiterungen: import … from 'klxm-studio/_i18n.js' → resources/js/_i18n.js (mitgebündelt)
   alias: { 'klxm-studio': path.join(ROOT, 'resources/js'), ...(extra.alias ?? {}) },
   // Teile von admin.js: gemeinsame Module aus admin.js statt Kopie (adminShared)
-  plugins: isAdminPart(src) ? [vendorVersioned, adminShared] : [vendorVersioned],
+  plugins: [vendorVersioned, ...(isAdminPart(src) ? [adminShared] : []), ...(isAdmScaled(src) ? [admScale] : [])],
   legalComments: 'none',
   logLevel: 'warning',
   // Versionsordner der Datums-/Zeitauswahl (resources/js/_datetime.js lädt vendor/a11y_datetime/{version}/)
@@ -411,16 +444,16 @@ async function assets() {
     const out = path.join(e[1], path.basename(e[0]));  // gleiche Endung wie die Quelle
     const kb = (fs.statSync(out).size / 1024).toFixed(1);
     console.log(`  ${path.relative(ROOT, e[0]).padEnd(46)} → ${path.relative(ROOT, out)}  (${kb} KB)`);
-    if (out === path.join(PUB, 'assets/css/admin.css')) shadowCss(out);
   }
 }
 
 /**
  * admin.shadow.css: Verwaltungs-CSS für Shadow DOM (Seitenleiste „Eintrag bearbeiten“ auf der Website, _entry_edit.js).
  * Tokens hängen dort am Host statt an :root; html.adm-ui[data-theme=…] (Hell/Dunkel) → :host(.adm-ui[data-theme=…]).
+ * Maße wachsen mit der Schriftgröße der Verwaltung (toScaled, --adm-s aus :host(.adm-ui[data-fs=…])).
  */
-function shadowCss(file) {
-  const css = fs.readFileSync(file, 'utf8')
+function shadowCss(file, px) {
+  const css = toScaled(px)
     .replace(/html\.adm-ui((?:\[[^\]]*\]|:not\([^()]*\))*)/g, ':host(.adm-ui$1)')
     .replace(/:root(?![\w-])/g, ':host');
   fs.writeFileSync(path.join(path.dirname(file), 'admin.shadow.css'), css);
