@@ -12,8 +12,9 @@
 :is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr{--f-hdr-bg:var(--f-zone);border-bottom-color:transparent}
 :is(.hbg-accent,.hbg-secondary,.hbg-dark) .hnav__link[aria-current=page],:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hnav__link[data-active]{text-decoration-color:currentColor}
 :is(.hbg-accent,.hbg-secondary,.hbg-dark) .hnav__sublink[aria-current=page]::before{background:currentColor}
-/* Übersichtslink (nav_overview) im farbigen Kopf: aktuelle Seite ohne helle Fläche (Kontrast der Schrift), Strich und Schriftstärke markieren */
-:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hnav__sublink--overview[aria-current=page]{background:none}
+/* Aufklappmenü im farbigen Kopf: aktuelle Seite ohne helle Fläche – die Fläche aus der Schriftfarbe senkt den Kontrast der Schrift
+   unter 4,5:1; Strich (::before) und Schriftstärke markieren. Farbwerte der Website bleiben unverändert. */
+:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hnav__sublink[aria-current=page]{background:none}
 /* Aktionen im farbigen Kopf (Handlungsaufruf, Menüpunkt-Link): Schriftfarbe der Fläche statt Akzentfarbe – sonst Grün auf Grün */
 :is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr :is(.ha,.ha-below){--ha-accent:var(--f-fg);--ha-on:var(--f-zone)}
 :is(.hbg-accent,.hbg-secondary,.hbg-dark) .brand__mark{box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--f-zone) 60%,var(--f-fg))}
