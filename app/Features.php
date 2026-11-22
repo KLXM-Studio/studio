@@ -304,12 +304,12 @@ final class Features
         return true;
     }
 
-    /** Blocktyp für die Redaktion freigegeben? */
+    /** Blocktyp für die Redaktion freigegeben? Rahmen der Website: Konfiguration (blocks.allow/deny) und Oberfläche (sys.blocks_off) */
     public static function allowsBlock(string $type): bool
     {
-        $b = (array) app()->config->get('blocks', []);
-        if (!empty($b['allow']) && !in_array($type, (array) $b['allow'], true)) return false;
-        if (in_array($type, (array) ($b['deny'] ?? []), true)) return false;
+        if (self::configBlockLock($type) !== null) return false;
+        // Website-Rahmen aus der Oberfläche (Funktionen & Erweiterungen → Blöcke der Website, Core\Http\Controllers\Admin\BlockFrameController)
+        if (in_array($type, self::blocksOff(), true)) return false;
         // Eigene Blöcke (Block-Designer): ohne Funktion „blocks.custom“ bleiben bestehende sichtbar, neue lassen sich nicht einfügen
         if (str_starts_with($type, 'cblk_') && !self::on('blocks.custom', false)) return false;
         if (in_array($type, ['data_list', 'data_fields'], true) && !self::on('data', false)) return false;
@@ -320,6 +320,20 @@ final class Features
         // Formular-Block: für Inhaltstabellen (forms.data) oder Eingangs-Tabellen (requests)
         if ($type === 'data_form' && !self::on('forms.data', false) && !self::on('requests', false)) return false;
         return true;
+    }
+
+    /** Per Konfiguration gesperrter Blocktyp: 'allow' (nicht in blocks.allow) | 'deny' (in blocks.deny) | null */
+    public static function configBlockLock(string $type): ?string
+    {
+        $b = (array) app()->config->get('blocks', []);
+        if (!empty($b['allow']) && !in_array($type, (array) $b['allow'], true)) return 'allow';
+        return in_array($type, (array) ($b['deny'] ?? []), true) ? 'deny' : null;
+    }
+
+    /** In der Oberfläche abgeschaltete Blocktypen der Website (sys.blocks_off) @return list<string> */
+    public static function blocksOff(): array
+    {
+        return array_values(array_filter(array_map('strval', (array) app()->settings->get('sys.blocks_off', []))));
     }
 
     /** Pfade, die eine Funktion voraussetzen (Website-Routen ohne Rechteprüfung) */

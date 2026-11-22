@@ -497,7 +497,8 @@ final class CmsService
 
     private static function exportBlock(array $b): array
     {
-        return ['id' => $b['id'], 'type' => $b['type'], 'data' => $b['data'] ?? [], 'section' => $b['tunes']['section'] ?? []];
+        // Sperre (Core\BlockGuard) mitgeben – beim Zurückschreiben bleibt sie so erhalten; ändern darf sie nur volle Gestaltung
+        return ['id' => $b['id'], 'type' => $b['type'], 'data' => $b['data'] ?? [], 'section' => $b['tunes']['section'] ?? []] + (!empty($b['lock']) ? ['lock' => $b['lock']] : []);
     }
 
     public function pageGet(string|int $ref, bool $published = false): array
@@ -522,6 +523,8 @@ final class CmsService
         $lang = isset($in['lang']) && Lang::valid((string) $in['lang']) ? (string) $in['lang'] : ($this->lang ?? Lang::default());
         $this->assertSlug($slug, null, $parent, $lang);
         $blocks = isset($in['blocks']) ? $this->importBlocks((array) $in['blocks']) : [];
+        // Rollenrechte an Blöcken wie beim Speichern (Core\BlockGuard): Token mit den Rechten seines Kontos
+        $blocks = $this->guarded(fn() => \Core\BlockGuard::forSave([], $blocks, $this->userId()));
         $id = Pages::create([
             'slug' => $slug, 'title' => mb_substr($title, 0, 120), 'parent_id' => $parent,
             'menu' => !empty($in['menu']) ? 1 : 0, 'nav_title' => mb_substr(strip_tags((string) ($in['nav_title'] ?? '')), 0, 60),
@@ -644,7 +647,7 @@ final class CmsService
             throw new ApiError(404, 'Version nicht gefunden.');
         }
         $blocks = json_decode((string) $row['blocks_json'], true)['blocks'] ?? [];
-        Pages::saveDraft((int) $p['id'], Pages::sanitizeBlocks($blocks), $this->userId(), $this->note('Version ' . $row['created_at'] . ' wiederhergestellt'));
+        $this->guarded(fn() => Pages::saveDraft((int) $p['id'], Pages::sanitizeBlocks($blocks), $this->userId(), $this->note('Version ' . $row['created_at'] . ' wiederhergestellt')));
         if ($q = Pages::find((int) $p['id'])) \Core\Extensions::emit(new \Core\Events\PageRestored($q, (int) $row['id'], $this->userId()));
         return $this->pageGet((int) $p['id']);
     }
@@ -693,7 +696,7 @@ final class CmsService
                 'type' => $b['type'],
                 'data' => (array) ($b['data'] ?? []),
                 'tunes' => ['section' => (array) ($b['section'] ?? $b['tunes']['section'] ?? [])],
-            ];
+            ] + (!empty($b['lock']) ? ['lock' => $b['lock']] : []);
         }
         $out = Pages::sanitizeBlocks($raw);
         // Block „Layout“: nur verschachtelbare Blöcke in den Spalten (block_types → nestable)
@@ -717,9 +720,19 @@ final class CmsService
         return $w;
     }
 
+    /** Ablehnung durch Core\BlockGuard (Rollenrechte an Blöcken) als API-Fehler 403 */
+    private function guarded(callable $fn): mixed
+    {
+        try {
+            return $fn();
+        } catch (\Core\BlockDenied $e) {
+            throw new ApiError(403, $e->getMessage(), ['blocks' => $e->problems]);
+        }
+    }
+
     private function saveBlocks(array $page, array $blocks, string $note, bool $publish): array
     {
-        Pages::saveDraft((int) $page['id'], $blocks, $this->userId(), $this->note($note));
+        $this->guarded(fn() => Pages::saveDraft((int) $page['id'], $blocks, $this->userId(), $this->note($note)));
         if ($publish) {
             try {
                 Pages::publish((int) $page['id'], $this->userId());

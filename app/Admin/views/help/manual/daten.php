@@ -91,7 +91,7 @@
     <li><b>Vorschläge:</b> Beim ersten Öffnen legt Studio passende Vorlagen an – etwa „Neueste als Karten“, „Kompakte Liste“, „Verzeichnis A–Z mit Filter“ (wenn die Tabelle ein Auswahlfeld hat), „Tabelle sortierbar“ oder „Team mit Foto“ (Bild und Funktion). Ändern, umbenennen oder löschen Sie sie nach Belieben.</li>
     <li><b>Als Vorlage speichern …</b> in der Seitenleiste macht aus der Einstellung eines Blocks eine neue Vorlage der Tabelle und wählt sie gleich aus – so werden bewährte Listen zu Vorlagen.</li>
     <li><b>Standard:</b> Ist für eine Tabelle ein Standard festgelegt, beginnt jede <b>neue</b> Datenliste nach der Wahl der Tabelle mit dieser Vorlage (auch über „Einsetzen“). Bestehende Blöcke bleiben, wie sie sind.</li>
-    <li><b>Wer darf was?</b> Auswählen darf jede Rolle, die Seiten bearbeitet. Vorlagen anlegen, ändern, löschen und den Standard festlegen erlaubt das Recht <b>„Blöcke gestalten“</b> (Benutzer &amp; Rollen → Gestaltung) – zunächst nur die Administration. Vorlagen aus dem Kit sind mit einem Schloss gekennzeichnet; mit „Duplizieren“ entsteht eine eigene, änderbare Kopie.</li>
+    <li><b>Wer darf was?</b> Auswählen darf jede Rolle, die Seiten bearbeitet. Vorlagen anlegen, ändern, löschen und den Standard festlegen erlaubt das Recht <b>„Blöcke gestalten (voll)“</b> (Benutzer &amp; Rollen → Gestaltung) – zunächst nur die Administration. Vorlagen aus dem Kit sind mit einem Schloss gekennzeichnet; mit „Duplizieren“ entsteht eine eigene, änderbare Kopie.</li>
   </ul>
 
   <h3>4. Detailseite gestalten</h3>

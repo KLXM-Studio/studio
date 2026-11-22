@@ -35,6 +35,10 @@ $sw = function (bool $on, bool $disabled, string $label) {
   </div>
 </div>
 
+<?php // Rahmen der Website für Blöcke (Core\BlockGuard): eigene Seite, die „Erlaubten Blöcke“ der Rollen liegen darin ?>
+<p class="ft-blocks-link"><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/funktionen/bloecke')) ?>"><?= icon('blocks') ?> <?= e(__('Blöcke der Website')) ?></a>
+  <span class="adm-muted"><?= e(__('Welche Blockarten die Redaktion einfügen darf – für alle Rollen.')) ?></span></p>
+
 <?php if (!$canManage): ?>
 <p class="adm-flash ft-readonly" role="status"><?= icon('lock') ?> <?= e(__('Freischaltung durch die Agentur: Diese Übersicht zeigt, was auf Ihrer Website eingeschaltet ist. Änderungen nimmt die Netzwerk-Administration vor.')) ?></p>
 <?php endif; ?>
@@ -205,7 +209,7 @@ $sw = function (bool $on, bool $disabled, string $label) {
   <table class="adm-table ft-log">
     <thead><tr><th><?= e(__('Zeit')) ?></th><th><?= e(__('Wer')) ?></th><th><?= e(__('Was')) ?></th><th><?= e(__('Änderung')) ?></th></tr></thead>
     <tbody>
-    <?php foreach ($log as $l): $kind = ['feature' => __('Funktion'), 'extension' => __('Erweiterung'), 'delegate' => __('Freigabe'), 'release' => __('Konfiguration freigegeben')][$l['kind']] ?? $l['kind']; ?>
+    <?php foreach ($log as $l): $kind = ['feature' => __('Funktion'), 'extension' => __('Erweiterung'), 'delegate' => __('Freigabe'), 'release' => __('Konfiguration freigegeben'), 'blocks' => __('Blöcke der Website')][$l['kind']] ?? $l['kind']; ?>
       <tr><td><?= e(substr((string) $l['created_at'], 0, 16)) ?></td><td><?= e((string) ($l['user_email'] ?? '–')) ?></td>
         <td><?= e($kind) ?>: <code><?= e($l['target']) ?></code><?= $l['detail'] ? ' <small class="adm-muted">' . e($l['detail']) . '</small>' : '' ?></td>
         <td><?= e(($l['old_value'] ? __($l['old_value']) : '–') . ' → ' . ($l['new_value'] ? __($l['new_value']) : '–')) ?></td></tr>

@@ -305,6 +305,10 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-flag--off{background:#FDF0DC;color:#9A5B00}
 .cms-flag--nav{background:#E7F2EE;color:#2F5A50}
 .cms-flag--row{background:#EEEBF7;color:#4A3D85}
+/* Gesperrter bzw. für die Rolle nicht erlaubter Block (Core\BlockGuard) */
+.cms-flag--lock{display:inline-flex;align-items:center;gap:4px;background:#FBE9E7;color:#8C1D18}
+.cms-flag--lock svg,.cms-lay-bar__lock svg{width:12px;height:12px}
+.cms-lay-bar__lock{display:inline-flex;vertical-align:-1px;color:#8C1D18}
 .cms-block__tools{display:inline-flex;gap:3px}
 .cms-iconbtn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0;padding:0;border-radius:8px;border:0;background:#fff;color:#16201E;box-shadow:0 0 0 1px #E6E6E9;font:700 14px Lato,"Segoe UI",Tahoma,Geneva,Verdana,system-ui,sans-serif;cursor:pointer}
 .cms-iconbtn:hover{background:#F0F0F2}
@@ -336,6 +340,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-drawer__vis{margin:0 0 14px;padding:10px 12px;border-radius:10px;background:var(--adm-fill,#F4F5F7)}
 .cms-drawer__vis:has(.is-off){background:#FDF0DC}
 .cms-vis{display:flex;align-items:center;gap:10px;width:100%;padding:4px 0;border:0;background:none;color:var(--adm-ink);font:600 14px var(--adm-font);text-align:left;cursor:pointer}
+.cms-vis:disabled{opacity:.55;cursor:not-allowed}
 .cms-vis:focus-visible{outline:2px solid var(--adm-a);outline-offset:3px;border-radius:6px}
 .cms-vis__track{position:relative;flex:none;width:42px;height:24px;border-radius:999px;background:var(--adm-ok);box-shadow:inset 0 0 0 1px var(--adm-line);transition:background .15s}
 .cms-vis__thumb{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transform:translateX(18px);transition:transform .15s}
@@ -764,6 +769,8 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 /* Block-Menü (editor.js BlockMenu): Stil wie „+ Block einfügen“, mit Titel, Trennern, Tastenhinweis und Löschen in Rot */
 .cms-blockmenu{width:min(280px,calc(100vw - 16px));max-height:min(520px,calc(100vh - 16px));overflow:auto;gap:2px}
 .cms-blockmenu__title{margin:2px 8px 4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--adm-t3,#5A6461)}
+.cms-blockmenu__note{display:flex;align-items:center;gap:6px;margin:0 8px 6px;font-size:12px;line-height:1.35;color:#8C1D18}
+.cms-blockmenu__note svg{width:12px;height:12px;flex:none}
 .cms-blockmenu hr{width:100%;margin:4px 0;border:0;border-top:1px solid var(--adm-line,#E6E6E9)}
 .cms-blockmenu .cms-addpop__item:disabled{opacity:.4;cursor:default}
 .cms-blockmenu .cms-addpop__item:focus-visible{outline:2px solid var(--adm-a,#314164);outline-offset:-2px}

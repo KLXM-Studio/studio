@@ -1105,6 +1105,9 @@ final class Theme
         $blocks = [];
         $context = $page !== null ? Blocks\Picker::context($page) : null;
         $previews = Blocks\Picker::previews($this, $this->blocks);   // Blockauswahl: Vorschaugrafiken (optional, Core\Blocks\Picker)
+        // Rollenrechte an Blöcken (Core\BlockGuard): erlaubte Blöcke, Stufe der Gestaltung – ohne Anmeldung (Vorschau, Tests) wie bisher
+        $role = isset(app()->auth) && app()->auth->user() ? app()->auth->role() : null;
+        $level = $role ? BlockGuard::level($role) : 'full';
         foreach ($this->blocks as $type => $b) {
             // Formular einer Datentabelle im Block (Knopf „Felder bearbeiten“, resources/js/_form_fields.js): 'formfields' => Feldname,
             // sonst das erste Tabellen-Feld, das Formular-Tabellen anbietet ('type' => 'datatable', 'inbox' => true – z. B. data_form, contact)
@@ -1120,8 +1123,10 @@ final class Theme
                 'central' => $b['central'] ?? null, 'background' => $b['background'] ?? 'white',
                 'help' => $b['help'] ?? null,
                 'description' => Blocks\Picker::description($b), 'preview' => $previews[$type] ?? null,   // Blockauswahl (beides optional)
-                'insertable' => Features::allowsBlock($type) && ($b['insertable'] ?? true)   // zurückgezogene eigene Blöcke: nicht einfügbar
+                'insertable' => ($role ? Permissions::allowsBlock($role, $type) : Features::allowsBlock($type)) && ($b['insertable'] ?? true)   // zurückgezogene eigene Blöcke: nicht einfügbar
                     && ($context === null || Blocks\Picker::fits($b, $context)),             // z. B. „Datensatz-Felder“ nur in Detailseiten-Vorlagen
+                // Typ nicht unter den „Erlaubten Blöcken“ der Rolle: bestehende Blöcke sichtbar, verschiebbar, aber nicht änderbar/löschbar
+                'guarded' => $role !== null && BlockGuard::protection($role, ['type' => $type]) === 'type',
                 'listed' => ($b['listed'] ?? true) !== false,   // false: nicht in der Blockauswahl, nur über Vorlagen (Extension::blockPresets)
                 'formfields' => $ff ?: null,
                 'raw' => !empty($b['raw']),   // eigene Abschnitts-Hülle → nicht „neben den vorigen Block“
@@ -1136,6 +1141,9 @@ final class Theme
             'presets' => Extensions::blockPresets(array_keys(array_filter($blocks, fn($b) => !empty($b['insertable'])))),
             'layout' => isset($this->blocks[Layout::TYPE]) ? ['presets' => Layout::PRESETS] : null,
             'glossary' => Features::on('glossary', false),   // Abschnitts-Option „Glossar-Begriffe hier nicht markieren“
+            // Gestaltung (Core\BlockGuard): full = auch sperren/entsperren und gesperrte Blöcke ändern; basic = Variante + Abschnitts-Optionen;
+            // none = nur Inhalte. designTunes: Abschnitts-Optionen, die als Gestaltung gelten (im Editor ausgegraut)
+            'design' => $level, 'designTunes' => BlockGuard::DESIGN_TUNES,
             // Abschnitts-Option „Einblend-Effekt“ – nur wenn das Kit Effekte anbietet (theme.php → 'reveal')
             'reveal' => array_map(fn($o) => $o['label'], $this->revealOptions()) ?: null];
     }

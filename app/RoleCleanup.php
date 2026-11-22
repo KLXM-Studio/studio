@@ -85,6 +85,9 @@ final class RoleCleanup
     {
         if ($cmd === 'roles:selftest') {
             $res = self::selfTest();
+            // Rollenrechte an Blöcken (Core\BlockGuard): Schreibwege, Sperre, Gestaltungsstufen, Migration, Bestand
+            $bg = BlockGuardSelfTest::run();
+            $res = ['ok' => $res['ok'] + $bg['ok'], 'fails' => [...$res['fails'], ...$bg['fails']]];
             foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
             echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
             return $res['fails'] ? 1 : 0;

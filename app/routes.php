@@ -311,6 +311,8 @@ return function (Router $r): void {
     $r->post('/admin/funktionen/funktion', [Admin\FeaturesController::class, 'feature']);
     $r->post('/admin/funktionen/erweiterung', [Admin\FeaturesController::class, 'extension']);
     $r->post('/admin/funktionen/freigabe', [Admin\FeaturesController::class, 'delegate']);
+    $r->get('/admin/funktionen/bloecke', [Admin\FeaturesController::class, 'blocks']);   // Rahmen der Website: einfügbare Blocktypen (Core\BlockGuard)
+    $r->post('/admin/funktionen/bloecke', [Admin\FeaturesController::class, 'saveBlocks']);
     $r->get('/admin/system', [Admin\SystemController::class, 'edit']);
     $r->post('/admin/system/undo/{id}', [Admin\SystemController::class, 'undo']);   // Version der Grundeinstellungen zurücknehmen
     $r->post('/admin/system', [Admin\SystemController::class, 'save']);

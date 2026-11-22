@@ -134,6 +134,40 @@ final class FeaturesController extends AdminController
         return $this->back($back, 'success', $msg);
     }
 
+    /**
+     * Blöcke der Website (Rahmen, /admin/funktionen/bloecke): welche Blocktypen die Redaktion überhaupt einfügen darf – für alle Rollen,
+     * die „Erlaubten Blöcke“ einer Rolle liegen darin. Gespeichert als sys.blocks_off (abgeschaltete Typen); Werte aus der Konfiguration
+     * (blocks.allow/deny) gehen vor und sind hier nicht änderbar. Bestehende Blöcke abgeschalteter Typen bleiben auf den Seiten.
+     */
+    public function blocks(Request $r): Response
+    {
+        $this->guard($r);
+        $catalog = \Core\BlockGuard::catalog();
+        $off = Features::blocksOff();
+        $on = [];
+        foreach ($catalog as $types) foreach ($types as $type => $t) if (!$t['config'] && !in_array($type, $off, true)) $on[] = (string) $type;
+        return $this->view('features_blocks', ['title' => __('Blöcke der Website'), 'catalog' => $catalog, 'on' => $on,
+            'canManage' => Features::canManage(), 'usage' => \Core\Theme::blockUsage(), 'css' => []]);
+    }
+
+    public function saveBlocks(Request $r): Response
+    {
+        $this->guard($r, true);
+        $all = [];
+        foreach (\Core\BlockGuard::catalog() as $types) foreach ($types as $type => $t) if (!$t['config']) $all[] = (string) $type;
+        $on = array_intersect(array_map('strval', (array) ($r->post['blocks'] ?? [])), $all);
+        $old = Features::blocksOff();
+        // Abgeschaltete Typen, die das aktive Kit gerade nicht kennt (anderes Kit, abgeschaltete Erweiterung), bleiben abgeschaltet
+        $off = array_values(array_unique([...array_values(array_diff($all, $on)), ...array_diff($old, $all)]));
+        sort($off);
+        app()->settings->set('sys.blocks_off', $off);
+        $added = array_diff($off, $old);
+        $removed = array_diff($old, $off);
+        if ($added || $removed) FeatureLog::add('blocks', site()->key, null, null, trim(($added ? '− ' . implode(', ', $added) : '') . ' ' . ($removed ? '+ ' . implode(', ', $removed) : '')));
+        $this->changed();
+        return $this->back('/admin/funktionen/bloecke', 'success', __('Blöcke der Website gespeichert: {n} Blockarten abgeschaltet.', ['n' => count(array_intersect($off, $all))]));
+    }
+
     /** Netzwerk: der Website-Administration das Schalten freigeben (Recht system.features wirkt dann) */
     public function delegate(Request $r): Response
     {

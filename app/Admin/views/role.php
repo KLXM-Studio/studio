@@ -1,8 +1,9 @@
 <?php
-/** Rolle bearbeiten: Rechte als Matrix. @var ?array $role  @var array $catalog  @var array $tables */
+/** Rolle bearbeiten: Rechte als Matrix. @var ?array $role  @var array $catalog  @var array $tables  @var array $blockCatalog */
 $isNew = $role === null;
 $perms = $role['permissions'] ?? [];
 $some = is_array($role['tables'] ?? null);
+$someBlocks = is_array($role['blocks'] ?? null);
 ?>
 <header class="adm-head">
   <div><p class="adm-eyebrow"><a href="<?= e(url('/admin/users/rollen')) ?>"><?= e(__('Benutzer & Rollen')) ?></a></p>
@@ -45,5 +46,18 @@ $some = is_array($role['tables'] ?? null);
     <p class="set-group__note"><?= e(__('Gilt für die Rechte im Bereich „Daten“ (außer „Tabellen und Felder ändern“) und für den „Eingang“ – z. B. nur eine Eingangs-Tabelle lesen.')) ?></p>
   </fieldset>
   <?php endif; ?>
+  <?php // Erlaubte Blöcke (Core\BlockGuard): nur Typen im Rahmen der Website; andere bleiben auf Seiten sichtbar, aber gesperrt ?>
+  <fieldset class="set-group" id="bloecke">
+    <legend class="set-group__title"><?= e(__('Erlaubte Blöcke')) ?></legend>
+    <div class="set-list">
+      <label class="set-row us-radio"><input type="radio" name="blocks_mode" value="all"<?= !$someBlocks ? ' checked' : '' ?>> <span class="set-row__main"><span class="set-row__label"><?= e(__('Alle Blöcke, die die Website erlaubt')) ?></span></span></label>
+      <div class="set-row set-row--stack">
+        <label class="us-radio"><input type="radio" name="blocks_mode" value="some"<?= $someBlocks ? ' checked' : '' ?>> <span class="set-row__label"><?= e(__('Nur ausgewählte:')) ?></span></label>
+        <?php $catalog = $blockCatalog; $checked = $someBlocks ? $role['blocks'] : []; $name = 'blocks[]'; $mode = 'role'; include __DIR__ . '/_block_choice.php'; ?>
+      </div>
+    </div>
+    <p class="set-group__note"><?= e(__('Neue Blöcke lassen sich nur aus dieser Auswahl einfügen. Blöcke anderer Arten bleiben auf den Seiten sichtbar und verschiebbar, lassen sich aber weder ändern noch löschen – das gilt auch für API, MCP und KI. Rollen mit „Blöcke gestalten (voll)“ ändern bestehende Blöcke trotzdem.')) ?></p>
+    <p class="set-group__note"><?= e(__('Gestaltung: Ohne „Blöcke gestalten im Rahmen des Kits“ ändert die Rolle nur Inhalte – Variante, Hintergrund und Abstände bleiben, wie sie sind. Gesperrte Blöcke (Schloss) ändert nur „Blöcke gestalten (voll)“.')) ?></p>
+  </fieldset>
   <div class="adm-savebar"><button class="adm-btn adm-btn--primary" type="submit"><?= e(__('Rolle speichern')) ?></button> <a class="adm-btn" href="<?= e(url('/admin/users/rollen')) ?>"><?= e(__('Abbrechen')) ?></a></div>
 </form>

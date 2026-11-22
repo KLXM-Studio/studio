@@ -93,6 +93,11 @@ final class Invites
             $scoped = array_filter($target['permissions'], fn($p) => (str_starts_with($p, 'data.') && $p !== 'data.schema') || str_starts_with($p, 'requests.'));
             if ($scoped && ($target['tables'] === null || array_diff($target['tables'], $mine['tables']))) return false;
         }
+        // Eigene Rolle nur mit ausgewählten Blöcken (Core\BlockGuard): Zielrolle mit Seitenrechten ebenso eingeschränkt, nicht weiter
+        if (is_array($mine['blocks'] ?? null) && in_array('pages.edit', $target['permissions'], true)) {
+            $tb = $target['blocks'] ?? null;
+            if (!is_array($tb) || array_diff($tb, $mine['blocks'])) return false;
+        }
         return true;
     }
 

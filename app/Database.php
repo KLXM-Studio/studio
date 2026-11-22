@@ -284,6 +284,11 @@ final class Database
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS roles (rkey VARCHAR(40) NOT NULL PRIMARY KEY, name $str NOT NULL, description TEXT,
             permissions_json TEXT, tables_json TEXT NULL, builtin INT NOT NULL DEFAULT 0)$tail");
         Permissions::seed($this);
+        // Erlaubte Blöcke je Rolle (Core\BlockGuard, null = alle). Beim ersten Anlegen der Spalte einmalig: Rollen mit „Seiten bearbeiten“
+        // bekommen „Blöcke gestalten im Rahmen des Kits“ (design.blocks.basic) – Abschnitts-Optionen und Varianten durften sie schon immer
+        $freshBlocks = !in_array('blocks_json', $this->columns('roles'), true);
+        $this->ensureColumns('roles', ['blocks_json' => 'TEXT NULL']);
+        if ($freshBlocks) Permissions::grantDesignBasic($this);
         $this->ensureColumns('users', ['locale' => 'VARCHAR(10) NULL', 'appearance' => 'VARCHAR(10) NULL',
             'favorites' => 'TEXT NULL']);   // Favoriten der Verwaltung (JSON, Core\Favorites)
         $this->ensureColumns('users', ['ui_prefs' => 'TEXT NULL']);   // persönliche Oberfläche: Akzentfarbe u. a. (JSON, Core\Accent)

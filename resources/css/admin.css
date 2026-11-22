@@ -1122,6 +1122,12 @@ html.adm-ui[data-theme=dark]{--ico-2-opacity:.3}
 .adm-fields>.f-bindwrap--half{grid-column:auto}
 /* Hinweise zu diesem Projekt (Core\Guide): Link im Block-Formular (.cms-guidenote) und über dem Inhalt eines Bereichs */
 .adm-fields>.cms-guidenote{grid-column:1/-1}
+/* Geschützter Block (Core\BlockGuard): Seitenleiste nur lesen; ohne Gestaltungsrecht Hinweis über den Abschnitts-Optionen */
+.adm-fields>.cms-locknote,.adm-fields>.cms-ro,.adm-fields>.cms-designnote{grid-column:1/-1}
+.cms-ro{display:contents;border:0;margin:0;padding:0;min-width:0}
+.cms-locknote svg{width:14px;height:14px;vertical-align:-2px}
+.cms-drawer button:disabled,.cms-drawer .btn:disabled,.cms-ro :is(button,.btn,a){opacity:.55;cursor:not-allowed}
+.cms-ro a{pointer-events:none}
 .adm-guidehint{display:flex;align-items:flex-start;gap:8px;margin:0 0 16px;padding:9px 12px;border-radius:8px;background:var(--adm-info-bg);color:var(--adm-ink);font-size:13.5px;line-height:1.45;max-width:max-content}
 .adm-guidehint svg{flex:none;width:18px;height:18px;margin-top:1px;color:var(--adm-a-ink)}
 .gd-src{width:100%;min-height:24em;font-family:var(--adm-mono);font-size:13.5px;line-height:1.55}
@@ -3177,6 +3183,13 @@ a.set-row--link::after{content:"";flex:none;width:7px;height:7px;border:solid va
 .set-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,11rem),1fr));gap:8px 16px;margin:0;padding:0;border:0;min-width:0}
 .set-checks > legend{float:left;width:100%;padding:0;margin:0 0 6px;font-size:12px;font-weight:600;color:var(--adm-t3)}
 .set-checks > legend + *{clear:both}
+/* Auswahl von Blockarten (app/Admin/views/_block_choice.php): je Gruppe eine Überschrift mit „alle“ */
+.bc{display:grid;gap:14px;margin:8px 0 0}
+.bc__group{padding-top:2px}
+.bc__legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;grid-column:1/-1}
+.bc__all{display:inline-flex;align-items:center;gap:6px;font-weight:400;color:var(--adm-t2)}
+.bc .f-check.is-off{color:var(--adm-t3)}
+.ft-blocks-link{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px}
 /* Schmal: Zeilen mit Bedienelementen dürfen umbrechen – kurze (Schalter, Abzeichen + kleiner Knopf, kurzer Code) bleiben neben der
    Beschriftung, solange sie passen (Beschriftung mindestens 9rem), längere rutschen von selbst in die nächste Zeile; Eingabefelder bekommen
    immer eine eigene Zeile. Reine Werte (Zahl, Datum, Text) und Pfeil-Zeilen bleiben rechts. */

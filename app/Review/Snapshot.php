@@ -65,14 +65,14 @@ final class Snapshot
     public static function exportBlocks(array $blocks): array
     {
         return array_values(array_map(fn($b) => ['id' => (string) ($b['id'] ?? ''), 'type' => (string) ($b['type'] ?? ''),
-            'data' => (array) ($b['data'] ?? []), 'section' => (array) ($b['tunes']['section'] ?? [])], $blocks));
+            'data' => (array) ($b['data'] ?? []), 'section' => (array) ($b['tunes']['section'] ?? [])] + (!empty($b['lock']) ? ['lock' => $b['lock']] : []), $blocks));
     }
 
     /** Export-Format ({id, type, data, section}) → Editor.js-Format mit tunes */
     public static function importBlocks(array $blocks): array
     {
         return array_values(array_map(fn($b) => ['id' => $b['id'] ?? '', 'type' => $b['type'] ?? '', 'data' => (array) ($b['data'] ?? []),
-            'tunes' => ['section' => (array) ($b['section'] ?? [])]], $blocks));
+            'tunes' => ['section' => (array) ($b['section'] ?? [])]] + (!empty($b['lock']) ? ['lock' => $b['lock']] : []), $blocks));
     }
 
     private static function page(int $id): ?array

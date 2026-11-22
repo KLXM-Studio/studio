@@ -50,6 +50,7 @@ import { ico } from './_icons.js';   // Symbolauswahl (Feldtyp „icon“, Tabel
 import { initAccent } from './_accent.js';   // Konto → Akzentfarbe: Live-Vorschau (Core\Accent)
 import { initUiScale } from './_uiscale.js';   // Schriftgröße der Verwaltung: Schieber in Kopfleiste und Konto (Core\UiScale)
 import { initFeatures } from './_features.js';   // Funktionen & Erweiterungen: Sicherheitsbestätigung (Core\Features)
+import { initBlockChoice } from './_blockchoice.js';   // Auswahl von Blockarten: Rolle bearbeiten, Blöcke der Website (Core\BlockGuard)
 import { initFonts } from './_fonts.js';   // Grundeinstellungen → Schriften: Proben von der eigenen Domain (Core\Fonts)
 import { Rich } from './_rte.js';   // Formatierungsleiste: Stile, Farben, Marker, Link, Menüs, Tastatur
 import * as Markdown from './_markdown.js';   // Markdown einfügen/importieren (Rich-Text-Felder, Seiten-Editor)
@@ -115,6 +116,7 @@ initUiScale(csrf);
 // Grundeinstellungen → Schriften (_fonts.js)
 initFonts();
 initFeatures();
+initBlockChoice();
 initDelivery();
 initRequests();
 initAddressBook();
