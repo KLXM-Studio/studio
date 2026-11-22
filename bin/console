@@ -197,7 +197,9 @@
  *   data:network <tabelle> [--levels=on|off] [--site-fields=on|off] [--existing=site|network] | --status
  *                                                     Netzwerk einer geteilten Tabelle (Core\Data\Network): Weitergabe je Eintrag,
  *                                                     Zusatzfelder je Website (nur Eigentümer-Website); --status: Schalter und Versionen
- *   data:network-join <tabelle> [--apply] [--choice=ID:existing|mine|both,…]
+ *   data:invite <tabelle> <website,…>                 Websites einladen (Eigentümer; auch data:share <t> --invite=a,b)
+ *   data:network-leave <tabelle> [--no-copies]        Geteilte Tabelle verlassen (Mitglied), Zusatzfelder werden wieder Felder
+ *   data:network-join <tabelle> [--apply] [--choice=ID:existing|mine|both,…] [--local-fields=a,b|--no-local-fields]
  *                                                     Beitritt mit Plan: eigene Einträge zusammenführen (Probelauf zeigt Doppel)
  *   shared:selftest [--sandbox --sites=verband,land1,land2]
  *                                                     Selbsttest Netzwerk; mit --sandbox Ende-zu-Ende mit drei Websites (nur in einer Kopie)
@@ -1499,6 +1501,14 @@ switch ($cmd) {
         if ($handle === '') { fwrite(STDERR, "Aufruf: data:share <handle> --members=a,b [--see-members] [--merge] [--local-fields=feld,feld] [--dry-run] [--site=eigentuemer]\n"); exit(1); }
         // Verknüpfungen auf lokale Tabellen (Core\Data\Network::sharePlan): --local-fields übernimmt sie als Zusatzfelder dieser Website
         $localFields = array_values(array_filter(array_map('trim', explode(',', (string) Core\Cli::opt($args, 'local-fields')))));
+        $invite = array_values(array_filter(array_map('trim', explode(',', (string) Core\Cli::opt($args, 'invite')))));
+        // Schon geteilt (diese Website ist Eigentümer): nur einladen – die Websites treten dort mit data:network-join bei
+        if ($invite && ($im = Core\Data\Shared::meta($handle)) && $im['owner'] === site()->key) {
+            try {
+                foreach (Core\Data\Network::invite($handle, $invite) as $l) echo "  $l\n";
+            } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+            break;
+        }
         if (in_array('--dry-run', $args, true)) {
             $lrow = app()->db->fetch('SELECT id FROM data_tables WHERE handle = ?', [$handle]);
             $lt = $lrow ? Core\Data\Tables::find((int) $lrow['id']) : null;
@@ -1511,6 +1521,7 @@ switch ($cmd) {
         }
         try {
             foreach (Core\Data\Shared::shareLocal($handle, $members, in_array('--merge', $args, true), ['members_see_members' => in_array('--see-members', $args, true), 'local_fields' => $localFields]) as $line) echo "  $line\n";
+            if ($invite) foreach (Core\Data\Network::invite($handle, $invite) as $l) echo "  $l\n";
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         echo "Geteilt: {$handle} (Eigentümer " . (Core\Data\Shared::meta($handle)['owner'] ?? site()->key) . ", Mitglieder: " . (implode(', ', Core\Data\Shared::meta($handle)['members'] ?? []) ?: '–') . ").\n";
         break;
@@ -1594,16 +1605,37 @@ switch ($cmd) {
     case 'data:network-join':
         // Beitritt mit Plan (Core\Data\Network::joinPlan/join) – Standard: Probelauf
         $handle = (string) ($args[0] ?? '');
-        if ($handle === '' || str_starts_with($handle, '--')) { fwrite(STDERR, "Aufruf: data:network-join <tabelle> [--apply] [--choice=ID:existing|mine|both,…]\n"); exit(1); }
-        $plan = Core\Data\Network::joinPlan($handle);
+        if ($handle === '' || str_starts_with($handle, '--')) { fwrite(STDERR, "Aufruf: data:network-join <tabelle> [--apply] [--choice=ID:existing|mine|both,…] [--local-fields=feld,…|--no-local-fields]\n"); exit(1); }
+        // Verknüpfungen auf eigene lokale Tabellen: ohne Angabe der Vorschlag des Plans (als Zusatzfelder dieser Website übernehmen)
+        $lf = Core\Cli::opt($args, 'local-fields');
+        $localFields = in_array('--no-local-fields', $args, true) ? [] : ($lf !== null ? array_values(array_filter(array_map('trim', explode(',', $lf)))) : null);
+        $plan = Core\Data\Network::joinPlan($handle, $localFields);
+        foreach ($plan['ok'] || $plan['relations'] ? Core\Data\Network::joinReport($plan, $handle) : [] as $l) echo "  $l\n";
         if (!$plan['ok']) { fwrite(STDERR, $plan['error'] . "\n"); exit(1); }
-        echo "  Eigene Einträge: {$plan['local']} · Einträge der anderen: {$plan['shared']} · Doppel: " . count($plan['dupes']) . "\n";
-        foreach ($plan['dupes'] as $d) echo "    #{$d['id']} {$d['title']} ↔ " . implode(', ', array_map(fn($m) => "#{$m['id']} {$m['title']} ({$m['site']})", $d['matches'])) . "\n";
-        if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply beitreten (Doppel ohne Wahl: existing). Rückweg: data:unshare bzw. Verlassen in der Verwaltung.\n"; break; }
+        if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply beitreten (Doppel ohne Wahl: existing). Rückweg: data:network-leave.\n"; break; }
         $choices = [];
         foreach (explode(',', (string) Core\Cli::opt($args, 'choice')) as $c) if (preg_match('~^(\d+):(existing|mine|both)$~', trim($c), $m)) $choices[(int) $m[1]] = $m[2];
         try {
-            foreach (Core\Data\Network::join($handle, $choices) as $l) echo "  $l\n";
+            foreach (Core\Data\Network::join($handle, $choices, '', $localFields) as $l) echo "  $l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
+    case 'data:network-leave':
+        // Geteilte Tabelle verlassen (Mitglied): wieder eigene Tabelle mit den eigenen Einträgen (und Kopien der gezeigten fremden), Zusatzfelder → Felder
+        $handle = (string) ($args[0] ?? '');
+        if ($handle === '' || str_starts_with($handle, '--')) { fwrite(STDERR, "Aufruf: data:network-leave <tabelle> [--no-copies]\n"); exit(1); }
+        try {
+            foreach (Core\Data\Shared::leave($handle, !in_array('--no-copies', $args, true)) as $l) echo "  $l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
+    case 'data:invite':
+        // Websites zum Beitreten einladen (nur Eigentümer-Website, --site=…): data:invite <tabelle> a,b – dort data:network-join
+        $handle = (string) ($args[0] ?? '');
+        $sites = array_values(array_filter(array_map('trim', explode(',', (string) ($args[1] ?? Core\Cli::opt($args, 'sites') ?? '')))));
+        if ($handle === '' || !$sites) { fwrite(STDERR, "Aufruf: data:invite <tabelle> <website,website> [--site=eigentuemer]\n"); exit(1); }
+        try {
+            foreach (Core\Data\Network::invite($handle, $sites) as $l) echo "  $l\n";
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         break;
 

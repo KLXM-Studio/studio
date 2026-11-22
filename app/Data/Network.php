@@ -418,6 +418,22 @@ final class Network
         return $out;
     }
 
+    /**
+     * Websites zum Beitreten einladen (Eigentümer-Website bzw. Integrator; Kommandozeile als Eigentümer) – gleichwertig mit der
+     * Einladung in der Verwaltung. Bereits beteiligte bleiben, wie sie sind. @return list<string>
+     */
+    public static function invite(string $key, array $sites): array
+    {
+        $meta = Shared::meta($key) ?? throw new \InvalidArgumentException(__('Unbekannte geteilte Tabelle.'));
+        if (!Shared::canAdmin($key) && !(PHP_SAPI === 'cli' && site()->key === $meta['owner'])) throw new \InvalidArgumentException(__('Einladen kann nur die Website, der die Tabelle gehört ({site}).', ['site' => (string) $meta['owner']]));
+        $unknown = array_diff($sites, array_keys(\Core\Sites::all()));
+        if ($unknown) throw new \InvalidArgumentException(__('Unbekannte Websites: {list}', ['list' => implode(', ', $unknown)]));
+        $new = array_values(array_diff($sites, Shared::participants($meta)));
+        Shared::update($key, ['invited' => array_values(array_unique([...$meta['invited'], ...$new]))]);
+        return $new ? [__('Eingeladen: {list}. Diese Websites treten mit data:network-join {key} bei (Probelauf zeigt Doppel und Verknüpfungen).', ['list' => implode(', ', $new), 'key' => $key])]
+            : [__('Alle genannten Websites sind schon beteiligt.')];
+    }
+
     /** Wie viele Einträge haben in diesem Verknüpfungsfeld einen Wert? */
     private static function filled(array $t, array $f): int
     {
@@ -641,19 +657,45 @@ final class Network
     }
 
     /**
-     * Probelauf des Beitritts: eigene Einträge der lokalen Tabelle gleichen Kurznamens, Einträge der anderen, Doppel.
-     * @return array{ok: bool, error: ?string, local: int, shared: int, dupes: list<array{id: int, title: string, matches: list<array{id: int, title: string, site: string}>}>}
+     * Probelauf des Beitritts: eigene Einträge der lokalen Tabelle gleichen Kurznamens, Einträge der anderen (sichtbar, mit
+     * Aufschlüsselung der nicht sichtbaren nach Grund), Doppel und Verknüpfungen auf lokale Tabellen dieser Website (Vorschlag:
+     * Zusatzfelder dieser Website). $localFields = null: Vorschlag des Plans.
+     * @return array{ok: bool, error: ?string, local: int, shared: int, total: int, hidden: list<array{site: string, reason: string, n: int}>,
+     *     dupes: list<array>, relations: ?array, local_fields: list<string>}
      */
-    public static function joinPlan(string $key): array
+    public static function joinPlan(string $key, ?array $localFields = null): array
     {
+        $fail = fn(string $msg) => ['ok' => false, 'error' => $msg, 'local' => 0, 'shared' => 0, 'total' => 0, 'hidden' => [], 'dupes' => [], 'relations' => null, 'local_fields' => []];
         $meta = Shared::meta($key);
         $t = $meta ? Tables::sharedTable($key) : null;
-        if (!$meta || !$t) return ['ok' => false, 'error' => __('Unbekannte geteilte Tabelle.'), 'local' => 0, 'shared' => 0, 'dupes' => []];
+        if (!$meta || !$t) return $fail(__('Unbekannte geteilte Tabelle.'));
         $row = app()->db->fetch('SELECT id FROM data_tables WHERE handle = ?', [$key]);
         $local = $row ? Tables::find((int) $row['id']) : null;
-        if ($local && ($c = self::mergeCheck($local, $t)) && $c['error']) return ['ok' => false, 'error' => $c['error'], 'local' => 0, 'shared' => 0, 'dupes' => []];
+        if ($local && ($c = self::mergeCheck($local, $t)) && $c['error']) return $fail((string) $c['error']);
+        // Verknüpfungen auf eigene lokale Tabellen: Standard = als Zusatzfelder dieser Website übernehmen
+        $relations = null;
+        if ($local) {
+            $suggest = array_column(self::sharePlan($local)['local'], 'name');
+            $relations = self::sharePlan($local, $localFields ?? $suggest);
+        }
         $others = array_values(array_diff(Shared::participants($meta), [site()->key]));
-        $theirs = $others ? Shared::db($key)->fetchAll("SELECT * FROM {$t['table']} WHERE status = 'published' AND origin_site IN (" . implode(',', array_fill(0, count($others), '?')) . ')', $others) : [];
+        $all = $others ? Shared::db($key)->fetchAll("SELECT * FROM {$t['table']} WHERE origin_site IN (" . implode(',', array_fill(0, count($others), '?')) . ')', $others) : [];
+        $levels = self::levelsOn($t);
+        $theirs = [];
+        $hidden = [];
+        foreach ($all as $x) {
+            $origin = (string) $x['origin_site'];
+            $reason = match (true) {
+                ($x['status'] ?? '') !== 'published' => 'draft',
+                $levels && self::level($x) === 'site' => 'site',
+                $levels && self::level($x) === 'sites' && !in_array(site()->key, self::shareSites($x), true) => 'sites',
+                $levels && Exposure::perEntry($t) && empty($x[Kinds::PUBLIC_FIELD]) => 'private',
+                $origin !== (string) $meta['owner'] && empty($meta['members_see_members']) && !($levels && self::level($x) === 'sites') => 'members',
+                default => '',
+            };
+            if ($reason !== '') { $hidden[$origin . "\x1F" . $reason] = ($hidden[$origin . "\x1F" . $reason] ?? 0) + 1; continue; }
+            $theirs[] = $x;
+        }
         $index = [];
         foreach ($theirs as $x) {
             $x['email'] = $x['email'] ?? null;
@@ -665,18 +707,47 @@ final class Network
             $k = self::dupKey($local, $m);
             if ($k !== "\x1F" && isset($index[$k])) $dupes[] = ['id' => (int) $m['id'], 'title' => Entries::title($local, $m), 'matches' => $index[$k]];
         }
-        return ['ok' => true, 'error' => null, 'local' => count($mine), 'shared' => count($theirs), 'dupes' => $dupes];
+        $out = [];
+        foreach ($hidden as $k => $n) {
+            [$site, $reason] = explode("\x1F", (string) $k);
+            $out[] = ['site' => $site, 'reason' => $reason, 'n' => $n];
+        }
+        return ['ok' => $relations === null || $relations['error'] === null, 'error' => $relations['error'] ?? null, 'local' => count($mine), 'shared' => count($theirs),
+            'total' => count($all), 'hidden' => $out, 'dupes' => $dupes, 'relations' => $relations, 'local_fields' => $relations['convert'] ?? []];
+    }
+
+    /** Bericht des Beitritts-Plans (Kommandozeile): Zahlen, nicht sichtbare Einträge nach Grund, Doppel, Verknüpfungen */
+    public static function joinReport(array $plan, string $key): array
+    {
+        $l = [__('Eigene Einträge: {local} · Einträge der anderen: {shared} sichtbar von {total} · Doppel: {d}', ['local' => $plan['local'], 'shared' => $plan['shared'], 'total' => $plan['total'], 'd' => count($plan['dupes'])])];
+        foreach ($plan['hidden'] as $h) {
+            $name = Shared::siteInfo($h['site'], $key)['name'];
+            $l[] = '  ' . match ($h['reason']) {
+                'draft' => __('{n} Entwürfe von {site} nicht sichtbar', ['n' => $h['n'], 'site' => $name]),
+                'site' => __('{n} Einträge von {site} nur für deren Website (nicht weitergegeben)', ['n' => $h['n'], 'site' => $name]),
+                'sites' => __('{n} Einträge von {site} nur an andere ausgewählte Websites', ['n' => $h['n'], 'site' => $name]),
+                'private' => __('{n} Kontakte von {site} nicht für die Website freigegeben', ['n' => $h['n'], 'site' => $name]),
+                default => __('{n} Einträge von {site} – die Websites zeigen Einträge nicht untereinander', ['n' => $h['n'], 'site' => $name]),
+            };
+        }
+        foreach ($plan['dupes'] as $d) {
+            $l[] = '  ' . __('Doppel: #{id} {title} ↔ {list}', ['id' => $d['id'], 'title' => $d['title'], 'list' => implode(', ', array_map(fn($m) => '#' . $m['id'] . ' ' . $m['title'] . ' (' . $m['site'] . ')', $d['matches']))]);
+        }
+        if ($plan['relations']) foreach (self::sharePlanReport($plan['relations']) as $x) $l[] = '  ' . $x;
+        return $l;
     }
 
     /**
      * Beitreten mit Plan (nur auf Einladung): eigene Einträge zusammenführen – je Doppel existing (vorhandenen nutzen, eigenen nicht
-     * übernehmen), mine (eigenen übernehmen, den anderen hier ausblenden) oder both. Rückweg: Shared::leave (eigene Einträge kommen
-     * als lokale Tabelle zurück, die Sicherung der lokalen Tabelle bleibt als zz_unshared_…). @return list<string>
+     * übernehmen), mine (eigenen übernehmen, den anderen hier ausblenden) oder both. Verknüpfungen auf eigene lokale Tabellen werden
+     * Zusatzfelder dieser Website ($localFields, Standard: Vorschlag des Plans) – auch an den vorhandenen Einträgen der Doppel.
+     * Rückweg: Shared::leave (eigene Einträge samt Verknüpfungen kommen als lokale Tabelle zurück). @return list<string>
      */
-    public static function join(string $key, array $choices = [], string $by = ''): array
+    public static function join(string $key, array $choices = [], string $by = '', ?array $localFields = null): array
     {
-        $plan = self::joinPlan($key);
+        $plan = self::joinPlan($key, $localFields);
         if (!$plan['ok']) throw new \InvalidArgumentException((string) $plan['error']);
+        if (in_array(site()->key, Shared::participants(Shared::meta($key) ?? ['owner' => '', 'members' => []]), true)) throw new \InvalidArgumentException(__('Diese Website ist an „{key}“ schon beteiligt.', ['key' => $key]));
         if (!Shared::isInvited($key)) throw new \InvalidArgumentException(__('Diese Website ist nicht zum Beitreten eingeladen – die Website, der die Tabelle gehört, gibt sie frei.'));
         if (!app()->db->fetch('SELECT id FROM data_tables WHERE handle = ?', [$key])) {
             Shared::addMember($key);
@@ -690,7 +761,7 @@ final class Network
             elseif ($c === 'mine') foreach ($d['matches'] as $x) $hide[] = (int) $x['id'];
         }
         $map = [];
-        $log = Shared::shareLocal($key, [], true, [], $map, $skip);
+        $log = Shared::shareLocal($key, [], true, ['local_fields' => $plan['local_fields']], $map, $skip);
         if ($hide && ($t = Tables::sharedTable($key))) {
             $n = Shared::setPick($t, array_values(array_unique($hide)), 'hidden', $by);
             $log[] = __('{n} Einträge anderer Websites auf dieser Website ausgeblendet (eigener Eintrag gilt).', ['n' => $n]);

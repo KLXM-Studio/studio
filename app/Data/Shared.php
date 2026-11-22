@@ -439,7 +439,7 @@ final class Shared
             if (!$db) continue;
             try {
                 foreach ($db->fetchAll('SELECT handle, name, settings_json FROM data_tables') as $r) {
-                    if ($r['handle'] === $key) $out[] = __('{site}: Es gibt dort schon eine eigene Tabelle mit dem Kurznamen „{key}“.', ['site' => $label, 'key' => $key]);
+                    if ($r['handle'] === $key) $out[] = __('{site}: Es gibt dort schon eine eigene Tabelle mit dem Kurznamen „{key}“ – statt direkt beteiligen einladen (data:share {key} --invite={sitekey} bzw. data:invite); die Website tritt dann mit data:network-join bei und führt ihre Einträge zusammen.', ['site' => $label, 'key' => $key, 'sitekey' => $s]);
                     $st = json_decode((string) $r['settings_json'], true) ?: [];
                     if ($route !== '' && ($st['route'] ?? '') === $route && $r['handle'] !== $key) {
                         $out[] = __('{site}: Die Adresse /{route} nutzt dort schon „{name}“.', ['site' => $label, 'route' => $route, 'name' => $r['name']]);
@@ -849,11 +849,11 @@ final class Shared
         $media = array_column(array_filter($local['fields'], fn($f) => in_array($f['type'], ['media', 'file'], true)), 'name');
         $moved = 0;
         $renamed = [];
-        $sdb->transaction(function () use ($local, $shared, $sdb, $have, $merge, $media, $skip, &$map, &$moved, &$renamed): void {
+        $sdb->transaction(function () use ($local, $shared, $sdb, $have, $merge, $media, $skip, $convert, &$map, &$moved, &$renamed): void {
             $fix = [];
             foreach (app()->db->fetchAll("SELECT * FROM {$local['table']} ORDER BY id") as $r) {
                 if (isset($skip[(int) $r['id']])) continue;
-                $ins = array_intersect_key($r, array_flip($have));
+                $ins = array_diff_key(array_intersect_key($r, array_flip($have)), array_flip($convert));   // umgewandelte Verknüpfungen: Zusatzfelder
                 foreach ($media as $mf) {
                     if (!empty($r[$mf])) $ins[$mf] = self::toPool($shared, (int) $r[$mf]);
                 }
@@ -886,7 +886,7 @@ final class Shared
             }
             $pivots = array_column($sdb->fetchAll("SELECT name FROM sqlite_master WHERE type = 'table'"), 'name');
             foreach ($local['fields'] as $f) {
-                if ($f['type'] !== 'relations' || !in_array(Tables::pivot($shared, $f['name']), $pivots, true)) continue;   // umgewandelt bzw. nicht im Schema
+                if ($f['type'] !== 'relations' || in_array($f['name'], $convert, true) || !in_array(Tables::pivot($shared, $f['name']), $pivots, true)) continue;   // umgewandelt bzw. nicht im Schema
                 $pv = Tables::pivot($local, $f['name']);
                 $self = ($f['target'] ?? '') === $local['handle'];
                 foreach (app()->db->fetchAll("SELECT * FROM $pv") as $p) {
@@ -1047,9 +1047,11 @@ final class Shared
                 $db->query("DELETE FROM {$t['table']} WHERE id IN ($in)");
             }
             $db->query('DELETE FROM share_picks WHERE pick_site = ?', [$site]);
+            // Netzwerk: Zusatzangaben dieser Website (sind über toLocal wieder Felder geworden)
+            if ($db->fetchValue("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'share_extra'")) $db->query('DELETE FROM share_extra WHERE extra_site = ?', [$site]);
         });
         $meta['members'] = array_values(array_diff($meta['members'], [$site]));
-        unset($meta['sites_info'][$site]);
+        unset($meta['sites_info'][$site], $meta['site_fields'][$site]);
         self::saveMeta($key, self::normMeta($key, $meta));
         app()->settings->delete('shared.' . $key);
         Tables::flush();

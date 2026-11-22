@@ -71,7 +71,7 @@ final class NetworkSelfTest
             self::$ok += (int) $res['ok'];
             foreach ((array) $res['fails'] as $f) self::$fail[] = "$step ($site): $f";
         };
-        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB'], [$bund, 'localPrep'], [$la, 'localMember'], [$bund, 'localBack']] as [$s, $st]) {
+        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB'], [$bund, 'localPrep'], [$la, 'localMember'], [$bund, 'localBack'], [$lb, 'joinPrepB'], [$la, 'joinA'], [$lb, 'joinB'], [$la, 'joinClean']] as [$s, $st]) {
             $call($s, $st);
         }
         @unlink($file);
@@ -93,6 +93,7 @@ final class NetworkSelfTest
                 'setup' => self::setup($st, $eq), 'landA' => self::landA($st, $eq), 'landB' => self::landB($st, $eq), 'bund' => self::bund($st, $eq),
                 'landA2' => self::landA2($st, $eq), 'bund2' => self::bund2($st, $eq), 'join' => self::join($st, $eq), 'cleanup' => self::cleanup($st, $eq), 'cleanupB' => self::cleanupB($st, $eq),
                 'localPrep' => self::localPrep($st, $eq), 'localMember' => self::localMember($st, $eq), 'localBack' => self::localBack($st, $eq),
+                'joinPrepB' => self::joinPrepB($st, $eq), 'joinA' => self::joinA($st, $eq), 'joinB' => self::joinB($st, $eq), 'joinClean' => self::joinClean($st, $eq),
                 default => throw new \InvalidArgumentException('Unbekannter Schritt'),
             };
         } catch (\Throwable $e) {
@@ -454,6 +455,96 @@ final class NetworkSelfTest
         $pt = Tables::find('ntp_' . $s);
         $eq('Rückweg Personen', $pt ? ((Entries::find($pt, (int) $st['P1']) ?? [])['regionalgruppe'] ?? null) : null, (int) $st['R1']);
         foreach (['ntc_', 'ntp_', 'ntw_', 'ntr_'] as $p) if ($lt = Tables::find($p . $s)) Tables::delete($lt);
+        return $st;
+    }
+
+    // ================================================================= Beitritt einer Website mit eigenen lokalen Verknüpfungen (Fall oejv/bayern)
+
+    /** Land B: eigene Regionalgruppen und eigener Kalender (per data:convert umgewandelt) mit Verknüpfung, darunter ein Doppel */
+    private static function joinPrepB(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        $rg = self::local('nbr_' . $s, ['name' => 'Regionalgruppen B', 'fields' => [['label' => 'Name', 'name' => 'name', 'type' => 'text', 'required' => 1]]]);
+        $st['OB'] = self::save($rg, ['name' => 'Oberland']);
+        $cal = self::local('ntj_' . $s, ['name' => 'Termine', 'fields' => [['label' => 'Titel', 'name' => 'titel', 'type' => 'text', 'required' => 1],
+            ['label' => 'Beginn', 'name' => 'beginn', 'type' => 'datetime'], ['label' => 'Regionalgruppe', 'name' => 'regionalgruppe', 'type' => 'relation', 'target' => $rg['handle']]],
+            'settings' => ['calendar' => ['enabled' => true, 'start' => 'beginn']]]);
+        $st['B1'] = self::save($cal, ['titel' => 'Sommerfest', 'beginn' => '2027-06-01 10:00', 'regionalgruppe' => $st['OB']]);
+        $st['B2'] = self::save($cal, ['titel' => 'Herbstwanderung', 'beginn' => '2027-09-12 09:00', 'regionalgruppe' => $st['OB']]);
+        $plan = Convert::plan($cal, Kinds::CALENDAR);
+        if (!$plan['ok']) throw new \RuntimeException('Umwandlung: ' . implode(' ', (array) ($plan['errors'] ?? [])));
+        Convert::apply($cal, $plan);
+        Tables::flush();
+        $eq('Land B: Kalender umgewandelt, Verknüpfung bleibt', [Kinds::isCalendar(Tables::find($cal['handle']) ?? []), (Tables::field(Tables::find($cal['handle']) ?? [], 'regionalgruppe')['target'] ?? '')], [true, $rg['handle']]);
+        return $st;
+    }
+
+    /** Land A teilt mit --local-fields, lädt Land B ein */
+    private static function joinA(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        [, , $lb] = $st['sites'];
+        $rg = self::local('njr_' . $s, ['name' => 'Regionalgruppen A', 'fields' => [['label' => 'Name', 'name' => 'name', 'type' => 'text', 'required' => 1]]]);
+        $st['NA'] = self::save($rg, ['name' => 'Niederrhein']);
+        $cal = self::local('ntj_' . $s, ['name' => 'Termine', 'settings' => ['kind' => Kinds::CALENDAR], 'fields' => [
+            ['label' => 'Regionalgruppe', 'name' => 'regionalgruppe', 'type' => 'relation', 'target' => $rg['handle']]]]);
+        $st['J1'] = self::save($cal, ['titel' => 'Sommerfest', 'beginn' => '2027-06-01 10:00', 'regionalgruppe' => $st['NA']]);
+        $st['J2'] = self::save($cal, ['titel' => 'Entwurf Land A', 'beginn' => '2027-06-02 10:00', 'status' => 'draft']);
+        $st['J3'] = self::save($cal, ['titel' => 'Interne Sitzung', 'beginn' => '2027-06-03 10:00']);
+        Shared::shareLocal($cal['handle'], [], false, ['local_fields' => ['regionalgruppe']]);
+        Network::setFlags($cal['handle'], ['levels' => true]);
+        $t = self::table($cal['handle']);
+        self::save($t, [Network::COL => 'site'], (int) $st['J3']);
+        // Direkt beteiligen geht nicht (gleichnamige Tabelle): Meldung verweist auf Einladen + network-join
+        $c = implode(' ', Shared::conflicts($cal['handle'], [$lb]));
+        $eq('Gleichnamige Tabelle: Hinweis auf Einladen und network-join', [str_contains($c, '--invite=' . $lb), str_contains($c, 'data:network-join')], [true, true]);
+        $log = Network::invite($cal['handle'], [$lb]);
+        $eq('Einladen (wie data:invite / data:share --invite)', [Shared::isInvited($cal['handle'], $lb), str_contains(implode(' ', $log), 'network-join')], [true, true]);
+        return $st;
+    }
+
+    /** Land B tritt per network-join bei: Doppel, eigene Verknüpfungen als Zusatzfelder (auch am Doppel), Aufschlüsselung */
+    private static function joinB(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        $key = 'ntj_' . $s;
+        $plan = Network::joinPlan($key);
+        $eq('Plan: Vorschlag Zusatzfelder, Doppel, sichtbar von gesamt', [$plan['ok'], $plan['local_fields'], array_column($plan['dupes'], 'title'), $plan['shared'], $plan['total']],
+            [true, ['regionalgruppe'], ['Sommerfest'], 1, 3]);
+        $reasons = array_column($plan['hidden'], 'n', 'reason');
+        $eq('Plan: nicht sichtbare nach Grund', [$reasons['draft'] ?? 0, $reasons['site'] ?? 0], [1, 1]);
+        $rep = implode("\n", Network::joinReport($plan, $key));
+        $eq('Bericht nennt den Unterschied', [str_contains($rep, '1 Entwürfe'), str_contains($rep, 'nicht weitergegeben'), str_contains($rep, 'Zusatzfeld')], [true, true, true]);
+        $none = Network::joinPlan($key, []);
+        $eq('Ohne Zusatzfelder: Abbruch mit Vorschlag --local-fields', [$none['ok'], str_contains((string) $none['error'], '--local-fields=regionalgruppe')], [false, true]);
+        $log = Network::join($key, [(int) $st['B1'] => 'existing'], '', ['regionalgruppe']);
+        $eq('Beitritt: Protokoll mit Zusatzfeldern', (bool) array_filter($log, fn($l) => str_contains($l, 'Zusatzfeld')), true);
+        $t = self::table($key);
+        $titles = array_map(fn($e) => Entries::title($t, $e), Entries::query($t, ['status' => 'published', 'lang' => 'all', 'sort' => 'titel']));
+        $eq('Nach dem Beitritt: eigener Termin + Termin von Land A, Doppel nicht doppelt', $titles, ['Herbstwanderung', 'Sommerfest']);
+        $j1 = Entries::find($t, (int) $st['J1']) ?? [];
+        $eq('Zuordnung von Land B am zusammengeführten Eintrag (Zusatzfeld Land B)', $j1['regionalgruppe'] ?? null, (int) $st['OB']);
+        $eq('Filter auf die eigene Regionalgruppe', array_map(fn($e) => Entries::title($t, $e), Entries::query($t, ['where' => [['regionalgruppe', '=', (string) $st['OB']]], 'sort' => 'titel', 'lang' => 'all'])),
+            ['Herbstwanderung', 'Sommerfest']);
+        $st['B2n'] = (int) (array_values(array_filter(Entries::query($t, ['source' => 'own', 'status' => 'all', 'lang' => 'all']), fn($e) => Entries::title($t, $e) === 'Herbstwanderung'))[0]['id'] ?? 0);
+        // Rückweg: Verlassen – Zusatzfelder werden wieder Felder mit den Werten
+        Shared::leave($key);
+        Tables::flush();
+        $lt = Tables::find($key);
+        $back = $lt ? array_column(array_map(fn($e) => ['t' => Entries::title($lt, $e), 'r' => $e['regionalgruppe'] ?? null], Entries::query($lt, ['status' => 'all', 'lang' => 'all'])), 'r', 't') : [];
+        ksort($back);
+        $eq('Rückweg: eigene Tabelle, Zuordnungen zurück (auch an der Kopie des Doppels)', [$lt !== null && !Tables::isShared($lt), $back], [true, ['Herbstwanderung' => (int) $st['OB'], 'Sommerfest' => (int) $st['OB']]]);
+        foreach (['ntj_', 'nbr_'] as $p) if ($x = Tables::find($p . $s)) Tables::delete($x);
+        return $st;
+    }
+
+    private static function joinClean(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        $key = 'ntj_' . $s;
+        $eq('Land B hat verlassen', in_array($st['sites'][2], (array) (Shared::meta($key)['members'] ?? []), true), false);
+        Shared::unshare($key, true);
+        foreach (['ntj_', 'njr_'] as $p) if ($x = Tables::find($p . $s)) Tables::delete($x);
         return $st;
     }
 }

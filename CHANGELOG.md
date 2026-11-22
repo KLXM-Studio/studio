@@ -29,6 +29,10 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Verknüpfungen auf Tabellen, die lokal bleiben (Regionalgruppen, Workshops), werden auf Wunsch (`data:share --local-fields=…`, Probelauf
   `--dry-run`, Häkchen in der Verwaltung) Zusatzfelder der teilenden Website – Werte bleiben, Filter „verknüpft mit dem aufgerufenen
   Eintrag“ und „In deiner Nähe“ wirken weiter, beim Aufheben kehren sie in die Spalte zurück.
+- **Beitreten mit eigenen Verknüpfungen:** `data:network-join` übernimmt Verknüpfungen der beitretenden Website auf ihre lokalen Tabellen
+  standardmäßig als deren Zusatzfelder (`--local-fields`, `--no-local-fields`) – auch an zusammengeführten Doppeln; der Probelauf nennt,
+  wie viele fremde Einträge warum nicht sichtbar sind (Entwürfe, nicht weitergegeben …). Einladen auf der Kommandozeile mit `data:invite`
+  bzw. `data:share --invite`, Verlassen mit `data:network-leave`.
 - **Feldtypen** „Kontakt“/„Kontakte“ (Verknüpfung auf ein Adressbuch) und „Termin“ (Serie oder einzelnes Vorkommen).
 - **Für Entwickler:** Spalten `_share`, `_share_sites`, `_external`, Tabelle `share_extra` (additiv, nur mit Schalter bzw. Abo), Filter
   `data.nearby`, Einstellung `sys.nearby_geocode`, Befehle `data:network`, `data:network-join`, Selbsttest `shared:selftest`
