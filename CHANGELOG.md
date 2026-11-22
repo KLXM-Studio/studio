@@ -10,6 +10,14 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kit fluid und NativeCSS: Übersichtslink im Aufklappmenü
+- Neue Design-Option **„Übersichtslink im Aufklappmenü“** (`nav_overview`, Standard „Aus“): erster Eintrag im Aufklappmenü der Leiste und
+  oben im Untermenü des Seitenblatts mit Link auf die Seite des Menüpunkts – „{Titel} – Übersicht“ oder „Alle {Titel}“ –, darunter eine
+  Trennlinie. Auf der Seite selbst `aria-current="page"`. Menüpunkte ohne eigene Seite bekommen keinen Link; Einträge aus Datentabellen im
+  Menü führen zur Übersichtsseite. Bei „Klick öffnet die Unterseiten“ ändert die Option nur die Beschriftung des Eintrags „Übersicht“.
+  NativeCSS übernimmt die Option (Gruppe „Seite“) für seinen Eintrag „Übersicht“. Selbsttest in `kits:selftest`.
+- *EN:* fluid/native: new design option “Overview link in the dropdown menu” (off by default) – first entry linking to the menu item’s own page.
+
 ### Kit fluid: Pfeil im Menü („Link und Pfeil“) mit eigener Hover-Fläche
 - Bei „Link und Pfeil“ (nav_split = apart) bekommt der Pfeil beim Überfahren bzw. Fokus eine abgerundete Fläche aus der Schriftfarbe
   (auf dunklem Kopf hell, auf hellem dunkel), auch beim Menüstil „Unterstrichen“; der Pfeil rückt leicht nach unten, offen bleibt die Fläche.

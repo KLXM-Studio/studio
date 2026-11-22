@@ -89,6 +89,9 @@
   .nv-nav__close .ico { inline-size: 1.1rem; block-size: 1.1rem; }
   .nv-nav .ncss-nav-list a[aria-current="page"], .nv-nav [data-active] > summary, .nv-nav a[data-active] { color: var(--f-link, var(--f-a)); }
   .nv-nav .nv-sub--deep a { padding-inline-start: 1.6rem; }
+  /* Design „Übersichtslink im Aufklappmenü“ (nav_overview, von fluid): Trennlinie unter dem ersten Eintrag (Dekor) */
+  .nv-nav .ncss-nav-submenu > .nv-ovw { padding-block-end: var(--ncss-space-3xs); border-block-end: 1px solid var(--f-line, var(--ncss-color-border)); }
+  .nv-nav .ncss-nav-submenu > .nv-ovw + li { margin-block-start: var(--ncss-space-2xs); }
   .nv-tools { display: flex; flex: 0 0 auto; align-items: center; gap: var(--f-s-s); margin-inline-start: auto; }
   /* Suchfeld in der Kopfleiste schmal – mehr Platz für das Menü in derselben Zeile (Vorschläge klappen breiter auf) */
   .nv-tools .ha-field--inline { --ha-field-w: 9rem; }

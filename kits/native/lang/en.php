@@ -13,6 +13,8 @@ return [
     'Darstellungs-Knopf für Besucher' => 'Display settings button for visitors',
     'Ein Knopf im Kopfbereich: Besucher stellen selbst Farbschema, Kontrast, Bewegung, Schriftgröße, Lese-Schrift, Textabstände, Links und Fokus ein (merkt sich der Browser, ohne Cookie).' => 'A button in the header: visitors choose colour scheme, contrast, motion, text size, reading font, text spacing, links and focus themselves (remembered by the browser, no cookie).',
     'Lese-Schriften im Darstellungs-Knopf anbieten' => 'Offer reading fonts in the display settings',
+    'Wie gewohnt („Übersicht: {Menüpunkt}“, ohne Trennlinie)' => 'As usual (“Overview: {Menu item}”, no divider line)',
+    'Das Menü zeigt im Aufklappmenü immer zuerst einen Link auf die Seite des Menüpunkts. Die Option wählt eine andere Beschriftung und setzt eine Trennlinie darunter. Menüpunkte ohne eigene Seite (reine Gruppen) bekommen keinen Link.' => 'The dropdown menu always starts with a link to the menu item’s own page. The option chooses a different label and adds a divider line below. Menu items without their own page (pure groups) get no link.',
     'Atkinson Hyperlegible, Lexend und OpenDyslexic (SIL Open Font License) – laden erst, wenn Besucher sie wählen.' => 'Atkinson Hyperlegible, Lexend and OpenDyslexic (SIL Open Font License) – only loaded when visitors choose them.',
     'NativeCSS · Graphit' => 'NativeCSS · Graphite',
     'Tiefes Blau, Navy, blaugetönte Flächen und die Systemschrift des Geräts – wie die NativeCSS-Website.' => 'Deep blue, navy, blue-tinted surfaces and the device’s system font – like the NativeCSS website.',

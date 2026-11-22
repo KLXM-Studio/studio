@@ -16,7 +16,9 @@ $actions = header_actions('bar', ['compact' => true]);
 $prefs = !empty($prefs);
 $brandHref = !empty(app()->currentPage['is_home']) ? '#main' : url(\Core\Lang::prefix(\Core\Lang::current()) . '/');
 $cur = static fn(array $m): string => fluid_is_current($m) ? ' aria-current="page"' : '';
-// Menüpunkt: Link oder Untermenü (details) mit „Übersicht: …“ als erstem Eintrag; dritte Ebene eingerückt im Untermenü
+// Menüpunkt: Link oder Untermenü (details) mit „Übersicht: …“ als erstem Eintrag; dritte Ebene eingerückt im Untermenü.
+// Design „Übersichtslink im Aufklappmenü“ (von fluid, fluid_nav_overview_label()): gewählte Beschriftung und Trennlinie
+// (.nv-ovw); Menüpunkte ohne eigene Seite (reine Gruppe ohne Adresse) bekommen keinen Übersichtseintrag.
 $sub = static function (array $items, int $depth) use (&$sub, $cur): string {
     $h = '';
     foreach ($items as $c) {
@@ -25,13 +27,19 @@ $sub = static function (array $items, int $depth) use (&$sub, $cur): string {
     }
     return $h;
 };
-$item = static function (array $m) use ($cur, $sub): string {
+$ovw = static function (array $m) use ($cur): string {
+    $href = trim((string) $m['href']);
+    if ($href === '' || $href === '#') return '';
+    $label = fluid_nav_overview_label($m);
+    return '<li' . ($label !== null ? ' class="nv-ovw"' : '') . '><a href="' . e($m['href']) . '"' . $cur($m) . '>'
+        . e($label ?? lt('Übersicht: {name}', ['name' => $m['label']])) . '</a></li>';
+};
+$item = static function (array $m) use ($cur, $sub, $ovw): string {
     if (!$m['children']) {
         return '<li class="ncss-nav-item"><a href="' . e($m['href']) . '"' . $cur($m) . ($m['active'] ? ' data-active' : '') . '>' . e($m['label']) . '</a></li>';
     }
     return '<li class="ncss-nav-item"><details class="ncss-nav-dropdown"' . ($m['active'] ? ' data-active' : '') . '><summary>' . e($m['label']) . '</summary>'
-        . '<ul class="ncss-nav-submenu"><li><a href="' . e($m['href']) . '"' . $cur($m) . '>' . e(lt('Übersicht: {name}', ['name' => $m['label']])) . '</a></li>'
-        . $sub($m['children'], 2) . '</ul></details></li>';
+        . '<ul class="ncss-nav-submenu">' . $ovw($m) . $sub($m['children'], 2) . '</ul></details></li>';
 };
 ?>
 <header class="ncss-topbar nv-topbar" data-header>

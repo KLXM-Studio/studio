@@ -291,11 +291,33 @@ function fluid_nav_parent(): string
     return in_array($v, ['split', 'hover', 'overview'], true) ? $v : 'split';
 }
 
+/** Design „Übersichtslink im Aufklappmenü“: „off“ (Standard), „overview“ („{Titel} – Übersicht“) oder „all“ („Alle {Titel}“) */
+function fluid_nav_overview(): string
+{
+    $v = (string) design('nav_overview');
+    return in_array($v, ['overview', 'all'], true) ? $v : 'off';
+}
+
+/**
+ * Beschriftung des Übersichtslinks auf die Seite eines Menüpunkts – null, wenn die Option aus ist oder der Menüpunkt keine
+ * eigene Seite hat (reine Gruppe ohne Adresse, z. B. aus dem Filter menu.items). Einträge aus Datentabellen im Menü
+ * (Core\Data\MenuEntries) hängen unter ihrer Übersichtsseite – der Link führt also dorthin.
+ */
+function fluid_nav_overview_label(array $m): ?string
+{
+    $mode = fluid_nav_overview();
+    $href = trim((string) ($m['href'] ?? ''));
+    if ($mode === 'off' || $href === '' || $href === '#') return null;
+    return $mode === 'all' ? lt('Alle {name}', ['name' => $m['label']]) : lt('{name} – Übersicht', ['name' => $m['label']]);
+}
+
 /**
  * Hauptmenü in der Leiste: Unterseiten als Aufklappmenü (<details> – ohne JavaScript bedienbar; site.js ergänzt
  * Pfeiltasten, Escape, Klick daneben, Öffnen beim Überfahren). Design „Menüpunkte mit Unterseiten“:
  *  - split/hover: der Menüpunkt bleibt ein Link, daneben öffnet ein Pfeil (<summary>) die Unterseiten – kein „Übersicht“-Eintrag
  *  - overview: der Menüpunkt öffnet das Menü, erster Eintrag „Übersicht: …“ führt zur Seite (bisheriges Verhalten)
+ * Design „Übersichtslink im Aufklappmenü“ (fluid_nav_overview_label()): bei split/hover erster Eintrag mit Link auf die Seite
+ * und Trennlinie (.hnav__ovw); bei overview bekommt der Eintrag „Übersicht“ die gewählte Beschriftung und die Trennlinie.
  * Dritte Ebene: .hnav__nested (Design „Dritte Menüebene“, Klassen nv-*): eingerückt bzw. gruppiert (immer sichtbar, nur CSS)
  * oder Akkordeon bzw. Slide – dann klappt ein Pfeil neben dem Link die Unterseiten auf (<details name> – je Ebene eins offen,
  * ohne JavaScript). Slide: die Unterebene ersetzt den Inhalt des Aufklappmenüs, der Pfeil wird zur Zeile „‹ Zurück“, darunter die
@@ -334,6 +356,11 @@ function fluid_nav_inline(array $menu): string
         $name = 'nv-' . (++$grp);
         return implode('', array_map(fn($c) => $item($c, $name), $m['children']));
     };
+    // Übersichtslink als erster Eintrag (Design „Übersichtslink im Aufklappmenü“, nur Menüpunkte mit eigener Seite)
+    $ovw = function (array $m) use ($cur): string {
+        $label = fluid_nav_overview_label($m);
+        return $label === null ? '' : '<li class="hnav__ovw"><a class="hnav__sublink hnav__sublink--overview" href="' . e($m['href']) . '"' . $cur($m) . '>' . e($label) . '</a></li>';
+    };
     $h = '<ul class="hnav__list" role="list">';
     foreach ($menu as $m) {
         $active = $m['active'] ? ' data-active' : '';
@@ -344,12 +371,13 @@ function fluid_nav_inline(array $menu): string
         if ($split) {
             $h .= '<li class="hnav__item hnav__item--split"><a class="hnav__link hnav__link--top" href="' . e($m['href']) . '"' . $cur($m) . $active . '>' . e($m['label']) . '</a>'
                 . '<details class="hnav__sub"' . $active . '><summary class="hnav__link hnav__toggle" aria-label="' . e(lt('Unterseiten von {name}', ['name' => $m['label']])) . '">' . $chev . '</summary>'
-                . '<ul class="hnav__panel" role="list">' . $children($m) . '</ul></details></li>';
+                . '<ul class="hnav__panel" role="list">' . $ovw($m) . $children($m) . '</ul></details></li>';
             continue;
         }
+        $label = fluid_nav_overview_label($m);
         $h .= '<li class="hnav__item"><details class="hnav__sub"' . $active . '><summary class="hnav__link"><span>' . e($m['label']) . '</span>' . $chev . '</summary>'
-            . '<ul class="hnav__panel" role="list"><li><a class="hnav__sublink hnav__sublink--parent" href="' . e($m['href']) . '"' . $cur($m) . '>'
-            . e(lt('Übersicht: {name}', ['name' => $m['label']])) . '</a></li>' . $children($m) . '</ul></details></li>';
+            . '<ul class="hnav__panel" role="list"><li' . ($label !== null ? ' class="hnav__ovw"' : '') . '><a class="hnav__sublink hnav__sublink--parent" href="' . e($m['href']) . '"' . $cur($m) . '>'
+            . e($label ?? lt('Übersicht: {name}', ['name' => $m['label']])) . '</a></li>' . $children($m) . '</ul></details></li>';
     }
     return $h . '</ul>';
 }
@@ -358,6 +386,7 @@ function fluid_nav_inline(array $menu): string
  * Hauptmenü im Seitenblatt (Menü-Schaltfläche). „overview“: Unterseiten als Akkordeon (<details name> – nur eins offen,
  * ohne JavaScript), erster Eintrag „Übersicht: …“. „split“/„hover“: jede Seite bleibt ein Link, die Unterseiten öffnet
  * eine eigene Schaltfläche daneben (aria-expanded; ohne JavaScript ist alles sichtbar, site.js klappt zu). Aktiver Zweig offen.
+ * Design „Übersichtslink im Aufklappmenü“: oben im Untermenü der obersten Ebene ein Link auf die Seite (.mnav__ovw, Trennlinie).
  */
 function fluid_nav_sheet(array $menu): string
 {
@@ -365,7 +394,12 @@ function fluid_nav_sheet(array $menu): string
     $chev = icon('caret-down', ['class' => 'mnav__chev']);
     $split = fluid_nav_parent() !== 'overview';
     $n = 0;
-    $level = function (array $items, int $depth) use (&$level, &$n, $cur, $chev, $split): string {
+    // Übersichtslink oben im Untermenü der obersten Ebene (Design „Übersichtslink im Aufklappmenü“, nur mit eigener Seite)
+    $ovw = function (array $m, int $depth) use ($cur): string {
+        $label = $depth === 1 ? fluid_nav_overview_label($m) : null;
+        return $label === null ? '' : '<a class="mnav__link mnav__ovw" href="' . e($m['href']) . '"' . $cur($m) . '>' . e($label) . '</a>';
+    };
+    $level = function (array $items, int $depth) use (&$level, &$n, $cur, $chev, $split, $ovw): string {
         $h = '<ul class="mnav__list mnav__list--' . $depth . '" role="list">';
         foreach ($items as $m) {
             if (!$m['children']) {
@@ -377,12 +411,13 @@ function fluid_nav_sheet(array $menu): string
                 $h .= '<li><div class="mnav__row"><a class="mnav__link" href="' . e($m['href']) . '"' . $cur($m) . '>' . e($m['label']) . '</a>'
                     . '<button type="button" class="mnav__toggle" aria-expanded="' . ($m['active'] ? 'true' : 'false') . '" aria-controls="' . $id . '">'
                     . $chev . '<span class="sr-only">' . e(lt('Unterseiten von {name}', ['name' => $m['label']])) . '</span></button></div>'
-                    . '<div class="mnav__sub" id="' . $id . '">' . $level($m['children'], $depth + 1) . '</div></li>';
+                    . '<div class="mnav__sub" id="' . $id . '">' . $ovw($m, $depth) . $level($m['children'], $depth + 1) . '</div></li>';
                 continue;
             }
             $h .= '<li><details class="mnav__acc" name="mnav-' . $depth . '"' . ($m['active'] ? ' open' : '') . '>'
                 . '<summary class="mnav__link"><span>' . e($m['label']) . '</span>' . $chev . '</summary>'
-                . '<div class="mnav__sub"><a class="mnav__link mnav__link--parent" href="' . e($m['href']) . '"' . $cur($m) . '>' . e(lt('Übersicht: {name}', ['name' => $m['label']])) . '</a>'
+                . '<div class="mnav__sub"><a class="mnav__link mnav__link--parent' . (($label = $depth === 1 ? fluid_nav_overview_label($m) : null) !== null ? ' mnav__ovw' : '') . '" href="' . e($m['href']) . '"' . $cur($m) . '>'
+                . e($label ?? lt('Übersicht: {name}', ['name' => $m['label']])) . '</a>'
                 . $level($m['children'], $depth + 1) . '</div></details></li>';
         }
         return $h . '</ul>';

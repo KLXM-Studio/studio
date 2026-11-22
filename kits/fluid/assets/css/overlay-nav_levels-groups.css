@@ -7,3 +7,5 @@
 .nv-groups .hnav__panel>li.has-nested>.hnav__sublink{padding-block:.45rem .2rem;color:var(--f-muted);font:600 var(--f-t-2)/1.3 var(--f-font-label);letter-spacing:.08em;text-transform:uppercase}
 .nv-groups .hnav__panel>li.has-nested>.hnav__sublink:hover{background:none;color:var(--f-link)}
 .nv-groups .hnav__nested .hnav__sublink{padding-inline-start:.85rem;color:var(--f-text);font-size:.9375rem}
+/* Übersichtslink (nav_overview) hat schon eine Trennlinie: die erste Gruppe darunter ohne zweite Linie */
+.nv-groups .hnav__panel>li.hnav__ovw+li.has-nested{margin-top:0;padding-top:0;border-top:0}

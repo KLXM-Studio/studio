@@ -14,6 +14,9 @@
 .hnav__sublink[aria-current=page]::before{content:"";position:absolute;inset-block:.5rem;inset-inline-start:.3rem;width:3px;border-radius:3px;background:var(--f-a)}
 .hnav__sublink--parent{color:var(--f-muted);font-size:.875rem}
 ul.hnav__panel{padding:.4rem}   /* ul.: schlägt ul[role=list]{padding:0} aus site.css – Zeilen bleiben innerhalb der runden Ecken */
+/* Design „Übersichtslink im Aufklappmenü“ (nav_overview): erster Eintrag führt zur Seite des Menüpunkts, Trennlinie darunter (Dekor) */
+.hnav__panel>.hnav__ovw{margin-bottom:.3rem;padding-bottom:.3rem;border-bottom:1px solid var(--f-line)}
+.hnav__sublink--overview{font-weight:600}
 /* Dritte Ebene „Eingerückt“ (nv-indent): immer sichtbar, eingerückt, etwas kleiner */
 .hnav__nested{margin:0;padding:0;list-style:none}
 .hnav__nested .hnav__sublink{padding-block:.45rem;padding-inline-start:1.75rem;color:var(--f-muted);font-size:.875rem}
@@ -64,6 +67,7 @@ html:has(.mnav:popover-open){overflow:hidden}
 .mnav__sub{margin:0 0 .75rem .25rem;padding-inline-start:.9rem;border-inline-start:2px solid var(--f-a-soft)}
 .mnav__sub .mnav__link,.mnav__list--2 .mnav__link{min-height:2.75rem;color:var(--f-text);font:400 var(--f-t0)/1.3 var(--f-font);letter-spacing:0}
 .mnav__link--parent{color:var(--f-muted)!important;font-size:var(--f-t-1)!important}
+.mnav__sub>.mnav__ovw{margin-bottom:.35rem;border-bottom:1px solid var(--f-line);font-weight:600}
 .mnav__row{display:flex;align-items:center;gap:.5rem}
 .mnav__row>.mnav__link{flex:1}
 .mnav__toggle{flex:none;display:grid;place-items:center;min-width:2.75rem;min-height:2.75rem;padding:0;border:0;background:none;color:var(--f-ink);cursor:pointer}

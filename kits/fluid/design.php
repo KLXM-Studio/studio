@@ -37,7 +37,7 @@ $base = [
     'secondary_role' => 'sections', 'heading_case' => 'normal', 'emphasis' => 'accent', 'links' => 'underline',
     'images' => 'radius', 'image_fx' => 'none', 'hover' => 'lift', 'icons' => 'soft', 'icon_pos' => 'top', 'dividers' => 'none', 'motion_style' => 'rise',
     'eyebrow' => 'line', 'eyebrow_case' => 'auto', 'header' => 'inline', 'header_sticky' => true, 'header_bg' => 'page', 'nav_style' => 'plain', 'topbar' => 'off',
-    'footer' => 'columns', 'footer_bg' => 'surface', 'sections' => 'flush', 'progress' => false, 'totop' => false, 'footer_line' => 'auto', 'footer_line_color' => 'auto', 'footer_line_width' => 'auto', 'header_height' => 'auto', 'nav_parent' => 'split', 'nav_split' => 'joined', 'nav_chev' => 'rotate', 'nav_open' => 'plain', 'nav_levels' => 'accordion', 'pagebg' => 'plain',
+    'footer' => 'columns', 'footer_bg' => 'surface', 'sections' => 'flush', 'progress' => false, 'totop' => false, 'footer_line' => 'auto', 'footer_line_color' => 'auto', 'footer_line_width' => 'auto', 'header_height' => 'auto', 'nav_parent' => 'split', 'nav_split' => 'joined', 'nav_overview' => 'off', 'nav_chev' => 'rotate', 'nav_open' => 'plain', 'nav_levels' => 'accordion', 'pagebg' => 'plain',
     'logo_size' => 'normal', 'logo_over' => false, 'nav_size' => 'normal', 'nav_mark' => 'auto', 'transitions' => 'off', 'back_nav' => 'link', 'dark_toggle' => false, 'side_width' => 'normal', 'side_tree' => 'branch', 'side_banner' => 'off', 'side_banner_height' => 'normal', 'side_banner_overlay' => 'none', 'palette' => 'brand',
     'motion' => true, 'dark' => true, 'dark_sections' => 'toned',
 ];
@@ -192,6 +192,9 @@ return [
             ['name' => 'nav_split', 'label' => 'Link und Pfeil', 'type' => 'choice', 'class' => 'ns-{value}', 'default' => 'joined',
                 'options' => ['joined' => 'Zusammen – eine gemeinsame Fläche', 'apart' => 'Pfeil abgesetzt – Trennlinie, eigene Fläche für den Pfeil'],
                 'help' => 'Nur bei „Link + Pfeil“: zeigt, dass Menüpunkt und Pfeil zwei Schaltflächen sind (der Menüpunkt öffnet die Seite, der Pfeil die Unterseiten) – hilfreich vor allem im farbigen Kopf.'],
+            ['name' => 'nav_overview', 'markup' => true, 'label' => 'Übersichtslink im Aufklappmenü', 'type' => 'choice', 'default' => 'off',
+                'options' => ['off' => 'Aus', 'overview' => 'Erster Eintrag „{Menüpunkt} – Übersicht“', 'all' => 'Erster Eintrag „Alle {Menüpunkt}“'],
+                'help' => 'Zeigt im Aufklappmenü und im Seitenblatt (Telefon) als ersten Eintrag einen Link auf die Seite des Menüpunkts, mit Trennlinie darunter – so sehen auch Touch-Nutzer, die den Pfeil antippen, dass es die Seite gibt. Menüpunkte ohne eigene Seite (reine Gruppen) bekommen keinen Link. Bei „Klick öffnet die Unterseiten“ ändert die Option die Beschriftung des Eintrags „Übersicht“.'],
             ['name' => 'nav_chev', 'label' => 'Pfeil im Menü', 'type' => 'choice', 'class' => 'nc-{value}', 'default' => 'rotate',
                 'options' => ['rotate' => 'Dreht sich beim Öffnen', 'zoom' => 'Zoomt leicht beim Zeigen und Öffnen (dreht sich nicht)']],
             ['name' => 'nav_open', 'label' => 'Aufklappmenü öffnen', 'type' => 'choice', 'class' => 'nd-{value}', 'default' => 'plain',

@@ -37,7 +37,7 @@ $darkDefaults = array_combine($colorKeys, $dark) + ['secondary' => '#9DB0D8', 'o
 $design = require \Core\Kit::dir('fluid') . '/design.php';
 // „Kopf & Fuß“ gehört zum Seitenrahmen von fluid – der Rahmen dieses Kits kommt aus NativeCSS. Es bleiben die Seiten-Optionen
 // (Seitenhintergrund, Abschnitte, Lesefortschritt, „Nach oben“, Seitenwechsel, Zurück-Link, Dichte des Fußbereichs) als Gruppe „Seite“.
-$keep = ['pagebg', 'sections', 'progress', 'totop', 'transitions', 'back_nav', 'footer_density'];   // Dichte des Fußes: CSS in _native.css
+$keep = ['pagebg', 'sections', 'progress', 'totop', 'transitions', 'back_nav', 'footer_density', 'nav_overview'];   // Dichte des Fußes: CSS in _native.css
 foreach ($design['groups'] as &$group) {
     if (($group['id'] ?? '') === 'navigation') {
         $group['label'] = 'Seite';
@@ -47,6 +47,11 @@ foreach ($design['groups'] as &$group) {
         $name = (string) ($token['name'] ?? '');
         if (array_key_exists($name, $defaults)) $token['default'] = $defaults[$name];
         if (array_key_exists($name, $darkDefaults) && ($token['type'] ?? '') === 'color') $token['dark'] = $darkDefaults[$name];
+        // Übersichtslink: das Menü von NativeCSS zeigt die Seite immer als ersten Eintrag „Übersicht: …“ – hier nur Beschriftung und Trennlinie
+        if ($name === 'nav_overview') {
+            $token['options']['off'] = 'Wie gewohnt („Übersicht: {Menüpunkt}“, ohne Trennlinie)';
+            $token['help'] = 'Das Menü zeigt im Aufklappmenü immer zuerst einen Link auf die Seite des Menüpunkts. Die Option wählt eine andere Beschriftung und setzt eine Trennlinie darunter. Menüpunkte ohne eigene Seite (reine Gruppen) bekommen keinen Link.';
+        }
     }
     unset($token);
     // Darstellungs-Knopf für Besucher: Schalter „visitor_prefs“ kommt von fluid (fluid_prefs()); dieses Kit bietet zusätzlich

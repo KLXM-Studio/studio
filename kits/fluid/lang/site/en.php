@@ -56,6 +56,8 @@ return [
     'Telefon' => 'Phone',
     'Telefon & E-Mail' => 'Phone & email',
     'Übersicht: {name}' => 'Overview: {name}',
+    '{name} – Übersicht' => '{name} – overview',
+    'Alle {name}' => 'All {name}',
     'Video' => 'Video',
     'Video abspielen' => 'Play video',
     '{provider}-Video laden' => 'Load {provider} video',

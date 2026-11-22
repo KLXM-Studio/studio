@@ -8,7 +8,7 @@ namespace Core;
 /**
  * php bin/console kits:selftest – Vererbung von Kits (theme.php → 'extends'): Zusammenführen der Definition (Theme::mergeDefinition),
  * Standardwerte des geerbten Designs (design_defaults), Kette eines Kits ohne Eltern, Theme::withKit (Vorschau mit anderem Kit),
- * eigene Stylesheets der Kits ('css'), Paketprüfung von Kind-Kits ohne templates/ (KitPackages::check).
+ * eigene Stylesheets der Kits ('css'), Paketprüfung von Kind-Kits ohne templates/ (KitPackages::check), Übersichtslink im Menü von fluid (nav_overview).
  */
 final class KitSelfTest
 {
@@ -96,6 +96,31 @@ final class KitSelfTest
             }
             $eq('withKit: nach Fehler wiederhergestellt', [app()->theme->name, app()->currentPage], [$before[0], $before[2]]);
             $eq('withKit: Theme-Objekt geht ebenso', Theme::withKit(app()->theme, fn(Theme $t) => $t === app()->theme), true);
+        }
+        // fluid: Design „Übersichtslink im Aufklappmenü“ (nav_overview) – Markup nur, wenn eingeschaltet; nicht bei Gruppen ohne Seite
+        if (Kit::exists('fluid')) {
+            $menu = [
+                ['id' => 5, 'label' => 'Leistungen', 'href' => '/leistungen', 'active' => true, 'children' => [
+                    ['id' => 6, 'label' => 'Beratung', 'href' => '/leistungen/beratung', 'active' => false, 'children' => []]]],
+                ['id' => 'g-1', 'label' => 'Gruppe', 'href' => '', 'active' => false, 'children' => [
+                    ['id' => 7, 'label' => 'Termine', 'href' => '/termine', 'active' => false, 'children' => []]]],
+            ];
+            // Beschriftungen in der Quellsprache Deutsch (Übersetzung in kits/fluid/lang/site/en.php)
+            $nav = fn(array $v) => Theme::withKit('fluid', function () use ($menu): array {
+                app()->currentPage = ['id' => 5];
+                $inline = app()->theme->kitFunction('nav_inline');
+                $sheet = app()->theme->kitFunction('nav_sheet');
+                return $inline && $sheet ? [(string) $inline($menu), (string) $sheet($menu)] : ['', ''];
+            }, $v);
+            [$offH, $offS] = $nav(['nav_parent' => 'split']);
+            $eq('nav_overview aus (Standard): kein Übersichtslink', [str_contains($offH, 'hnav__ovw'), str_contains($offS, 'mnav__ovw')], [false, false]);
+            [$onH, $onS] = $nav(['nav_parent' => 'split', 'nav_overview' => 'overview']);
+            $eq('nav_overview an: Leiste und Seitenblatt je ein Link (nur Menüpunkt mit Seite)', [substr_count($onH, 'hnav__ovw'), substr_count($onS, 'mnav__ovw')], [1, 1]);
+            $eq('nav_overview an: erster Eintrag im Aufklappmenü, aria-current auf der Seite selbst',
+                (bool) preg_match('~<ul class="hnav__panel" role="list"><li class="hnav__ovw"><a class="hnav__sublink hnav__sublink--overview" href="/leistungen" aria-current="page">~', $onH), true);
+            $eq('nav_overview „Alle …“', str_contains($nav(['nav_parent' => 'hover', 'nav_overview' => 'all'])[0], '>Alle Leistungen</a>'), true);
+            [$ovH] = $nav(['nav_parent' => 'overview', 'nav_overview' => 'overview']);
+            $eq('nav_parent „overview“: vorhandener Eintrag mit neuer Beschriftung, kein zweiter', [substr_count($ovH, 'hnav__sublink--parent'), substr_count($ovH, 'hnav__ovw'), str_contains($ovH, '>Leistungen – Übersicht</a>')], [2, 1, true]);
         }
         // Kind-Kits mit eigenem CSS ('css' => [...]) und Paketprüfung ohne templates/ – zwei Test-Kits in storage/kits, danach entfernt
         if (Kit::exists('fluid')) {
