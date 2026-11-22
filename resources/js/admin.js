@@ -43,6 +43,7 @@ import { initTools, tools_, emit, beforeSave } from './_tools.js';   // Werkzeug
 import { initAi } from './_ai.js';   // KI-Assistent (Core\AI) – ohne Konfiguration #cms-ai wirkungslos
 import { initIconPickers, initIconGallery } from './_iconpicker.js';
 import { initTiles } from './_tiles.js';   // Auswahl als Kacheln (z. B. Raster des Layout-Blocks)
+import { initListTemplates } from './_listtpl.js';   // Feld „Vorlage“ der Datenliste (Core\Blocks\ListTemplates)
 import { ico } from './_icons.js';   // Symbolauswahl (Feldtyp „icon“, Tabellensymbol)
 import { initAccent } from './_accent.js';   // Konto → Akzentfarbe: Live-Vorschau (Core\Accent)
 import { initUiScale } from './_uiscale.js';   // Schriftgröße der Verwaltung: Schieber in Kopfleiste und Konto (Core\UiScale)
@@ -1267,7 +1268,7 @@ function initDt(scope) {
 }
 if (IN_ADMIN) watchDatetime(d, dtOpts());
 onRoot(r => watchDatetime(r, dtOpts()));
-function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 

@@ -284,6 +284,12 @@ return function (Router $r): void {
     $r->get('/admin/data/{handle}/abonnieren', [Admin\SubscriptionController::class, 'index']);
     $r->post('/admin/data/{handle}/abonnieren', [Admin\SubscriptionController::class, 'store']);
     $r->post('/admin/data/{handle}/abonnieren/{id}/widerrufen', [Admin\SubscriptionController::class, 'revoke']);
+    // Listen-Vorlagen einer Tabelle (Core\Blocks\ListTemplates, Recht design.blocks)
+    $r->get('/admin/data/{handle}/vorlagen', [Admin\ListTemplateController::class, 'index']);
+    $r->post('/admin/data/{handle}/vorlagen', [Admin\ListTemplateController::class, 'save']);
+    $r->get('/admin/data/{handle}/vorlagen/neu', [Admin\ListTemplateController::class, 'editNew']);
+    $r->post('/admin/data/{handle}/vorlagen/aktion', [Admin\ListTemplateController::class, 'action']);
+    $r->get('/admin/data/{handle}/vorlagen/{key}', [Admin\ListTemplateController::class, 'edit']);
     $r->get('/admin/data/{handle}/new', [Admin\DataController::class, 'entryNew']);
     $r->post('/admin/data/{handle}/new', [Admin\DataController::class, 'entrySave']);
     $r->post('/admin/data/{handle}/{id}/delete', [Admin\DataController::class, 'entryDelete']);
@@ -524,6 +530,7 @@ return function (Router $r): void {
     $r->post('/admin/api/pages/{id}/discard', [Admin\EditorController::class, 'discard']);
     $r->post('/admin/api/preview', [Admin\EditorController::class, 'preview']);
     $r->post('/admin/api/block-form', [Admin\EditorController::class, 'form']);
+    $r->post('/admin/api/list-templates', [Admin\ListTemplateController::class, 'fromBlock']);   // „Als Vorlage speichern“ (Seitenleiste)
     $r->post('/admin/api/block-picker', [Admin\EditorController::class, 'pickerPrefs']);   // Blockauswahl: Ansicht, Favoriten, zuletzt verwendet
     $r->get('/admin/api/links', [Admin\EditorController::class, 'links']);
     // Einträge auf der Website bearbeiten (Seitenleiste + direkt im Text, Core\Data\EntryEdit)
