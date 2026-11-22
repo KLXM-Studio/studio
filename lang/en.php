@@ -9350,4 +9350,18 @@ return [
     'Ohne Einwilligung Zwei-Klick-Hinweis in der Lightbox zeigen' => 'Without consent, show a two-click notice in the lightbox',
     'Statt den Link normal zu öffnen, erklärt die Lightbox zuerst, dass der Anbieter Daten erhält; das Video lädt erst nach Klick. Vorschaubild nur, wenn es lokal zwischengespeichert ist.' => 'Instead of opening the link normally, the lightbox first explains that the provider receives data; the video only loads after a click. Preview image only if it is cached locally.',
     'Video ohne Lightbox öffnen (normaler Link)' => 'Open video without lightbox (normal link)',
+    // Wissensbereich: Umstieg mit Verweisen (Core\Data\KnowledgeImport)
+    '--blocks gilt nur beim Anlegen – die Tabelle „{h}“ behält ihre Auswahl (Blöcke der Seiten werden ergänzt).' => '--blocks only applies when creating – the table “{h}” keeps its selection (blocks used on the pages are added).',
+    '--blocks: „{b}“ ist in Kapiteln nicht wählbar.' => '--blocks: “{b}” cannot be used in chapters.',
+    '--keep: „{k}“ ist keine Unterseite dieses Zweigs.' => '--keep: “{k}” is not a subpage of this branch.',
+    'Bild aus dem Seitenkopf' => 'Image from the page header',
+    'Feld „Inhalt“ erlaubt: {list}' => 'Field “Content” allows: {list}',
+    'Feld „Inhalt“: erlaubte Blöcke wie vorher' => 'Field “Content”: allowed blocks as before',
+    'Feld „Inhalt“: zusätzlich erlaubt (kommen in den Seiten vor): {list}' => 'Field “Content”: additionally allowed (used on the pages): {list}',
+    'Seite behält: {list}' => 'Page keeps: {list}',
+    'Verweis auf {p}' => 'Link to {p}',
+    'Verweis – die Seite bleibt' => 'Link – the page stays',
+    'Vorschlag: Seiten mit Blöcken, die in Kapiteln nicht gehen, als Verweis behalten – --keep={list}' => 'Suggestion: keep pages with blocks that cannot go into chapters as links – --keep={list}',
+    'bleibt Seite, Kapitel-Adresse leitet dorthin' => 'stays a page, the chapter address redirects there',
+    'nicht übertragbar: {list}' => 'not transferable: {list}',
 ];

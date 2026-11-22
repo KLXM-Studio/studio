@@ -55,6 +55,8 @@ final class SiteController
             }
             // Geteilte Tabellen: nur Einträge, die diese Website zeigt (eigene + gewählte Quellen)
             $entry = Entries::bySlug($t, $m[2], !app()->auth->check(), Lang::current(), 'site');
+            // Wissen: Kapitel vom Typ „Verweis“ leiten auf ihre Seite weiter (Core\Data\Knowledge::refUrl)
+            if ($entry && \Core\Data\Knowledge::is($t) && ($to = \Core\Data\Knowledge::refUrl($t, $entry)) !== null) return Response::redirect($to, 301);
             if ($tpl && $entry) {
                 // Website-Ausgabe: „Nie öffentlich“-Felder sind für Vorlage, Blöcke und Kopfdaten leer (Core\Data\Exposure)
                 app()->entry = ['table' => $t, 'entry' => \Core\Data\Exposure::publicEntry($t, $entry)];
@@ -441,6 +443,7 @@ final class SiteController
                 $loc = site_url() . Entries::url($t, $e);
                 if (Tables::isShared($t) && Entries::absUrl($t, $e) !== $loc) continue;
                 if (!$live($e)) continue;
+                if (\Core\Data\Knowledge::is($t) && \Core\Data\Knowledge::refUrl($t, $e) !== null) continue;   // Verweis-Kapitel: Adresse leitet weiter, die Seite steht selbst in der Sitemap
                 $urls[] = ['loc' => $loc, 'lastmod' => $mod($e['updated_at'] ?? $e['published_at']),
                     'images' => self::sitemapImages(array_map(fn($f) => (int) ($e[$f] ?? 0), $mediaFields))];
             }

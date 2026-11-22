@@ -17,8 +17,11 @@ use Core\Redirects\Redirects;
  *  - Tabelle: vorhandene Wissenstabelle (--table) oder neu aus der Vorlage „Wissen“ mit der Adresse des Zweigs – so behalten die
  *    Kapitel der ersten Ebene ihre Adresse (/wissen/kapitel), tiefere bekommen eine 301-Weiterleitung.
  *  - Je Unterseite ein Eintrag: Titel (Menütitel, sonst Titel), Adresse (Slug, bei Gleichstand -2 …), Status, Oberkapitel, Reihenfolge wie
- *    im Seitenbaum, Anreißer = Meta-Beschreibung (sonst Text des Seitenkopfs), Inhalt = Blöcke der veröffentlichten Fassung (Spalten aufgelöst, nur Blöcke, die in
- *    Inhaltsblöcken erlaubt sind – der Plan nennt ausgelassene).
+ *    im Seitenbaum, Anreißer = Meta-Beschreibung (sonst Text des Seitenkopfs), Bild = Bild des Seitenkopfs, Inhalt = Blöcke der
+ *    veröffentlichten Fassung (Spalten aufgelöst). Erlaubte Blöcke: Feld „Inhalt“ der vorhandenen Tabelle bzw. --blocks/Standard; Blöcke
+ *    der Seiten, die in Kapiteln wählbar sind (EntryBlocks::choices), schaltet der Import dort frei. Daten-Blöcke (data_list …) gehen nie.
+ *  - --keep=ID|Slug|Pfad,…: diese Seiten bleiben Seiten und werden Kapitel vom Typ „Verweis“ (Feld verweis = page:ID) – der Plan schlägt
+ *    Seiten mit nicht übertragbaren Blöcken dafür vor.
  *  - Die Seiten wandern offline unter eine versteckte Archivseite (Entwurf) – ihr Inhalt bleibt; Links page:ID in Seiten, Einstellungen
  *    und den neuen Kapiteln zeigen auf die Einträge. Die Startseite des Zweigs bekommt die Datenliste „Kapitel“ (Suche, Filter).
  *  - --revert dreht alles zurück (Einträge, Weiterleitungen, Links, Seitenbaum, Startseite; eine neu angelegte Tabelle wird gelöscht).
@@ -35,11 +38,17 @@ final class KnowledgeImport
         return ctype_digit($ref) ? Pages::find((int) $ref) : Pages::byPath($ref);
     }
 
+    /** Blocktypen, die nie in Kapitel übernommen werden: Seitenkopf (Titel/Bild/Anreißer kommen aus Feldern), Spalten (aufgelöst) */
+    private const SKIP = ['hero', 'layout'];
+
     /**
-     * Plan: Tabelle, Kapitel (Seite → Slug, Oberkapitel, Adresse alt/neu), ausgelassene Blocktypen, Hinweise.
-     * @return array{ok: bool, errors: list<string>, root: ?array, table: ?array, handle: string, route: string, create: bool, items: list<array>, notes: list<string>}
+     * Plan: Tabelle, erlaubte Blöcke des Feldes „Inhalt“ (vorhanden, --blocks bzw. Standard; Blöcke der Seiten, die in Kapiteln wählbar
+     * sind, werden freigeschaltet), Kapitel (Seite → Slug, Oberkapitel, Adresse alt/neu), Verweis-Kapitel (--keep), nicht übertragbare
+     * Blöcke mit Vorschlag für --keep, Hinweise. $o: keep (Liste ID|Slug|Pfad), blocks (Liste Blocktypen, nur beim Anlegen).
+     * @return array{ok: bool, errors: list<string>, root: ?array, table: ?array, handle: string, route: string, create: bool, items: list<array>,
+     *     notes: list<string>, allowed: list<string>, unlock: list<string>, suggest: list<string>}
      */
-    public static function plan(array $root, string $handle = ''): array
+    public static function plan(array $root, string $handle = '', array $o = []): array
     {
         $errors = [];
         $notes = [];
@@ -52,28 +61,50 @@ final class KnowledgeImport
         if ($create && ($other = Tables::byRoute($route))) $errors[] = __('Unter /{r} liegt schon die Tabelle „{n}“.', ['r' => $route, 'n' => $other['name']]);
         if (isset(self::state()[(string) $root['id']])) $errors[] = __('Dieser Zweig wurde schon übernommen – erst zurückdrehen (--revert).');
         $route = $t ? ((string) $t['settings']['route'] ?: $route) : $route;
-        $allowed = array_flip(EntryBlocks::allowed(['blocks' => []]));
+        // Erlaubte Blöcke: Feld „Inhalt“ der vorhandenen Tabelle, beim Anlegen --blocks bzw. der Standard (Inhalt und Medien)
+        $choices = array_keys(EntryBlocks::choices());   // ohne Daten-Blöcke (data_list, Kalender …) – nie in Kapiteln
+        $want = array_values(array_filter(array_map('trim', (array) ($o['blocks'] ?? [])), fn($x) => $x !== ''));
+        if ($want && !$create) $notes[] = __('--blocks gilt nur beim Anlegen – die Tabelle „{h}“ behält ihre Auswahl (Blöcke der Seiten werden ergänzt).', ['h' => $handle]);
+        foreach (array_diff($want, $choices) as $bad) $errors[] = __('--blocks: „{b}“ ist in Kapiteln nicht wählbar.', ['b' => $bad]);
+        $base = $t && ($f = Tables::field($t, 'inhalt')) ? EntryBlocks::allowed($f) : ($want && $create ? array_values(array_intersect($choices, $want)) : EntryBlocks::defaults());
+        // Verweis-Kapitel: Seiten, die Seiten bleiben (--keep=ID|Slug|Pfad)
+        $keepRefs = array_values(array_filter(array_map(fn($x) => trim((string) $x, " /"), (array) ($o['keep'] ?? [])), fn($x) => $x !== ''));
+        $isKept = fn(array $p) => in_array((string) $p['id'], $keepRefs, true) || in_array((string) $p['slug'], $keepRefs, true) || in_array(trim((string) ($p['path'] ?? ''), '/'), $keepRefs, true);
         $items = [];
+        $unlock = [];
+        $suggest = [];
+        $seenKeep = [];
         $slugs = $t ? array_map('strval', array_column(Tables::db($t)->fetchAll("SELECT slug FROM {$t['table']}"), 'slug')) : [];
-        $walk = function (int $parentId, ?int $parentPage, int $depth) use (&$walk, &$items, &$slugs, $allowed, $route, &$notes): void {
+        $walk = function (int $parentId, ?int $parentPage, int $depth) use (&$walk, &$items, &$slugs, &$unlock, &$suggest, &$seenKeep, $choices, $base, $isKept, $route, &$notes): void {
             foreach (Pages::db()->fetchAll("SELECT * FROM pages WHERE parent_id = ? AND type = 'page' ORDER BY sort, id", [$parentId]) as $p) {
+                $keep = $isKept($p);
+                if ($keep) $seenKeep[] = $p;
                 $blocks = Layout::flatten(Pages::blocks($p, $p['content_published'] === null));
-                $keep = [];
-                $dropped = [];
+                $take = [];
+                $foreign = [];   // nicht übertragbar (Daten-Blöcke, unbekannte)
                 foreach ($blocks as $b) {
-                    if (isset($allowed[(string) ($b['type'] ?? '')])) $keep[] = $b;
-                    elseif (($b['type'] ?? '') !== 'layout') $dropped[] = (string) ($b['type'] ?? '?');
+                    $type = (string) ($b['type'] ?? '');
+                    if (in_array($type, self::SKIP, true)) continue;
+                    if (in_array($type, $choices, true)) {
+                        $take[] = $b;
+                        if (!$keep && !in_array($type, $base, true) && !in_array($type, $unlock, true)) $unlock[] = $type;
+                    } else {
+                        $foreign[] = $type ?: '?';
+                    }
                 }
+                if ($foreign && !$keep) $suggest[] = (string) $p['slug'];
+                $hero = \Core\Blocks\SubpageList::hero($p);
                 $slug = Pages::slugify((string) $p['slug']) ?: 'kapitel';
-                $base = $slug;
-                for ($i = 2; in_array($slug, $slugs, true); $i++) $slug = $base . '-' . $i;
+                $baseSlug = $slug;
+                for ($i = 2; in_array($slug, $slugs, true); $i++) $slug = $baseSlug . '-' . $i;
                 $slugs[] = $slug;
                 $old = '/' . trim((string) ($p['path'] ?? $p['slug']), '/');
                 $new = '/' . $route . '/' . $slug;
                 $items[] = ['page' => (int) $p['id'], 'parent_page' => $parentPage, 'depth' => $depth, 'title' => (string) (($p['nav_title'] ?? '') ?: $p['title']),
-                    'slug' => $slug, 'status' => $p['status'] === 'published' ? 'published' : 'draft', 'old' => $old, 'new' => $new,
-                    // Anreißer: Meta-Beschreibung, sonst der Text des Seitenkopfs (der Kopf selbst entfällt – Titel steht in der Detailvorlage)
-                    'teaser' => trim((string) ($p['meta_description'] ?? '')) ?: fmt()->excerpt((string) (\Core\Blocks\SubpageList::hero($p)['text'] ?? ''), 300), 'blocks' => $keep, 'dropped' => $dropped, 'menu' => (int) $p['menu'],
+                    'slug' => $slug, 'status' => $p['status'] === 'published' ? 'published' : 'draft', 'old' => $old, 'new' => $new, 'keep' => $keep,
+                    // Anreißer: Meta-Beschreibung, sonst der Text des Seitenkopfs; Bild des Seitenkopfs → Bild des Eintrags (Kopf selbst entfällt)
+                    'teaser' => trim((string) ($p['meta_description'] ?? '')) ?: fmt()->excerpt((string) ($hero['text'] ?? ''), 300),
+                    'image' => (int) ($hero['image'] ?? 0), 'blocks' => $keep ? [] : $take, 'dropped' => array_values(array_unique($foreign)), 'menu' => (int) $p['menu'],
                     'sort' => (int) $p['sort'], 'parent_id' => (int) $p['parent_id'], 'published_at' => $p['published_at'], 'pslug' => (string) $p['slug']];
                 if ($depth >= 6) { $notes[] = __('Sehr tiefe Verschachtelung bei „{t}“ – tiefer als sechs Ebenen wird nicht übernommen.', ['t' => $p['title']]); continue; }
                 $walk((int) $p['id'], (int) $p['id'], $depth + 1);
@@ -81,8 +112,16 @@ final class KnowledgeImport
         };
         $walk((int) $root['id'], null, 0);
         if (!$items) $errors[] = __('Die Seite „{t}“ hat keine Unterseiten.', ['t' => $root['title']]);
-        if (!Redirects::enabled() && array_filter($items, fn($i) => $i['old'] !== $i['new'])) $notes[] = __('Funktion „Weiterleitungen“ ist aus – geänderte Adressen bekommen keine 301 (bitte einschalten und erneut ausführen).');
-        return ['ok' => !$errors, 'errors' => $errors, 'root' => $root, 'table' => $t, 'handle' => $handle, 'route' => $route, 'create' => $create, 'items' => $items, 'notes' => $notes];
+        foreach ($keepRefs as $k) {
+            if (!array_filter($seenKeep, fn($p) => in_array($k, [(string) $p['id'], (string) $p['slug'], trim((string) ($p['path'] ?? ''), '/')], true))) {
+                $errors[] = __('--keep: „{k}“ ist keine Unterseite dieses Zweigs.', ['k' => $k]);
+            }
+        }
+        if ($unlock) $notes[] = __('Feld „Inhalt“: zusätzlich erlaubt (kommen in den Seiten vor): {list}', ['list' => implode(', ', $unlock)]);
+        if ($suggest) $notes[] = __('Vorschlag: Seiten mit Blöcken, die in Kapiteln nicht gehen, als Verweis behalten – --keep={list}', ['list' => implode(',', $suggest)]);
+        if (!Redirects::enabled() && array_filter($items, fn($i) => !$i['keep'] && $i['old'] !== $i['new'])) $notes[] = __('Funktion „Weiterleitungen“ ist aus – geänderte Adressen bekommen keine 301 (bitte einschalten und erneut ausführen).');
+        return ['ok' => !$errors, 'errors' => $errors, 'root' => $root, 'table' => $t, 'handle' => $handle, 'route' => $route, 'create' => $create, 'items' => $items, 'notes' => $notes,
+            'allowed' => array_values(array_unique([...$base, ...$unlock])), 'unlock' => $unlock, 'suggest' => $suggest];
     }
 
     /** Bericht des Plans (Zeilen) */
@@ -92,12 +131,35 @@ final class KnowledgeImport
         $l[] = __('Zweig „{t}“ (/{p}) → Tabelle „{h}“{c} unter /{r}/…', ['t' => $plan['root']['title'], 'p' => trim((string) ($plan['root']['path'] ?? ''), '/'),
             'h' => $plan['handle'], 'c' => $plan['create'] ? ' (' . __('neu, Vorlage „Wissen“') . ')' : '', 'r' => $plan['route']]);
         foreach ($plan['items'] as $i) {
-            $l[] = str_repeat('  ', $i['depth'] + 1) . '+ ' . $i['title'] . ' [' . $i['status'] . '] ' . $i['old'] . ($i['old'] !== $i['new'] ? ' → ' . $i['new'] . ' (301)' : ' (' . __('gleiche Adresse') . ')')
-                . ($i['dropped'] ? ' · ' . __('ausgelassen: {list}', ['list' => implode(', ', array_unique($i['dropped']))]) : '');
+            $extra = [];
+            if ($i['keep']) $extra[] = __('Verweis – die Seite bleibt');
+            if ($i['image']) $extra[] = __('Bild aus dem Seitenkopf');
+            if ($i['dropped']) $extra[] = ($i['keep'] ? __('Seite behält: {list}', ['list' => implode(', ', $i['dropped'])]) : __('nicht übertragbar: {list}', ['list' => implode(', ', $i['dropped'])]));
+            $where = $i['keep'] ? $i['old'] . ' (' . __('bleibt Seite, Kapitel-Adresse leitet dorthin') . ')'
+                : $i['old'] . ($i['old'] !== $i['new'] ? ' → ' . $i['new'] . ' (301)' : ' (' . __('gleiche Adresse') . ')');
+            $l[] = str_repeat('  ', $i['depth'] + 1) . ($i['keep'] ? '↗ ' : '+ ') . $i['title'] . ' [' . $i['status'] . '] ' . $where . ($extra ? ' · ' . implode(' · ', $extra) : '');
         }
+        $l[] = __('Feld „Inhalt“ erlaubt: {list}', ['list' => implode(', ', $plan['allowed'])]);
         foreach ($plan['notes'] as $n) $l[] = '! ' . $n;
         foreach ($plan['errors'] as $e) $l[] = '✗ ' . $e;
         return $l;
+    }
+
+    /** Erlaubte Blöcke des Feldes „Inhalt“ setzen. Gibt die bisherige Auswahl zurück (für --revert), null = unverändert */
+    private static function setAllowed(array $t, array $allowed): ?array
+    {
+        $f = Tables::field($t, 'inhalt');
+        if (!$f) return null;
+        $before = array_values((array) ($f['blocks'] ?? []));
+        if (EntryBlocks::allowed($f) === EntryBlocks::allowed(['blocks' => $allowed])) return null;
+        $in = Tables::toInput($t);
+        foreach ($in['fields'] as &$x) if (($x['name'] ?? '') === 'inhalt') $x['blocks'] = $allowed;
+        unset($x);
+        [$clean, $err] = Tables::validate($in, $t);
+        if ($err) return null;
+        Tables::update($t, $clean);
+        Tables::flush();
+        return $before;
     }
 
     /** Plan ausführen. @return list<string> */
@@ -112,39 +174,54 @@ final class KnowledgeImport
             $t = $res['table'];
             if (!$t) return [...$log, '✗ ' . __('Tabelle konnte nicht angelegt werden.')];
         }
-        $t = Tables::find($t['handle']);
+        // Vorhandene Tabelle: Grundschema auf Version 2 (Bild, Verweis) – nur additiv, Einträge bleiben unverändert
+        $t = Knowledge::upgrade(Tables::find($t['handle']));
         if (empty($t['settings']['detail_page_id'])) { \Core\Http\Controllers\Admin\DataController::makeTemplate($t); $t = Tables::find($t['handle']); }
-        $st = ['table' => $t['handle'], 'created' => $plan['create'], 'entries' => [], 'pages' => [], 'redirects' => [], 'links' => [], 'archive' => null, 'root' => null, 'at' => now()];
-        // 1. Einträge (Reihenfolge wie im Seitenbaum)
+        $st = ['table' => $t['handle'], 'created' => $plan['create'], 'entries' => [], 'kept' => [], 'pages' => [], 'redirects' => [], 'links' => [], 'archive' => null, 'root' => null,
+            'blocks_before' => null, 'at' => now()];
+        // 0. Erlaubte Blöcke des Feldes „Inhalt“ (freigeschaltete Blöcke der Seiten, --blocks)
+        $before = self::setAllowed($t, $plan['allowed']);
+        if ($before !== null) {
+            $st['blocks_before'] = $before;
+            $t = Tables::find($t['handle']);
+            $log[] = '✓ ' . __('Feld „Inhalt“ erlaubt: {list}', ['list' => implode(', ', $plan['allowed'])]);
+        }
+        $hasImage = (bool) Tables::field($t, 'bild');
+        // 1. Einträge (Reihenfolge wie im Seitenbaum); Verweis-Kapitel ohne Inhalt, mit Verweis auf die Seite
         $db = Tables::db($t);
         foreach ($plan['items'] as $n => $i) {
             $parent = $i['parent_page'] !== null ? ($st['entries'][(string) $i['parent_page']] ?? null) : null;
-            [$id, $errors] = Entries::save($t, null, ['titel' => $i['title'], 'slug' => $i['slug'], 'status' => $i['status'], 'oberkapitel' => $parent,
-                'anreisser' => $i['teaser'], 'inhalt' => $i['blocks']], __('Aus Seite #{id} übernommen', ['id' => $i['page']]));
+            $values = ['titel' => $i['title'], 'slug' => $i['slug'], 'status' => $i['status'], 'oberkapitel' => $parent, 'anreisser' => $i['teaser'], 'inhalt' => $i['blocks']];
+            if ($hasImage && $i['image']) $values['bild'] = $i['image'];
+            if ($i['keep']) $values['verweis'] = 'page:' . $i['page'];
+            [$id, $errors] = Entries::save($t, null, $values, __('Aus Seite #{id} übernommen', ['id' => $i['page']]));
             if ($errors || !$id) { $log[] = '✗ ' . $i['title'] . ': ' . implode(' ', array_map('strval', $errors)); continue; }
             $db->update($t['table'], array_filter(['sort' => ($n + 1) * 10, 'published_at' => $i['published_at'] ?: null]), 'id = :id', ['id' => (int) $id]);
             $st['entries'][(string) $i['page']] = (int) $id;
-            $log[] = '✓ ' . $i['title'] . ' → ' . $i['new'];
+            if ($i['keep']) $st['kept'][] = $i['page'];
+            $log[] = '✓ ' . $i['title'] . ' → ' . ($i['keep'] ? __('Verweis auf {p}', ['p' => $i['old']]) : $i['new']);
         }
-        // 2. Seiten offline unter eine versteckte Archivseite (frei werdende Adressen für die Kapitel)
+        // 2. Übernommene Seiten offline unter eine versteckte Archivseite (frei werdende Adressen); Verweis-Seiten bleiben, wo sie sind
         $archive = Pages::create(['slug' => '_archiv-' . Pages::slugify((string) $root['slug']), 'title' => $root['title'] . ' – ' . __('vor der Umstellung'), 'status' => 'draft',
             'menu' => 0, 'noindex' => 1, 'lang' => $root['lang'] ?? null]);
         $st['archive'] = $archive;
+        $kept = array_map('intval', $st['kept']);
         foreach ($plan['items'] as $i) {
-            if (!isset($st['entries'][(string) $i['page']])) continue;
+            if ($i['keep'] || !isset($st['entries'][(string) $i['page']])) continue;
             $st['pages'][(string) $i['page']] = ['parent_id' => $i['parent_id'], 'sort' => $i['sort'], 'status' => $i['status'], 'menu' => $i['menu']];
-            Pages::db()->update('pages', array_filter(['status' => 'draft', 'menu' => 0, 'parent_id' => $i['depth'] === 0 ? $archive : null, 'updated_at' => now()], fn($v) => $v !== null),
+            $toArchive = $i['depth'] === 0 || in_array((int) $i['parent_page'], $kept, true);
+            Pages::db()->update('pages', array_filter(['status' => 'draft', 'menu' => 0, 'parent_id' => $toArchive ? $archive : null, 'updated_at' => now()], fn($v) => $v !== null),
                 'id = :id', ['id' => $i['page']]);
         }
         self::movePaths();
         $log[] = '✓ ' . __('{n} Seiten offline unter „{t}“ (Entwurf, Inhalt bleibt)', ['n' => count($st['pages']), 't' => $root['title'] . ' – ' . __('vor der Umstellung')]);
-        // 3. Links page:ID → entry:… (Seiten, Einstellungen, neue Kapitel)
+        // 3. Links page:ID → entry:… (Seiten, Einstellungen, neue Kapitel) – nicht für Verweis-Seiten, die bleiben erreichbar
         $map = [];
-        foreach ($st['entries'] as $pid => $eid) $map['page:' . $pid] = 'entry:' . $t['handle'] . ':' . $eid;
+        foreach ($st['entries'] as $pid => $eid) if (!in_array((int) $pid, $kept, true)) $map['page:' . $pid] = 'entry:' . $t['handle'] . ':' . $eid;
         $st['links'] = self::relink($map, $t, $log);
         // 4. Weiterleitungen alter Adressen
         foreach ($plan['items'] as $i) {
-            if (!isset($st['entries'][(string) $i['page']]) || $i['old'] === $i['new'] || !Redirects::enabled()) continue;
+            if ($i['keep'] || !isset($st['entries'][(string) $i['page']]) || $i['old'] === $i['new'] || !Redirects::enabled()) continue;
             $target = 'entry:' . $t['handle'] . ':' . $st['entries'][(string) $i['page']];
             if (Redirects::bySource($i['old'])) { $log[] = '= ' . __('Weiterleitung {s} gibt es schon', ['s' => $i['old']]); continue; }
             [$rid, $errors] = Redirects::save(['source' => $i['old'], 'target' => $target, 'code' => 301, 'note' => __('Wissensbereich „{t}“ übernommen', ['t' => $root['title']])], null, 'import');
@@ -272,6 +349,7 @@ final class KnowledgeImport
             } else {
                 foreach ((array) $st['entries'] as $eid) Entries::delete($t, (int) $eid);
                 $log[] = '✓ ' . __('{n} Einträge entfernt', ['n' => count((array) $st['entries'])]);
+                if (is_array($st['blocks_before'] ?? null) && self::setAllowed($t, $st['blocks_before']) !== null) $log[] = '✓ ' . __('Feld „Inhalt“: erlaubte Blöcke wie vorher');
             }
         }
         unset($all[(string) $root['id']]);

@@ -64,7 +64,36 @@ final class Knowledge
     {
         return ['name' => 'Wissen', 'singular' => 'Kapitel', 'icon' => 'book-open', 'route' => 'wissen', 'sort' => ['sort', 'asc'],
             'kind' => Kinds::KNOWLEDGE, 'schema_type' => 'Article', 'fields' => Kinds::presetFields(Kinds::KNOWLEDGE),
-            'title' => 'titel', 'image' => '', 'desc' => 'anreisser', 'knowledge' => self::DEFAULTS];
+            'title' => 'titel', 'image' => 'bild', 'desc' => 'anreisser', 'knowledge' => self::DEFAULTS];
+    }
+
+    /**
+     * Grundschema auf den aktuellen Stand bringen (Version 2: Felder „Bild“ und „Verweis auf Seite“) – nur additiv: neue, leere Spalten,
+     * vorhandene Einträge, Felder und Einstellungen bleiben unverändert. Gibt die (ggf. neue) Definition zurück.
+     */
+    public static function upgrade(array $t): array
+    {
+        if (!self::is($t) || (int) ($t['settings']['kind_version'] ?? 0) >= Kinds::version(Kinds::KNOWLEDGE) || isset($t['shared']) && !Shared::isOwner($t)) return $t;
+        [$clean, $err] = Tables::validate(Tables::toInput($t), $t);
+        if ($err) return $t;
+        Tables::update($t, $clean);
+        Tables::flush();
+        return Tables::find($t['handle']) ?? $t;
+    }
+
+    /** Verweis-Kapitel (Feld verweis, z. B. page:12): Adresse der Seite, sonst null */
+    public static function refUrl(array $t, array $e): ?string
+    {
+        $v = trim((string) ($e['verweis'] ?? ''));
+        if ($v === '' || !Tables::field($t, 'verweis')) return null;
+        $u = link_href($v);
+        return $u !== '#' && $u !== '' ? $u : null;
+    }
+
+    /** Link eines Kapitels in Navigation, Listen und Vor/Zurück: Verweis-Kapitel führen auf ihre Seite */
+    public static function href(array $t, array $e): ?string
+    {
+        return self::refUrl($t, $e) ?? Entries::href($t, $e);
     }
 
     /** Detailseiten-Vorlage: Kopf (Bereich, Titel), Anreißer, Inhaltsblöcke – Seitenleiste & Co. legt frame() darum */
@@ -72,7 +101,7 @@ final class Knowledge
     {
         $id = fn() => bin2hex(random_bytes(5));
         $blocks = [
-            ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'head', 'fields' => [$t['handle'] . '._title', $t['handle'] . '.bereich']],
+            ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'head', 'fields' => [$t['handle'] . '._title', $t['handle'] . '.bereich', $t['handle'] . '.bild']],
                 'tunes' => ['section' => ['spaceBottom' => 'small']]],
             ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => [$t['handle'] . '.anreisser']],
                 'tunes' => ['section' => ['spaceTop' => 'none', 'spaceBottom' => 'small']]],
@@ -132,7 +161,7 @@ final class Knowledge
         foreach ($rows as $e) {
             $id = (int) $e['id'];
             $nodes[$id] = ['id' => $id, 'title' => Entries::title($t, $e), 'parent' => (int) ($e['oberkapitel'] ?? 0), 'area' => (string) ($e['bereich'] ?? ''),
-                'own' => trim((string) ($e['kapitelnummer'] ?? '')), 'sort' => (int) ($e['sort'] ?? 0), 'href' => Entries::href($t, $e), 'children' => [],
+                'own' => trim((string) ($e['kapitelnummer'] ?? '')), 'sort' => (int) ($e['sort'] ?? 0), 'href' => self::href($t, $e), 'ref' => self::refUrl($t, $e) !== null, 'children' => [],
                 'number' => '', 'depth' => 0, 'entry' => $e];
         }
         // Oberkapitel nur, wenn es im Baum steht und kein Kreis entsteht – sonst erste Ebene

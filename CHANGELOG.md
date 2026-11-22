@@ -28,14 +28,22 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Glossar bleibt websiteweit:** Wissenseinträge verknüpfen nur Begriffe des einen Glossars; der Block „Glossar“ zeigt auf der
   Begriffsseite optional **„Erwähnt in“** (Wissenseinträge und Seiten).
 - **Umstieg** `php bin/console data:import-pages <zweig> [--apply] | --revert`: Seitenzweig → Wissensbereich mit Probelauf, Kapitelbaum
-  aus dem Seitenbaum, Archiv der alten Seiten, umgestellten Verweisen und 301-Weiterleitungen; vollständig zurückdrehbar.
+  aus dem Seitenbaum, Archiv der alten Seiten, umgestellten Verweisen und 301-Weiterleitungen; vollständig zurückdrehbar. Blöcke der
+  Seiten, die in Kapiteln wählbar sind (auch von Erweiterungen), werden im Feld „Inhalt“ freigeschaltet; `--blocks=…` legt die Auswahl
+  beim Anlegen fest. Seiten mit nicht übertragbaren Blöcken (Datenliste u. a.) schlägt der Plan für **`--keep=…`** vor: Sie bleiben
+  Seiten und werden **Kapitel vom Typ „Verweis“** (Feld „Verweis auf Seite“, `page:ID`) – mit Nummer in Seitenleiste,
+  Inhaltsverzeichnis, Suche und Vor/Zurück, Kapitel-Adresse per 301 auf die Seite. Das Bild des Seitenkopfs wird das Bild des Kapitels.
+- **Grundschema Version 2** (nur additiv): Felder „Bild“ und „Verweis auf Seite“; vorhandene Wissenstabellen bekommen sie leer beim
+  nächsten Speichern des Schemas bzw. beim Umstieg (`Knowledge::upgrade`), Einträge bleiben unverändert.
 - Selbsttest `knowledge:selftest`; Handbuch → Wissensbereich & Handbuch, Entwicklerhandbuch → Wissensbereich.
 - *EN:* New table kind “Knowledge” for manuals and knowledge bases: chapters with areas, parent chapters, automatic (overridable)
   chapter numbers, content blocks, keywords, related chapters and glossary terms. Detail pages get a sidebar with search and chapters,
   “In this chapter” from the subheadings, keywords, related chapters and previous/next, in five layouts (Classic, Compact, Focus,
   Manual, Compact manual) with an off-canvas drawer on phones – styled only via kit tokens, accessible, works without JavaScript. The
   data list block gains a “Chapters” layout, multi-select filters (state in the URL), search excerpts and glossary hits. The glossary
-  stays site-wide (optional “Mentioned in” on term pages). `data:import-pages` converts a page branch with dry run and full revert.
+  stays site-wide (optional “Mentioned in” on term pages). `data:import-pages` converts a page branch with dry run and full revert; it unlocks block types used on the pages, takes
+  `--blocks=…` for new tables and suggests `--keep=…` for pages with non-transferable blocks, which stay pages and become “link”
+  chapters (schema version 2 adds optional “Image” and “Link to page” fields, additive only).
   Self-test `knowledge:selftest`.
 ### Interaktives Bild: Block, Feldtyp „Markierungen“, Vorlage „Interaktive Bilder“ (`Core\Hotspots`)
 - **Block „Interaktives Bild“** (Gruppe Medien, in Layout-Spalten erlaubt): Bild aus der Mediathek (auch SVG/Grafik) mit

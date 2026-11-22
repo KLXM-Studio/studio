@@ -43,7 +43,12 @@ final class KnowledgeSelfTest
             $t = Tables::find($h);
             if ($lp = Knowledge::makeListPage($t)) $pages[] = $lp;   // Übersicht /{route}: Suche in der Seitenleiste, Schlagwort-Links
             $ck(count($pages) === 1, 'Übersichtsseite mit Datenliste „Kapitel“');
-            $ck(Kinds::isKnowledge($t) && ($t['settings']['kind_version'] ?? 0) === 1 && Knowledge::config($t) === Knowledge::DEFAULTS, 'Art „Wissen“, Version 1, Standard-Einstellungen');
+            $ck(Kinds::isKnowledge($t) && ($t['settings']['kind_version'] ?? 0) === Kinds::version(Kinds::KNOWLEDGE) && Knowledge::config($t) === Knowledge::DEFAULTS
+                && ($t['settings']['image_field'] ?? '') === 'bild' && Tables::field($t, 'verweis'), 'Art „Wissen“, aktuelle Version, Standard-Einstellungen, Bild- und Verweisfeld');
+            // Grundschema nur additiv: Version 1 ⊂ Version 2 (Bild, Verweis neu)
+            $v1 = Kinds::systemNames(Kinds::KNOWLEDGE, 1);
+            $v2 = Kinds::systemNames(Kinds::KNOWLEDGE, 2);
+            $ck(array_values(array_intersect($v2, $v1)) === $v1 && array_values(array_diff($v2, $v1)) === ['bild', 'verweis'], 'Grundschema v2 ergänzt nur Bild und Verweis');
             $ck((Tables::field($t, 'oberkapitel')['target'] ?? '') === $h && (Tables::field($t, 'verwandt')['target'] ?? '') === $h, 'Oberkapitel/Verwandte verweisen auf die eigene Tabelle');
             $gt = (string) (Tables::field($t, 'begriffe')['target'] ?? '');
             $ck($gt === '' || $gt === \Core\Glossary\Glossary::HANDLE, 'Glossarbegriffe nur aufs Website-Glossar');
@@ -110,6 +115,20 @@ final class KnowledgeSelfTest
             }
             // 6. Glossar bleibt websiteweit: keine weitere Glossar-Tabelle entstanden
             $ck(array_values(array_filter(array_diff(array_column(Tables::content(), 'handle'), $tablesBefore), fn($x) => $x !== $h && str_contains($x, 'glossar'))) === [], 'Keine Glossar-Tabelle je Wissensbereich');
+            // 6b. Tabelle der Version 1 (ohne Bild/Verweis) wird additiv aktualisiert – Einträge bleiben unverändert
+            $old = $t;
+            $old['fields'] = array_values(array_filter($t['fields'], fn($f) => !in_array($f['name'] ?? '', ['bild', 'verweis'], true)));
+            $old['settings']['kind_version'] = 1;
+            $old['settings']['image_field'] = '';
+            Tables::update($t, $old);
+            $t1 = Tables::find($h);
+            $before = Entries::find($t1, $a);
+            $t2 = Knowledge::upgrade($t1);
+            $after = Entries::find($t2, $a);
+            $ck(($t1['settings']['kind_version'] ?? 0) === 1 && ($t2['settings']['kind_version'] ?? 0) === 2 && Tables::field($t2, 'bild') && Tables::field($t2, 'verweis')
+                && ($t2['settings']['image_field'] ?? '') === '' && array_diff_key($after, ['bild' => 1, 'verweis' => 1, 'updated_at' => 1]) == array_diff_key($before, ['updated_at' => 1])
+                && empty($after['bild']) && empty($after['verweis']), 'Version 1 → 2: neue Felder leer, Einträge und Einstellungen unverändert');
+            $t = $t2;
             // 7. Seitenzweig umstellen und zurückdrehen
             $slug = 'qa-knroot-' . bin2hex(random_bytes(2));
             $root = Pages::create(['slug' => $slug, 'title' => 'QA Zweig', 'status' => 'published']);
@@ -135,6 +154,50 @@ final class KnowledgeSelfTest
             $back = Pages::find($p1);
             $ck($back && $back['status'] === 'published' && (int) $back['parent_id'] === $root && !Tables::find($h . 'imp') && !str_contains((string) Pages::find($root)['content_published'], 'data_list')
                 && (!\Core\Redirects\Redirects::enabled() || \Core\Redirects\Redirects::bySource('/' . $slug . '/erstes/zweites') === null), 'Zurückdrehen: Seiten, Startseite, Tabelle, Weiterleitung wie vorher');
+
+            // 8. Erlaubte Blöcke, Verweis-Kapitel (--keep), Bild aus dem Seitenkopf, --blocks
+            $choices = array_keys(EntryBlocks::choices());
+            $extra = array_values(array_diff($choices, EntryBlocks::defaults(), ['hero']))[0] ?? null;   // wählbar, aber nicht im Standard (z. B. Gruppe „Interaktiv“)
+            $mid = (int) (Pages::db()->fetchValue('SELECT id FROM media WHERE deleted_at IS NULL ORDER BY id LIMIT 1') ?: 0);
+            $slug2 = 'qa-knref-' . bin2hex(random_bytes(2));
+            $r2 = Pages::create(['slug' => $slug2, 'title' => 'QA Verweise', 'status' => 'published']);
+            $pl = Pages::create(['slug' => 'liste', 'title' => 'Liste', 'status' => 'published', 'parent_id' => $r2, 'sort' => 1],
+                [['id' => 'qa3', 'type' => 'richtext', 'data' => ['text' => '<p>Vor der Liste</p>']], ['id' => 'qa4', 'type' => 'data_list', 'data' => ['table' => $h]]]);
+            $pt = Pages::create(['slug' => 'tief', 'title' => 'Tief', 'status' => 'published', 'parent_id' => $pl, 'sort' => 1],
+                [['id' => 'qa5', 'type' => 'richtext', 'data' => ['text' => '<p>Tief</p>']]]);
+            $px = Pages::create(['slug' => 'extra', 'title' => 'Extra', 'status' => 'published', 'parent_id' => $r2, 'sort' => 2],
+                array_values(array_filter([['id' => 'qa6', 'type' => 'hero', 'data' => ['title' => 'Extra', 'text' => 'Kopftext', 'image' => $mid ?: null]],
+                    $extra ? ['id' => 'qa7', 'type' => $extra, 'data' => []] : null])));
+            array_push($pages, $r2, $pl, $pt, $px);
+            $h2 = $h . 'ref';
+            $plain = KnowledgeImport::plan(Pages::find($r2), $h2);
+            $ck($plain['ok'] && $plain['suggest'] === ['liste'] && in_array('data_list', $plain['items'][0]['dropped'], true) && !in_array('data_list', $plain['allowed'], true)
+                && !in_array('hero', $plain['allowed'], true), 'Plan: data_list nicht übertragbar, Vorschlag --keep=liste, Daten-Blöcke und Seitenkopf nie erlaubt');
+            $ck($extra === null || ($plain['unlock'] === [$extra] && in_array($extra, $plain['allowed'], true)), 'Plan: wählbare Blöcke der Seiten werden im Feld „Inhalt“ freigeschaltet');
+            $bad = KnowledgeImport::plan(Pages::find($r2), $h2, ['keep' => ['gibtsnicht'], 'blocks' => ['data_list']]);
+            $ck(!$bad['ok'] && count($bad['errors']) === 2, 'Plan: unbekanntes --keep und nicht wählbares --blocks werden abgewiesen');
+            $plan2 = KnowledgeImport::plan(Pages::find($r2), $h2, ['keep' => ['liste', (string) $pt], 'blocks' => ['richtext']]);
+            $ck($plan2['ok'] && $plan2['suggest'] === [] && $plan2['allowed'] === array_values(array_filter(['richtext', $extra])), 'Plan: --keep übernimmt den Vorschlag, --blocks legt die Auswahl beim Anlegen fest');
+            KnowledgeImport::apply($plan2);
+            $tr = Tables::find($h2);
+            $rr = $tr ? array_column(Entries::query($tr, ['status' => 'all', 'limit' => 10]), null, 'titel') : [];
+            $ck(($rr['Liste']['verweis'] ?? '') === 'page:' . $pl && ($rr['Tief']['verweis'] ?? '') === 'page:' . $pt && (int) ($rr['Tief']['oberkapitel'] ?? 0) === (int) ($rr['Liste']['id'] ?? -1)
+                && EntryBlocks::items($rr['Liste']['inhalt'] ?? null) === [], 'Verweis-Kapitel: Feld „Verweis auf Seite“, Oberkapitel, kein Inhalt');
+            $keptPage = Pages::find($pl);
+            $ck($keptPage && $keptPage['status'] === 'published' && (int) $keptPage['parent_id'] === $r2 && (int) Pages::find($pt)['parent_id'] === $pl, 'Verweis-Kapitel: Seiten bleiben, wo sie sind');
+            Knowledge::flush();
+            $tree2 = $tr ? Knowledge::tree($tr) : ['nodes' => []];
+            $nodeT = $tree2['nodes'][(int) ($rr['Tief']['id'] ?? 0)] ?? null;
+            $ck($nodeT && $nodeT['ref'] && $nodeT['href'] === Pages::url(Pages::find($pt)) && $nodeT['number'] === '1.1', 'Verweis-Kapitel: im Kapitelbaum mit Nummer, Link auf die Seite');
+            $ck(isset($rr['Extra']) && ($extra === null || in_array($extra, array_column(EntryBlocks::items($rr['Extra']['inhalt']), 'type'), true))
+                && !in_array('hero', array_column(EntryBlocks::items($rr['Extra']['inhalt'] ?? null), 'type'), true) && ($rr['Extra']['anreisser'] ?? '') === 'Kopftext'
+                && (!$mid || (int) ($rr['Extra']['bild'] ?? 0) === $mid), 'Seitenkopf: Bild → Feld „Bild“, Text → Anreißer, freigeschalteter Block übernommen');
+            // Kapitel-Adresse eines Verweises (/zweig/tief) → 301 auf die Seite (/zweig/liste/tief)
+            $res = (new \Core\Http\Controllers\SiteController())->page(new \Core\Http\Request('GET', '/' . $slug2 . '/tief', [], [], [], []), $slug2 . '/tief');
+            $ck($res->status === 301 && str_ends_with((string) ($res->headers['Location'] ?? ''), '/' . $slug2 . '/liste/tief'), 'Verweis-Kapitel: Adresse leitet per 301 auf die Seite');
+            KnowledgeImport::revert(Pages::find($r2));
+            Tables::flush();
+            $ck(!Tables::find($h2) && Pages::find($px)['status'] === 'published' && (int) Pages::find($px)['parent_id'] === $r2, 'Zurückdrehen mit Verweisen');
         } catch (\Throwable $e) {
             $ck(false, $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine());
         } finally {
