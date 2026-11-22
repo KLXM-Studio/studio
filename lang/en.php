@@ -9294,4 +9294,6 @@ return [
     '„{text}“ steht schon als Begriff im Glossar.' => '“{text}” is already a term in the glossary.',
     '„{text}“ steht schon als Schreibweise von „{term}“ im Glossar.' => '“{text}” is already in the glossary as a spelling of “{term}”.',
     '„{text}“ steht schon im Glossar – bei „{term}“.' => '“{text}” is already in the glossary – under “{term}”.',
+    // Interaktives Bild (Core\Hotspots)
+    'Im Grafik-Editor öffnen' => 'Open in graphics editor',
 ];
