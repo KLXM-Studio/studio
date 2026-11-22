@@ -17,6 +17,8 @@ $pick = $e['_pick'];
 $shown = (bool) Entries::query($t, ['status' => 'published', 'lang' => 'all', 'source' => 'site', 'ids' => [$e['id']]]);
 $stateLabel = ['visible' => __('übernommen'), 'featured' => __('hervorgehoben'), 'hidden' => __('ausgeblendet'), 'rejected' => __('abgelehnt')];
 $back = $base . '/' . $e['id'];
+// Netzwerk: Funktionen der Ursprungs-Website zeigen (eigene Funktionen dieser Website stehen in den Zusatzangaben)
+if (array_key_exists('_base_' . \Core\Data\Roles::FIELD, $e)) $e = \Core\Data\Roles::refresh($t, [\Core\Data\Roles::FIELD => $e['_base_' . \Core\Data\Roles::FIELD]] + $e);
 ?>
 <header class="adm-head dt-head">
   <div><p class="adm-eyebrow"><a href="<?= e(url($base . '/shared') . '?src=' . $src) ?>"><span aria-hidden="true"><?= icon($t['icon']) ?></span> <?= e($t['name']) ?> · <?= e($src === 'owner' ? term('shared_from_owner') : term('shared_from_members')) ?></a></p>
@@ -35,6 +37,7 @@ $back = $base . '/' . $e['id'];
       <dt><?= e($f['label']) ?></dt><dd><?= $h ?></dd>
       <?php endforeach; ?>
     </dl>
+    <?php if ($x = \Core\Data\Network::originNote($t, $e)): ?><div class="sh-note"><?= $x ?></div><?php endif; ?>
   </section>
   <aside class="dt-entry__side">
     <section class="adm-card">
@@ -58,5 +61,6 @@ $back = $base . '/' . $e['id'];
         <dt>ID</dt><dd><?= (int) $e['id'] ?></dd>
       </dl>
     </section>
+    <?= /* Netzwerk: Zusatzangaben dieser Website zum fremden Eintrag (Core\Data\Network) */ can('data.edit', $t['handle']) ? \Core\Theme::capture(__DIR__ . '/_network.php', ['t' => $t, 'e' => $e, 'values' => [], 'part' => 'extra', 'action' => $base . '/' . (int) $e['id'] . '/zusatz']) : '' ?>
   </aside>
 </div>

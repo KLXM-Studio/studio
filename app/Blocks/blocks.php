@@ -54,6 +54,7 @@ return [
                 'options' => ['' => 'wie eingestellt', 'asc' => 'aufsteigend (A–Z, alt → neu)', 'desc' => 'absteigend (Z–A, neu → alt)']],
             ['name' => 'paginate', 'label' => 'Seitenweise blättern', 'type' => 'bool', 'default' => false],
             ...\Core\Data\Shared::blockFields(true),   // geteilte Tabellen: welche Einträge
+            ...\Core\Data\Nearby::blockFields(),         // „In deiner Nähe“ (PLZ oder Ort des Besuchers)
             ['type' => 'heading', 'label' => 'Filter für Besucher', 'collapse' => true, 'summary' => 'Schaltflächen, Suchfeld, A–Z', 'help' => 'Für Verzeichnisse mit vielen Einträgen (Mitglieder, Partner, Angebote). Funktioniert ohne JavaScript; die Auswahl steht in der Adresse und lässt sich teilen.'],
             ['name' => 'visitor_filter', 'label' => 'Filter-Schaltflächen nach', 'type' => 'datafield', 'types' => ['select', 'multiselect'], 'width' => 'half', 'empty_label' => '– keine –',
                 'help' => 'Ein Auswahl- oder Mehrfachauswahl-Feld, z. B. Kategorie.'],
@@ -252,6 +253,7 @@ return [
             ['name' => 'filter_value', 'label' => 'Wert (Kurzname der Auswahl)', 'type' => 'text', 'width' => 'half',
                 'help' => 'Bei „aufgerufenem Eintrag“ leer lassen (für Detailseiten, z. B. Termine einer Gruppe oder eines Ortes).'],
             ...\Core\Data\Shared::blockFields(),
+            ...\Core\Data\Nearby::blockFields(),
             ['type' => 'heading', 'label' => 'Darstellung & Links', 'collapse' => true, 'summary' => 'Liste oder kompakt, Ort, Abo-Link, Button'],
             ['name' => 'layout', 'label' => 'Darstellung', 'type' => 'select', 'required' => true, 'default' => 'list', 'width' => 'half',
                 'options' => ['list' => 'Liste mit Datum', 'compact' => 'Kompakt']],
@@ -514,6 +516,9 @@ return [
             ['name' => 'former', 'label' => 'Ehemalige (Funktion beendet)', 'type' => 'select', 'default' => '', 'width' => 'half', 'show_if' => ['source' => ['filter']],
                 'options' => ['' => 'nicht zeigen', 'below' => 'darunter als „Ehemalige“'],
                 'help' => 'Nur bei Adressbüchern mit Funktionen und einem Filter nach Liste: Personen, deren Funktion in dieser Liste beendet ist („bis“ vergangen).'],
+            // Netzwerk (geteilte Adressbücher): Quelle und „In deiner Nähe“ – nur bei „gefiltert“
+            ...array_map(fn($f) => $f + ['show_if' => ['source' => ['filter']]], \Core\Data\Shared::blockFields(false, 'shared_source')),
+            ...array_map(fn($f) => $f + ['show_if' => ['source' => ['filter']]], \Core\Data\Nearby::blockFields()),
             ['name' => 'items', 'label' => 'Personen', 'type' => 'repeater', 'item_label' => 'Person', 'title_field' => 'person', 'max_items' => 30,
                 'show_if' => ['source' => ['manual']], 'fields' => [
                 ['name' => 'person', 'label' => 'Person', 'type' => 'link', 'required' => true,

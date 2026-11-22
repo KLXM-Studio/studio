@@ -98,6 +98,8 @@ final class Entries
             foreach ($rows as &$r) $r[$f['name']] = $map[$r['id']] ?? [];
             unset($r);
         }
+        // Netzwerk: Zusatzfelder dieser Website (Core\Data\Network, Werte je Website in share_extra)
+        if (!empty($table['site_fields'])) $rows = Network::loadExtras($table, $rows);
         return $rows;
     }
 
@@ -225,7 +227,7 @@ final class Entries
         if (Tables::isShared($table)) {
             $src = (string) ($o['source'] ?? 'site');
             $where[] = Shared::sourceSql($table, in_array($src, Shared::SOURCES, true) ? $src : 'site', $params,
-                fn(array $w, array &$p) => self::conditions($table, $w, $p));
+                fn(array $w, array &$p) => self::conditions($table, $w, $p), (array) ($o['source_sites'] ?? []));
             if (!empty($o['suggested'])) {
                 $where[] = 'suggest = 1';
                 if ($o['suggested'] === 'pending') {
@@ -379,6 +381,8 @@ final class Entries
         if ($shared) {
             $r['suggest'] = !empty($r['suggest']);
             $r['_pick'] ??= null;
+            // Netzwerk mit Weitergabe-Stufen: fremde Einträge überall nur in der öffentlichen Fassung (Verwaltung, API, Apps, Website)
+            if (Network::levelsOn($table) && Shared::isForeign($table, $r)) $r = Network::foreignView($table, $r);
         }
         return $r;
     }
@@ -386,7 +390,7 @@ final class Entries
     // ================================================================= Formular-Schema
 
     /** Felder der Tabelle als Fields-Schema (für Formulare und Bereinigung) */
-    public static function schema(array $table): array
+    public static function schema(array $table, ?array $e = null): array
     {
         $out = [];
         foreach ($table['fields'] as $f) {
@@ -414,6 +418,11 @@ final class Entries
                 $def['start_field'] = $cal['start'] ?: (array_values(array_filter($table['fields'], fn($x) => in_array($x['type'], ['datetime', 'date'], true)))[0]['name'] ?? '');
                 $def['all_day_field'] = $cal['all_day'];
             }
+            // Termin (Core\Data\EventRef): Auswahl aus Terminen und Vorkommen des Kalenders
+            if ($f['type'] === EventRef::TYPE) {
+                $def['type'] = 'select';
+                $def['options'] = ($ct = Tables::findContent($f['target'] ?? '')) ? EventRef::options($ct, $e[$f['name']] ?? null) : [];
+            }
             if (in_array($f['type'], ['relation', 'relations'], true)) {
                 $target = Tables::findContent($f['target'] ?? '');
                 $def['type'] = $f['type'] === 'relation' ? 'select' : 'multiselect';
@@ -433,9 +442,9 @@ final class Entries
      * „3 von 7 ausgefüllt“) und Freitext als Hinweis – gleiche Gliederung wie das Formular.
      * Gespeichert und geprüft wird weiter mit schema() (Gestaltung hat keine Werte; Fields überspringt 'heading').
      */
-    public static function formSchema(array $table): array
+    public static function formSchema(array $table, ?array $e = null): array
     {
-        $data = array_column(self::schema($table), null, 'name');
+        $data = array_column(self::schema($table, $e), null, 'name');
         // Merkmal „Öffentlich“/„Intern“ an jedem Datenfeld (Core\Fields::renderExpose, Regeln aus Exposure::fieldReach): fest bei
         // „immer“/„nie“, umschaltbar bei „Redaktion entscheidet“. Nicht in Eingängen und nicht am Schalter „Auf der Website zeigen“.
         if (!Tables::isInbox($table)) {
@@ -566,7 +575,8 @@ final class Entries
             return [null, ['_' => __('Dieser Eintrag gehört zu einer anderen Website und lässt sich hier nicht ändern.')]];
         }
         // Externe Quellen (Core\Sources): übernommene Einträge ändert nur der Abgleich – Verwaltung, API, MCP, DAV sind schreibgeschützt
-        if ($current && !\Core\Sources\Sync::$writing && \Core\Sources\Sources::isExternal($table, (int) $id)) {
+        // (auch Termine aus Kalender-Abos in geteilten Tabellen: Herkunft am Eintrag, Core\Data\Network::external)
+        if ($current && !\Core\Sources\Sync::$writing && (\Core\Sources\Sources::isExternal($table, (int) $id) || Network::external($current) !== null)) {
             return [null, ['_' => __('Dieser Eintrag stammt aus einer externen Quelle und wird bei jedem Abruf aktualisiert – Änderungen bitte in der Quelle vornehmen.')]];
         }
         $db = Tables::db($table);
@@ -578,7 +588,7 @@ final class Entries
         }
         // Tabellenarten (Core\Data\Kinds): Kontakte – Anzeigename aus Vor-/Nachname, neue Kontakte zuerst nicht öffentlich
         $in = Kinds::beforeSave($table, $current, $in);
-        [$values, $errors] = Fields::sanitize(self::schema($table), $in, $current ?? []);
+        [$values, $errors] = Fields::sanitize(self::schema($table, $in + ($current ?? [])), $in, $current ?? []);
         // Funktionen je Person (Core\Data\Roles): Verknüpfungen prüfen, Listen ableiten, Hauptfunktion in position
         if (!$errors) [$values, $errors] = Roles::apply($table, $current, $values);
         // Bedingungen: ausgeblendete Felder leeren, „Pflicht wenn“ und Vergleiche prüfen (gilt für Verwaltung, API, MCP, DAV, Formulare)
@@ -665,6 +675,10 @@ final class Entries
             if (array_key_exists(VCards::UID, $in)) $row[VCards::UID] = ($v = trim((string) $in[VCards::UID])) !== '' ? mb_substr($v, 0, 255) : null;
             if (array_key_exists(VCards::EXTRA, $in)) $row[VCards::EXTRA] = $in[VCards::EXTRA] === null ? null : mb_strcut((string) $in[VCards::EXTRA], 0, VCards::MAX_EXTRA);
         }
+        // Netzwerk (Core\Data\Network): Weitergabe-Stufe je Eintrag – nur mit Schalter; ohne Angabe bleibt der Stand bzw. der Standard
+        if ($shared && Network::levelsOn($table)) $row += Network::row($table, $in, $current);
+        // Herkunft aus einem Kalender-Abo (nur der Abgleich setzt sie)
+        if (\Core\Sources\Sync::$writing && array_key_exists(Network::EXTERNAL, $in)) $row[Network::EXTERNAL] = $in[Network::EXTERNAL];
         if ($shared && array_key_exists('_suggest', $in)) {
             // „Dem Verband vorschlagen“ – nur Mitglieder, nicht die Eigentümer-Website
             $row['suggest'] = !Shared::isOwner($table) && !empty($in['_suggest']) && $in['_suggest'] !== '0' ? 1 : 0;
@@ -731,6 +745,8 @@ final class Entries
             // Geteilt: nur eigene Einträge; Auswahl aller Websites mit entfernen
             if ($db->query("DELETE FROM {$table['table']} WHERE id = ? AND origin_site = ?", [$id, site()->key])->rowCount() === 0) return;
             $db->query('DELETE FROM share_picks WHERE pick_entry = ?', [$id]);
+            // Netzwerk: Zusatzangaben aller Websites zu diesem Eintrag (Core\Data\Network)
+            if ($db->fetchValue("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'share_extra'")) $db->query('DELETE FROM share_extra WHERE extra_entry = ?', [$id]);
         } else {
             $db->query("DELETE FROM {$table['table']} WHERE id = ?", [$id]);
         }
@@ -976,6 +992,7 @@ final class Entries
             'time' => e(ltrim((string) $v, '0') ?: (string) $v),
             'datetime' => ($ts = strtotime((string) $v)) ? e((isset($o['date_format']) ? date($o['date_format'], $ts) : date_local($ts, $o['date_style'] ?? 'short')) . ', ' . lt('{time} Uhr', ['time' => date('H:i', $ts)])) : e((string) $v),
             'recurrence' => e(Calendar::describe((string) $v)),
+            EventRef::TYPE => EventRef::html($f, $v, $o),
             'select' => e(Tables::optionLabel($f, (string) $v)),
             'multiselect' => e(implode(', ', array_map(fn($k) => Tables::optionLabel($f, (string) $k), (array) $v))),
             'media' => Media::visual((int) $v, $o['sizes'] ?? '(min-width: 1080px) 800px, 100vw', array_filter(['ratio' => $o['ratio'] ?? null])),

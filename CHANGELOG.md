@@ -10,6 +10,30 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Netzwerk: Verband und Vereine teilen Kontakte und Termine (`Core\Data\Network`, `Core\Data\Nearby`)
+- **Weitergabe je Eintrag** (Schalter der geteilten Tabelle, Standard aus): nur diese Website, ausgewählte Websites (erscheinen dort von
+  selbst) oder ganzes Netzwerk. Neue Kontakte zuerst „nur diese Website“, Termine „ganzes Netzwerk“; Einträge von vor dem Schalter gelten
+  als Netzwerk. Die Freigabe je Feld geht vor: Andere Websites sehen fremde Einträge überall nur öffentlich – Website, Verwaltung, API,
+  CardDAV/CalDAV, vCard. Abwählen je Eintrag (ausblenden) oder je Kategorie („Fremde Einträge nicht zeigen, wenn …“).
+- **Zusatzfelder je Website** (Schalter): eigene Felder, nur auf der jeweiligen Website sichtbar, auch zu fremden Einträgen; ein Feld
+  „Funktionen“ gibt einer Person Ämter auf dieser Website (eine Person, Funktionen auf mehreren Ebenen, keine Dubletten).
+- **Herkunft:** „von …“ auf der Website, `sourceOrganization` im JSON-LD; Termine aus Kalender-Abos tragen Quelle, Veranstalter und
+  Original-Link am Eintrag (`_external`), bleiben schreibgeschützt – auch weitergegeben.
+- **Blöcke:** Quelle „Bestimmte Websites“ in Datenliste, Kalender, Nächste Termine; Quelle auch im Personen-Block. **„In deiner Nähe“**
+  (Personen, Nächste Termine, Datenliste): PLZ oder Ort → zuerst das zuständige Gebiet (Gebietskarten), dann im Umkreis; Modus „nur die
+  zuständige Website“ für „Ansprechpartner in deinem Land“. Online-Suche von PLZ nur mit Grundeinstellung (Standard aus).
+- **Grundschema im Netzwerk:** `data:kind-upgrade` hebt geteilte Tabellen (nur Eigentümer, für alle Websites); Beitritt mit älterem eigenen
+  Adressbuch füllt die Funktionen, neuere Version wird abgelehnt. **Beitritt mit Plan** (`data:network-join`): Doppel existing/mine/both,
+  Rückweg über Verlassen.
+- **Feldtypen** „Kontakt“/„Kontakte“ (Verknüpfung auf ein Adressbuch) und „Termin“ (Serie oder einzelnes Vorkommen).
+- **Für Entwickler:** Spalten `_share`, `_share_sites`, `_external`, Tabelle `share_extra` (additiv, nur mit Schalter bzw. Abo), Filter
+  `data.nearby`, Einstellung `sys.nearby_geocode`, Befehle `data:network`, `data:network-join`, Selbsttest `shared:selftest`
+  (`--sandbox` Ende-zu-Ende mit drei Websites). Websites ohne geteilte Tabellen und geteilte Tabellen ohne Schalter bleiben unverändert.
+- *EN:* Network for shared tables: per-entry sharing level (this website, selected websites, whole network), foreign entries only in their
+  public version everywhere (admin, API, apps, vCard), additional fields per website (e.g. roles on this website), origin on the website
+  and in JSON-LD, subscribed events keep source, organiser and original link and stay read-only. Blocks: source “specific websites”,
+  “Near you” (postcode or place → responsible area first, then by distance). Base schema upgrades of shared tables, join with a plan,
+  field types contact(s) and event (series or single occurrence). Everything behind switches; nothing changes without them.
 ### Rollen: erlaubte Blöcke, gesperrte Blöcke, Gestaltung in zwei Stufen
 - **Erlaubte Blöcke je Rolle:** in „Rolle bearbeiten“ „Alle Blöcke, die die Website erlaubt“ (Standard) oder nur ausgewählte, gruppiert
   wie die Blockauswahl. Neue Blöcke nur aus dieser Auswahl; Blöcke anderer Arten bleiben sichtbar und verschiebbar, lassen sich aber

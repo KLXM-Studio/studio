@@ -74,6 +74,10 @@ $own = Entries::count($t, ['status' => 'published', 'lang' => 'all', 'source' =>
       <label class="f-check"><input type="hidden" name="link_origin" value="0"><input type="checkbox" name="link_origin" value="1"<?= $cfg['link_origin'] ? ' checked' : '' ?>> <span><?= e(__('Direkt auf die Ursprungs-Website verlinken (statt Detailseite auf dieser Website)')) ?></span></label>
     </fieldset>
   <?php endif; ?>
+    <fieldset class="sh-fieldset"><legend><?= e(__('Fremde Einträge nicht zeigen, wenn …')) ?></legend>
+      <p class="adm-muted"><?= e(__('Jede Zeile für sich: Einträge anderer Websites, auf die eine Bedingung passt, erscheinen hier nicht – z. B. eine Kategorie des Verbands, die diese Website nicht braucht. Einzelne Einträge blenden Sie in der Liste aus.')) ?></p>
+      <?= $whereRows('except', $cfg['except']) ?>
+    </fieldset>
     <fieldset class="sh-fieldset"><legend><?= e(__('Suchmaschinen: Canonical fremder Einträge')) ?></legend>
       <?php foreach (['origin' => __('Ursprungs-Website (empfohlen)'), 'self' => __('Diese Website')] as $k => $l): ?>
       <label class="f-check"><input type="radio" name="canonical" value="<?= e($k) ?>"<?= $cfg['canonical'] === $k ? ' checked' : '' ?>> <span><?= e($l) ?></span></label>
@@ -83,3 +87,40 @@ $own = Entries::count($t, ['status' => 'published', 'lang' => 'all', 'source' =>
   <?php if ($canSave): ?><div class="adm-row"><button class="adm-btn adm-btn--primary" type="submit"><?= e(__('Speichern')) ?></button></div>
   <?php else: ?><p class="adm-muted"><?= e(__('Ändern darf, wer Einträge veröffentlichen darf.')) ?></p><?php endif; ?>
 </form>
+
+<?php // Netzwerk (Core\Data\Network): Schalter der Eigentümer-Website, Zusatzfelder je Website
+$flags = \Core\Data\Network::flags($key);
+$siteFields = \Core\Data\Network::siteFields($key);
+$types = array_combine(\Core\Data\Network::SITE_TYPES, array_map(fn($ty) => __(\Core\Data\Tables::TYPES[$ty][0]), \Core\Data\Network::SITE_TYPES)); ?>
+<section class="adm-card sh-display net-admin" aria-labelledby="net-h">
+  <h2 class="sh-h" id="net-h"><?= e(__('Netzwerk')) ?></h2>
+  <?php if (Shared::canAdmin($key)): ?>
+  <form method="post" action="<?= e(url($base . '/netzwerk')) ?>">
+    <?= csrf_field() ?>
+    <fieldset class="sh-fieldset"><legend><?= e(__('Schalter für alle beteiligten Websites')) ?></legend>
+    <label class="f-check"><input type="hidden" name="levels" value="0"><input type="checkbox" name="levels" value="1"<?= $flags['levels'] ? ' checked' : '' ?>> <span><?= e(__('Weitergabe je Eintrag: nur diese Website, ausgewählte Websites oder ganzes Netzwerk')) ?></span></label>
+    <p class="adm-muted"><?= e(__('Andere Websites sehen fremde Einträge dann überall nur in der öffentlichen Fassung – auch in Verwaltung, Apps und Visitenkarten. Vorhandene Einträge gelten als „Ganzes Netzwerk“, neue Kontakte als „Nur diese Website“.')) ?></p>
+    <label class="f-check"><input type="hidden" name="site_fields" value="0"><input type="checkbox" name="site_fields" value="1"<?= $flags['site_fields'] ? ' checked' : '' ?>> <span><?= e(__('Zusatzfelder je Website (nur auf der jeweiligen Website sichtbar)')) ?></span></label>
+    </fieldset>
+    <div class="adm-row"><button class="adm-btn" type="submit"><?= e(__('Netzwerk speichern')) ?></button></div>
+  </form>
+  <?php else: ?>
+  <p class="adm-muted"><?= e(__('Weitergabe je Eintrag: {a} · Zusatzfelder je Website: {b} – stellt „{site}“ ein.', ['a' => $flags['levels'] ? __('an') : __('aus'), 'b' => $flags['site_fields'] ? __('an') : __('aus'), 'site' => $ownerName])) ?></p>
+  <?php endif; ?>
+  <?php if ($flags['site_fields'] && can('data.schema')): ?>
+  <form method="post" action="<?= e(url($base . '/zusatzfelder')) ?>" class="net-fields">
+    <?= csrf_field() ?>
+    <h3 class="sh-sub"><?= e(__('Zusatzfelder dieser Website')) ?></h3>
+    <p class="adm-muted"><?= e(__('Eigene Angaben zu jedem Eintrag, auch zu fremden – z. B. „Funktionen“ (Typ Funktionen) für Ämter auf dieser Website. Die anderen Websites sehen sie nicht. Leere Zeilen werden entfernt.')) ?></p>
+    <?php foreach (array_pad($siteFields, count($siteFields) + 2, []) as $i => $sf): ?>
+    <div class="sh-where">
+      <input name="sf[<?= $i ?>][label]" value="<?= e((string) ($sf['label'] ?? '')) ?>" aria-label="<?= e(__('Beschriftung')) ?>" placeholder="<?= e(__('Beschriftung')) ?>">
+      <input type="hidden" name="sf[<?= $i ?>][name]" value="<?= e((string) ($sf['name'] ?? '')) ?>">
+      <select name="sf[<?= $i ?>][type]" aria-label="<?= e(__('Feldtyp')) ?>"><?php foreach ($types as $k => $l): ?><option value="<?= e($k) ?>"<?= ($sf['type'] ?? 'text') === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select>
+      <input name="sf[<?= $i ?>][options]" value="<?= e(implode(', ', (array) ($sf['options'] ?? []))) ?>" aria-label="<?= e(__('Optionen (Auswahl)')) ?>" placeholder="<?= e(__('Optionen, durch Komma getrennt')) ?>">
+    </div>
+    <?php endforeach; ?>
+    <div class="adm-row"><button class="adm-btn" type="submit"><?= e(__('Zusatzfelder speichern')) ?></button></div>
+  </form>
+  <?php endif; ?>
+</section>

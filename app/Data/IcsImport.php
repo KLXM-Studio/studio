@@ -232,6 +232,8 @@ final class IcsImport
         }
         $heads = self::uidIndex($t);
         $db = app()->db;
+        // Kalender-Abo: Herkunft am Termin (Quelle, Veranstalter, Original-Link) – bleibt auch beim Weitergeben im Netzwerk sichtbar
+        if ($src && !$dry) Network::ensureExternal($t);
         $items = [];
         if ($src) foreach ($db->fetchAll('SELECT * FROM ext_source_items WHERE source_id = ?', [(int) $src['id']]) as $r) $items[(string) $r['ext_id']] = $r;
         $seen = [];
@@ -264,6 +266,11 @@ final class IcsImport
                     $warn[] = __('Geänderter Einzeltermin ohne seine Serie – als eigener Termin übernommen.');
                 }
                 $in = self::fields($t, $ev, $warn, $cats);
+                if ($src) {
+                    $org = isset($ev->ORGANIZER) ? self::txt((string) ($ev->ORGANIZER['CN'] ?? ''), 120) : '';
+                    $link = isset($ev->URL) ? trim((string) $ev->URL) : '';
+                    $in[Network::EXTERNAL] = Network::externalValue((string) $src['name'], $org, preg_match('~^https?://~i', $link) ? mb_substr($link, 0, 500) : '');
+                }
                 $row['series'] = $in['wiederholung'] !== '';
                 $in[Series::UID] = $uid;
                 if (!$g['master']) { $in[Series::UID] = $uid . '#' . self::rid($ev); $id = $heads[strtolower($in[Series::UID])] ?? null; $cur = $id ? Entries::find($t, $id) : null; }
@@ -420,7 +427,7 @@ final class IcsImport
             $a = self::norm($f, $cur[$k] ?? null);
             $b = self::norm($f, $v);
             if ($a === $b) continue;
-            $out[] = $f ? (string) $f['label'] : $k;
+            $out[] = $f ? (string) $f['label'] : ($k === Network::EXTERNAL ? __('Herkunft') : $k);
         }
         return array_values(array_unique($out));
     }

@@ -681,6 +681,11 @@ final class DataController extends AdminController
             }
             // Mitglieder: „dem Verband vorschlagen“
             if (!Shared::isOwner($t) && array_key_exists('suggest', $r->post)) $in['_suggest'] = $r->str('suggest') === '1';
+            // Netzwerk (Core\Data\Network): Weitergabe-Stufe – nur mit Recht „Einträge veröffentlichen“
+            if (\Core\Data\Network::levelsOn($t) && can('data.publish', $handle) && $r->str('share_level') !== '') {
+                $in[\Core\Data\Network::COL] = $r->str('share_level');
+                $in[\Core\Data\Network::COL_SITES] = array_map('strval', (array) ($r->post['share_sites'] ?? []));
+            }
         }
         if ($id === null && $r->str('lang') !== '') {
             $in['lang'] = $r->str('lang');
@@ -712,6 +717,10 @@ final class DataController extends AdminController
             app()->session->flash('error', 'Bitte prüfen Sie die markierten Felder – es wurde nichts gespeichert.');
             $e = $id !== null ? Entries::find($t, (int) $id) : null;
             return $this->view('data/entry', ['t' => $t, 'e' => $e, 'values' => $in + ($e ?? []), 'errors' => $errors, 'occ' => $occ], 422);
+        }
+        // Netzwerk: Zusatzangaben dieser Website (share_extra)
+        if (!empty($t['site_fields']) && is_array($r->post['x'] ?? null) && ($xe = \Core\Data\Network::saveExtras($t, (int) $newId, (array) $r->post['x']))) {
+            app()->session->flash('error', __('Zusatzangaben: {msg}', ['msg' => implode(' ', array_map('strval', $xe))]));
         }
         $this->changed();
         $to = $r->str('then') === 'new' ? "/admin/data/$handle/new" : ($r->str('then') === 'list' ? "/admin/data/$handle" : "/admin/data/$handle/$newId");
@@ -957,7 +966,8 @@ final class DataController extends AdminController
             // Eigentümer: automatische Übernahme nach Regeln (für alle Websites der Tabelle gespeichert)
             Shared::update($key, ['auto' => ['enabled' => $r->str('auto_enabled') === '1', 'sites' => (array) ($r->post['auto_sites'] ?? []),
                 'where' => self::whereRows($r->post['auto_where'] ?? [])]]);
-            Shared::saveLocal($key, ['link_origin' => false, 'canonical' => $r->str('canonical') === 'self' ? 'self' : 'origin']);
+            Shared::saveLocal($key, ['link_origin' => false, 'canonical' => $r->str('canonical') === 'self' ? 'self' : 'origin',
+                'except' => Shared::cleanWhere($t, self::whereRows($r->post['except'] ?? []))]);
         } else {
             $members = in_array($r->str('members'), ['off', 'all', 'selected'], true) ? $r->str('members') : 'off';
             Shared::saveLocal($key, [
@@ -966,10 +976,44 @@ final class DataController extends AdminController
                 'where' => Shared::cleanWhere($t, self::whereRows($r->post['where'] ?? [])),
                 'link_origin' => $r->str('link_origin') === '1',
                 'canonical' => $r->str('canonical') === 'self' ? 'self' : 'origin',
+                'except' => Shared::cleanWhere($t, self::whereRows($r->post['except'] ?? [])),
             ]);
         }
         $this->changed();
         return $this->back("/admin/data/$handle/display", 'success', __('Anzeige gespeichert.'));
+    }
+
+    /** Netzwerk: Schalter der geteilten Tabelle (nur Eigentümer-Website bzw. Integrator) */
+    public function networkSave(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        $t = $this->sharedTable($r, $handle);
+        if (!Shared::canAdmin($t['shared']['key'])) throw new HttpException(403, __('Die Netzwerk-Schalter stellt die Website ein, der die Tabelle gehört.'));
+        $log = \Core\Data\Network::setFlags($t['shared']['key'], ['levels' => $r->str('levels') === '1', 'site_fields' => $r->str('site_fields') === '1']);
+        $this->changed();
+        return $this->back("/admin/data/$handle/display", 'success', $log ? implode(' · ', $log) : __('Gespeichert.'));
+    }
+
+    /** Netzwerk: Zusatzfelder dieser Website (Recht „Tabellen und Felder ändern“) */
+    public function siteFieldsSave(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        $t = $this->sharedTable($r, $handle);
+        if (!can('data.schema')) throw new HttpException(403, __('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'));
+        $rows = array_map(fn($x) => is_array($x) ? ['options' => preg_split('~\s*,\s*~', trim((string) ($x['options'] ?? '')), -1, PREG_SPLIT_NO_EMPTY)] + $x : $x, (array) ($r->post['sf'] ?? []));
+        [, $errors] = \Core\Data\Network::saveSiteFields($t, $rows);
+        $this->changed();
+        return $this->back("/admin/data/$handle/display", $errors ? 'error' : 'success', $errors ? implode(' ', $errors) : __('Zusatzfelder gespeichert.'));
+    }
+
+    /** Netzwerk: Zusatzangaben dieser Website zu einem (auch fremden) Eintrag speichern (Core\Data\Network::saveExtras) */
+    public function extraSave(Request $r, string $handle, string $id): Response
+    {
+        $this->auth($r);
+        $t = $this->sharedTable($r, $handle);
+        $errors = \Core\Data\Network::saveExtras($t, (int) $id, (array) ($r->post['x'] ?? []));
+        $this->changed();
+        return $this->back("/admin/data/$handle/$id", $errors ? 'error' : 'success', $errors ? implode(' ', array_map('strval', $errors)) : __('Zusatzangaben gespeichert.'));
     }
 
     /** Filterzeilen aus dem Formular: where[i][field|op|value] → [[feld, op, wert], …] */

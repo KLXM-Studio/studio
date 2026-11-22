@@ -7,7 +7,9 @@ namespace Core\Blocks;
 
 use Core\Data\Entries;
 use Core\Data\Exposure;
+use Core\Data\Nearby;
 use Core\Data\Roles;
+use Core\Data\Shared;
 use Core\Data\Tables;
 use Core\Fields;
 
@@ -45,7 +47,10 @@ final class PeopleSource
             $rows = array_map(fn(array $e) => Exposure::publicEntry($t, $e), self::filtered($t, $d, $withFormer));
             [$cur, $former] = Roles::arrange($t, $rows, $ctx, (string) ($d['sort_field'] ?? '') === '', $withFormer);
             $limit = max(0, min(200, (int) ($d['limit'] ?? 0)));
-            if ($limit && Roles::has($t)) $cur = array_slice($cur, 0, $limit);
+            // „In deiner Nähe“ (Core\Data\Nearby): zuständige Personen (Gebiet, Funktion mit Verknüpfung, Website) zuerst, dann im Umkreis
+            $loc = Nearby::forBlock($d);
+            if (Nearby::found($loc)) { $cur = Nearby::arrange($t, $cur, $loc, $d); $former = []; }
+            if ($limit && (Roles::has($t) || Nearby::found($loc))) $cur = array_slice($cur, 0, $limit);
             return [...array_map(fn(array $e) => ['i' => null, 'entry' => $e, 'item' => [], 'former' => false], $cur),
                 ...array_map(fn(array $e) => ['i' => null, 'entry' => $e, 'item' => [], 'former' => true], $former)];
         }
@@ -80,13 +85,14 @@ final class PeopleSource
     public static function filtered(array $t, array $d, bool $former = false): array
     {
         $pfx = $t['handle'] . '.';
-        $o = ['status' => 'published'];
+        // Geteilte Adressbücher (Netzwerk): Quelle des Blocks (eigene, Verband, bestimmte Websites …)
+        $o = ['status' => 'published'] + Shared::blockQuery($d, 'shared_source');
         $sf = (string) ($d['sort_field'] ?? '');
         if (str_starts_with($sf, $pfx)) $o['sort'] = substr($sf, strlen($pfx));
         if (in_array($d['sort_dir'] ?? '', ['asc', 'desc'], true)) $o['dir'] = (string) $d['sort_dir'];
         $limit = max(0, min(200, (int) ($d['limit'] ?? 0)));
         // Funktionen: Anzahl erst nach dem Ordnen (beendete fallen weg, Reihenfolge der Funktion) – rows() begrenzt
-        if ($limit && !Roles::has($t)) $o['limit'] = $limit;
+        if ($limit && !Roles::has($t) && !Nearby::found(Nearby::forBlock($d))) $o['limit'] = $limit;
 
         $ff = (string) ($d['filter_field'] ?? '');
         $field = str_starts_with($ff, $pfx) ? Tables::field($t, substr($ff, strlen($pfx))) : null;
@@ -104,10 +110,10 @@ final class PeopleSource
             $ids = [];
             foreach ($values as $v) {
                 [$op, $v] = self::condition($field, $v);
-                foreach (Entries::query($t, ['status' => 'published', 'where' => [[$field['name'], $op, $v]]]) as $e) $ids[(int) $e['id']] = true;
+                foreach (Entries::query($t, ['status' => 'published', 'where' => [[$field['name'], $op, $v]]] + Shared::blockQuery($d, 'shared_source')) as $e) $ids[(int) $e['id']] = true;
                 // Liste als Wert: auch Personen mit einer (beendeten) Funktion in dieser Liste – für „Ehemalige“
                 if ($former && $rf && in_array($field['name'], ['listen', $rf['name']], true) && ($k = Roles::listKey($t, $v)) !== null) {
-                    foreach (Entries::query($t, ['status' => 'published', 'where' => [[$rf['name'], '=', $k]]]) as $e) $ids[(int) $e['id']] = true;
+                    foreach (Entries::query($t, ['status' => 'published', 'where' => [[$rf['name'], '=', $k]]] + Shared::blockQuery($d, 'shared_source')) as $e) $ids[(int) $e['id']] = true;
                 }
             }
             if (!$ids) return [];

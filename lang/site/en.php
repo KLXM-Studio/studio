@@ -487,4 +487,12 @@ return [
     'Unterkapitel von {title}' => 'Subchapters of {title}',
     'in {title}' => 'in {title}',
     '{n} weitere' => '{n} more',
+    'Alle zeigen' => 'Show all',
+    'In deiner Nähe – PLZ oder Ort' => 'Near you – postcode or place',
+    'In der Nähe von {ort} gibt es keine Einträge.' => 'There are no entries near {ort}.',
+    'In der Nähe von {ort}: {n}' => 'Near {ort}: {n}',
+    'Quelle: {name}' => 'Source: {name}',
+    'Veranstalter: {name}' => 'Organiser: {name}',
+    'Zum Original' => 'Original',
+    '„{ort}“ wurde nicht gefunden – es werden alle Einträge gezeigt.' => '“{ort}” was not found – showing all entries.',
 ];

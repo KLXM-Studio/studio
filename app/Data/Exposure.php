@@ -203,6 +203,8 @@ final class Exposure
     /** Eintrag für die Apps der Redaktion (CardDAV/CalDAV): Felder, die nicht an diese Art App gehen, sind null */
     public static function forApps(array $t, array $e, string $app = 'vcard'): array
     {
+        // Netzwerk mit Weitergabe-Stufen (Core\Data\Network): fremde Einträge auch in den Apps dieser Website nur öffentlich
+        if (Network::levelsOn($t) && Shared::isForeign($t, $e)) $e = self::publicEntry($t, $e, $app === 'ics' ? 'ics' : 'vcard');
         foreach ((array) ($t['fields'] ?? []) as $f) if (!self::forApp($f, $app) && array_key_exists($f['name'], $e)) $e[$f['name']] = null;
         return self::perEntry($t) ? Roles::refresh($t, $e) : $e;   // Hauptfunktion frisch (vCard TITLE)
     }

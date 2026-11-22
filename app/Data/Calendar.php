@@ -319,6 +319,7 @@ final class Calendar
         if (!empty($opts['ids'])) $q['ids'] = $opts['ids'];
         if (!empty($opts['q'])) $q['q'] = (string) $opts['q'];
         if (!empty($opts['source'])) $q['source'] = (string) $opts['source'];   // geteilte Tabellen (Core\Data\Shared)
+        if (!empty($opts['source_sites'])) $q['source_sites'] = (array) $opts['source_sites'];   // Quelle „bestimmte Websites“
         if (!empty($opts['internal'])) $q['internal'] = true;
         $series = Kinds::isCalendar($table);
         $replaced = [];                                           // Serienkopf → [ursprünglicher Beginn => true]

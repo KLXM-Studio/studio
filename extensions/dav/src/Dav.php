@@ -315,7 +315,9 @@ final class Dav
         $a = Tables::db($table)->fetch("SELECT COUNT(*) AS n, MAX(updated_at) AS u, SUM(id) AS s FROM {$table['table']}");
         // Geteilte Tabellen: auch die Auswahl der Website (ausgeblendet/hervorgehoben) und die eigenen Anzeige-Einstellungen
         if (Tables::isShared($table)) $a['picks'] = [Tables::db($table)->fetchValue('SELECT MAX(pick_at) || COUNT(*) FROM share_picks WHERE pick_site = ?', [site()->key]),
-            \Core\Data\Shared::localConfig($table['shared']['key']), \Core\Data\Shared::meta($table['shared']['key'])['members'] ?? []];
+            \Core\Data\Shared::localConfig($table['shared']['key']), \Core\Data\Shared::meta($table['shared']['key'])['members'] ?? [],
+            // Netzwerk: Zusatzangaben dieser Website (z. B. Funktionen je Website → TITLE) – Core ab Stufe „Netzwerk“
+            \Core\Data\Network::extrasStamp($table)];
         $b = app()->db->fetch('SELECT COUNT(*) AS n, MAX(updated_at) AS u, SUM(hidden) AS h FROM dav_objects WHERE kind = ? AND table_handle = ?', [$kind, $table['handle']]);
         return md5(json_encode([$a, $b, $table['updated_at'] ?? '', self::tableSettings($table)]));
     }

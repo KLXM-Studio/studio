@@ -146,6 +146,9 @@ final class SystemSchema
                     'help' => __('Manche Praxen oder Behörden verlangen das auch ohne Drittanbieter. Spart außerdem Daten (MapLibre ≈ 800 KB).')],
                 ['name' => 'sys.map_radius', 'label' => __('Kartengebiet je Ort (km)'), 'type' => 'number', 'default' => 25, 'width' => 'half',
                     'help' => __('Detailkacheln liefert der Server nur in diesem Umkreis um Orte, die auf der Website als Karte vorkommen – so taugt er nicht als kostenloser Kachelserver für andere.')],
+                // „In deiner Nähe“ (Core\Data\Nearby): Orte ohne Treffer in Erweiterungen (z. B. Gebietskarten) online suchen – Standard aus
+                ['name' => 'sys.nearby_geocode', 'label' => __('„In deiner Nähe“: PLZ und Orte online suchen'), 'type' => 'bool', 'default' => false,
+                    'help' => __('Schickt die Eingabe der Besucher (PLZ oder Ort, ohne weitere Angaben) an OpenStreetMap Nominatim, wenn sie nicht schon über die eigenen Daten bzw. Gebietskarten gefunden wird. Ergebnisse werden 30 Tage zwischengespeichert. Standard: aus.')],
                 // Termin-Aktionen (Core\Data\EventActions): reine Links zu Kalender-Diensten – Standard aus, Blöcke können abweichen
                 ['type' => 'heading', 'label' => __('Termine: Links zu Kalender-Diensten'),
                     'lead' => __('„In den Kalender“ und „Abonnieren“ auf Termin-Detailseiten kommen immer vom eigenen Server. Zusätzlich lassen sich reine Links zu Google Kalender und Outlook.com zeigen: ohne Skript und ohne Kontakt beim Laden der Seite – erst beim Klick öffnet sich die Seite des Anbieters, der dann Titel, Zeit, Ort und Beschreibung des Termins erhält.')],

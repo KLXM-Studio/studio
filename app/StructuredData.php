@@ -143,6 +143,12 @@ final class StructuredData
         if (($c['description'] ?? '') !== '' && ($t = trim(Entries::text($table, $e, $c['description']))) !== '') $n['description'] = mb_strimwidth($t, 0, 300, '…');
         if ($u = Entries::absUrl($table, $e)) $n['url'] = $u;
         if ($img = self::image($table, $e)) $n['image'] = $img;
+        // Netzwerk: Herkunft fremder Termine; Termine aus Abos (Kooperationen) nie als eigene – Veranstalter und Original der Quelle
+        if ($foreign && !empty($n['organizer']['name'])) $n['sourceOrganization'] = $n['organizer'];
+        if ($x = Data\Network::external($e)) {
+            $n['organizer'] = ['@type' => 'Organization', 'name' => $x['organizer'] !== '' ? $x['organizer'] : $x['source']];
+            if ($x['url'] !== '') $n['sameAs'] = $x['url'];
+        }
         return $n;
     }
 
@@ -369,6 +375,8 @@ final class StructuredData
                 if ($v = $find(['url'])) $n['sameAs'] = $v;
                 break;
         }
+        // Geteilte Tabellen: fremde Einträge tragen ihre Herkunft (wie Glossar und Wissen; Canonical über Entries::absUrl)
+        if (Data\Shared::isForeign($table, $e) && !empty($org['name'])) $n['sourceOrganization'] = $org;
         return $n;
     }
 

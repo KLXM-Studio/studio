@@ -35,7 +35,8 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
   <?= csrf_field() ?>
   <section class="adm-card dt-entry__main">
     <?= /* Sichtbarkeit: „Auf der Website: …“ bzw. „nicht auf der Website“ (Core\Data\Exposure) */ \Core\Theme::capture(__DIR__ . '/_visibility.php', ['t' => $t, 'values' => $values, 'status' => (string) $status]) ?>
-    <div class="adm-fields"><?= Fields::renderForm(Entries::formSchema($t), $values, $errors, 'f') ?></div>
+    <div class="adm-fields"><?= Fields::renderForm(Entries::formSchema($t, $values), $values, $errors, 'f') ?></div>
+    <?= /* Netzwerk: Zusatzfelder dieser Website (Core\Data\Network) */ \Core\Theme::capture(__DIR__ . '/_network.php', ['t' => $t, 'e' => $e, 'values' => $values, 'part' => 'extra', 'action' => null]) ?>
   </section>
   <aside class="dt-entry__side">
     <section class="adm-card">
@@ -85,6 +86,7 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
         }) ?></p>
         <?php endif; ?>
       </div>
+      <?= /* Netzwerk: Weitergabe-Stufe (Core\Data\Network) */ \Core\Theme::capture(__DIR__ . '/_network.php', ['t' => $t, 'e' => $e, 'values' => $values, 'part' => 'level', 'action' => null]) ?>
       <?php endif; ?>
       <div class="f"><label for="slug">Adresse</label>
         <div class="adm-prefix"><span>/<?= e($t['settings']['route'] ?: '…') ?>/</span><input id="slug" name="slug" value="<?= e($values['slug'] ?? '') ?>" placeholder="aus dem Titel"></div>

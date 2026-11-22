@@ -34,6 +34,7 @@ final class Filters
         'rowmenu.actions' => ['list<array{label: string, href: string, icon?: string}> weitere Punkte im Zeilenmenü', 'kind (entry), table, id', 'Zeilenmenü der Verwaltung (Core\\RowMenu) um eigene Aktionen ergänzen – stehen vor „Löschen“; nur Pfade dieser Installation (/…), Rechte prüft die Ziel-Route.'],
         'list_templates' => ['array<string, array{name, options, tables?, requires?, default?, block?}> Listen-Vorlagen (nur lesbar, Schlüssel im Block ext:{name})', 'table, block (Blocktyp, z. B. data_list)', 'Vorlagen für Listenblöcke vordefinieren (Core\\Blocks\\ListTemplates) – wie theme.php → list_templates.'],
         'data_list.query' => ['array $options für Entries::query (where, order, limit, q …)', 'table, block (Daten des Blocks)', 'Abfrage des Blocks „Datenliste“ ändern (z. B. zusätzliche Bedingung).'],
+        'data.nearby' => ['array{point: ?array{lat, lng}, label: string, regions: list<string "tabelle:id">, sites: list<string>}', 'q (Eingabe: PLZ oder Ort), point (nach der Geokodierung)', '„In deiner Nähe“ (Core\\Data\\Nearby): Ort der Besucher-Eingabe auflösen – Kartenpunkt, zuständige Gebiete als Einträge und zuständige Websites (z. B. Gebietskarten).'],
     ];
 
     /** Ist der Name erlaubt? Bekannte Filter des Cores oder eigene einer Erweiterung (ext:{name}.…) */

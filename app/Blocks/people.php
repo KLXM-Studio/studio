@@ -28,7 +28,8 @@ if ($t) {
         $people[] = ['former' => !empty($row['former']), 'i' => $i, 'name' => Entries::title($t, $e), 'role' => $role, 'note' => trim((string) ($it['note'] ?? '')),
             'image' => (int) ($it['image'] ?? 0) ?: ($img !== '' ? (int) ($e[$img] ?? 0) : 0),
             'email' => (string) (StructuredData::field($t, $e, ['email']) ?? ''), 'tel' => (string) (StructuredData::field($t, $e, ['tel']) ?? ''),
-            'href' => !empty($d['link_detail']) ? Entries::href($t, $e) : null, 'vcard' => !empty($d['vcard']) ? vcard_entry_url($t, $e) : null];
+            'href' => !empty($d['link_detail']) ? Entries::href($t, $e) : null, 'vcard' => !empty($d['vcard']) ? vcard_entry_url($t, $e) : null,
+            'origin' => \Core\Data\Network::originNote($t, $e)];   // Netzwerk: Herkunft fremder Kontakte („von …“)
     }
 }
 $initials = function (string $name): string {
@@ -46,6 +47,7 @@ $ratio = $layout === 'list' ? '1:1' : '3:4';
     <?php if (!empty($d['intro'])): ?><p class="cms-people__intro"<?= $b->edit('intro') ?>><?= emphasis((string) $d['intro']) ?></p><?php endif; ?>
   </header>
   <?php endif; ?>
+  <?= $byFilter && !empty($d['nearby']) ? \Core\Data\Nearby::form($d, \Core\Data\Nearby::forBlock($d), count($people)) : '' ?>
   <?php if ($people):
     $groups = array_filter([array_values(array_filter($people, fn($p) => !$p['former'])), array_values(array_filter($people, fn($p) => $p['former']))]);
     foreach ($groups as $gi => $list): ?>
@@ -60,6 +62,7 @@ $ratio = $layout === 'list' ? '1:1' : '3:4';
       <div class="cms-person__body">
         <<?= $tag ?> class="cms-person__name"><?= $p['href'] ? '<a href="' . e($p['href']) . '">' . e($p['name']) . '</a>' : e($p['name']) ?></<?= $tag ?>>
         <?php if ($p['role'] !== ''): ?><p class="cms-person__role"<?= $p['i'] !== null ? $b->edit('items.' . $p['i'] . '.role') : '' ?>><?= e($p['role']) ?></p><?php endif; ?>
+        <?= $p['origin'] ?>
         <?php if ($p['note'] !== ''): ?><p class="cms-person__note"<?= $p['i'] !== null ? $b->edit('items.' . $p['i'] . '.note') : '' ?>><?= e($p['note']) ?></p><?php endif; ?>
         <?php if ((!empty($d['contact']) && ($p['email'] !== '' || $p['tel'] !== '')) || $p['vcard']): ?>
         <ul class="cms-person__actions" role="list">

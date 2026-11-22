@@ -54,6 +54,11 @@ final class Tables
         'geo' => ['Ort (Karte)', 'string', 'map-pin'],
         'relation' => ['Verknüpfung (ein Eintrag)', 'integer', 'tree-structure'],
         'relations' => ['Verknüpfung (mehrere)', 'pivot', 'share-network'],
+        // Vorauswahl mit Zielart: Kontakt(e) aus einem Adressbuch – gespeichert als relation/relations mit target_kind = contacts
+        'contact' => ['Kontakt (aus einem Adressbuch)', 'integer', 'address-book'],
+        'contacts' => ['Kontakte (aus einem Adressbuch)', 'pivot', 'address-book'],
+        // Termin eines Kalenders – ganze Serie oder ein Vorkommen („{id}@JJJJMMTTTHHMM“, Core\Data\EventRef)
+        'event' => ['Termin (aus einem Kalender)', 'string', 'calendar-check'],
         'recurrence' => ['Wiederholung', 'text', 'repeat'],
         'iban' => ['IBAN (Bankverbindung)', 'string', 'bank'],
         // Wiederholbare Gruppe: Liste gleichartiger Einträge (z. B. mehrere Medikamente) – JSON-Array von Objekten
@@ -145,6 +150,8 @@ final class Tables
             'members_see_members' => (bool) $meta['members_see_members'], 'row_id' => (int) $row['id'], 'label' => (string) $meta['label']];
         $t['id'] = Shared::tableId($key);
         $t['settings']['detail_page_id'] = Shared::localConfig($key)['detail_page_id'];
+        // Netzwerk (Core\Data\Network): Zusatzfelder dieser Website (nicht in fields – keine Spalten, Werte in share_extra)
+        if ($sf = Network::siteFields($key)) $t['site_fields'] = $sf;
         return $t;
     }
 
@@ -385,6 +392,12 @@ final class Tables
             if ($label === '' && trim((string) ($f['name'] ?? '')) === '') continue;
             $fname = self::normName((string) ($f['name'] ?? '') ?: $label);
             $type = (string) ($f['type'] ?? 'text');
+            // Vorauswahl „Kontakt“/„Kontakte“: Verknüpfung auf ein Adressbuch (Tabellenart contacts) – Ziel ohne Angabe: das erste Adressbuch
+            if (in_array($type, ['contact', 'contacts'], true)) {
+                $f['target_kind'] = Kinds::CONTACTS;
+                if (trim((string) ($f['target'] ?? '')) === '') foreach (self::content() as $ct) if (Kinds::isContacts($ct)) { $f['target'] = $ct['handle']; break; }
+                $type = $type === 'contact' ? 'relation' : 'relations';
+            }
             if (!isset(self::TYPES[$type])) $type = 'text';
             if ($inbox && !in_array($type, [...DataForms::TYPES, 'file', ...self::LAYOUT], true)) {
                 $errors["fields.$i"] = "Feld „{$label}“: Der Feldtyp „" . self::TYPES[$type][0] . '“ ist in Eingangs-Tabellen nicht möglich (keine Bilder, Verknüpfungen, Karten oder formatierten Texte; Dateien nur bei Zustellung per E-Mail).';
@@ -458,6 +471,18 @@ final class Tables
                 elseif ($sharedOwner !== null && $target !== $handle && ((self::findContent($target)['shared']['owner'] ?? null) !== $sharedOwner)) {
                     $errors["fields.$i"] = __('Feld „{label}“: Geteilte Tabellen können nur mit geteilten Tabellen derselben Website verknüpft werden.', ['label' => $label]);
                 }
+                $def['target'] = $target;
+                // Zielart (Vorauswahl „Kontakt“): nur Adressbücher
+                if (($f['target_kind'] ?? '') === Kinds::CONTACTS) {
+                    $def['target_kind'] = Kinds::CONTACTS;
+                    if ($target !== '' && ($tt = self::findContent($target)) && !Kinds::isContacts($tt)) $errors["fields.$i"] = __('Feld „{label}“: Bitte ein Adressbuch wählen.', ['label' => $label]);
+                }
+            }
+            // Termin (Core\Data\EventRef): Ziel ist ein Kalender
+            if ($type === EventRef::TYPE) {
+                $target = (string) ($f['target'] ?? '');
+                if ($target === '') foreach (self::content() as $ct) if (Calendar::enabled($ct)) { $target = $ct['handle']; break; }
+                if (!($tt = self::findContent($target)) || !Calendar::enabled($tt)) $errors["fields.$i"] = __('Feld „{label}“: Bitte einen Kalender wählen.', ['label' => $label]);
                 $def['target'] = $target;
             }
             // Datei: erlaubte Dateitypen (DataForms::FILE_KINDS; DOCX/ODT nur im Eingang) und eigene Höchstgröße (0 = Grenze der Tabelle)
@@ -845,6 +870,13 @@ final class Tables
             $t->addColumn(Series::UID, 'string', ['length' => 255, 'notnull' => false]);
             $t->addIndex([Series::SERIES], $name . '_series');
         }
+        // Netzwerk (Core\Data\Network): Weitergabe-Stufe je Eintrag (Schalter der geteilten Tabelle) – bleibt, wenn einmal da; Herkunft aus
+        // Kalender-Abos (_external, angelegt beim ersten Abgleich) – bleibt, wenn einmal da
+        if (isset($table['shared']) && (Network::levelsOn($table) || in_array(Network::COL, $cols, true))) {
+            $t->addColumn(Network::COL, 'string', ['length' => 12, 'notnull' => false]);
+            $t->addColumn(Network::COL_SITES, 'text', ['notnull' => false]);
+        }
+        if (in_array(Network::EXTERNAL, $cols, true)) $t->addColumn(Network::EXTERNAL, 'text', ['notnull' => false]);
         // Adressbücher (Art contacts, Core\Data\VCards): UID aus Apps/Import und unbekannte vCard-Eigenschaften – bleiben, wenn einmal da
         if (Kinds::isContacts($table) || in_array(VCards::EXTRA, $cols, true)) {
             if (!Kinds::isCalendar($table) && !in_array(Series::SERIES, $cols, true)) $t->addColumn(VCards::UID, 'string', ['length' => 255, 'notnull' => false]);
