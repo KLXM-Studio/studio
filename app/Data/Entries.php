@@ -31,6 +31,7 @@ final class Entries
      *     sort (Feld), dir (asc|desc), limit, offset, ids (nur diese IDs)
      * Geteilte Tabellen (Core\Data\Shared) zusätzlich: source (site = wie für die Website eingestellt [Standard], own, owner,
      *     members, own_owner, all, featured), suggested (true | 'pending'), pick (Auswahl dieser Website), origin (Website), featured_first
+     * „Auf der Startseite hervorheben“ (Core\Data\Featured): featured ('date' | 'order') – nur gerade hervorgehobene, so sortiert
      */
     public static function query(array $table, array $o = []): array
     {
@@ -63,6 +64,8 @@ final class Entries
             $order = "$sort $dir, id $dir";
         }
         if (Tables::isShared($table) && !empty($o['featured_first'])) $order = "CASE WHEN _pick = 'featured' THEN 0 ELSE 1 END, " . $order;
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): Reihenfolge bzw. neueste zuerst
+        if (!empty($o['featured'])) $order = Featured::orderSql((string) $o['featured']);
         $sql = 'SELECT ' . self::select($table, $pre) . " FROM {$table['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . " ORDER BY $order";
         if (!empty($o['limit'])) {
             $sql .= ' LIMIT ' . max(1, (int) $o['limit']) . ' OFFSET ' . max(0, (int) ($o['offset'] ?? 0));
@@ -227,6 +230,8 @@ final class Entries
             $where[] = '(' . implode(' OR ', $or) . ')';
         }
         array_push($where, ...self::conditions($table, (array) ($o['where'] ?? []), $params));
+        // Nur gerade hervorgehobene Einträge (Core\Data\Featured, Option 'featured' => 'date'|'order'; „bis“-Datum einschließlich)
+        if (!empty($o['featured'])) $where[] = Featured::sql($params);
         // Stellenangebote (Core\Data\Jobs): abgelaufene („Gültig bis“ vor heute) erscheinen auf der Website nicht – in Listen, Sitemap,
         // Suche und API; Ausnahmen: Verwaltung, Abfragen nach IDs, ausdrücklich 'expired' => true
         if ($status === 'published' && empty($o['expired']) && empty($o['ids']) && Jobs::is($table) && !(app()->request?->isAdminPath() ?? false)
@@ -668,6 +673,13 @@ final class Entries
             $row['online_from'] = $from;
             $row['online_until'] = $until;
             $scheduled = true;
+        }
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): nur, wenn das Formular die Angaben mitschickt – sonst bleibt der Stand
+        if (array_key_exists(Featured::COL, $in) && Featured::enabled($table)) {
+            [$fv, $fErr] = Featured::input($in);
+            if ($fErr) return [null, $fErr];
+            Featured::ensure($table);
+            $row += $fv;
         }
         if (\Core\Schedule::pending($row + ($current ?? []))) $status = 'draft';
         $row['status'] = $status;

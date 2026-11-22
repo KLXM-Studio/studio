@@ -142,7 +142,11 @@ if ($know && empty($d['sort_field']) && !$az) {
     $kpos = array_flip($ktree['order']);
     usort($rows, fn($x, $y) => ($kpos[(int) $x['id']] ?? PHP_INT_MAX) <=> ($kpos[(int) $y['id']] ?? PHP_INT_MAX));
 }
-$knum = fn(array $e) => $kcfg && $kcfg['numbers'] && ($n = (string) ($ktree['nodes'][(int) $e['id']]['number'] ?? '')) !== '' ? '<span class="dl-knum">' . e($n) . '</span> ' : '';
+// Kapitelnummer: „automatisch“ nur in der Darstellung „Kapitel“ bzw. auf der Übersichtsseite des Wissensbereichs – sonst
+// (Startseite „Im Fokus“) wäre die Zahl ohne Zusammenhang
+$knumMode = in_array($d['chapter_numbers'] ?? 'auto', ['auto', 'on', 'off'], true) ? ($d['chapter_numbers'] ?? 'auto') : 'auto';
+$knumOn = $knumMode === 'on' || ($knumMode === 'auto' && $know && ($layout === 'chapters' || \Core\Data\Knowledge::onOverview($t)));
+$knum = fn(array $e) => $knumOn && $kcfg && $kcfg['numbers'] && ($n = (string) ($ktree['nodes'][(int) $e['id']]['number'] ?? '')) !== '' ? '<span class="dl-knum">' . e($n) . '</span> ' : '';
 // Suche: Trefferauszug je Eintrag, passende Glossarbegriffe als eigene Gruppe (websiteweites Glossar)
 $excerpt = fn(array $e) => $vq !== '' && !empty($d['search_excerpt']) ? \Core\Data\Knowledge::excerpt($t, $e, $vq) : '';
 $glossHits = $vq !== '' && !empty($d['search_glossary']) ? \Core\Data\Knowledge::glossaryHits($vq) : [];

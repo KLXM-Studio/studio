@@ -565,6 +565,12 @@ final class Tables
             'form' => DataForms::validateSettings((array) ($s['form'] ?? []), $all, $errors, $existing['settings']['form'] ?? null, $formUploads, $formKnown),
         ];
         $settings['kind'] = $kind;
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): nur gespeichert, wenn gesetzt oder schon da (Bestand bleibt byte-gleich)
+        if (array_key_exists('featured', $s)) {
+            if (!empty($s['featured']) || !empty($existing['settings']['featured'])) $settings['featured'] = !empty($s['featured']);
+        } elseif (!empty($existing['settings']['featured'])) {
+            $settings['featured'] = true;
+        }
         // Kalender (Art calendar): Zuordnung fest aufs Grundschema (Core\Data\Kinds::CALENDAR_MAP), Fehler der freien Zuordnung entfallen
         if ($kind === Kinds::CALENDAR) {
             $settings['calendar'] = Kinds::calendarSettings($settings['calendar']);
@@ -575,7 +581,9 @@ final class Tables
         // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
         // Einträge im Menü unter der Übersichtsseite (Core\Data\MenuEntries) – nur gespeichert, wenn gesetzt (Bestand bleibt unverändert)
         if (isset($s['menu_entries']) || isset($existing['settings']['menu_entries'])) $settings['menu_entries'] = MenuEntries::validate((array) ($s['menu_entries'] ?? $existing['settings']['menu_entries']));
-        if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? [])));
+        // Stil der mitgelieferten Vorlagen (style) bleibt, auch wenn das Formular ihn nicht mitschickt
+        if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? []))
+            + array_intersect_key((array) ($existing['settings']['knowledge'] ?? []), ['style' => 1]));
         $conv = $in['_convert'] ?? ($s['convert'] ?? ($existing['settings']['convert'] ?? null));
         if (is_array($conv) && $conv) $settings['convert'] = $conv;
         // Website-Suche je Tabelle (Core\Search\TableSearch) – ohne Formularabschnitt bleibt die bisherige Einstellung
@@ -805,6 +813,9 @@ final class Tables
         if (!empty($table['settings']['detail_page_id'])) {
             app()->db->query("DELETE FROM pages WHERE id = ? AND type = 'template'", [(int) $table['settings']['detail_page_id']]);
         }
+        // weitere Detailseiten-Vorlagen und ihre Zuordnung (Core\Data\DetailTemplates) – nicht bei geteilten Tabellen (Vorlagen gehören der Website)
+        if (!isset($table['shared'])) app()->db->query("DELETE FROM pages WHERE type = 'template' AND template_for = ?", [$table['handle']]);
+        app()->settings->delete(DetailTemplates::SETTING . $table['handle']);
         self::$cache = [];
         Occurrences::drop($table);
         PageCache::clear();
@@ -877,6 +888,12 @@ final class Tables
             $t->addColumn(Network::COL_SITES, 'text', ['notnull' => false]);
         }
         if (in_array(Network::EXTERNAL, $cols, true)) $t->addColumn(Network::EXTERNAL, 'text', ['notnull' => false]);
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): Schalter, Reihenfolge, „bis“ – bleiben, wenn einmal da
+        if (!empty($table['settings']['featured']) || Featured::hasColumns($cols)) {
+            $t->addColumn(Featured::COL, 'integer', ['default' => 0]);
+            $t->addColumn(Featured::ORDER, 'integer', ['notnull' => false]);
+            $t->addColumn(Featured::UNTIL, 'string', ['length' => 10, 'notnull' => false]);
+        }
         // Adressbücher (Art contacts, Core\Data\VCards): UID aus Apps/Import und unbekannte vCard-Eigenschaften – bleiben, wenn einmal da
         if (Kinds::isContacts($table) || in_array(VCards::EXTRA, $cols, true)) {
             if (!Kinds::isCalendar($table) && !in_array(Series::SERIES, $cols, true)) $t->addColumn(VCards::UID, 'string', ['length' => 255, 'notnull' => false]);

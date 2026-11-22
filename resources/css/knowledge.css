@@ -54,6 +54,10 @@ a.kn-nav__link:hover{background:var(--kn-soft)}
 .kn-main:focus{outline:none}
 .kn .kn-content > section{padding-block:0 clamp(1rem,2.5vw,1.75rem)}
 .kn .kn-content .wrap{max-width:none;margin-inline:0;padding-inline:0}
+/* Abschnitte mit Hintergrund (bg-muted, bg-tint, bg-accent …; bg-white = ohne) in der Kapitelspalte als Karte: Innenabstand und Radius
+   wie die Karten des Kits, keine Ausdehnung über die Spalte – sonst klebt der Text an der Kante der Fläche */
+.kn .kn-content > section[class*="bg-"]:not(.bg-white){padding:clamp(1.25rem,3vw,2rem);border-radius:var(--kit-radius,var(--f-radius,12px));margin-block-end:clamp(1rem,2.5vw,1.75rem)}
+.kn .kn-content > section[class*="bg-"]:not(.bg-white) .wrap{padding-inline:0}
 .kn-crumbs ol{display:flex;flex-wrap:wrap;gap:.25rem .5rem;margin:0 0 1rem;padding:0;list-style:none;font-size:.88rem;color:var(--kn-muted)}
 .kn-crumbs li+li::before{content:"›";margin-right:.5rem;opacity:.7}
 .kn-crumbs a{color:inherit}
@@ -109,13 +113,32 @@ a.kn-chip:hover{background:var(--kn-soft);border-color:var(--kn-accent)}
 }
 @media (max-width:600px){.kn-pager{grid-template-columns:1fr}.kn-pager__link--next{grid-column:1}}
 
+/* Block „Kapitelnavigation“ (.kn--block): Seitenleiste rechts, oben als aufklappbares Menü oder gar keine */
+.kn-menu{border:1px solid var(--kn-line);border-radius:var(--kn-r);background:var(--kn-bg)}
+.kn-menu__sum{display:flex;align-items:center;gap:.45rem;padding:.6rem .85rem;font-weight:650;color:var(--kn-ink);cursor:pointer}
+.kn-menu .kn-side{padding:0 .85rem .85rem}
+.kn-menu .kn-side__head{display:none}
+/* Kompakt im Block (Stil „Sachlich“): ruhigere Typografie im Kapiteltext – Titel kleiner, Abschnitte enger */
+.kn--block.kn--compact .kn-content{font-size:.97rem}
+.kn--block.kn--compact .kn-content .df-title{font-size:clamp(1.7rem,1.25rem + 1.6vw,2.5rem);line-height:1.15}
+.kn--block.kn--compact .kn-content h2{font-size:clamp(1.2rem,1.05rem + .5vw,1.5rem)}
+@media (min-width:960px){
+  .kn.kn--top,.kn.kn--noside{grid-template-columns:minmax(0,1fr)}
+  .kn.kn--top .kn-side{position:static;max-height:none;overflow:visible}
+  .kn.kn--top .kn-main,.kn.kn--noside .kn-main{max-width:52rem;justify-self:center;width:100%}
+  .kn.kn--top .kn-menu{max-width:52rem;justify-self:center;width:100%}
+  .kn.kn--right{grid-template-columns:minmax(0,1fr) var(--kn-side)}
+  .kn.kn--right .kn-side{grid-column:2;grid-row:1;padding-right:0;padding-left:.25rem}
+  .kn.kn--right .kn-main{grid-column:1;grid-row:1}
+}
+
 /* Mit Skript: Schublade auf dem Telefon und im Modus „Fokus“ (Kapitelmenü-Knopf, Esc und Klick daneben schließen) */
 .kn.is-js .kn-side[data-kn-drawer]{--kn-drawer:min(22rem,88vw)}
 /* Knopf „Kapitel“ bleibt beim Lesen erreichbar: unten links schwebend (unten rechts sitzen oft Chat/Nach-oben) */
 .kn.is-js .kn-toggle{position:fixed;z-index:55;left:max(1rem,env(safe-area-inset-left));bottom:max(1rem,env(safe-area-inset-bottom));box-shadow:0 6px 20px -6px rgb(0 0 0/.35)}
 @media (max-width:959.98px){
-  .kn.is-js .kn-side{position:fixed;z-index:60;inset:0 auto 0 0;width:var(--kn-drawer);padding:1rem;overflow:auto;background:var(--kn-bg);color:var(--kn-text);box-shadow:0 0 0 100vmax rgb(0 0 0/0);translate:-105% 0;visibility:hidden;transition:translate .25s,visibility 0s .25s,box-shadow .25s}
-  .kn.is-js.is-open .kn-side{translate:0 0;visibility:visible;box-shadow:0 0 0 100vmax rgb(0 0 0/.45);transition:translate .25s,box-shadow .25s}
+  .kn.is-js .kn-side[data-kn-drawer]{position:fixed;z-index:60;inset:0 auto 0 0;width:var(--kn-drawer);padding:1rem;overflow:auto;background:var(--kn-bg);color:var(--kn-text);box-shadow:0 0 0 100vmax rgb(0 0 0/0);translate:-105% 0;visibility:hidden;transition:translate .25s,visibility 0s .25s,box-shadow .25s}
+  .kn.is-js.is-open .kn-side[data-kn-drawer]{translate:0 0;visibility:visible;box-shadow:0 0 0 100vmax rgb(0 0 0/.45);transition:translate .25s,box-shadow .25s}
   .kn.is-js .kn-close{display:grid;place-items:center;padding:.4rem;border:0;border-radius:var(--kn-r);background:transparent;color:inherit;cursor:pointer}
 }
 @media (min-width:960px){

@@ -19,7 +19,8 @@ final class Filters
 {
     /** Name → [Wert, Kontext, Beschreibung] – Grundlage für Doku und Selbsttest */
     public const ALL = [
-        'search.document' => ['array $doc (id, type, title, text, url, lang …)', 'type: page|entry|file, page|table|entry|media', 'Dokument für die Website-Suche ändern oder mit false aus der Suche nehmen.'],
+        'search.document' => ['array $doc (id, type, title, text, url, lang …)', 'type: page|entry|file|ext, page_id | table + entry_id | provider + id', 'Dokument für die Website-Suche ändern oder mit false aus der Suche nehmen.'],
+        'search.block' => ['array{head: list<string>, text: list<string>} indexierbarer Text eines Blocks', 'type (Blocktyp), data, page_id', 'Text eines Blocks für die Website-Suche ändern oder mit false weglassen – nach der Blockdefinition (search_text) bzw. der Standard-Extraktion.'],
         'sitemap.urls' => ['list<array{loc: string, lastmod?: string}>', 'host', 'Adressen der sitemap.xml ergänzen, ändern oder entfernen.'],
         'menu.items' => ['list<array{id, label, href, active, children, draft}> (Baum)', 'drafts: bool', 'Navigation der Kits (Pages::menu) ändern – Einträge ergänzen, umbenennen, ausblenden.'],
         'seo.meta' => ['array{title, description, canonical, og_image, noindex, jsonld}', 'page | entry + table', 'Angaben für den Kopf der Seite (Seo::forPage/forEntry) ändern.'],

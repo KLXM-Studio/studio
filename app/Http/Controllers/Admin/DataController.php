@@ -173,6 +173,7 @@ final class DataController extends AdminController
                 'data/schema' => $t ? 'schema' : 'new',
                 'data/wizard' => 'new',
                 'data/place' => 'place',
+                'data/detail_templates' => 'detail-templates',
                 // Geteilte Tabellen: fremde Einträge, Vorschläge, Anzeige-Einstellungen
                 'data/foreign' => 'src-' . ($vars['src'] ?? ''),
                 'data/foreign_entry' => 'src-' . ($vars['src'] ?? 'owner'),
@@ -512,21 +513,78 @@ final class DataController extends AdminController
         }
         $tplId = $t['settings']['detail_page_id'] && Pages::find((int) $t['settings']['detail_page_id']) ? (int) $t['settings']['detail_page_id'] : $this->makeTemplate($t);
         $t = $this->table($handle);
-        $first = Entries::query($t, ['status' => 'all', 'limit' => 1, 'source' => 'site'])[0] ?? null;
+        // Bestimmte Vorlage (Core\Data\DetailTemplates): mit einem Eintrag öffnen, der sie nutzt, und ?vorlage={id}
+        $want = ctype_digit($r->str('id')) && \Core\Data\DetailTemplates::belongs($t, (int) $r->str('id')) ? (int) $r->str('id') : 0;
+        $first = $want ? \Core\Data\DetailTemplates::sampleEntry($t, $want) : (Entries::query($t, ['status' => 'all', 'limit' => 1, 'source' => 'site'])[0] ?? null);
         if (!$first) {
             return $this->back('/admin/data/' . $handle . '/new', 'success', 'Vorlage angelegt. Legen Sie einen ersten Eintrag an – dann können Sie die Detailseite mit echten Inhalten gestalten.');
         }
-        return Response::redirect((string) Entries::url($t, $first) . '?edit=1');
+        return Response::redirect((string) Entries::url($t, $first) . '?edit=1' . ($want && $want !== $tplId ? '&vorlage=' . $want : ''));
+    }
+
+    /** Detailseiten-Vorlagen der Tabelle: Liste, Standard, neue Vorlage (leer, Kopie, mitgeliefert), Zuordnung (Core\Data\DetailTemplates) */
+    public function detailTemplates(Request $r, string $handle): Response
+    {
+        $this->auth($r, 'data.schema');
+        $t = $this->table($handle);
+        $this->noInbox($t, $r);
+        if ($t['settings']['route'] === '') return $this->back('/admin/data/' . $handle . '/schema', 'error', __('Bitte zuerst eine Adresse (URL-Basis) festlegen.'));
+        return $this->view('data/detail_templates', ['t' => $t, 'list' => \Core\Data\DetailTemplates::all($t), 'rules' => \Core\Data\DetailTemplates::rules($t),
+            'usage' => \Core\Data\DetailTemplates::usage($t)]);
+    }
+
+    public function detailTemplatesSave(Request $r, string $handle): Response
+    {
+        $this->auth($r, 'data.schema');
+        $t = $this->table($handle);
+        $this->noInbox($t, $r);
+        $back = '/admin/data/' . $handle . '/detailvorlagen';
+        $id = (int) $r->str('id');
+        $DT = \Core\Data\DetailTemplates::class;
+        switch ($r->str('do')) {
+            case 'create':
+                $name = trim(mb_substr($r->str('name'), 0, 120));
+                $from = $r->str('from');
+                if ($name === '') return $this->back($back, 'error', __('Bitte einen Namen angeben.'));
+                if (ctype_digit($from)) {
+                    $new = $DT::duplicate($t, (int) $from, $name);
+                } elseif (\Core\Data\Knowledge::is($t) && isset(\Core\Data\Knowledge::STYLES[$from])) {
+                    $new = $DT::create($t, $name, \Core\Data\Knowledge::templateBlocks($t, $from));
+                } elseif ($from === 'hero' && ($hb = \Core\Blocks\EntryHero::templateBlock($t))) {
+                    $new = $DT::create($t, $name, [$hb, ['id' => bin2hex(random_bytes(5)), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => []]]]);
+                } else {
+                    $new = $DT::create($t, $name, []);
+                }
+                return $new ? $this->back($back, 'success', __('Vorlage „{name}“ angelegt.', ['name' => $name])) : $this->back($back, 'error', __('Vorlage nicht gefunden.'));
+            case 'default':
+                return $DT::setDefault($t, $id) ? $this->back($back, 'success', __('Standard-Vorlage geändert.')) : $this->back($back, 'error', __('Vorlage nicht gefunden.'));
+            case 'rename':
+                return $DT::rename($t, $id, $r->str('name')) ? $this->back($back, 'success', __('Gespeichert.')) : $this->back($back, 'error', __('Bitte einen Namen angeben.'));
+            case 'delete':
+                return $DT::delete($t, $id) ? $this->back($back, 'success', __('Vorlage gelöscht.')) : $this->back($back, 'error', __('Die Standard-Vorlage lässt sich nicht löschen.'));
+            case 'rules':
+                $rules = [];
+                foreach ((array) ($r->post['rules'] ?? []) as $row) {
+                    if (!is_array($row) || empty($row['page'])) continue;
+                    $what = (string) ($row['what'] ?? '');
+                    if (str_starts_with($what, 'e:')) $rules[] = ['entry' => substr($what, 2), 'page' => (int) $row['page']];
+                    elseif (preg_match('~^f:([a-z][a-z0-9_]*)=(.+)$~s', $what, $m)) $rules[] = ['field' => $m[1], 'value' => $m[2], 'page' => (int) $row['page']];
+                }
+                $DT::saveRules($t, $rules);
+                return $this->back($back, 'success', __('Zuordnung gespeichert.'));
+        }
+        return $this->back($back, 'error', __('Unbekannte Aktion.'));
     }
 
     /**
      * Detailseiten-Vorlage einer Tabelle anlegen. $hero („Kopf wie Seiten“, nur neue Vorlagen): Einstieg des Kits mit Quelle
      * „Felder des Eintrags“ (Core\Blocks\EntryHero) statt des Kopfs aus „Datensatz-Felder“ – Stellen und Adressbuch behalten ihre Vorlage.
      */
-    public static function makeTemplate(array $t, bool $hero = false): int
+    public static function makeTemplate(array $t, bool $hero = false, string $style = ''): int
     {
         if (\Core\Data\Jobs::is($t)) return \Core\Data\Jobs::makeTemplate($t);   // Stellen: Eckdaten + Bewerbungsformular
-        if (\Core\Data\Knowledge::is($t)) return \Core\Data\Knowledge::makeTemplate($t, $hero);   // Wissen: Kopf, Anreißer, Inhaltsblöcke (Rahmen: Knowledge::frame)
+        // Wissen: mitgelieferte Vorlage – $style magazin (Standard), sachlich, klassisch; sonst der Stil der Tabelle (Knowledge::style)
+        if (\Core\Data\Knowledge::is($t)) return \Core\Data\Knowledge::makeTemplate($t, $style ?: (\Core\Data\Knowledge::style($t) ?: 'magazin'));
         // Adressbuch (Core\Data\Kinds): Porträt mit allen Feldern – Foto, Funktion, Kontakt-Knöpfe aus freigegebenen Angaben, Vita …
         if (\Core\Data\Kinds::isContacts($t)) {
             $id = Pages::create(['slug' => '_vorlage-' . $t['handle'], 'title' => $t['name'] . ' – Detailseite', 'type' => 'template',
@@ -574,10 +632,8 @@ final class DataController extends AdminController
             $blocks[] = ['id' => bin2hex(random_bytes(5)), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => $rest, 'ratio' => '16:9'] + $back]
                 + ($cal ? ['tunes' => ['section' => ['spaceTop' => 'none']]] : []);
         }
-        $id = Pages::create(['slug' => '_vorlage-' . $t['handle'], 'title' => $t['name'] . ' – Detailseite', 'type' => 'template',
-            'template_for' => $t['handle'], 'status' => 'published', 'noindex' => 0], Pages::sanitizeBlocks($blocks));
-        Tables::setDetailPage($t, $id);   // geteilte Tabellen: Vorlage gehört dieser Website
-        return $id;
+        // Standard, wenn die Tabelle noch keine Vorlage hat (geteilte Tabellen: Vorlage gehört dieser Website)
+        return \Core\Data\DetailTemplates::create($t, $t['name'] . ' – Detailseite', $blocks);
     }
 
     // ================================================================= Einträge
@@ -723,6 +779,12 @@ final class DataController extends AdminController
         if ($t['settings']['workflow'] && can('data.publish', $handle) && array_key_exists('online_from', $r->post)) {
             $in['online_from'] = $r->str('online_from');
             $in['online_until'] = $r->str('online_until');
+        }
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): Schalter, Reihenfolge, „bis“ – nur mit Veröffentlichungsrecht
+        if (\Core\Data\Featured::enabled($t) && can('data.publish', $handle) && array_key_exists('_featured_form', $r->post)) {
+            $in[\Core\Data\Featured::COL] = $r->str(\Core\Data\Featured::COL);
+            $in[\Core\Data\Featured::ORDER] = $r->str(\Core\Data\Featured::ORDER);
+            $in[\Core\Data\Featured::UNTIL] = $r->str(\Core\Data\Featured::UNTIL);
         }
         // Serie: Vorkommen bearbeitet → Bereich „nur dieser / dieser und folgende / alle“ (Core\Data\Series)
         $occ = $id !== null ? \Core\Data\Series::ridFromKey($r->str('vorkommen')) : null;

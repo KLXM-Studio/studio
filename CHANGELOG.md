@@ -30,6 +30,57 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   [--anonymize] [--revisions]` – neue Schlüssel, ohne Abonnenten, Anfragen, Formulareingänge, Verläufe, Statistik und Tokens; geteilte Tabellen
   per Einladung und Beitritt. Selbsttest `blueprint:selftest` (mit `--sandbox` Rundlauf mit Testdaten in einer Kopie).
 - **Domains ohne Website:** `site:list` und `health` nennen Domains, die über `fallback_site` eine andere Website ausliefern.
+- **Demo-Einträge** tragen in der Datenliste das Merkmal „Demo“; das Vorschaubild einer Vorlage kommt über den Upload der Mediathek.
+- *EN:* Website templates (blueprints): export a site's structure with anonymised demo content (`site:blueprint`), create new sites from a
+  template (`site:create --blueprint`) with a guided quick setup, roll out new template versions as structure-only proposals, and copy whole
+  sites without secrets or personal data (`site:copy`); network administration → Website templates.
+### Wissensbereich: Abschnitte mit Hintergrund in der Kapitelspalte als Karte
+- Blöcke mit Abschnitts-Hintergrund (grau, getönt, Akzent …) bekommen in der Kapitelspalte Innenabstand und Kartenradius – vorher klebten
+  Dachzeile, Überschrift und Text an der Kante der Fläche. Ohne Hintergrund bleibt alles wie bisher.
+- *EN:* Knowledge base: blocks with a section background are shown as padded cards inside the chapter column.
+
+### Datenliste: Kapitelnummern nur im Zusammenhang; Push-Glocke auf farbigen Abschnitten
+- Neue Option „Kapitelnummern zeigen“ (Automatisch · An · Aus) bei Wissensbereichen. „Automatisch“ zeigt die Nummer nur in der Darstellung
+  „Kapitel“ und auf der Übersichtsseite des Wissensbereichs – Listen wie „Im Fokus“ auf der Startseite zeigen keine Zahl ohne Zusammenhang.
+- Benachrichtigungen abonnieren: Auf Abschnitten mit Akzent-, Zweit- oder dunklem Hintergrund nimmt die Glocke die Schriftfarbe des
+  Abschnitts an (`--push-accent-on`), statt in der Akzentfarbe unsichtbar zu werden.
+- *EN:* Data list: chapter numbers only in context (auto/on/off). Push subscribe: bell icon readable on coloured sections.
+
+### Wissensbereich über die Vorlage gestalten, mehrere Detailseiten-Vorlagen (`Core\Data\DetailTemplates`)
+- **Mehrere Detailseiten-Vorlagen je Tabelle** (alle Tabellen mit Detailseiten): Daten → Tabelle → Detailseiten-Vorlagen – anlegen
+  (Kopie, „Kopf wie Seiten“, mitgeliefert, leer), umbenennen, Standard, löschen; Zuordnung je Eintrag, Oberkapitel (vererbt an
+  Unterkapitel) oder Feldwert (Kategorie, Bereich). Tabellen mit einer Vorlage bleiben unverändert.
+- **Block „Kapitelnavigation“** in Wissens-Vorlagen: Position (links, rechts, oben als Menü), Kapitelbaum, Abschnitte, Suche,
+  Brotkrumen, Fuß, kompakt; Blöcke darüber laufen über die volle Breite, ausgeblendet = keine Navigation. Ohne den Block gilt der
+  bisherige Rahmen nach dem Layout der Tabelle (Bestand unverändert, Pixelvergleich 0).
+- **Zwei mitgelieferte Stile für Wissen:** „Magazin“ (Standard für neue Wissensbereiche: Einstieg mit Bild und Nummer als Dachzeile,
+  Navigation darunter, Übersicht als Karten) und „Sachlich / Handbuch“ (Seitenleiste von Anfang an, große Nummer, kompakte Schrift,
+  „Zuletzt geprüft“, Inhaltsverzeichnis) – beim Anlegen wählbar, später umschaltbar; `data:template knowledge --style=…`.
+- **Kapitelnummer steuerbar:** im Einstieg automatisch (Dachzeile bzw. Plakette), als Plakette oder keine, Text der Dachzeile mit
+  `{nummer}`; im Kopf „Datensatz-Felder“ große Nummer an/aus. Selbsttest `detailtemplates:selftest`.
+### Website-Suche: Schnittstelle für Erweiterungen und dynamische Blöcke (`Core\Search\Providers`)
+- **Eigene Dokumente:** `Extension::searchProvider($key, ['label', 'documents' => fn(string $lang)])` – Inhalte, die weder Seite noch Eintrag
+  sind, landen im selben Index (auch Besucher-Chat, KI-Antwort, Vektoren); nur öffentliche (`public`), Sprache, Adresse geprüft, HTML → Klartext,
+  Fehler isoliert. Reiter je Anbieter frei benennbar (`?typ=ext-{key}`), Filter `search.document` gilt mit (`provider`, `id`).
+- **Text eines Blocks:** Blockdefinition `'search_text'` (fn → Text/`head`+`text`, `false`, `null` = Standard, `'render'` = sichtbare Ausgabe mit
+  `data-search-text` für Inhalte, die erst ein Skript zeichnet), neuer Filter `search.block`. Kern-Entscheidungen: Datenliste, Kalender, Termine
+  verweisen nur auf ihre Einträge; gemeinsame Bausteine zählen mit ihrem Text (jetzt auch in Inhaltsblöcken von Einträgen); Live-Text als
+  Momentaufnahme der geschriebenen Meldungen (Quelle Datentabelle: nur Kopf).
+- **Aktualisierung:** `Search::invalidate($type, $id)` merkt den Abgleich vor (Warteschlange wie bei Seiten/Einträgen, Cron `search.sync`).
+  Doku: Entwicklerhandbuch → Erweiterungen → Website-Suche. Selbsttest `extensions:selftest`.
+
+### Website-Suche: Inhaltsblöcke in Einträgen, Reiter „Wissen“, Sprung zum Abschnitt (`Core\Search\Documents`)
+- **Inhaltsblöcke (`blocks`) im Index:** Wissens-Kapitel, „weitere Inhalte“ von Nachrichten, Workshops usw. werden über ihren Text gefunden –
+  mit derselben Extraktion wie Seiten (`Documents::blocksText`: Rich-Text, Text + Bild, Reiter, Scrolly, FAQ, Zitat, Merkmale, Karten, Schritte,
+  neu auch Titel/Text der Markierungen interaktiver Bilder). Überschriften zählen hoch, der Text normal (Standard an, je Tabelle unter
+  „Suche“ einstellbar). „Nie öffentlich“ gilt; Datenlisten in Einträgen werden nicht rekursiv indexiert. Gilt auch für Vektoren, Besucher-Chat
+  und KI-Antwort.
+- **Reiter „Wissen“** für Wissenstabellen statt „Kapitel“ (eigene Beschriftung je Tabelle bleibt möglich).
+- **Sprung zum Abschnitt:** passt eine Zwischenüberschrift, führt der Treffer auf `#anker` – dieselben IDs wie „In diesem Kapitel“ bzw. das
+  Inhaltsverzeichnis des Kits, bei Seiten die Abschnitts-Anker; Hinweis „Abschnitt „…““ im Treffer. Lange Texte zeigen den Auszug um die Fundstelle.
+- **Nach dem Update Neuaufbau:** Index-Aufbau `Search::FORMAT` 2 – der nächste Abgleich (Cron `search:index` bzw. nach der nächsten Änderung)
+  baut einmal vollständig neu auf, Health meldet bis dahin „Suchindex auf aktuellem Stand“ als offen. Sofort: `php bin/console search:index --all`.
+  Selbsttest `search:selftest` (Wissenstabelle mit Inhaltsblöcken, Überschrift, Anker = ID der Detailseite, privates Feld, Reiter).
 
 ### Detailseiten mit Kopf wie Seiten: Einstieg mit Quelle „Felder des Eintrags“ (`Core\Blocks\EntryHero`)
 - **Einstieg (Hero) in Detailseiten-Vorlagen:** neue Option „Quelle: Eigene Inhalte | Felder des Eintrags“ am Hero jedes Kits (mit Titel
@@ -45,6 +96,30 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   fluid: Logo-Überhang trägt der Einstieg.
 - **Neue Tabellen:** „Detailseiten mit Kopf wie Seiten“ im Assistenten und beim Anlegen, `data:template … --with-detail-page --hero`.
   Bestehende Vorlagen und Blöcke bleiben unverändert (Standard „Eigene Inhalte“). Selbsttest `hero:selftest`.
+
+### Einstieg als Slider (`Core\Blocks\HeroSlider`)
+- **Hero jedes Kits als Slider** (Block → Slider → „Als Slider zeigen“, Standard aus): mehrere Folien mit derselben Variante und
+  Gestaltung – der Kern legt die Folien um den Hero des Kits, kein Kit-Renderer musste geändert werden. Folien: Inhalt des Blocks,
+  eigene Folien (Bild/Video, Dachzeile, Titel, Text, Buttons) und/oder hervorgehobene Einträge mehrerer Tabellen mit der Zuordnung
+  „Felder des Eintrags“ wie beim Detail-Hero; Button zur Detailseite.
+- **Übergänge:** Morphing (Bilder weich ineinander, Titel per Clip-Path bzw. Wort für Wort), Aufdecken von unten oder seitlich,
+  Überblenden; optional Kenburns zum Fokuspunkt des Bildes.
+- **Steuerung und Barrierefreiheit:** automatischer Wechsel mit einstellbarer Dauer, Pause bei Maus und Fokus, Pause/Play mit dem
+  gemeinsamen Video-Schalter (`Hero::playToggle`), Punkte oder Nummern, Pfeile, Tastatur, Wischen. `aria-roledescription` Karussell/Folie
+  mit „x von n“, Live-Region nur nach Bedienung, bei „Bewegung reduzieren“ kein Auto-Wechsel und harte Schnitte, genau eine H1.
+- **Technik:** ohne JavaScript steht die erste Folie still; eigenes kleines Skript `js/hero-slider.js` und `css/hero-slider.css` nur auf
+  Seiten mit Slider (CSP-konform, kein Fremdskript); weitere Folien laden ihre Bilder verzögert. Bestand byte-gleich. Selbsttest
+  `slider:selftest`.
+
+### Auf der Startseite hervorheben und Block „Highlights“ (`Core\Data\Featured`)
+- **Grundfeld „Auf der Startseite hervorheben“** für jede Tabelle mit Detailseiten (Tabelle → Auf der Website → Detailseiten, Standard
+  aus): je Eintrag Schalter, optional Reihenfolge und „bis“-Datum (einschließlich, ohne Cron). Spalten `_featured`, `_featured_order`,
+  `_featured_until` (additiv); Abfrage-Option `Entries::query($t, ['featured' => 'date'|'order'])`. Bestehende Tabellen bleiben byte-gleich.
+- **Neuer Block „Highlights“:** mischt hervorgehobene Einträge mehrerer Tabellen (Anzahl je Tabelle, Anzahl gesamt), sortiert nach Datum
+  oder Reihenfolge, Etikett je Bereich (Name der Tabelle oder eigene Beschriftung), Karten oder großer Teaser (erster groß). Markup und
+  Stile der Datenliste (auto-fill-Raster), damit jedes Kit ihn gestaltet; Zusatz `css/highlights.css` nur mit dem Block.
+- **Sichtbarkeit:** nur veröffentlichte Einträge, die Besucher sehen dürfen (Zeitplan, geschützte Bereiche, Freigaben); geteilte Tabellen
+  im Netzwerk nur mit den Einträgen, die die Website auch sonst zeigt. Selbsttest `highlights:selftest`.
 
 ### Netzwerk: Verband und Vereine teilen Kontakte und Termine (`Core\Data\Network`, `Core\Data\Nearby`)
 - **Weitergabe je Eintrag** (Schalter der geteilten Tabelle, Standard aus): nur diese Website, ausgewählte Websites (erscheinen dort von

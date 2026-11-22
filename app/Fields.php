@@ -609,7 +609,9 @@ final class Fields
     {
         // Feld nur auf Detailseiten-Vorlagen ('entry_only' => true, z. B. „Quelle“ des Einstiegs, Core\Blocks\EntryHero): sonst nur
         // der gespeicherte Wert als verstecktes Feld, damit er beim Speichern erhalten bleibt
-        if (!empty($f['entry_only']) && !self::$binding && $path === '' && isset($f['name'])) {
+        // 'entry_only' => 'knowledge': nur in Vorlagen von Tabellen dieser Art (Core\Data\Kinds), z. B. Kapitelnummer im Einstieg
+        $kindOk = !is_string($f['entry_only'] ?? null) || (self::$binding && (string) (self::$binding['table']['settings']['kind'] ?? '') === $f['entry_only']);
+        if (!empty($f['entry_only']) && (!self::$binding || !$kindOk) && $path === '' && isset($f['name'])) {
             return is_scalar($value) && (string) $value !== '' && $value !== ($f['default'] ?? '')
                 ? '<input type="hidden" name="' . $prefix . '[' . e($f['name']) . ']" value="' . e((string) $value) . '">' : '';
         }

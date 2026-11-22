@@ -68,7 +68,7 @@ $en = array_key_exists('enabled', $s) ? ($s['enabled'] ? '1' : '0') : '';
     <?= $select('image', __('Bild'), $byType(['media']), (string) ($s['image'] ?? ''), __('– Bildfeld der Tabelle –')) ?>
     <?= $select('date', __('Datum'), $byType(['date', 'datetime']), (string) ($s['date'] ?? ''), __('– Termin bzw. erstes Datumsfeld –')) ?>
     <div class="f f--inline"><label for="ts-label"><?= e(__('Art (Beschriftung im Treffer)')) ?></label>
-      <input id="ts-label" name="settings[search][label]" value="<?= e((string) ($s['label'] ?? '')) ?>" maxlength="40" placeholder="<?= e((string) (($def['singular'] ?? '') ?: ($def['name'] ?? ''))) ?>"></div>
+      <input id="ts-label" name="settings[search][label]" value="<?= e((string) ($s['label'] ?? '')) ?>" maxlength="40" placeholder="<?= e(\Core\Data\Kinds::isKnowledge($def) ? 'Wissen' : (string) (($def['singular'] ?? '') ?: ($def['name'] ?? ''))) ?>"></div>
     <?php foreach (\Core\Lang::all() as $code => $lname): if ($code === \Core\Lang::default()) continue; ?>
     <div class="f f--inline"><label for="ts-label-<?= e($code) ?>"><?= e(__('Art ({lang})', ['lang' => $lname])) ?></label>
       <input id="ts-label-<?= e($code) ?>" name="settings[search][labels][<?= e($code) ?>]" value="<?= e((string) ($s['labels'][$code] ?? '')) ?>" maxlength="40"></div>

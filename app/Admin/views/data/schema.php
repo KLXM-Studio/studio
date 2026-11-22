@@ -207,6 +207,8 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
           <p class="f-help">Einträge erscheinen unter <code>/<?= e(($s['route'] ?? '') ?: 'adresse') ?>/titel-des-eintrags</code>. Leer = keine Detailseiten.</p>
           <div class="adm-prefix"><span>/</span><input id="t-route" name="settings[route]" value="<?= e($s['route'] ?? '') ?>" placeholder="z. B. aktuelles"></div><?= $err('settings.route') ?></div>
         <div class="f f--bool"><label class="f-check"><input type="checkbox" name="settings[noindex]" value="1"<?= !empty($s['noindex']) ? ' checked' : '' ?>> <span><?= e(__('Detailseiten nicht indexieren (nicht in Suchmaschinen, Sitemap und llms.txt)')) ?></span></label></div>
+        <?php // „Auf der Startseite hervorheben“ (Core\Data\Featured): Grundfeld je Eintrag für den Block „Highlights“ und Slider-Folien ?>
+        <?= $sw('settings[featured]', !empty($s['featured']), __('Einträge auf der Startseite hervorheben können'), __('Jeder Eintrag bekommt „Hervorheben“ mit optionaler Reihenfolge und „bis“-Datum – für den Block „Highlights“ und den Einstieg als Slider. Nur mit Detailseiten.')) ?>
         <?php if ($isNew): ?>
         <div class="f f--bool"><label class="f-check"><input type="checkbox" name="with_template" value="1" checked> <span>Detailseiten-Vorlage gleich mit anlegen</span></label></div>
         <div class="f f--bool"><label class="f-check"><input type="checkbox" name="with_hero" value="1"> <span><?= e(__('Detailseiten mit Kopf wie Seiten')) ?></span></label>
@@ -214,7 +216,8 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
         <?php elseif ($s['route'] ?? ''): ?>
         <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= e(__('Detailseiten-Vorlage')) ?></span>
           <span class="set-row__sub"><?= $tplPage ? 'Die Vorlage gilt für alle Einträge. Gestaltet wird sie wie jede Seite – mit echten Inhalten eines Eintrags.' : 'Noch keine Vorlage vorhanden.' ?></span></div>
-          <div class="set-row__ctl"><button class="adm-btn adm-btn--small" form="tplform"><?= $tplPage ? 'Detailseite gestalten ↗' : 'Vorlage anlegen' ?></button></div></div>
+          <div class="set-row__ctl"><button class="adm-btn adm-btn--small" form="tplform"><?= $tplPage ? 'Detailseite gestalten ↗' : 'Vorlage anlegen' ?></button>
+            <?php if ($tplPage): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $table['handle'] . '/detailvorlagen')) ?>"><?= e(__('Mehrere Vorlagen …')) ?></a><?php endif; ?></div></div>
         <?php endif; ?>
         <?php if (!$isNew && !$inbox): // RSS-Feed (Core\Data\Feed): Adresse zum Weitergeben bzw. warum es keinen gibt ?>
         <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= icon('rss') ?> <?= e(__('RSS-Feed')) ?></span>

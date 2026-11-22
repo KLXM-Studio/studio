@@ -16,10 +16,11 @@ use Core\Lang;
  *   enabled   null = automatisch (an mit Detailseite, sonst aus; Eingangs-Tabellen nie)
  *   fields    [feld => high|normal|low|off]   Standard: Titel hoch, Text normal, Auswahl/Verknüpfung niedrig,
  *                                              E-Mail/Telefon aus (nur ausdrücklich), Textfelder wie Mobil/Handy/privat/Geburt aus,
- *                                              IBAN und „Nie öffentlich“ (Core\Data\Exposure) nie; Gruppen als Text (ohne IBAN/E-Mail/Telefon)
+ *                                              IBAN und „Nie öffentlich“ (Core\Data\Exposure) nie; Gruppen als Text (ohne IBAN/E-Mail/Telefon);
+ *                                              Inhaltsblöcke (blocks) normal – Text wie bei Seiten (Documents::blocksText), Überschriften hoch
  *   facets    [feld, …]                       Auswahl-/Verknüpfungsfelder als Filter auf der Ergebnisseite
  *   title, summary, image, date               Anzeige im Treffer (Standard: Titelfeld, Auszug mit Treffern, Bildfeld, Termin/erstes Datum)
- *   label, labels[lang]                       Art im Treffer, z. B. „Termin“ (Standard: Einzahl der Tabelle)
+ *   label, labels[lang]                       Art im Treffer, z. B. „Termin“ (Standard: Einzahl der Tabelle; Wissensbereich: „Wissen“)
  *   future    nur künftige Termine (Kalender: nächstes Vorkommen; sonst Datumsfeld ≥ heute)
  *   exclude   [field, value]                  Einträge mit diesem Wert nicht finden
  */
@@ -27,7 +28,7 @@ final class TableSearch
 {
     public const WEIGHTS = ['high' => 'hoch', 'normal' => 'normal', 'low' => 'niedrig', 'off' => 'nicht durchsuchen'];
     /** Feldtypen, die durchsucht werden können */
-    public const TYPES = ['text', 'textarea', 'richtext', 'mediatext', 'person', 'faq', 'address', 'downloads', 'select', 'multiselect', 'relation', 'relations', 'group', 'email', 'tel', 'url', 'link', 'number', 'phones', 'emails', 'addresses', 'urls'];
+    public const TYPES = ['text', 'textarea', 'richtext', 'blocks', 'mediatext', 'person', 'faq', 'address', 'downloads', 'select', 'multiselect', 'relation', 'relations', 'group', 'email', 'tel', 'url', 'link', 'number', 'phones', 'emails', 'addresses', 'urls'];
     /** Nur ausdrücklich (personenbezogen) */
     public const OPT_IN = ['email', 'tel', 'url', 'link', 'number', 'phones', 'emails', 'addresses', 'urls'];
     public const FACET_TYPES = ['select', 'multiselect', 'relation', 'relations'];
@@ -86,7 +87,9 @@ final class TableSearch
         $cfg ??= self::config($table);
         $lang = Lang::current();
         if (!empty($cfg['labels'][$lang])) return $cfg['labels'][$lang];
-        return lt($cfg['label'] !== '' ? $cfg['label'] : (string) ($table['singular'] ?: $table['name']));
+        if ($cfg['label'] !== '') return lt($cfg['label']);
+        // Wissensbereich (Core\Data\Knowledge): eigener Reiter „Wissen“ statt der Einzahl „Kapitel“
+        return \Core\Data\Knowledge::is($table) ? lt('Wissen') : lt((string) ($table['singular'] ?: $table['name']));
     }
 
     /** Eingabe aus dem Formular (settings[search]) bereinigen – gespeichert werden nur Abweichungen von den Vorgaben */

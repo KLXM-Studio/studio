@@ -64,6 +64,7 @@
 .srch-hit.has-img>:not(.srch-hit__img){grid-column:1}
 .srch-hit__img{grid-column:2;grid-row:1/span 4;width:96px;height:96px;object-fit:cover;border-radius:calc(var(--se-radius) - 2px);background:var(--se-surface)}
 @media (max-width:480px){.srch-hit.has-img{grid-template-columns:1fr 64px;column-gap:14px}.srch-hit__img{width:64px;height:64px}}
+.srch-hit__section{font-size:.9rem;font-weight:600}
 .srch-hit__url{margin:0;font-size:.8rem;color:var(--se-muted);opacity:.85;overflow-wrap:anywhere}
 .srch mark,.ssug mark{background:var(--se-mark);color:inherit;border-radius:3px;padding:0 .1em;font-weight:650}
 

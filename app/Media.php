@@ -1049,6 +1049,9 @@ final class Media
      */
     public static int $autoEager = 0;
 
+    /** Alles verzögert laden, auch mit 'eager' => true – z. B. weitere Folien eines Einstiegs als Slider (Core\Blocks\HeroSlider) */
+    public static bool $lazyAll = false;
+
     /**
      * <picture> mit AVIF/WebP-srcset, width/height gegen CLS, lazy außer $eager.
      * Alt-Text aus der Mediathek (dekorative Bilder: alt="").
@@ -1085,7 +1088,7 @@ final class Media
         $class = $classes !== '' ? ' class="' . e($classes) . '"' : '';
         // Sofort laden: ausdrücklich ('eager') oder – ohne Angabe – das erste Bild im ersten Block der Seite (Theme::renderBlocks,
         // self::$autoEager); ein Bild mit Vorrang verbraucht das Kontingent, 'eager' => false lädt immer verzögert
-        $eager = array_key_exists('eager', $opt) ? !empty($opt['eager']) : self::$autoEager > 0;
+        $eager = !self::$lazyAll && (array_key_exists('eager', $opt) ? !empty($opt['eager']) : self::$autoEager > 0);
         if ($eager) self::$autoEager = 0;
         $loading = $eager ? ' fetchpriority="high"' : ' loading="lazy" decoding="async"';
         // Im Bearbeiten-Modus: Kennung für „Anpassen“/„Rahmen“ und (mit Bildformat, beim Füllen) den Inline-Zuschnitt

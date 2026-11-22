@@ -276,6 +276,8 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/destroy', [Admin\DataController::class, 'destroy']);
     $r->post('/admin/data/{handle}/delivery-test', [Admin\DataController::class, 'deliveryTest']);
     $r->post('/admin/data/{handle}/template', [Admin\DataController::class, 'template']);
+    $r->get('/admin/data/{handle}/detailvorlagen', [Admin\DataController::class, 'detailTemplates']);   // mehrere Detailseiten-Vorlagen (Core\Data\DetailTemplates)
+    $r->post('/admin/data/{handle}/detailvorlagen', [Admin\DataController::class, 'detailTemplatesSave']);
     $r->get('/admin/data/{handle}/einsetzen', [Admin\DataController::class, 'place']);       // Einsetzen (Core\Data\Placement)
     $r->post('/admin/data/{handle}/einsetzen', [Admin\DataController::class, 'placeSave']);
     $r->post('/admin/data/{handle}/bulk', [Admin\DataController::class, 'bulk']);

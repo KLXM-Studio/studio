@@ -68,6 +68,9 @@ return [
                 'help' => 'Zeigt unter jedem Treffer die Textstelle mit dem Suchwort (markiert).'],
             ['name' => 'search_glossary', 'label' => 'Passende Glossarbegriffe zeigen', 'type' => 'bool', 'default' => false, 'width' => 'half',
                 'help' => 'Bei einer Suche stehen passende Begriffe aus dem Glossar der Website als eigene Gruppe über den Treffern (Funktion „Glossar“).'],
+            ['name' => 'chapter_numbers', 'label' => 'Kapitelnummern zeigen', 'type' => 'select', 'default' => 'auto', 'width' => 'half',
+                'options' => ['auto' => 'Automatisch', 'on' => 'An', 'off' => 'Aus'],
+                'help' => 'Nur bei Wissensbereichen. „Automatisch“: an in der Darstellung „Kapitel“ und auf der Übersichtsseite des Wissensbereichs, sonst aus (z. B. „Im Fokus“ auf der Startseite).'],
             ['name' => 'az_index', 'label' => 'A–Z-Sprungleiste (alphabetisch gruppiert)', 'type' => 'bool', 'default' => false, 'width' => 'half',
                 'help' => 'Sortiert nach dem Titel und gruppiert nach Anfangsbuchstaben – nur ohne seitenweises Blättern.'],
             ...\Core\Blocks\ListFilter::fields(),   // „Filter erst ab … Einträgen“, nur Optionen mit Treffern
@@ -119,6 +122,26 @@ return [
             ['name' => 'event_links', 'label' => 'Links zu Kalender-Diensten', 'type' => 'select', 'default' => '', 'show_if' => ['layout' => ['head']],
                 'options' => ['' => 'Wie in den Grundeinstellungen (Standard: keine)', 'none' => 'Keine', 'google' => 'Google Kalender', 'outlook' => 'Outlook.com', 'both' => 'Google Kalender und Outlook.com'],
                 'help' => 'Reine Links ohne Skript: Erst beim Klick öffnet sich die Seite des Anbieters, der dann Titel, Zeit, Ort und Beschreibung des Termins erhält.'],
+            // Wissensbereich (Core\Data\Knowledge): Kapitelnummer vor dem Titel im Kopf – nur in Vorlagen von Wissens-Tabellen sichtbar
+            ['name' => 'kn_number', 'label' => 'Kapitelnummer groß vor dem Titel', 'type' => 'bool', 'default' => true, 'show_if' => ['layout' => ['head']], 'entry_only' => 'knowledge',
+                'help' => 'Nur mit eingeschalteten Kapitelnummern (Einstellungen der Tabelle → Wissensbereich). In Seitenleiste und Karten bleiben die Nummern.'],
+        ],
+    ],
+    'kn_nav' => [
+        'label' => 'Kapitelnavigation', 'icon' => 'list', 'group' => 'Daten',
+        'context' => 'detail',   // Blockauswahl: nur in Detailseiten-Vorlagen (Core\Blocks\Picker::fits)
+        'description' => 'Seitenleiste oder Menü mit Kapiteln, Suche und Abschnitten – für Detailseiten-Vorlagen eines Wissensbereichs.',
+        'help' => 'Nur für Wissensbereiche (Tabellenart „Wissen“): Blöcke über diesem Block stehen über die volle Breite (z. B. der Einstieg), alle Blöcke darunter erscheinen neben bzw. unter der Kapitelnavigation. Block ausblenden = keine Navigation. Ohne diesen Block legt die Website den Rahmen wie bisher nach den Einstellungen der Tabelle um die Vorlage.',
+        'fields' => [
+            ['name' => 'position', 'label' => 'Position', 'type' => 'select', 'required' => true, 'default' => 'left', 'width' => 'half',
+                'options' => ['left' => 'Seitenleiste links', 'right' => 'Seitenleiste rechts', 'top' => 'Oben als aufklappbares Menü']],
+            ['name' => 'compact', 'label' => 'Kompakt (schmal, dichte Einträge)', 'type' => 'bool', 'default' => false, 'width' => 'half'],
+            ['name' => 'tree', 'label' => 'Kapitelbaum', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'sections', 'label' => 'Abschnitte des Kapitels („In diesem Kapitel“)', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'search', 'label' => 'Suche im Wissensbereich', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'crumbs', 'label' => 'Brotkrumen über dem Text', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'footer', 'label' => 'Fuß: Schlagworte, Begriffe, Verwandte, Zurück/Weiter', 'type' => 'bool', 'default' => true,
+                'help' => 'Was davon erscheint, steuern die Einstellungen der Tabelle (Wissensbereich) und die Einträge selbst.'],
         ],
     ],
     'event_actions' => [
@@ -267,6 +290,45 @@ return [
             ['name' => 'empty_text', 'label' => 'Text, wenn keine Termine', 'type' => 'text', 'default' => 'Zurzeit sind keine Termine geplant.'],
         ],
     ],
+    // Highlights (Core\Data\Featured): hervorgehobene Einträge mehrerer Tabellen gemischt – Kartenausgabe wie „Datenliste“ (dl-items),
+    // damit Kits sie gestalten; Renderer app/Blocks/highlights.php, Zusatz-CSS css/highlights.css (Kit kann es ersetzen)
+    'highlights' => [
+        'label' => 'Highlights', 'icon' => 'star', 'group' => 'Daten',
+        'description' => 'Hervorgehobene Einträge aus mehreren Tabellen – als Karten oder großer Teaser.',
+        'help' => 'Mischt Einträge mit „Auf der Startseite hervorheben“ aus den gewählten Tabellen (z. B. Aktuelles, Termine, Projekte), mit Etikett je Bereich. Das Hervorheben schalten Sie je Tabelle ein (Tabelle → Auf der Website → Detailseiten); dann hat jeder Eintrag „Hervorheben“ mit optionaler Reihenfolge und „bis“-Datum. Es erscheinen nur veröffentlichte Einträge, die Besucher sehen dürfen – bei geteilten Tabellen im Netzwerk nur die, die diese Website zeigt.',
+        'fields' => [
+            ['name' => 'eyebrow', 'label' => 'Dachzeile (optional)', 'type' => 'text', 'width' => 'half'],
+            ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'width' => 'half', 'default' => 'Highlights'],
+            ['name' => 'intro', 'label' => 'Einleitung (optional)', 'type' => 'textarea', 'rows' => 2, 'max' => 400],
+            ['type' => 'heading', 'label' => 'Einträge'],
+            ['name' => 'sources', 'label' => 'Tabellen', 'type' => 'repeater', 'item_label' => 'Tabelle', 'title_field' => 'badge', 'max_items' => 8,
+                'help' => 'Nur Tabellen mit eingeschaltetem „Hervorheben“. Je Tabelle höchstens so viele Einträge wie angegeben.', 'fields' => [
+                ['name' => 'table', 'label' => 'Tabelle', 'type' => 'datatable', 'required' => true, 'width' => 'half'],
+                ['name' => 'limit', 'label' => 'Höchstens', 'type' => 'select', 'required' => true, 'default' => '3', 'width' => 'half',
+                    'options' => ['1' => '1', '2' => '2', '3' => '3', '4' => '4', '6' => '6', '8' => '8', '12' => '12']],
+                ['name' => 'badge', 'label' => 'Etikett (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half', 'placeholder' => 'Name der Tabelle'],
+            ]],
+            ['name' => 'sort', 'label' => 'Sortierung', 'type' => 'select', 'required' => true, 'default' => 'date', 'width' => 'half',
+                'options' => ['date' => 'Neueste zuerst', 'order' => 'Reihenfolge (Zahl am Eintrag), dann neueste']],
+            ['name' => 'limit', 'label' => 'Anzahl gesamt', 'type' => 'number', 'default' => 6, 'min' => 0, 'max' => 24, 'width' => 'half', 'help' => '0 = alle'],
+            ['type' => 'heading', 'label' => 'Darstellung', 'collapse' => true, 'summary' => 'Karten oder großer Teaser, Etikett, Text'],
+            ['name' => 'layout', 'label' => 'Darstellung', 'type' => 'select', 'required' => true, 'default' => 'cards', 'width' => 'half',
+                'options' => ['cards' => 'Karten', 'teaser' => 'Großer Teaser (erster groß, Rest als Karten)']],
+            ['name' => 'columns', 'label' => 'Spalten (höchstens)', 'type' => 'select', 'required' => true, 'default' => '3', 'width' => 'half',
+                'options' => ['2' => '2', '3' => '3', '4' => '4'], 'help' => 'Auf schmalen Bildschirmen weniger – die Karten füllen den Platz von selbst.'],
+            ['name' => 'show_badge', 'label' => 'Etikett mit dem Bereich zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'show_date', 'label' => 'Datum zeigen', 'type' => 'bool', 'default' => false, 'width' => 'half'],
+            ['name' => 'show_text', 'label' => 'Kurzbeschreibung zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half',
+                'help' => 'Feld „Beschreibung“ der Tabelle.'],
+            ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => '16:10', 'width' => 'half',
+                'options' => ['16:10' => '16:10', '4:3' => '4:3', '1:1' => '1:1', '16:9' => '16:9']],
+            ...array_map(fn(array $f) => ($f['name'] ?? '') === 'text_lines' ? ['default' => '3'] + $f : $f, \Core\Data\Clamp::fields()),
+            ['name' => 'more_label', 'label' => 'Button unter der Liste', 'type' => 'text', 'width' => 'half', 'placeholder' => 'z. B. Alle Neuigkeiten'],
+            ['name' => 'more_link', 'label' => 'Button-Link', 'type' => 'link', 'width' => 'half'],
+            ['name' => 'hide_empty', 'label' => 'Abschnitt ausblenden, wenn nichts hervorgehoben ist', 'type' => 'bool', 'default' => true],
+            ['name' => 'empty_text', 'label' => 'Text, wenn nichts hervorgehoben ist', 'type' => 'text', 'default' => 'Zurzeit ist nichts hervorgehoben.', 'show_if' => ['hide_empty' => ['']]],
+        ],
+    ],
     'push_subscribe' => [
         'label' => 'Benachrichtigungen abonnieren', 'icon' => 'bell-ringing', 'group' => 'Daten',
         'description' => 'Besucher abonnieren Push-Mitteilungen zu neuen Einträgen.',
@@ -410,6 +472,8 @@ return [
     ],
     'live_text' => [
         'label' => 'Live-Text (Ticker)', 'icon' => 'broadcast', 'group' => 'Daten', 'live' => true,
+        // Website-Suche: Momentaufnahme der hier geschriebenen Meldungen als Text (nicht als Überschriften); Quelle „Datentabelle“ → nur Kopf
+        'search_text' => [\Core\Search\Documents::class, 'liveTextSearch'],
         'description' => 'Meldungen, die sich ohne Neuladen aktualisieren – als Ticker oder aktuelle Meldung.',
         'help' => 'Meldungen, die sich bei Besuchern ohne Neuladen aktualisieren – als Ticker (neueste oben) oder nur die aktuelle Meldung, z. B. Spielstand, Wartezeit, Ablauf einer Veranstaltung. Direkt hier geschrieben (erscheinen beim Veröffentlichen der Seite) oder aus einer Datentabelle (erscheinen sofort, auch per API/MCP).',
         'fields' => [

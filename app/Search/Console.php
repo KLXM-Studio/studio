@@ -79,8 +79,91 @@ final class Console
         } finally {
             $pdo->rollBack();
         }
+        // Tabellen legt Doctrine über eine eigene Verbindung an (nicht in der Transaktion) – angelegt und danach wieder gelöscht
+        $made = [];
+        try {
+            self::selftestEntryBlocks($eq, Lang::default(), $made);
+        } catch (\Throwable $e) {
+            $eq('Inhaltsblöcke – Ausnahme: ' . $e->getMessage() . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')', false, true);
+        } finally {
+            \Core\Data\Tables::flush();
+            foreach ($made as $h) if ($x = \Core\Data\Tables::find($h)) \Core\Data\Tables::delete($x);
+            \Core\Data\Tables::flush();
+            \Core\Data\Knowledge::flush();
+        }
         echo $fail ? "\n{$fail} Fehler\n" : "\nAlles in Ordnung\n";
         return $fail ? 1 : 0;
+    }
+
+    /**
+     * Selbsttest Inhaltsblöcke in Einträgen: Wissenstabelle (Vorlage „Wissen“ mit Detailseite) – Wort aus dem Rich-Text im Text,
+     * Zwischenüberschrift in den Überschriften, Sprungmarke wie auf der Detailseite („In diesem Kapitel“), Reiter „Wissen“,
+     * keine verschachtelte Datenliste; zweite Tabelle mit einem Inhaltsblöcke-Feld „Nie öffentlich“ → nicht im Index.
+     */
+    private static function selftestEntryBlocks(\Closure $eq, string $lang, array &$made): void
+    {
+        $theme = app()->theme;
+        if (!$theme->block('richtext')) { echo "  – Kit ohne Block „richtext“: Inhaltsblöcke übersprungen\n"; return; }
+        $h = 'suchtest_wissen_' . bin2hex(random_bytes(2));
+        $made[] = $h;
+        $res = \Core\Data\Templates::install('knowledge', ['handle' => $h, 'name' => 'Suchtest Wissen', 'slug' => str_replace('_', '-', $h), 'detail' => true], fn() => null);
+        $t = $res['table'] ?? null;
+        if (!$res['ok'] || !$t || empty($t['settings']['detail_page_id'])) { $eq('Wissenstabelle angelegt', false, true); return; }
+        $rt = fn(string $html, string $title = '') => ['id' => substr(md5($html . $title), 0, 8), 'type' => 'richtext', 'data' => ['title' => $title, 'text' => $html], 'tunes' => []];
+        $blocks = [$rt('<p>Einleitung mit Quittenkompott.</p><h2>Anreise nach Musterstadt</h2><p>Bahnhof Zinnoberheim.</p><h2>Musterstadt bei Nacht</h2><p>Führung.</p>')];
+        if ($theme->block('data_list')) $blocks[] = ['id' => 'dl000001', 'type' => 'data_list', 'data' => ['table' => $h], 'tunes' => []];
+        [$id, $err] = \Core\Data\Entries::save($t, null, ['titel' => 'Kapitel Suchtest', 'inhalt' => $blocks, 'status' => 'published']);
+        $eq('Kapitel gespeichert', $err, []);
+        \Core\Data\Knowledge::flush();
+        $doc = Documents::build($lang)['e-' . $h . '-' . $id] ?? null;
+        $eq('Kapitel im Index', $doc !== null, true);
+        if (!$doc) return;
+        $eq('Wort aus dem Rich-Text der Inhaltsblöcke im Text', str_contains($doc['text'], 'Quittenkompott'), true);
+        $eq('Zwischenüberschrift in den Überschriften (hoch)', str_contains($doc['headings'], 'Anreise nach Musterstadt'), true);
+        $eq('Reiter/Art „Wissen“', $doc['badge'], lt('Wissen'));
+        $words = Text::words('Anreise Musterstadt');
+        $sec = Documents::anchorFor($doc['anchors'], $words);
+        $eq('Sprungmarke zur passenden Überschrift', $sec['id'] ?? null, 'kn-anreise-nach-musterstadt');
+        $eq('Mehrere Überschriften passen: die erste', Documents::anchorFor($doc['anchors'], Text::words('Musterstadt'))['id'] ?? null, 'kn-anreise-nach-musterstadt');
+        $eq('Keine Sprungmarke, wenn keine Überschrift passt', Documents::anchorFor($doc['anchors'], Text::words('Quittenkompott')), null);
+        $eq('Verschachtelte Datenliste nicht indexiert (kein Rundlauf über den eigenen Eintrag)', substr_count($doc['text'] . ' ' . $doc['headings'], 'Kapitel Suchtest'), 0);
+        // Sprungmarke = ID auf der Detailseite (wie „In diesem Kapitel“ sie vergibt)
+        if (!app()->settings->get('sys.maintenance')) {
+            $prev = [app()->entry, app()->request, app()->currentPage];
+            $e = \Core\Data\Entries::find(\Core\Data\Tables::find($h) ?? $t, (int) $id) ?? [];
+            $path = $t['settings']['route'] . '/' . ($e['slug'] ?? '');
+            try {
+                $page = (new \Core\Http\Controllers\SiteController())->page(new \Core\Http\Request('GET', '/' . $path, ['selbsttest' => '1'], [], [], []), $path);
+                $eq('Detailseite hat dieselbe ID', [$page->status, str_contains($page->body, 'id="kn-anreise-nach-musterstadt"')], [200, true]);
+            } finally {
+                [app()->entry, app()->request, app()->currentPage] = $prev;
+            }
+        }
+        // Inhaltsblöcke „Nie öffentlich“ in einer zweiten Tabelle
+        $h2 = 'suchtest_priv_' . bin2hex(random_bytes(2));
+        [$def, $errors] = \Core\Data\Tables::validate(['name' => 'Suchtest Beiträge', 'singular' => 'Beitrag', 'handle' => $h2, 'fields' => [
+            ['label' => 'Titel', 'type' => 'text', 'required' => 1],
+            ['label' => 'Inhalt', 'name' => 'inhalt', 'type' => 'blocks'],
+            ['label' => 'Intern', 'name' => 'intern', 'type' => 'blocks', 'private' => 1],
+        ], 'settings' => ['route' => str_replace('_', '-', $h2), 'workflow' => 0]]);
+        $eq('Tabelle mit privatem Inhaltsblöcke-Feld angelegt', $errors, []);
+        if ($errors) return;
+        $made[] = $h2;
+        \Core\Data\Tables::create($def);
+        \Core\Data\Tables::flush();
+        $t2 = \Core\Data\Tables::find($h2) ?? throw new \RuntimeException('Tabelle fehlt');
+        $pid = Pages::create(['slug' => '_vorlage-' . $h2, 'title' => 'Suchtest Detail', 'type' => 'template', 'template_for' => $h2, 'status' => 'published', 'noindex' => 1],
+            Pages::sanitizeBlocks([['id' => 'eb000001', 'type' => 'entry_blocks', 'data' => ['table' => $h2, 'field' => $h2 . '.inhalt']]]));
+        \Core\Data\Tables::setDetailPage($t2, $pid);
+        $t2['settings']['detail_page_id'] = $pid;
+        $cfg = TableSearch::config($t2);
+        $eq('Inhaltsblöcke: Standard „normal“, „Nie öffentlich“ aus', [$cfg['fields']['inhalt'] ?? null, $cfg['fields']['intern'] ?? null], ['normal', 'off']);
+        [$id2] = \Core\Data\Entries::save($t2, null, ['titel' => 'Beitrag Suchtest', 'inhalt' => [$rt('<p>Öffentlich Ahornblatt.</p>')],
+            'intern' => [$rt('<p>Geheim Distelfink.</p>')], 'status' => 'published']);
+        $doc2 = Documents::build($lang)['e-' . $h2 . '-' . $id2] ?? null;
+        $all = (string) json_encode($doc2, JSON_UNESCAPED_UNICODE);
+        $eq('Öffentliches Inhaltsblöcke-Feld im Index, privates nicht', [str_contains($all, 'Ahornblatt'), str_contains($all, 'Distelfink')], [true, false]);
+        $eq('Art ohne Wissen: Einzahl der Tabelle', $doc2['badge'] ?? null, lt((string) $t2['singular']));
     }
 
     /** Hilfe-Index des Assistenten (Core\AI\HelpIndex): Handbuch, Technik, Tutorials – Stichwörter + Vektoren */

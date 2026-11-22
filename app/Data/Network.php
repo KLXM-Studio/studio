@@ -213,7 +213,7 @@ final class Network
     public static function foreignView(array $t, array $e, string $target = 'web'): array
     {
         $keep = array_intersect_key($e, array_flip(['id', 'slug', 'status', 'lang', 'origin_site', 'suggest', '_pick', self::COL, self::COL_SITES, self::EXTERNAL,
-            'created_at', 'updated_at', 'published_at', 'sort', 'translation_group', 'online_from', 'online_until']));
+            'created_at', 'updated_at', 'published_at', 'sort', 'translation_group', 'online_from', 'online_until', ...Featured::COLUMNS]));
         return array_replace(Exposure::publicEntry($t, $e, $target), $keep) + ['_foreign' => true];
     }
 

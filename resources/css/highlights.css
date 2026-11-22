@@ -1,0 +1,9 @@
+/* Kern-Block „Highlights“ (app/Blocks/highlights.php) – ergänzt die Karten der Datenliste (data.css bzw. die des Kits).
+   Lädt nur auf Seiten mit dem Block; ein Kit ersetzt die Datei mit eigener css/highlights.css. Null-Spezifität (:where), Kit-Regeln gewinnen.
+   Tokens: --hl-lead-min (22rem) Mindestbreite je Spalte im großen Teaser, --hl-lead-title (clamp …) Titelgröße des großen Teasers. */
+:where(.dl--highlights) .hl-badge{min-height:0;padding:.2em .75em;font-size:.75rem;letter-spacing:.04em;text-transform:none}
+:where(.hl--teaser) .hl-lead{grid-column:1/-1}
+:where(.hl--teaser) .hl-lead:has(.dl-img){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--hl-lead-min,22rem)),1fr));align-items:stretch}
+:where(.hl--teaser) .hl-lead .dl-img{aspect-ratio:4/3;min-height:100%}
+:where(.hl--teaser) .hl-lead .dl-body{align-content:center;padding:clamp(20px,3vw,40px)}
+:where(.hl--teaser) .hl-lead .dl-name{font-size:var(--hl-lead-title,clamp(1.5rem,1.1rem + 1.6vw,2.25rem))}
