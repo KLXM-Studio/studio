@@ -10,6 +10,28 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Rollen: erlaubte Blöcke, gesperrte Blöcke, Gestaltung in zwei Stufen
+- **Erlaubte Blöcke je Rolle:** in „Rolle bearbeiten“ „Alle Blöcke, die die Website erlaubt“ (Standard) oder nur ausgewählte, gruppiert
+  wie die Blockauswahl. Neue Blöcke nur aus dieser Auswahl; Blöcke anderer Arten bleiben sichtbar und verschiebbar, lassen sich aber
+  weder ändern noch löschen.
+- **Gesperrte Blöcke:** Block-Menü ⋯ → „Sperren“ (nur mit „Blöcke gestalten (voll)“). Gesperrte Blöcke tragen ein Schloss, „Ansehen“
+  öffnet die Felder nur zum Lesen, Löschen ist abgeschaltet, Verschieben geht. Die Sperre liegt an der Wurzel des Block-JSON (`lock`).
+- **Gestaltung in zwei Stufen:** `design.blocks.basic` („im Rahmen des Kits“: Variante, Hintergrund, Abstände, weitere
+  Abschnitts-Optionen) und `design.blocks` (voll: zusätzlich sperren, gesperrte Blöcke ändern, Listen-Vorlagen). Ohne Gestaltung sind
+  diese Felder im Editor ausgegraut. Eine einmalige Migration gibt allen Rollen mit „Seiten bearbeiten“ die Stufe `basic` – bestehende
+  Rollen dürfen danach genau das, was sie vorher durften (Selbsttest gegen alle Rollen und Seiten der Testsites).
+- **Eine Prüfung für alle Schreibwege** (`Core\BlockGuard`): Editor, Bearbeiten auf der Website, Versionen, KI, Freigaben, REST-API und MCP
+  (Tokens handeln mit den Rechten ihres Kontos), Seite mit Blöcken anlegen, Inhaltsblöcke in Einträgen. Abgelehnt wird mit 403 und
+  Gründen; nichts wird gespeichert.
+- **Blöcke der Website:** Funktionen & Erweiterungen → „Blöcke der Website“ legt fest, welche Blockarten die Redaktion überhaupt
+  einfügen darf (bisher nur per Konfiguration `blocks.allow/deny`, die weiter vorgeht). Bestehende Blöcke bleiben, Änderungen stehen im Protokoll.
+- **Für Entwickler:** Spalte `roles.blocks_json` (additiv), Rechte `design.blocks.basic`/`design.blocks`, `Permissions::allowsBlock()`,
+  `BlockGuard::check()/forSave()`, Ausnahme `Core\BlockDenied`, Einstellung `sys.blocks_off`, Selbsttest `roles:selftest`.
+- *EN:* Roles: allowed blocks per role, locked blocks (visible and movable, not editable or deletable) and block design in two levels
+  (`design.blocks.basic` within the Kit, `design.blocks` full). One server-side guard covers every write path – editor, on-site
+  editing, versions, AI, review approvals, REST API and MCP (tokens act with their owner's rights), page import and entry content
+  blocks. Website-wide block selection under Features & extensions. Existing roles keep exactly what they could do before.
+
 ### Listen-Vorlagen für die Datenliste (Stufe 1)
 - **Vorlage statt zwanzig Einstellungen:** Eine Listen-Vorlage speichert die Darstellung einer Datenliste – Darstellung, angezeigte
   Felder, Spalten, Bildformat, Bilder, Textlänge, Sortierung, Filter für Besucher, Verlinkung. In der Seitenleiste wählt die Redaktion
@@ -28,7 +50,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   wählt sie aus – so werden bestehende Listen zu Vorlagen.
 - **Standard je Tabelle:** neue Datenlisten (Editor, „Einsetzen“) beginnen nach der Wahl der Tabelle mit der Standard-Vorlage;
   ohne Standard wie bisher mit eigenen Einstellungen.
-- **Recht „Blöcke gestalten“** (`design.blocks`, neue Gruppe „Gestaltung“): Vorlagen anlegen, ändern, löschen, Standard festlegen.
+- **Recht „Blöcke gestalten (voll)“** (`design.blocks`, Gruppe „Gestaltung“): Vorlagen anlegen, ändern, löschen, Standard festlegen.
   Neu, darum hat es zunächst nur die Administration; auswählen dürfen alle, die Seiten bearbeiten.
 - **Bestehende Blöcke bleiben unverändert:** ohne gewählte Vorlage (alle bisherigen Blöcke) gilt alles wie bisher; eine Vorlage
   legt nur Blockdaten vor (`Core\Theme::makeBlock`), darum funktioniert sie mit jedem Kit-Renderer der Datenliste (Kern, editorial,

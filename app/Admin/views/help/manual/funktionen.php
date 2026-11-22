@@ -9,6 +9,8 @@
     <li><b>Sicherheitsrelevant</b> (REST-API, MCP, KI, Besucher-Chat, Externe Quellen, Erweiterungen mit Server-Prozessen wie die Video-Werkzeuge): Beim Einschalten erscheint der konkrete Risiko-Hinweis; Sie bestätigen ihn und dazu Ihre Identität – mit Passwort oder Passkey. Haben Sie sich in den letzten 15 Minuten angemeldet oder bestätigt, genügt der Hinweis; Konten ohne Passwort bestätigen mit dem Passkey.</li>
     <li><b>Vorsicht bei „Benutzer und Rollen“ und „Grundeinstellungen“:</b> Aus bedeutet gesperrt für alle – bis Sie den Schalter hier wieder einschalten.</li>
   </ul>
+  <h3 id="funktionen-bloecke">Blöcke der Website</h3>
+  <p>Über den Knopf <b>Blöcke der Website</b> oben auf der Seite wählen Sie, welche Blockarten die Redaktion neu einfügen darf – für alle Rollen. Die Auswahl je Rolle (<a href="#erlaubte-bloecke">Erlaubte Blöcke</a>) liegt immer darin. Abgeschaltete Arten verschwinden aus der Blockauswahl, aus API, MCP und KI; Blöcke, die schon auf Seiten stehen, bleiben sichtbar und bearbeitbar. Arten, die in der Konfiguration der Website festgelegt sind (<code>blocks.allow</code> / <code>blocks.deny</code>), tragen einen Hinweis und lassen sich hier nicht ändern. Jede Änderung steht im Protokoll.</p>
   <h3>Erweiterungen</h3>
   <ul>
     <li>Die Liste zeigt alle installierten Erweiterungen mit Version, Autor, Lizenz, Beschreibung und Voraussetzungen. Die Prüfungen laufen live – bei den Video-Werkzeugen z. B. „ffmpeg gefunden?“ und „proc_open erlaubt?“.</li>

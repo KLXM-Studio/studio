@@ -62,6 +62,16 @@
     <li><b>Rollen</b>: eine Karte je Rolle mit ihren Rechten; <b>Rechte bearbeiten</b> öffnet die Rolle mit einem Schalter je Recht, <b>Neue Rolle</b> legt eine eigene an.</li>
     <li><b>Anmeldung &amp; Sicherheit</b>: erlaubte Verfahren, zweiter Faktor je Rolle, Übergangsfrist.</li>
   </ul>
+  <h4 id="erlaubte-bloecke">Erlaubte Blöcke, gesperrte Blöcke und Gestaltung</h4>
+  <p>Unter <b>Rechte bearbeiten</b> legen Sie je Rolle fest, welche Blöcke sie nutzen darf und wie weit sie gestalten darf:</p>
+  <ul>
+    <li><b>Erlaubte Blöcke:</b> „Alle Blöcke, die die Website erlaubt“ (Standard, wie bisher) oder <b>Nur ausgewählte</b> – je Gruppe der Blockauswahl mit „alle“. Neue Blöcke fügt die Rolle nur aus dieser Auswahl ein. Blöcke anderer Arten bleiben auf den Seiten sichtbar und lassen sich <b>verschieben</b>, aber weder ändern noch löschen. Das gilt überall: im Editor, auf der Website, über API, MCP und KI.</li>
+    <li><b>Blöcke gestalten im Rahmen des Kits:</b> Variante, Hintergrund, Abstände und die übrigen Abschnitts-Optionen. Alle Rollen, die Seiten bearbeiten, haben dieses Recht seit der Umstellung – es ändert sich also nichts. Ohne dieses Recht ändert eine Rolle nur Inhalte; die Gestaltungsfelder sind im Editor ausgegraut.</li>
+    <li><b>Blöcke gestalten (voll):</b> zusätzlich Blöcke <b>sperren</b> und entsperren (Block-Menü <b>⋯ → Sperren</b>), gesperrte Blöcke ändern und löschen, Listen-Vorlagen pflegen. Zunächst hat es nur die Administration.</li>
+    <li><b>Gesperrte Blöcke</b> tragen in der Blockleiste ein Schloss („gesperrt“ bzw. „nicht für Ihre Rolle“). <b>Ansehen</b> öffnet die Felder nur zum Lesen; im Menü ist „Löschen“ abgeschaltet, Verschieben geht.</li>
+    <li>Welche Blockarten die Website überhaupt anbietet, legt die Administration unter <a href="#funktionen-bloecke">Funktionen &amp; Erweiterungen → Blöcke der Website</a> fest; die Auswahl einer Rolle liegt immer darin.</li>
+  </ul>
+  <p><b>Beispiel „Redaktion eingeschränkt“:</b> Neue Rolle mit „Seiten bearbeiten“ und „Seiten veröffentlichen“, ohne Gestaltung, erlaubte Blöcke nur Fließtext, Text + Bild, Fragen &amp; Antworten und Handlungsaufruf. Die Person pflegt Texte und ergänzt solche Blöcke; die übrigen Abschnitte der Agentur bleiben, wie sie sind.</p>
   <h4 id="als-rolle-person">Als Rolle oder Person arbeiten</h4>
   <p>Zum Prüfen von Rechten oder für Support kann die Administration die Verwaltung und die Website so sehen wie andere:</p>
   <ul>
