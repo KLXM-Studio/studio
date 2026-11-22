@@ -37,6 +37,10 @@ final class DefaultChanges
         '2026-11-gallery-single-size' => [
             'gallery' => ['single_size' => 'grid'],
         ],
+        // 1.0.0: Scrollytelling Bildformat „Automatisch“ (Standard für neue Blöcke) – bestehende behalten 4:5
+        '2026-11-scrolly-ratio' => [
+            'scrolly' => ['ratio' => '4:5'],
+        ],
     ];
     public const SETTING = 'sys.block_defaults';
 
