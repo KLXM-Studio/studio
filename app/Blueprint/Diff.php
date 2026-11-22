@@ -166,11 +166,13 @@ final class Diff
                 }
                 $cur = Tables::find($h);
                 if (!$cur || Tables::isShared($cur)) continue;
-                $names = array_column($cur['fields'], 'name');
+                // Vergleich mit der gespeicherten Definition (auch Abschnitte und Freitexte, die die geladene Tabelle nicht als Felder führt)
+                $row = $db->fetch('SELECT fields_json FROM data_tables WHERE id = ?', [(int) $cur['id']]);
+                $raw = (array) json_decode((string) ($row['fields_json'] ?? '[]'), true);
+                $names = array_column($raw, 'name');
                 $new = array_values(array_filter((array) $t['fields'], fn($f) => isset($f['name']) && !in_array($f['name'], $names, true)));
                 if (!$new) continue;
-                $row = $db->fetch('SELECT fields_json FROM data_tables WHERE id = ?', [(int) $cur['id']]);
-                $fields = array_merge((array) json_decode((string) ($row['fields_json'] ?? '[]'), true), $new);
+                $fields = array_merge($raw, $new);
                 $db->update('data_tables', ['fields_json' => json_encode($fields, JSON_UNESCAPED_UNICODE), 'updated_at' => now()], 'id = :id', ['id' => (int) $cur['id']]);
                 Tables::flush();
                 if ($nt = Tables::find($h)) Tables::sync($nt);

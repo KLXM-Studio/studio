@@ -170,9 +170,10 @@ final class Copy
         if (!empty($o['anonymize'])) $lines[] = 'Anonymisiert: ' . self::anonymize() . ' Personen/Kontakte';
         // Netzwerk: Kopie ist an geteilten Tabellen nicht beteiligt – Bezüge für „einladen und beitreten“ merken
         $refs = [];
-        foreach ($db->fetchAll("SELECT skey FROM settings WHERE skey LIKE 'shared.%'") as $s) {
-            $sk = substr((string) $s['skey'], 7);
-            if (($meta = \Core\Data\Shared::meta($sk)) === null) continue;
+        foreach (array_keys(\Core\Data\Shared::all()) as $sk) {
+            $sk = (string) $sk;
+            $meta = \Core\Data\Shared::meta($sk);
+            if ($meta === null || !in_array((string) ($o['from'] ?? ''), \Core\Data\Shared::participants($meta), true)) continue;
             $refs[] = ['key' => $sk, 'label' => (string) ($meta['label'] ?? $sk), 'kind' => 'content', 'plan' => 'existing', 'handle' => $sk];
         }
         app()->settings->set(Apply::KEY, ['name' => 'copy:' . (string) ($o['from'] ?? ''), 'version' => '', 'title' => __('Kopie von {site}', ['site' => (string) ($o['from'] ?? '')]),

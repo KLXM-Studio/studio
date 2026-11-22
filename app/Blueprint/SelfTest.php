@@ -171,6 +171,11 @@ final class SelfTest
             $eq('Ziel: data:selftest', $run(['data:selftest', '--site=' . $dst]), 0);
             if ($fails) echo $out;
             $eq('Ziel: Demoinhalte entfernen', $run(['site:demo-remove', '--site=' . $dst]) === 0 && str_contains($out, 'entfernt'), true);
+            // Neue Version: Quelle bekommt ein Feld und eine Seite → Vorschlag an das Ziel, nur Struktur übernehmen
+            $eq('Quelle: neue Struktur', $run(['blueprint:selftest', '--step=grow', '--site=' . $src]), 0);
+            $eq('Export Version 1.1.0', $run(['site:blueprint', $src, '--out=' . $pkg . '-v2', '--demo=none', '--name=selftest-vorlage', '--version=1.1.0']), 0);
+            $eq('Ziel: Vorschlag übernehmen (Feld, Seite als Entwurf, Inhalte bleiben)', $run(['blueprint:selftest', '--step=update', '--pkg=' . $pkg . '-v2', '--site=' . $dst]), 0);
+            if ($fails) echo $out;
             // Kopie (site:copy, voller Inhalt)
             $eq('Kopie (full)', $run(['site:copy', $src, $cpy, $cpy . '.localhost', '--content=full', '--media=copy']), 0);
             if ($fails) echo $out;
@@ -186,6 +191,7 @@ final class SelfTest
             if (!$keep) {
                 foreach ([$src, $dst, $cpy] as $k) self::dropSite($k);
                 Package::remove($pkg);
+                Package::remove($pkg . '-v2');
             } else {
                 echo "  Websites bleiben stehen (--keep): $src, $dst, $cpy · Paket: $pkg\n";
             }
@@ -272,6 +278,30 @@ final class SelfTest
                 $eq('Startseite mit neuem Namen', str_contains($home, 'Neuer Musterverein'), true);
                 $eq('Akzentfarbe gesetzt und lesbar', \Core\Contrast::ratio((string) (\Core\Design::values()['accent'] ?? '#000000'), '#FFFFFF') >= 4.5, true);
                 $eq('Demo gekennzeichnet', array_sum(Demo::counts()) >= 4, true);
+                break;
+            case 'grow':
+                $t = Tables::find('personen');
+                $in = Tables::toInput($t);
+                $in['fields'][] = ['label' => 'Ehrenamt seit', 'name' => 'ehrenamt_seit', 'type' => 'date'];
+                [$def, $err] = Tables::validate($in, $t);
+                if ($err) { fwrite(STDERR, implode(' ', $err) . "\n"); return 1; }
+                Tables::update($t, $def);
+                \Core\Pages::create(['slug' => 'mitmachen', 'title' => 'Mitmachen', 'status' => 'published', 'menu' => 1], []);
+                return 0;
+            case 'update':
+                $pkg = Package::open($opt('pkg'));
+                $bp = (array) app()->settings->get(Apply::KEY, []);
+                $diff = Diff::compare((array) ($bp['structure'] ?? []), Diff::signature($pkg['dir']));
+                $eq('Vorschlag: neues Feld und neue Seite', [$diff['added']['fields'], $diff['added']['pages']], [['personen.ehrenamt_seit'], ['-:/mitmachen']]);
+                $home = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1');
+                Diff::propose('selftest-vorlage', '1.1.0', $opt('pkg'), $diff);
+                Diff::applyProposal();
+                \Core\Data\Tables::flush();
+                $eq('Feld angelegt', \Core\Data\Tables::field((array) \Core\Data\Tables::find('personen'), 'ehrenamt_seit') !== null, true);
+                $eq('Seite als Entwurf, nicht im Menü', app()->db->fetch("SELECT status, menu FROM pages WHERE slug = 'mitmachen'"), ['status' => 'draft', 'menu' => 0]);
+                $eq('Inhalte unverändert', (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1'), $home);
+                $eq('Version gemerkt, Vorschlag erledigt', [(string) app()->settings->get(Apply::KEY)['version'], Diff::proposal()], ['1.1.0', null]);
+                if ($pkg['temp']) Package::remove($pkg['dir']);
                 break;
             case 'copycheck':
                 $from = $opt('from');

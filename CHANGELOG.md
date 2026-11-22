@@ -10,6 +10,27 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Website-Vorlagen mit Schnelleinrichtung, Website kopieren (`Core\Blueprint`)
+- **Website-Vorlage exportieren:** `site:blueprint <key> --out=ordner|datei.zip [--demo=anonym|none|full]` – Paket (Format 1, Manifest mit
+  Version, Änderungsprotokoll und Prüfsummen) mit Kit, Design-Werten, Grundeinstellungen nach Whitelist, Funktionen und Erweiterungen,
+  Seitenbaum mit Menü, Detail- und Listen-Vorlagen, eigenen Blöcken, Datentabellen mit Schema und Art, Rollen mit Blockrechten,
+  Projekt-Hinweisen und Netzwerk-Bezügen. Angaben der Organisation werden Platzhalter (`{{org.name}}` …), Demoinhalte anonymisiert
+  (Platzhalter-Personen, Beispiel-Organisationen, Termine relativ zu heute, Bilder nur frei mit Urheber, sonst Platzhalterbild). Nie im Paket:
+  Konten, Geheimnisse, E-Mail-Konten, Abonnenten, Anfragen, Formulareingänge, Aufgaben, Statistik, Protokolle, Versionen – das Paket wird
+  vor dem Speichern geprüft und bei einem Fund verworfen. Erweiterungen ergänzen eigene Abschnitte (Filter `blueprint.export`/`blueprint.apply`).
+- **Neue Website aus Vorlage:** `site:create <key> <domain> --blueprint=<name|paket> [--name --short --color --logo --region]` bzw.
+  Netzwerk → Website-Vorlagen → „Neue Website aus Vorlage“; Netzwerk-Tabellen werden per Einladung und Beitritt verbunden statt kopiert.
+- **Schnelleinrichtung** (`/admin/schnelleinrichtung`, `site:quick-config`): Organisation, Erscheinungsbild (Akzentfarbe mit Kontrastprüfung
+  und Vorschau), Gebiet, Netzwerk, Konten, Demoinhalte, E-Mail mit Testmail, Recht (Impressum/Datenschutz füllen, Aufgabe „Bitte prüfen“);
+  Schritte je Vorlage wählbar, eigene Platzhalter. Bis zum Abschluss Wartungsmodus, danach offene Punkte als Aufgaben. „Demoinhalte entfernen“
+  auch per `site:demo-remove`.
+- **Netzwerk → Website-Vorlagen** (Recht `network.blueprints`): aus Website erstellen, Versionen mit Änderungsprotokoll, Demo-Einträge
+  kuratieren, Vorschaubild, Updates als Vorschlag an betroffene Websites (nur Struktur, nie Inhalte; `blueprint:propose`, `blueprint:update`).
+- **Website kopieren:** `site:copy <quelle> <neu> <domain> [--content=full|structure|demo] [--media=copy|share|none] [--users=none|copy]
+  [--anonymize] [--revisions]` – neue Schlüssel, ohne Abonnenten, Anfragen, Formulareingänge, Verläufe, Statistik und Tokens; geteilte Tabellen
+  per Einladung und Beitritt. Selbsttest `blueprint:selftest` (mit `--sandbox` Rundlauf mit Testdaten in einer Kopie).
+- **Domains ohne Website:** `site:list` und `health` nennen Domains, die über `fallback_site` eine andere Website ausliefern.
+
 ### Detailseiten mit Kopf wie Seiten: Einstieg mit Quelle „Felder des Eintrags“ (`Core\Blocks\EntryHero`)
 - **Einstieg (Hero) in Detailseiten-Vorlagen:** neue Option „Quelle: Eigene Inhalte | Felder des Eintrags“ am Hero jedes Kits (mit Titel
   und Bild; praxis unverändert). Bild, Titel (H1), Dachzeile und Text kommen aus wählbaren Feldern – Standard: Bildfeld der Tabelle, Titel,
