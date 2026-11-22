@@ -25,6 +25,7 @@ final class Fetch
     public const TYPES = [
         'xml' => ['application/xml', 'text/xml', 'application/rss+xml', 'application/atom+xml', 'application/rdf+xml', 'text/plain', 'application/octet-stream'],
         'json' => ['application/json', 'text/json', 'text/plain', 'application/octet-stream', 'application/ld+json', 'application/vnd.api+json', 'application/hal+json', 'application/feed+json'],
+        'ics' => ['text/calendar', 'text/plain', 'application/ics', 'application/octet-stream', 'text/x-vcalendar'],
         'zip' => ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
         'image' => ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/octet-stream'],
         'file' => ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'application/octet-stream'],

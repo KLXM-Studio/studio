@@ -10,7 +10,7 @@ namespace Klxm\Dav;
  */
 final class SelfTest
 {
-    public static function run(): int
+    public static function run(array $args = []): int
     {
         $fail = 0;
         $eq = function (string $name, mixed $got, mixed $want) use (&$fail): void {
@@ -136,6 +136,30 @@ final class SelfTest
         $eq('TITLE = Hauptfunktion (erste aktuelle, frisch)', self::val($tc, 'TITLE'), 'Vorsitz');
         $eq('Funktionen nicht als X-MYCMS-*', str_contains($tc, 'X-MYCMS-FUNKTIONEN'), false);
         \Core\Data\Roles::$today = null;
+
+        echo "Zusatzangaben aus vCard-Import (_vcard_extra) und UID\n";
+        $xt = ['id' => 0, 'handle' => 'dav_selftest_x', 'table' => 'data_dav_selftest_x', 'name' => 'Kontakte', 'singular' => 'Kontakt',
+            'settings' => ['title_field' => 'name', 'workflow' => false, 'kind' => 'contacts', 'kind_version' => 1],
+            'fields' => [['name' => 'name', 'label' => 'Name', 'type' => 'text'], ['name' => 'telefon', 'label' => 'Telefon', 'type' => 'phones']]];
+        $extra = "NICKNAME:Eri\r\nITEM1.X-ABDATE:2001-06-15\r\nITEM1.X-ABLABEL:Jahrestag\r\n";
+        $xe = ['id' => 5, 'updated_at' => '2026-05-01 10:00:00', 'name' => 'Erika Musterfrau', \Core\Data\VCards::UID => 'erika-0001', \Core\Data\VCards::EXTRA => $extra,
+            'telefon' => [['label' => 'office', 'value' => '+49 2841 555-10', 'public' => '1']]];
+        $xc = CardBackend::render($xt, $xe, null, Dav::TABLE_DEFAULTS);
+        $eq('UID aus Import/App (_uid)', self::val($xc, 'UID'), 'erika-0001');
+        $eq('Zusatzangaben gehen hinaus', [self::val($xc, 'NICKNAME'), self::val($xc, 'X-ABDATE')], ['Eri', '2001-06-15']);
+        $eq('Gruppen getrennt: Angabe zählt hinter den Zusatzangaben weiter', [str_contains($xc, 'item2.TEL') || str_contains($xc, 'ITEM2.TEL'), substr_count(strtoupper($xc), 'ITEM1.')], [true, 2]);
+        $raw = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:erika-0001\r\nFN:Erika Musterfrau\r\nNICKNAME:Alt\r\nEND:VCARD\r\n";
+        $eq('bekannte Zusatzangaben gehen den Rohdaten vor', self::val(CardBackend::render($xt, $xe, ['raw' => $raw, 'uid' => 'erika-0001'], Dav::TABLE_DEFAULTS), 'NICKNAME'), 'Eri');
+        $old = $xe;
+        unset($old[\Core\Data\VCards::EXTRA]);
+        $eq('ohne Zusatzangaben: Rohdaten wie bisher', self::val(CardBackend::render($xt, $old, ['raw' => $raw, 'uid' => 'erika-0001'], Dav::TABLE_DEFAULTS), 'NICKNAME'), 'Alt');
+        [$xin] = CardBackend::parse($xt, $xe, str_replace('NICKNAME:Eri', 'NICKNAME:Erika', $xc), Dav::TABLE_DEFAULTS);
+        $eq('Rückweg: Zusatzangaben aus der App am Eintrag', [str_contains((string) ($xin[\Core\Data\VCards::EXTRA] ?? ''), 'NICKNAME:Erika'),
+            str_contains((string) ($xin[\Core\Data\VCards::EXTRA] ?? ''), 'TEL'), str_contains((string) ($xin[\Core\Data\VCards::EXTRA] ?? ''), 'X-ABDATE')], [true, false, true]);
+        $eq('Rückweg: Mehrfachfeld mit Beschriftung, Freigabe bleibt', array_map(fn($i) => [$i['label'], $i['value'], $i['public']], $xin['telefon'] ?? []), [['office', '+49 2841 555-10', '1']]);
+
+        echo "Alt-Tabellen ohne Tabellenart (Inhaltstabellen mit freier Zuordnung) unverändert\n";
+        LegacySelfTest::run($eq, in_array('--legacy-dump', $args, true));
 
         echo $fail ? "\n$fail Prüfungen fehlgeschlagen\n" : "\nAlle Prüfungen bestanden\n";
         return $fail ? 1 : 0;

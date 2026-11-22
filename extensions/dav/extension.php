@@ -16,7 +16,7 @@ spl_autoload_register(function (string $class): void {
 return [
     'name' => 'dav',
     'label' => 'CalDAV/CardDAV',
-    'version' => '1.7.0',
+    'version' => '1.8.0',
     'requires' => '>=1.0.0',
     'description' => 'Termine und Kontakte aus Datentabellen mit Kalender- und Adressbuch-Apps abgleichen (Apple, Thunderbird, DAVx⁵). Anmeldung mit App-Passwörtern.',
     'author' => 'KLXM Crossmedia GmbH and contributors',
@@ -55,7 +55,7 @@ return [
             $r->post('/admin/dav/tables', [$c, 'tables'], 'data.schema');
         });
         $x->command('dav:selftest', 'CalDAV/CardDAV: Namen (FN → N), Organisation, Rich-Text als Text, Rückweg aus Apps, nur veröffentlichte Einträge',
-            fn(array $args): int => Klxm\Dav\SelfTest::run());
+            fn(array $args): int => Klxm\Dav\SelfTest::run($args));
         $x->command('dav:password', 'App-Passwort anlegen: dav:password <e-mail> [name] [read|write]', function (array $args): int {
             $u = app()->db->fetch('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', [(string) ($args[0] ?? '')]);
             if (!$u) { fwrite(STDERR, "Benutzer nicht gefunden.\n"); return 1; }

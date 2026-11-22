@@ -660,6 +660,11 @@ final class Entries
                 $row[$k] = $k === Series::SERIES ? ((int) $in[$k] > 0 ? (int) $in[$k] : null) : (($v = trim((string) $in[$k])) !== '' ? mb_substr($v, 0, $k === Series::RID ? 20 : 255) : null);
             }
         }
+        // Kontakte (Art contacts, Core\Data\VCards): UID aus App/Import und unbekannte vCard-Eigenschaften – nur interne Aufrufer
+        if (Kinds::isContacts($table)) {
+            if (array_key_exists(VCards::UID, $in)) $row[VCards::UID] = ($v = trim((string) $in[VCards::UID])) !== '' ? mb_substr($v, 0, 255) : null;
+            if (array_key_exists(VCards::EXTRA, $in)) $row[VCards::EXTRA] = $in[VCards::EXTRA] === null ? null : mb_strcut((string) $in[VCards::EXTRA], 0, VCards::MAX_EXTRA);
+        }
         if ($shared && array_key_exists('_suggest', $in)) {
             // „Dem Verband vorschlagen“ – nur Mitglieder, nicht die Eigentümer-Website
             $row['suggest'] = !Shared::isOwner($table) && !empty($in['_suggest']) && $in['_suggest'] !== '0' ? 1 : 0;

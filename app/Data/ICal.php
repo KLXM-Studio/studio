@@ -36,7 +36,7 @@ final class ICal
             $own = $series && Series::isOverride($table, $e);
             if ($own && in_array((int) $e[Series::SERIES], $heads, true)) continue;
             $lines = !empty($o['single']) ? self::vevent($table, $e, array_filter(['uid' => $o['uid'] ?? null, 'url' => $o['url'] ?? null]))
-                : ($series && !$own ? self::series($table, $e, ['public' => true]) : self::vevent($table, $e));
+                : ($series && !$own ? self::series($table, $e, empty($o['internal']) ? ['public' => true] : ['apps' => true]) : self::vevent($table, $e));
             if (!$lines) continue;
             $events[] = $lines;
             $span = Calendar::span($table, $e);

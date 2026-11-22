@@ -335,7 +335,7 @@ final class Exposure
         if (!self::visible($t, $e)) {
             foreach ((array) ($t['fields'] ?? []) as $f) if (array_key_exists($f['name'], $e)) $e[$f['name']] = null;
             $e['_hidden'] = true;
-            unset($e[self::STATE]);
+            unset($e[self::STATE], $e[VCards::EXTRA]);
             return $e;
         }
         foreach ((array) ($t['fields'] ?? []) as $f) {
@@ -344,7 +344,7 @@ final class Exposure
             if (!self::allowed($f, $e, $target)) $e[$n] = null;
             elseif (\Core\Combo::isMulti((string) $f['type'])) $e[$n] = \Core\Combo::publicItems((string) $f['type'], $e[$n]);
         }
-        unset($e[self::STATE]);
+        unset($e[self::STATE], $e[VCards::EXTRA]);   // Zusatzangaben aus vCards: nie öffentlich
         // Funktionen je Person (Core\Data\Roles): Hauptfunktion frisch aus den Funktionen (eine beendete Funktion gilt sofort nicht mehr)
         return self::perEntry($t) ? Roles::refresh($t, $e) : $e;
     }

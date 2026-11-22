@@ -1,0 +1,49 @@
+/* Austausch: vCard/ICS importieren (Core\Data\Exchange, app/Admin/views/data/import.php, resources/js/_exchange.js) */
+.imp-lead{max-width:76ch;margin:-4px 0 16px}
+.imp-card{margin-bottom:16px;max-width:980px}
+.imp-card h3{font-size:15px;margin:22px 0 8px}
+.imp-src{font-weight:400;font-size:14px}
+.imp-file{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.imp-drop{display:grid;justify-items:center;gap:6px;padding:34px 20px;border:2px dashed var(--adm-line);border-radius:14px;background:var(--adm-bg);
+  text-align:center;cursor:pointer;transition:border-color .15s,background-color .15s}
+.imp-drop:hover,.imp-drop.is-over,.imp-card:has(.imp-file:focus-visible) .imp-drop{border-color:var(--adm-a);background:var(--adm-hover)}
+.imp-card:has(.imp-file:focus-visible) .imp-drop{outline:2px solid var(--adm-a);outline-offset:2px}
+.imp-drop__ico{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--adm-surface);box-shadow:0 0 0 1px var(--adm-line);color:var(--adm-a-ink)}
+.imp-drop__ico .ico{width:26px;height:26px}
+.imp-drop__t{font-size:17px;font-weight:700;color:var(--adm-ink)}
+.imp-drop__s{font-size:13px;color:var(--adm-t2)}
+.imp-drop__name{font-size:13px;font-weight:600;color:var(--adm-a-ink);min-height:1.2em}
+.imp-actions{margin-top:14px;align-items:center;gap:10px;flex-wrap:wrap}
+.imp-abo{border-top:1px solid var(--adm-line);padding-top:6px}
+.imp-abos{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px}
+.imp-abos a{display:inline-flex;align-items:center;gap:6px}
+/* Vorschau */
+.imp-sum{list-style:none;display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 16px;padding:0}
+.imp-sum__i{display:grid;gap:2px;min-width:112px;padding:10px 14px;border-radius:10px;background:var(--adm-bg);box-shadow:0 0 0 1px var(--adm-line)}
+.imp-sum__n{font-size:24px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.imp-sum__l{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--adm-t2)}
+.imp-sum__l .ico{width:14px;height:14px}
+.imp-sum__i--created .imp-sum__n{color:var(--adm-ok)}
+.imp-sum__i--failed .imp-sum__n{color:var(--adm-err)}
+.imp-status{border:0;margin:12px 0;padding:0}
+.imp-status legend{font-weight:700;font-size:14px;margin-bottom:4px;padding:0}
+.imp-rows{margin:14px -20px 0;overflow-x:auto;max-height:60vh;overflow-y:auto}
+.imp-table td{vertical-align:top}
+.imp-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;
+  background:var(--adm-bg);color:var(--adm-t2);box-shadow:0 0 0 1px var(--adm-line)}
+.imp-badge .ico{width:12px;height:12px}
+.imp-badge--created{background:var(--adm-ok-bg);color:var(--adm-ok)}
+.imp-badge--updated{background:var(--adm-accent-bg);color:var(--adm-a-ink)}
+.imp-badge--failed{background:var(--adm-err-bg);color:var(--adm-err)}
+.imp-warn{display:inline-flex;align-items:flex-start;gap:4px;font-size:12px;color:var(--adm-t2)}
+.imp-warn .ico{width:12px;height:12px;flex:none;margin-top:2px}
+/* Ziehen auf Adressbuch/Kalender */
+[data-imp-target]{position:relative}
+.imp-over{position:absolute;inset:0;z-index:40;display:grid;place-items:center;border:2px dashed var(--adm-a);border-radius:12px;
+  background:color-mix(in srgb,var(--adm-surface) 88%,transparent);font-size:18px;font-weight:700;color:var(--adm-a-ink);pointer-events:none}
+.dt-cal__tools{display:flex;gap:6px;align-items:center;margin-left:auto}
+@media (max-width:640px){
+  .imp-drop{padding:24px 14px}
+  .imp-rows{margin:14px -16px 0}
+  .dt-cal__tools{margin-left:0}
+}

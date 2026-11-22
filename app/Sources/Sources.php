@@ -22,7 +22,7 @@ use Core\Settings;
  */
 final class Sources
 {
-    public const FORMATS = ['rss' => 'RSS 2.0 / RSS 1.0', 'atom' => 'Atom', 'json' => 'JSON-API', 'xml' => 'XML (XPath)', 'openimmo' => 'OpenImmo (XML oder ZIP)'];
+    public const FORMATS = ['rss' => 'RSS 2.0 / RSS 1.0', 'atom' => 'Atom', 'json' => 'JSON-API', 'xml' => 'XML (XPath)', 'openimmo' => 'OpenImmo (XML oder ZIP)', 'ics' => 'iCalendar (ICS)'];
     public const AUTH = ['none', 'bearer', 'header', 'basic'];
     public const LOG_KEEP = 20;
 
@@ -209,12 +209,14 @@ final class Sources
         if ($name === '') $errors['name'] = __('Bitte einen Namen angeben.');
         $format = array_key_exists((string) ($in['format'] ?? ''), self::FORMATS) ? (string) $in['format'] : 'rss';
         $url = trim((string) ($in['url'] ?? ''));
+        // Kalender-Abos: webcal:// ist https://
+        if (preg_match('~^webcals?://~i', $url)) $url = (string) preg_replace('~^webcals?://~i', 'https://', $url);
         if ($url !== '' && (!preg_match('~^https?://[^\s/$.?#][^\s]*$~i', $url) || !filter_var($url, FILTER_VALIDATE_URL))) {
             $errors['url'] = __('Bitte eine vollständige Adresse mit http:// oder https:// angeben.');
         } elseif ($url !== '' && (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null)) {
             $errors['url'] = __('Zugangsdaten gehören nicht in die Adresse – bitte unter „Anmeldung“ eintragen.');
         }
-        if ($url === '' && $format !== 'openimmo') $errors['url'] = __('Bitte die Adresse der Quelle angeben.');
+        if ($url === '' && !in_array($format, ['openimmo', 'ics'], true)) $errors['url'] = __('Bitte die Adresse der Quelle angeben.');
         $o = (array) ($in['options'] ?? []);
         $old = $src['options'] ?? self::DEFAULTS;
         $options = [
@@ -393,6 +395,9 @@ final class Sources
             'openimmo' => ['label' => __('OpenImmo'), 'icon' => 'house-line', 'format' => 'openimmo', 'name' => __('Immobilien (OpenImmo)'),
                 'help' => __('Immobilienangebote aus Makler-Software: ZIP hochladen oder Adresse zum Abholen – mit Bildern, Energieausweis und Kontakt.'),
                 'options' => ['schedule' => 'manual', 'ttl' => 60, 'max_items' => 500, 'max_mb' => 20], 'table' => OpenImmo::tableDef(), 'mapping' => OpenImmo::mapping()],
+            'ics' => ['label' => __('Kalender (ICS)'), 'icon' => 'calendar-blank', 'format' => 'ics', 'name' => __('Termine (Kalender-Abo)'),
+                'help' => __('Kalender abonnieren (ICS/webcal) oder ICS-Datei hochladen – Serien, Ausnahmen, geänderte Einzeltermine und Zeitzonen; Abgleich per UID.'),
+                'options' => ['schedule' => 'daily', 'ttl' => 60, 'max_items' => 2000, 'missing' => 'hide'], 'table' => null, 'mapping' => null],
             'json' => ['label' => __('JSON-API'), 'icon' => 'brackets-curly', 'format' => 'json', 'name' => __('Einträge aus einer API'),
                 'help' => __('Beliebige JSON-Schnittstelle: Pfad zur Liste angeben, Felder in der Vorschau zuordnen.'),
                 'options' => ['schedule' => 'daily', 'ttl' => 60, 'max_items' => 200], 'table' => null, 'mapping' => null],

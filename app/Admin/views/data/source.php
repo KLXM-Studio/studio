@@ -57,9 +57,9 @@ $optHelp = __('Datum: Formate wie d.m.Y|Y-m-d H:i (leer = automatisch) · Zahl: 
         <select id="src-format" name="format" data-autosubmit><?php foreach (Sources::FORMATS as $k => $l): ?><option value="<?= e($k) ?>"<?= $k === $fmt ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
       <div class="f f--half"><span class="f-label"><?= e(__('Status')) ?></span>
         <label class="f-check"><input type="checkbox" name="active" value="1"<?= $v['active'] ? ' checked' : '' ?>> <span><?= e(__('Aktiv (Zeitplan ruft ab)')) ?></span></label></div>
-      <div class="f"><label for="src-url"><?= e(__('Adresse (URL)')) ?><?= $fmt !== 'openimmo' ? ' <span class="req" aria-hidden="true">*</span>' : '' ?></label>
+      <div class="f"><label for="src-url"><?= e(__('Adresse (URL)')) ?><?= !in_array($fmt, ['openimmo', 'ics'], true) ? ' <span class="req" aria-hidden="true">*</span>' : '' ?></label>
         <input id="src-url" name="url" type="url" inputmode="url" value="<?= e($v['url']) ?>" placeholder="https://…" spellcheck="false"<?= $inv('url') ?>><?= $err('url') ?>
-        <p class="f-help"><?= e($fmt === 'openimmo' ? __('Optional: Adresse, unter der die Makler-Software die OpenImmo-Datei (XML oder ZIP) bereitstellt – sonst ZIP hochladen (rechts).') : __('Abgerufen wird nur vom Server. Adressen im eigenen Netz (localhost, private IP-Adressen) sind gesperrt.')) ?></p></div>
+        <p class="f-help"><?= e($fmt === 'openimmo' ? __('Optional: Adresse, unter der die Makler-Software die OpenImmo-Datei (XML oder ZIP) bereitstellt – sonst ZIP hochladen (rechts).') : ($fmt === 'ics' ? __('Adresse des Kalenders (https:// oder webcal://) zum regelmäßigen Abruf – oder leer lassen und eine ICS-Datei hochladen (rechts). Adressen im eigenen Netz sind gesperrt.') : __('Abgerufen wird nur vom Server. Adressen im eigenen Netz (localhost, private IP-Adressen) sind gesperrt.'))) ?></p></div>
       <?php if ($fmt === 'json'): ?>
       <div class="f"><label for="src-ip"><?= e(__('Pfad zur Liste der Einträge')) ?></label>
         <input id="src-ip" name="options[items_path]" value="<?= e($o['items_path']) ?>" placeholder="data.items[*]" spellcheck="false">
@@ -279,6 +279,19 @@ $optHelp = __('Datum: Formate wie d.m.Y|Y-m-d H:i (leer = automatisch) · Zahl: 
     <form method="post" action="<?= e(url('/admin/quellen/' . $src['id'] . '/sync')) ?>"><?= csrf_field() ?><button class="adm-btn adm-btn--primary adm-btn--block"><?= icon('arrows-clockwise') ?> <?= e(__('Jetzt abrufen')) ?></button></form>
     <?php endif; ?>
   </section>
+  <?php if ($src['format'] === 'ics'): ?>
+  <section class="adm-card" aria-labelledby="src-h-up">
+    <h2 id="src-h-up"><?= icon('calendar-blank') ?> <?= e(__('Kalender-Datei hochladen')) ?></h2>
+    <form method="post" action="<?= e(url('/admin/quellen/' . $src['id'] . '/upload')) ?>" enctype="multipart/form-data">
+      <?= csrf_field() ?>
+      <div class="f"><label for="src-file"><?= e(__('ICS-Datei')) ?></label><input id="src-file" type="file" name="datei" accept=".ics,.ical,text/calendar" required></div>
+      <button class="adm-btn adm-btn--block"<?= $src['table'] ? '' : ' disabled' ?>><?= icon('upload-simple') ?> <?= e(__('Hochladen und einlesen')) ?></button>
+      <?php if (!$src['table']): ?><p class="f-help"><?= e(__('Zuerst eine Zieltabelle wählen.')) ?></p><?php endif; ?>
+    </form>
+    <?php if ($upload): ?><p class="f-help"><?= e(__('Zuletzt hochgeladen: {when} – „Jetzt abrufen“ liest diese Datei erneut ein, solange keine Adresse eingetragen ist.', ['when' => \Core\Format::admin()->datetime((int) filemtime($upload))])) ?></p><?php endif; ?>
+    <?php if ($src['table'] && \Core\Data\Kinds::isCalendar($src['table'])): ?><p class="f-help"><?= e(__('Kalender mit Serien: Die Zuordnung ist fest (Titel, Beginn, Ende, Wiederholung, Ort, Kategorien, „Fällt aus“) – Serien, Ausnahmen und geänderte Einzeltermine werden übernommen, Abgleich per UID.')) ?></p><?php endif; ?>
+  </section>
+  <?php endif; ?>
   <?php if ($src['format'] === 'openimmo'): ?>
   <section class="adm-card" aria-labelledby="src-h-up">
     <h2 id="src-h-up"><?= icon('file-zip') ?> <?= e(__('OpenImmo-Datei hochladen')) ?></h2>

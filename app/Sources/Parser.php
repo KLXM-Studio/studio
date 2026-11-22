@@ -35,11 +35,22 @@ final class Parser
             'rss', 'atom' => self::feed($body),
             'xml' => self::xml($body, (string) ($opt['xpath'] ?? '')),
             'openimmo' => OpenImmo::parse($body),
+            'ics' => self::ics($body),
             default => throw new SourceException(__('Unbekanntes Format.')),
         };
         $out['meta']['total'] = count($out['items']);
         $out['items'] = array_slice(array_values(array_filter($out['items'], 'is_array')), 0, $max);
         return $out;
+    }
+
+    /** iCalendar → je VEVENT ein flacher Eintrag (Core\Data\IcsImport::items) */
+    private static function ics(string $body): array
+    {
+        try {
+            return \Core\Data\IcsImport::items($body);
+        } catch (\RuntimeException $e) {
+            throw new SourceException($e->getMessage());
+        }
     }
 
     private static function stripBom(string $s): string

@@ -197,6 +197,8 @@
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
  *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
  *                                                     Termin-Aktionen (In den Kalender, Vorkommen, Fremd-Links)
+ *   exchange:selftest                                 Selbsttest Austausch: vCard-Import/-Export (Rundreise inkl. Zusatzangaben, UID-Abgleich,
+ *                                                     Listen, Fotos), ICS-Import (Serien, Einzeltermine, Zeitzonen, Abo), SSRF, XSS, Alt-Tabellen
  *   data:import-pages <pfad|seiten-id> [--table=kurzname] [--keep=id|slug,…] [--blocks=typ,…] [--apply] | --revert
  *                                                     Seitenzweig in einen Wissensbereich umstellen (Tabellenart „Wissen“): Unterseiten →
  *                                                     Kapitel mit Oberkapitel und Reihenfolge, Seiten offline ins Archiv, Links und 301-
@@ -1567,6 +1569,13 @@ switch ($cmd) {
         $res = Core\Data\CalendarSelfTest::run();
         $eva = Core\Data\EventActionsSelfTest::run();   // Termin-Aktionen (In den Kalender, Abonnieren, Fremd-Links, Vorkommen)
         $res = ['ok' => $res['ok'] + $eva['ok'], 'fails' => [...$res['fails'], ...$eva['fails']]];
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'exchange:selftest':
+        // Austausch (Core\Data\ExchangeSelfTest): vCard und ICS – Import mit Probelauf, Export, UID-Abgleich, Abo, Sicherheit
+        $res = Core\Data\ExchangeSelfTest::run();
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

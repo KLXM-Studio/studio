@@ -63,6 +63,7 @@ import { initPushAdmin } from './_pushadmin.js';   // Mitteilungen → Verfassen
 import { initPack } from './_pack.js';   // Große Formulare gebündelt senden (max_input_vars, Core\Http\Request::unpack)
 import { initRequests } from './_requests.js';   // Anfragen als Posteingang (Liste + Lesebereich)
 import { initAddressBook } from './_addressbook.js';   // Kontakte: Adressbuch-Ansicht (Core\Data\AddressBook)
+import { initExchange } from './_exchange.js';   // Austausch: vCard/ICS ziehen → Vorschau (Core\Data\Exchange)
 import { initDelivery } from './_delivery.js';   // Eingang → Zustellung der Anfragen (Core\Data\Delivery)   // Assistent-Chat der Redaktion (Core\AI\Assistant) – lädt assistant.mjs erst beim Öffnen
 
 const d = document;
@@ -120,6 +121,7 @@ initBlockChoice();
 initDelivery();
 initRequests();
 initAddressBook();
+initExchange();
 if (IN_ADMIN) initPush(csrf);
 if (IN_ADMIN) initPushAdmin();
 
