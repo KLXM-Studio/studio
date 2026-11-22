@@ -148,13 +148,17 @@ final class SelfTest
             ['gruppen' => ['rows' => [['id' => 1, 'gebiet' => "Musterhausen\nBeispielburg"]]]], [], [['handle' => 'gruppen', 'name' => 'Gruppen']], ['region.name' => 'Musterland'], $areas);
         $by = fn(string $w) => array_values(array_map(fn($r) => $r['reason'], array_filter($rv, fn($r) => $r['where'] === $w)));
         $eq('Ortsnamen: Absatz mit mehreren → ein Fund, einzelner Ort, Feld mit Flächen nicht', [count($by('page:4')), str_starts_with((string) ($by('page:4')[0] ?? ''), 'Absatz ist auf Musterland bezogen'),
-            str_starts_with((string) ($by('page:5')[0] ?? ''), 'Ortsname aus Musterland („Beispielburg“)'), $by('entry:gruppen:1')], [1, true, true, []]);
+            str_starts_with((string) ($by('page:5')[0] ?? ''), 'Absatz ist auf Musterland bezogen („Beispielburg“)'), $by('entry:gruppen:1')], [1, true, true, []]);
         [, $rv0] = Export::review([['id' => 4, 'title' => 'Gruppen', 'content_published' => ['blocks' => [['type' => 'richtext', 'data' => ['text' => '<p>Treffen in Musterhausen und Beispielburg.</p>']]]]]], [], [], [], ['region.name' => 'Musterland']);
         $eq('Ortsnamen: ohne Erweiterung wie bisher', $rv0, []);
-        // Neutrale Namen für Gebiete (rename): mit Einzahl davor nicht doppelt
-        $an = new Anonymizer([], 0, []);
-        $an->renames(['Testheide' => 'Gruppe Nord'], ['Gruppe']);
-        $eq('Gebiete umbenennen', [$an->text('Die Gruppe Testheide lädt ein, Testheide-Fest bleibt'), $an->text('Testheide')], ['Die Gruppe Nord lädt ein, Testheide-Fest bleibt', 'Gruppe Nord']);
+        // Neutrale Namen nur an echten Verweisen – Landschaftsname im Fließtext bleibt und wird gemeldet
+        $rs = References::selftest();
+        $ok += $rs['ok'];
+        array_push($fails, ...$rs['fails']);
+        [, $rv2] = Export::review([['id' => 6, 'title' => 'Wald', 'content_published' => ['blocks' => [['type' => 'richtext', 'data' => ['text' => '<p>Kalamitätsfläche mit Gras in der Testheide 2016</p><p>Die Metropole Musterhausen (Beispielburg) wächst.</p>']]]]]],
+            [], [], [], ['region.name' => 'Musterland'], $areas);
+        $eq('Landschaft im Fließtext gemeldet (je Absatz ein Fund)', array_map(fn($r) => strstr((string) $r['reason'], ' – ', true), $rv2),
+            ['Absatz ist auf Musterland bezogen („Testheide“)', 'Absatz ist auf Musterland bezogen („Musterhausen“, „Beispielburg“)']);
         // Lizenz aus dem Urheberhinweis
         $eq('Lizenz aus Urheberhinweis', [\Core\Media::licenseFromCredit('Image by Erika Musterfrau from Pixabay'), \Core\Media::licenseFromCredit('Foto: Max Mustermann / pexels.com'),
             \Core\Media::licenseFromCredit('Photo by X on Unsplash'), \Core\Media::licenseFromCredit('Foto: privat'), Export::license(['license' => 'Eigenes Foto', 'credit' => 'Pixabay'])],

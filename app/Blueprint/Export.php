@@ -87,7 +87,9 @@ final class Export
         // Gebiete der Quelle (Filter blueprint.areas, z. B. Gebietskarten): Ortsnamen für die Prüfung, neutrale Namen für Einträge an Flächen
         $areas = \Core\Extensions::filter('blueprint.areas', [], ['region' => (string) ($src['region.name'] ?? $srcRegion), 'site' => site()->key]);
         $areas = is_array($areas) ? $areas : [];
-        $anon->renames(array_map('strval', (array) ($areas['rename'] ?? [])), array_values(array_filter(array_map(fn($e) => (string) ($e['singular'] ?? ''), (array) ($areas['entries'] ?? [])))));
+        // Neutrale Namen nur an echten Verweisen (Titel, Adresse, Links auf den Eintrag, Werte genau gleich dem Namen) – nie im Fließtext;
+        // dort meldet die Prüfung den Namen als Ortsbezug (Core\Blueprint\References)
+        $refs = self::areaRefs($areas);
         $files = [];
         $copies = [];   // Dateien, die unverändert ins Paket kopiert werden: Pfad im Paket → Quelldatei
         $media = [];   // alte ID → ['demo' => bool] (Verwendung)
@@ -299,6 +301,13 @@ final class Export
         $config = array_filter(['preset' => $app->config->get('preset'), 'features' => array_diff_key((array) $app->config->get('features', []), array_flip(self::FEATURES_OFF)),
             'blocks' => $app->config->get('blocks')], fn($v) => $v !== null && $v !== []);
 
+        // Neutrale Namen an echten Verweisen (Links auf den Eintrag, Werte gleich dem Namen) – vor dem Schreiben und der Prüfung
+        if ($refs) {
+            $pages = References::apply($pages, $refs);
+            $settings = References::apply($settings, $refs);
+            $ext = References::apply($ext, $refs);
+            foreach ($entries as $h => $set) $entries[$h]['rows'] = References::apply($set['rows'], $refs);
+        }
         $files['structure/settings.json'] = $settings;
         $files['structure/pages.json'] = $pages;
         $files['structure/tables.json'] = $tables;
@@ -464,22 +473,18 @@ final class Export
                 $num = self::regionNumber($rest);
                 if ($num !== null) $hits[] = [$num, 'Zahlen und Angaben zur Region (z. B. Anzahl, Statistik) – bitte für die eigene Organisation prüfen'];
             }
-            // Ortsnamen: je Absatz zählen – mehrere verschiedene in einem Absatz → ein Fund „Absatz ist auf … bezogen“
+            // Ortsnamen: je Absatz ein Fund „Absatz ist auf … bezogen“ (alle Namen des Absatzes) – Fließtext wird nie ersetzt; höchstens 5 je Stelle
             if ($placeRe) {
-                $best = [[], ''];
+                $n = 0;
                 foreach (preg_split('~</p>|<br\s*/?>|</li>|</h\d>|\n{2,}~i', $s) ?: [] as $para) {
                     $pt = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($para), ENT_QUOTES, 'UTF-8')));
                     $pt = (string) preg_replace(Placeholders::PATTERN, ' ', $pt);
                     $found = [];
                     foreach ($placeRe as $re) if (preg_match_all($re, $pt, $pm)) foreach ($pm[1] as $p) $found[$p] = true;
-                    if (count($found) > count($best[0])) $best = [array_keys($found), $pt];
-                }
-                if (count($best[0]) >= 2) {
-                    $key = $where . "\x1Fplaces";
-                    $items[$key] ??= ['where' => $where, 'link' => $link, 'title' => $title, 'reason' => 'Absatz ist auf ' . $regionName . ' bezogen („' . implode('“, „', array_slice($best[0], 0, 5)) . '“) – bitte für die eigene Region neu schreiben',
-                        'sample' => mb_strimwidth($best[1], 0, 160, '…')];
-                } elseif (count($best[0]) === 1) {
-                    $hits[] = [(string) $best[0][0], 'Ortsname aus ' . $regionName . ' („' . $best[0][0] . '“) – bitte an die eigene Region anpassen'];
+                    if (!$found || ++$n > 5) continue;
+                    $key = $where . "\x1Fplaces\x1F" . md5($pt);
+                    $items[$key] ??= ['where' => $where, 'link' => $link, 'title' => $title, 'reason' => 'Absatz ist auf ' . $regionName . ' bezogen („' . implode('“, „', array_slice(array_keys($found), 0, 5)) . '“) – bitte für die eigene Region neu schreiben',
+                        'sample' => mb_strimwidth($pt, 0, 160, '…')];
                 }
             }
             foreach ($hits as [$needle, $reason]) {
@@ -522,6 +527,28 @@ final class Export
         foreach ($settings as $k => $v) $walk($v, fn(string $s) => $check($s, 'setting:' . $k, '/admin/settings', 'Einstellung ' . $k));
         ksort($counts);
         return [$counts, array_values($items)];
+    }
+
+    /**
+     * Verweise für neutrale Namen (blueprint.areas → entries: Titelfeld, ID → Name): bisheriger Titel und Slug aus der Datenbank.
+     * @return list<array{handle: string, id: int, old: string, new: string, slug_old: string, slug_new: string, prefix: string}>
+     */
+    private static function areaRefs(array $areas): array
+    {
+        $out = [];
+        foreach ((array) ($areas['entries'] ?? []) as $h => $e) {
+            $t = is_array($e) ? Tables::find((string) $h) : null;
+            $tf = (string) ($e['field'] ?? '');
+            if (!$t || !Tables::field($t, $tf)) continue;
+            foreach ((array) ($e['labels'] ?? []) as $id => $label) {
+                $row = Tables::db($t)->fetch('SELECT * FROM ' . $t['table'] . ' WHERE id = ?', [(int) $id]);
+                $old = trim((string) ($row[$tf] ?? ''));
+                if (!$row || $old === '' || $old === (string) $label) continue;
+                $out[] = ['handle' => (string) $h, 'id' => (int) $id, 'old' => $old, 'new' => (string) $label, 'slug_old' => (string) ($row['slug'] ?? ''),
+                    'slug_new' => Anonymizer::slug((string) $label), 'prefix' => (string) ($e['singular'] ?? '')];
+            }
+        }
+        return $out;
     }
 
     /** Zahlwörter (eins bis zwanzig, Zehner, hundert, tausend, Dutzend – auch gebeugt: „zweier“, „dreien“, „Dutzende“) */

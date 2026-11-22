@@ -21,7 +21,9 @@
       ein Absatz Zahlen zur Region (Anzahl der Gruppen, Statistik – auch als Wort: „in elf Regionen“), ersetzt die Vorlage nichts selbst.
       Rechtsverweise („Art. 6 Abs. 1 lit. a DSGVO“), Adressen und Video-Kennungen zählen nicht. Mit einer Erweiterung wie Gebietskarten
       erkennt die Prüfung auch Orts- und Kreisnamen der Quell-Region; ein Absatz mit mehreren davon wird ein Fund „Absatz ist auf … bezogen“.
-      Einträge, die an Flächen einer Karte hängen (z. B. Regionalgruppen), heißen in der Vorlage nach ihrer Lage („Regionalgruppe Nord“). Die neue Website bekommt dafür je Stelle die
+      Einträge, die an Flächen einer Karte hängen (z. B. Regionalgruppen), heißen in der Vorlage nach ihrer Lage („Regionalgruppe Nord“) –
+      geändert werden nur echte Verweise (Titel, Adresse, Links auf den Eintrag, Werte genau gleich dem Namen). Derselbe Name als Wort in
+      einem Satz bleibt stehen und wird als „Absatz ist auf … bezogen“ gemeldet; die neue Website bekommt dafür eine Aufgabe. Die neue Website bekommt dafür je Stelle die
       Aufgabe „Text an Ihre Organisation anpassen“ mit Link. Das <b>Impressum</b> der Quelle geht nie mit – die Vorlage enthält ein Impressum mit
       Platzhaltern; „Vertreten durch“ und „Verantwortlich nach § 18 Abs. 2 MStV“ füllt die Schnelleinrichtung. Vorab prüfen: <code>php bin/console site:blueprint &lt;website&gt; --check</code> zeigt den Plan, ohne ein Paket zu schreiben.</li>
     <li><b>Bilder:</b> Der Bericht jeder Version (Versionen → „Bericht des Exports“) nennt die Bilder, die als Platzhalter ersetzt werden, mit Grund.

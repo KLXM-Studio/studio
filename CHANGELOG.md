@@ -73,7 +73,8 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Schnelleinrichtung; Beispiel-IBAN im Text wird nicht mehr als Telefonnummer ersetzt.
 - **Gebiete der Quelle** (Filter `blueprint.areas`): Erweiterungen melden Ortsnamen der Quell-Region für `--check` (Absätze mit mehreren
   Treffern werden ein Fund „Absatz ist auf {Region} bezogen“), Felder mit Flächen (nicht geprüft) und neutrale Namen für Einträge an
-  Flächen („Regionalgruppe Nord/Mitte/Süd“), die in allen Texten ersetzt werden.
+  Flächen („Regionalgruppe Nord/Mitte/Süd“). Ersetzt werden nur echte Verweise – Titel, Adresse, Links auf den Eintrag, Werte gleich dem
+  Namen (`Core\Blueprint\References`); derselbe Name im Fließtext bleibt und wird je Absatz gemeldet.
 - *EN:* Website templates (blueprints): export a site's structure with anonymised demo content (`site:blueprint`), create new sites from a
   template (`site:create --blueprint`) with a guided quick setup, roll out new template versions as structure-only proposals, and copy whole
   sites without secrets or personal data (`site:copy`); network administration → Website templates. Follow-ups: the palette chosen at
