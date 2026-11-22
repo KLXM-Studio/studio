@@ -155,26 +155,40 @@ final class Library
         return ['version' => $version, 'report' => array_values(array_filter(array_map('trim', explode("\n", (string) $out))))];
     }
 
-    /** Vorschaubild der Vorlage (Pfad) */
+    /** Bildformate des Vorschaubilds */
+    public const PREVIEW_MIMES = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
+
+    /**
+     * Vorschaubild der Vorlage (Pfad): Datei der Mediathek der Netzwerk-Website (meta.json → preview_media), Pfad aus dem Medienordner
+     * und dem geprüften Dateinamen. Nur im Kontext der Netzwerk-Website (Verwaltung, Bibliothek).
+     */
     public static function previewFile(string $name): ?string
     {
-        $known = self::known($name);
-        if ($known === null) return null;
-        foreach (['png', 'jpg', 'webp'] as $e) if (is_file(self::path($known) . '/preview.' . $e)) return self::path($known) . '/preview.' . $e;
-        return null;
+        $b = self::get($name);
+        $m = $b && (int) ($b['preview_media'] ?? 0) > 0 ? \Core\Media::find((int) $b['preview_media']) : null;
+        if (!$m || !empty($m['deleted_at']) || !empty($m['pool_ref']) || !isset(self::PREVIEW_MIMES[(string) $m['mime']])) return null;
+        $file = Package::cleanPath((string) $m['file']);
+        $path = $file !== null ? site()->mediaDir() . '/' . $file : '';
+        return $path !== '' && is_file($path) ? $path : null;
     }
 
-    /** Vorschaubild aus einem Upload speichern (nur hochgeladene Dateien, PNG/JPEG/WebP, höchstens 4 MB) – Fehlertext oder null */
-    public static function setPreview(string $name, string $tmp): ?string
+    /**
+     * Vorschaubild aus einem Upload: über den geprüften Upload der Mediathek (Core\Media::upload, Website des Netzwerks), die Vorlage
+     * merkt sich nur die Medien-ID. Nur PNG/JPEG/WebP bis 4 MB. Fehlertext oder null.
+     */
+    public static function setPreview(string $name, array $file): ?string
     {
-        if (!is_uploaded_file($tmp) || filesize($tmp) > 4 * 1024 * 1024) return __('Bild fehlt oder ist größer als 4 MB.');
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) ?: '';
-        $ext = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'][$mime] ?? null;
-        if (!$ext) return __('Bitte ein PNG-, JPEG- oder WebP-Bild wählen.');
-        $known = self::known($name);
-        if ($known === null) return __('Bild fehlt oder ist größer als 4 MB.');
-        foreach (['png', 'jpg', 'webp'] as $e) @unlink(self::path($known) . '/preview.' . $e);
-        if (!move_uploaded_file($tmp, self::path($known) . '/preview.' . $ext)) return __('Bild fehlt oder ist größer als 4 MB.');
+        $b = self::get($name);
+        if (!$b) return __('Bild fehlt oder ist größer als 4 MB.');
+        if ((int) ($file['size'] ?? 0) > 4 * 1024 * 1024) return __('Bild fehlt oder ist größer als 4 MB.');
+        [$m, $err] = \Core\Media::upload($file, __('Vorschaubild der Website-Vorlage {name}', ['name' => (string) $b['title']]), ['require_alt' => false, 'tags' => 'website-vorlage']);
+        if (!$m) return (string) $err;
+        if (!isset(self::PREVIEW_MIMES[(string) $m['mime']])) {
+            \Core\Media::delete((int) $m['id'], true);
+            return __('Bitte ein PNG-, JPEG- oder WebP-Bild wählen.');
+        }
+        $b['preview_media'] = (int) $m['id'];
+        self::save($b);
         return null;
     }
 

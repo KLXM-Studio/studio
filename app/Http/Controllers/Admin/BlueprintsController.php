@@ -66,7 +66,7 @@ final class BlueprintsController extends AdminController
         $this->guard($r);
         $f = Package::validName($name) ? Library::previewFile($name) : null;
         if (!$f) throw new HttpException(404);
-        $mime = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'webp' => 'image/webp'][pathinfo($f, PATHINFO_EXTENSION)] ?? 'application/octet-stream';
+        $mime = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'webp' => 'image/webp'][pathinfo($f, PATHINFO_EXTENSION)] ?? 'application/octet-stream';
         return (new Response((string) file_get_contents($f)))->header('Content-Type', $mime)->header('Cache-Control', 'private, max-age=300')->header('X-Content-Type-Options', 'nosniff');
     }
 
@@ -129,7 +129,7 @@ final class BlueprintsController extends AdminController
                     $b['placeholders'] = Export::cleanPlaceholders($ph);
                     Library::save($b);
                     if (is_array($f = $r->files['preview'] ?? null) && (int) ($f['error'] ?? 4) === UPLOAD_ERR_OK && is_uploaded_file((string) $f['tmp_name'])) {
-                        if ($err = Library::setPreview($name, (string) $f['tmp_name'])) return $this->back($back, 'error', $err);
+                        if ($err = Library::setPreview($name, $f)) return $this->back($back, 'error', $err);
                     }
                     $msg = __('Angaben gespeichert – gelten ab der nächsten Version.');
                     break;

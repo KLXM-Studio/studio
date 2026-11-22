@@ -9897,4 +9897,6 @@ return [
     'Übernehmen (ohne Passkeys)' => 'Take over (without passkeys)',
     'Übernimmt die Struktur der Website. Grundeinstellungen nur nach Liste, nie Passwörter, Konten, Abonnenten, Anfragen, Aufgaben oder Statistik. Angaben der Organisation werden Platzhalter.' => 'Takes over the website’s structure. Basic settings only from an allow list, never passwords, accounts, subscribers, requests, tasks or statistics. Organisation details become placeholders.',
     'Übernommen wird nur Neues an der Struktur – neue Tabellen und Felder, neue Seiten als Entwurf, Rollen. Inhalte bleiben unverändert.' => 'Only new structure is applied – new tables and fields, new pages as drafts, roles. Content stays unchanged.',
+    'Vorschaubild der Website-Vorlage {name}' => 'Preview image of website template {name}',
+    'Beispiel-Eintrag aus der Website-Vorlage – entfernen unter Schnelleinrichtung → Demoinhalte' => 'Sample entry from the website template – remove it under Quick setup → Demo content',
 ];
