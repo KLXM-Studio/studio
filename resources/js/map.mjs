@@ -6,6 +6,9 @@
  * 3D (cfg.view3d, Core\Maps): Gebäude mit Höhe (fill-extrusion aus render_height der OpenMapTiles-Kacheln), nach dem Laden
  * weiche Kamerafahrt auf Neigung 55° / Drehung −20° – bei „Bewegung reduzieren“ sofort. Steuerung mit Kompass/Neigung;
  * Tastatur: Pfeile verschieben, +/− zoomen, Umschalt + Pfeile drehen/neigen (MapLibre).
+ * Kit-Farben: setzt ein Kit an der Karte (oder darüber) CSS-Variablen --map-land, --map-water, --map-green, --map-road,
+ * --map-road-major, --map-building, --map-label, --map-label-halo, färbt tint() die Ebenen des Stils nach jedem Laden um
+ * (auch nach dem Wechsel Hell/Dunkel). Werte dürfen var()/color-mix() sein – aufgelöst über eine Probe und eine 1×1-Leinwand.
  */
 const maps = [...document.querySelectorAll('[data-cms-map]:not([data-ready])')];
 let lib = null;
@@ -63,6 +66,7 @@ async function init(el) {
     pin.setAttribute('role', 'img');
     pin.setAttribute('aria-label', cfg.label || 'Standort');
     new ml.Marker({ element: pin, anchor: 'bottom' }).setLngLat(cfg.center).addTo(map);
+    map.on('style.load', () => tint(map, el));
     map.once('load', () => el.classList.replace('is-loading', 'is-ready'));
     if (cfg.styleDark) {
       const sync = () => requestAnimationFrame(() => { const now = isDark(); if (now !== dark) { dark = now; map.setStyle(styleFor()); } });
@@ -75,6 +79,41 @@ async function init(el) {
     el.classList.add('is-failed');
     delete el.dataset.ready;
     console.warn('Karte konnte nicht geladen werden', e);
+  }
+}
+
+// Kit-Farben (--map-*) → Ebenen des Stils umfärben (OpenMapTiles-Schema: source-layer water/waterway/landcover/park/landuse/building/
+// transportation; Schrift aller Symbol-Ebenen). Fehlt eine Variable, bleibt die Farbe des Stils.
+const probe = (() => { let c; return (v, host) => {
+  if (!v) return '';
+  const s = document.createElement('span'); s.hidden = true; s.style.setProperty('color', v); host.append(s);
+  const cs = getComputedStyle(s).color; s.remove();
+  c ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  c.clearRect(0, 0, 1, 1); c.fillStyle = '#000'; c.fillStyle = cs; c.fillRect(0, 0, 1, 1);
+  const [r, g, b, a] = c.getImageData(0, 0, 1, 1).data;
+  return a ? `rgb(${r},${g},${b})` : '';
+}; })();
+function tint(map, el) {
+  const cs = getComputedStyle(el);
+  const t = Object.fromEntries(['land', 'water', 'green', 'road', 'road-major', 'building', 'label', 'label-halo']
+    .map(k => [k, probe(cs.getPropertyValue('--map-' + k).trim(), el)]));
+  if (!Object.values(t).some(Boolean)) return;
+  const set = (id, prop, v) => { if (v) try { map.setPaintProperty(id, prop, v); } catch { /* Ebene ohne diese Eigenschaft */ } };
+  for (const l of map.getStyle().layers) {
+    const sl = l['source-layer'] || '', id = l.id;
+    if (l.type === 'background') set(id, 'background-color', t.land);
+    else if (l.type === 'fill') {
+      if (sl === 'water') set(id, 'fill-color', t.water);
+      else if (sl === 'park' || (sl === 'landcover' && /wood|forest|grass|park|scrub|meadow/.test(id))) set(id, 'fill-color', t.green);
+      else if (sl === 'landuse' || sl === 'landcover') set(id, 'fill-color', t.land);
+      else if (sl === 'building') set(id, 'fill-color', t.building);
+    } else if (l.type === 'line') {
+      if (sl === 'waterway') set(id, 'line-color', t.water);
+      else if (sl === 'transportation' && !/casing|rail|ferry|path|track/.test(id)) set(id, 'line-color', /motorway|trunk|primary/.test(id) ? (t['road-major'] || t.road) : t.road);
+    } else if (l.type === 'symbol' && l.layout?.['text-field']) {
+      set(id, 'text-color', t.label);
+      set(id, 'text-halo-color', t['label-halo']);
+    }
   }
 }
 
