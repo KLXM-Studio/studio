@@ -42,6 +42,7 @@ $fieldInfo = [
     'collection' => 'Medien-Sammlung (ID)', 'datatable' => 'Datentabelle (Kurzname)', 'datafield' => 'Feld einer Tabelle „tabelle.feld“ (optional mit system-Sortierfeldern)',
     'datafields' => 'Mehrere Felder „tabelle.feld“; das Formular zeigt nur die der gewählten Tabelle',
     'repeater' => 'Liste von Einträgen (fields)', 'group' => 'Wiederholbare Gruppe der Datentabellen: fields (Unterfelder), min/max (Anzahl, Fehler statt Kürzen), item_label – leere Zeilen fallen weg, Fehler je Zeile unter feld.position.unterfeld',
+'hotspots' => 'Markierungen eines Bildes (Core\\Hotspots, Format v1 {v, items}) mit Marker-Editor; image_field = Bildfeld desselben Formulars – siehe Seitenbaum & Datentabellen → Interaktives Bild', 'hidden' => 'Verstecktes Feld (Wert unverändert durchgereicht, z. B. Kennung einer Zeile)',
 'secret' => 'Passwort – leer = unverändert', 'heading' => 'Nur Zwischenüberschrift im Formular',
     'iban' => 'IBAN: gespeichert ohne Leerzeichen in Großbuchstaben, Prüfung Ländercode + Länge (SEPA-Raum) + Prüfziffer (ISO 13616, Mod 97); Anzeige in Vierergruppen, in Listen/Ausgaben maskiert (Feldoption mask, Standard an)',
     'icon' => 'Symbol (Core\\Icons): Wert = Symbolname wie „calendar-dots“; Auswahl als durchsuchbares Raster, alte Unicode-Zeichen werden abgebildet; options = zusätzlich erlaubte eigene Werte; Ausgabe im Kit: icon($wert)',

@@ -10,6 +10,33 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Interaktives Bild: Block, Feldtyp „Markierungen“, Vorlage „Interaktive Bilder“ (`Core\Hotspots`)
+- **Block „Interaktives Bild“** (Gruppe Medien, in Layout-Spalten erlaubt): Bild aus der Mediathek (auch SVG/Grafik) mit
+  nummerierten Markierungen – Punkte oder Flächen (Kreis, Rechteck, Vieleck). Ein Klick bzw. Enter öffnet ein Hinweisfenster
+  (Popover-API wie das Glossar) mit Titel, kurzem Rich-Text (über `Core\Sanitizer`, keine Bilder), optional Link (Core-Linkauswahl)
+  und Glossar-Begriff (Kurz-Erklärung + „Mehr im Glossar“). Tab-Reihenfolge = Nummern, Escape schließt und gibt den Fokus zurück,
+  Flächen per Klick, „Bewegung reduzieren“ beachtet. Unter dem Bild die **Liste aller Markierungen** (Nummer, Titel, Text): auf
+  schmalen Flächen sichtbar, sonst für Screenreader (mit Fokus sichtbar) – oder „immer“. Alt-Text aus der Mediathek.
+- **Quelle „hier pflegen“ oder „aus einer Datentabelle“** (Eintrag wählen, `entry:{tabelle}:{id}`): Vorlage **„Interaktive Bilder“**
+  (Titel, Bild, Markierungen) unter Daten → Neue Tabelle bzw. `data:template hotspots` – einmal pflegen, an mehreren Stellen und
+  als geteilte Tabelle im Netzwerk zeigen. Mit „Gemeinsame Bausteine“ wie jeder Block nutzbar.
+- **Feldtyp „Markierungen“ (`hotspots`)** für Blöcke und Datentabellen mit **Marker-Editor**: Klick ins Bild setzt eine Markierung,
+  Ziehen verschiebt Punkte, Ecken und Eckpunkte; Tastatur: Pfeile (Umschalt 5 %, Alt 0,1 %), Entf, Enter, Bild auf/ab; Ansagen über
+  eine Live-Region. Reihenfolge, Löschen und Angaben in der Wiederholgruppe darunter.
+- **Datenformat Version 1** (`{"v":1,"items":[…]}`, Koordinaten in % des Bildes): `point`, `circle` (r in % der Breite), `rect`
+  (x/y = linke obere Ecke, w/h), `poly` (`points` [[x,y],…]); je Markierung `title`, `text`, `link`, `link_label`, `term`, `icon`, `id`.
+  `Hotspots::normalize()` bereinigt jede Eingabe (auch JSON, ältere Marker-Listen).
+- **Andockstelle für Editoren** `Extension::hotspotEditor()` (z. B. ein Grafik-Editor zum Zeichnen von Flächen): Knopf im Feld,
+  eingebettetes Fenster, Austausch per `postMessage` (`klxm-hotspot-editor` ↔ `klxm-hotspots`); JavaScript-Schnittstelle
+  `CMSAdmin.hotspots.get/set`. Gestaltung über `css/hotspots.css` des Kerns mit `--kit-*`-Farben (Variablen `--hs-*`), Kits können
+  eine eigene `css/hotspots.css` mitbringen. Lage der Knöpfe CSP-konform über Klassen, genau per CSSOM (`js/hotspots.js`).
+- Selbsttests in `data:selftest`, `blocks:selftest`, `extensions:selftest`; Handbuch → Alle Blöcke, Entwicklerhandbuch → Blöcke.
+- *EN:* New core block “Interactive image”: an image from the media library with numbered hotspots (points, circles, rectangles,
+  polygons) that open popovers with title, short rich text, optional link and glossary term; keyboard and screen reader friendly,
+  list of hotspots below the image on phones. Maintained in the block or taken from a data table entry (template “Interactive
+  images”, shareable across the network). New field type `hotspots` with a marker editor (click, drag, keyboard), versioned
+  data format v1 and the integration point `Extension::hotspotEditor()` for external editors.
+
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:
   90 %, 100 % (Standard), 112 %, 125 %, 140 %, mit kleinem/großem „A“, Prozentanzeige und **Zurücksetzen**. Wirkt sofort ohne
