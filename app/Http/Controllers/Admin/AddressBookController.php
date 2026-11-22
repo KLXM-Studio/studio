@@ -117,7 +117,8 @@ final class AddressBookController extends AdminController
             $ids = array_map(fn($x) => (int) $x['id'], AddressBook::index($t, $list, $filter, mb_substr(trim($r->str('q')), 0, 100)));
         }
         $internal = $r->str('umfang') !== 'oeffentlich';
-        $body = AddressBook::vcards($t, $ids, $internal);
+        // Alle Angaben: vollständige vCards mit eigenen Zusatzfeldern und unveränderten Zusatzangaben (Core\Data\VCards, wieder importierbar)
+        $body = $internal ? \Core\Data\VCards::exportMany($t, $ids) : AddressBook::vcards($t, $ids, false);
         if ($body === '') {
             app()->session->flash('error', $internal ? __('Keine Kontakte zum Exportieren.') : __('Keiner dieser Kontakte steht auf der Website – es gibt nichts Öffentliches zu exportieren.'));
             return Response::redirect($this->backUrl($r, $handle));

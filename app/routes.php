@@ -275,6 +275,10 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/listen', [Admin\AddressBookController::class, 'assign']);
     $r->get('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
     $r->post('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
+    // Austausch (Core\Data\Exchange): vCard in Adressbücher, ICS in Kalender – Datei/Adresse, Vorschau, Bestätigen; Kalender-Abo als Quelle
+    $r->get('/admin/data/{handle}/import', [Admin\ExchangeController::class, 'form']);
+    $r->post('/admin/data/{handle}/import', [Admin\ExchangeController::class, 'submit']);
+    $r->post('/admin/data/{handle}/import/abo', [Admin\ExchangeController::class, 'subscribe']);
     // Geteilte Tabellen (Core\Data\Shared): fremde Einträge, Auswahl, Anzeige auf dieser Website – vor /{id}
     $r->get('/admin/data/{handle}/shared', [Admin\DataController::class, 'foreign']);
     $r->post('/admin/data/{handle}/pick', [Admin\DataController::class, 'pick']);
