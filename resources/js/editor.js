@@ -46,6 +46,10 @@ layerBox().append(drawer);
   grip.setAttribute('role', 'separator'); grip.setAttribute('aria-orientation', 'vertical');
   const tr = (window.CMSAdmin && CMSAdmin.t) || (x => x);
   grip.setAttribute('aria-label', tr('Breite der Seitenleiste ändern (Pfeiltasten, Doppelklick = Standard)'));
+  // Fokussierbarer Trenner braucht einen Wert (a11y): Breite in Pixeln, aktualisiert beim Ziehen und mit den Pfeiltasten
+  grip.setAttribute('aria-valuemin', '380'); grip.setAttribute('aria-valuemax', '1100');
+  const now = () => grip.setAttribute('aria-valuenow', String(Math.round(drawer.getBoundingClientRect().width) || 480));
+  now(); new ResizeObserver(now).observe(drawer);
   grip.title = tr('Breite ziehen · Doppelklick = Standard');
   drawer.prepend(grip);
   grip.addEventListener('pointerdown', e => {
@@ -65,6 +69,15 @@ const previews = initial.previews || {};
 const tools = new Map();      // blockId → Tool-Instanz
 const tunes = new Map();      // blockId → Tune-Instanz
 const initialTunes = Object.fromEntries((initial.blocks || []).map(b => [b.id, b.tunes?.section || {}]));
+// Rollenrechte an Blöcken (Core\BlockGuard): Sperre je Block (Wurzel des Block-JSON – Editor.js kennt sie nicht, darum hier gemerkt;
+// Blöcke in Spalten tragen sie in den Daten des Layouts), Stufe der Gestaltung (full | basic | none)
+const locks = new Map((initial.blocks || []).filter(b => b.lock).map(b => [b.id, b.lock]));
+const DESIGN = cfg.design || 'full';
+const DESIGN_TUNES = cfg.designTunes || [];
+/** Geschützt: gesperrt (ohne volle Gestaltung) oder Blockart nicht unter den „Erlaubten Blöcken“ der Rolle */
+const guardOf = (type, lock) => DESIGN === 'full' ? null : (lock ? 'lock' : (cfg.blocks[type]?.guarded ? 'type' : null));
+const guardNote = (why, lock) => why === 'lock' ? ((lock && lock.note) || CMSAdmin.t('Dieser Block ist von der Agentur gestaltet')) : CMSAdmin.t('Diese Blockart kann Ihre Rolle nicht bearbeiten');
+const lockIco = () => (CMSAdmin.ico ? CMSAdmin.ico('lock') : '');
 const TUNE_DEFAULTS = { background: 'white', anchor: '', visible: true, showInNav: false, navLabel: '', spaceTop: 'normal', spaceBottom: 'normal', divider: false, height: 'auto', bgImage: null, overlay: 'none', align: 'center', row: '', noGlossary: false, noSearch: false, reveal: '' };
 let editor, dirty = false, drawerFor = null, drawerSnap = null;
 let History = null;   // Rückgängig/Wiederholen (unten)
@@ -423,8 +436,11 @@ const clipboard = () => { const c = store.get(CLIP_KEY, null); return c && cfg.b
 function insertCopy(src, index) {
   if (!src || !cfg.blocks[src.type]) return false;
   const id = newBlockId();
-  initialTunes[id] = structuredClone(src.tunes || {});
-  editor.blocks.insert(src.type, freshIds(src.data), undefined, index, false, false, id);
+  const tn = structuredClone(src.tunes || {}), data = freshIds(src.data);
+  // Ohne Recht „Blöcke gestalten“: Kopie mit Standard-Gestaltung (Variante, Hintergrund, Abstände) – sonst lehnt der Server ab
+  if (DESIGN === 'none') { DESIGN_TUNES.forEach(k => delete tn[k]); delete data.variant; }
+  initialTunes[id] = tn;
+  editor.blocks.insert(src.type, data, undefined, index, false, false, id);
   markDirty();
   requestAnimationFrame(refreshMoveButtons);
   return true;
@@ -528,20 +544,25 @@ const BlockMenu = (() => {
   };
   const render = () => {
     const i = index(), n = blockEls().length, c = clipboard(), folded = tool.el.classList.contains('is-collapsed');
+    const guard = tool.guard(), canIns = tool.def.insertable !== false, locked = locks.has(tool.blockId);
     el.innerHTML = `<p class="cms-blockmenu__title">${CMSAdmin.esc(tool.def.label)}</p>`
+      + (guard ? `<p class="cms-blockmenu__note">${lockIco()} ${CMSAdmin.esc(guardNote(guard, locks.get(tool.blockId)))} – ${CMSAdmin.esc(T('nur verschieben'))}</p>` : '')
       + item('up', '↑', T('Nach oben'), { disabled: i <= 0, kbd: 'Alt ↑' })
       + item('down', '↓', T('Nach unten'), { disabled: i < 0 || i >= n - 1, kbd: 'Alt ↓' })
       + '<hr>'
-      + item('dup', '⧉', T('Duplizieren'))
-      + item('copy', '⎘', T('Kopieren'))
+      + item('dup', '⧉', T('Duplizieren'), { disabled: !canIns })
+      + item('copy', '⎘', T('Kopieren'), { disabled: !canIns })
       + (c ? item('paste', '↧', T('Einfügen darunter: {label}', { label: cfg.blocks[c.type].label })) : '')
       + '<hr>'
       + item('fold', folded ? '▸' : '▾', folded ? T('Ausklappen') : T('Einklappen'))
-      + item('vis', tool.tuneData.visible !== false ? '◌' : '●', tool.tuneData.visible !== false ? T('Ausblenden') : T('Einblenden'))
+      + item('vis', tool.tuneData.visible !== false ? '◌' : '●', tool.tuneData.visible !== false ? T('Ausblenden') : T('Einblenden'), { disabled: !!guard })
       + item('section', '▭', T('Abschnitt & Navigation …'))
+      // Volle Gestaltung: Block sperren bzw. entsperren (Core\BlockGuard) – gesperrte Blöcke ändert dann nur, wer „Blöcke gestalten (voll)“ hat
+      + (DESIGN === 'full' ? item('lock', locked ? '○' : '●', locked ? T('Sperre aufheben') : T('Sperren (nur Gestaltung ändert)')) : '')
       + extItems()
       + '<hr>'
-      + item('delete', '✕', armed ? T('Wirklich löschen?') : T('Löschen'), { danger: true });
+      + (guard ? item('delete', '✕', T('Löschen nicht möglich – gesperrt'), { danger: true, disabled: true })
+        : item('delete', '✕', armed ? T('Wirklich löschen?') : T('Löschen'), { danger: true }));
   };
   const run = act => {
     const t = tool, i = index();
@@ -552,7 +573,15 @@ const BlockMenu = (() => {
       try { a?.run(extBlock(t)); } catch (e) { console.error('[editorExt]', e); }
       return;
     }
+    if (act === 'lock') {
+      close();
+      if (locks.has(t.blockId)) locks.delete(t.blockId); else locks.set(t.blockId, { by: 'design', note: '' });
+      markDirty(); t.loadPreview();
+      editorStatus(locks.has(t.blockId) ? T('Block gesperrt – noch nicht gespeichert. Ändern und löschen kann ihn dann nur, wer „Blöcke gestalten (voll)“ darf.') : T('Sperre aufgehoben – noch nicht gespeichert.'));
+      return;
+    }
     if (act === 'delete') {
+      if (t.guard()) return;
       if (!armed) { armed = true; render(); el.querySelector('[data-act="delete"]')?.focus(); return; }
       close(false); editor.blocks.delete(i); markDirty(); requestAnimationFrame(refreshMoveButtons);
       editorStatus(T('Block gelöscht – noch nicht gespeichert. Wiederherstellen über „Versionen“.'));
@@ -666,6 +695,12 @@ function makeTool(type, def) {
     }
 
     get tuneData() { return tunes.get(this.blockId)?.data || { ...TUNE_DEFAULTS, background: def.background || 'white' }; }
+
+    /** Geschützt (Core\BlockGuard)? 'lock' | 'type' | null – sichtbar und verschiebbar, nicht änderbar und nicht löschbar */
+    guard() { return guardOf(type, locks.get(this.blockId)); }
+
+    /** Block in einer Spalte (Layout) geschützt? */
+    childGuard(id) { const c = (this.data.columns || []).flatMap(x => x?.blocks || []).find(b => b.id === id); return c ? guardOf(c.type, c.lock) : null; }
 
     /** Kopie direkt unter diesem Block */
     duplicate() {
@@ -795,11 +830,17 @@ function makeTool(type, def) {
         if ([...d.querySelectorAll('script[type="module"][src]')].some(x => x !== sc && !pv.contains(x) && x.getAttribute('src') === src)) return;
         const n = d.createElement('script'); n.type = 'module'; n.src = src; d.head.append(n);
       });
-      const t = this.tuneData;
+      const t = this.tuneData, guard = this.guard(), lock = locks.get(this.blockId);
       this.el.classList.toggle('is-hidden', !t.visible);
+      this.el.classList.toggle('is-locked', !!guard);
+      const eb = this.bar.querySelector('.cms-block__edit');
+      eb.textContent = guard ? CMSAdmin.t('Ansehen') : CMSAdmin.t('Bearbeiten');
+      eb.title = guard ? guardNote(guard, lock) : '';
       this.bar.querySelector('.cms-block__summary').textContent = summarize(this.data) || '(ohne Titel)';
       this.bar.querySelector('.cms-block__swatch').className = 'cms-block__swatch sw-' + (t.background || 'white');
       this.bar.querySelector('.cms-block__flags').innerHTML = [
+        // Gesperrt (Core\BlockGuard): für alle sichtbar; wer ändern darf (volle Gestaltung), sieht „gesperrt“ ohne Einschränkung
+        (guard || lock) && `<span class="cms-flag cms-flag--lock" title="${CMSAdmin.esc(guardNote(guard || 'lock', lock))}">${lockIco()} ${CMSAdmin.esc(guard === 'type' ? CMSAdmin.t('nicht für Ihre Rolle') : CMSAdmin.t('gesperrt'))}</span>`,
         !t.visible && '<span class="cms-flag cms-flag--off">ausgeblendet</span>',
         t.anchor && `<span class="cms-flag">#${CMSAdmin.esc(t.anchor)}</span>`,
         t.showInNav && '<span class="cms-flag cms-flag--nav">Navigation</span>',
@@ -821,6 +862,9 @@ function makeTool(type, def) {
       // Direkt editierbare Texte: plain = nur Text, rich/inline = mit schwebender Formatierungsleiste
       $$('[data-edit]', pv).forEach(n => {
         if (n.closest('[data-cms-readonly]')) return;   // Vorschau fremder Inhalte (z. B. Inhaltsblöcke des Eintrags in der Vorlage)
+        // Geschützter Block bzw. geschützter Block in einer Spalte: Text nicht direkt bearbeitbar (Core\BlockGuard)
+        const item = type === LAYOUT && n.closest('[data-lay-id]');
+        if (item ? this.childGuard(item.dataset.layId) : guard) { n.classList.add('is-guarded'); return; }   // in Spalten zählt das Kind
         const mode = n.dataset.editMode || 'plain';
         n.spellcheck = true;
         // Editor.js soll Tasten in unseren Feldern nicht abfangen (Enter, Backspace, Tab …) – und auch kein Einfügen:
@@ -942,7 +986,8 @@ function makeTool(type, def) {
     hintEdit(central = false) {
       selectBlock(this.el);
       const hint = this.bar.querySelector('.cms-block__hint'), btn = this.bar.querySelector('.cms-block__edit');
-      hint.textContent = central ? CMSAdmin.t('Zentral gepflegt – ändern unter „{title}“', { title: cfg.settingsTitle || CMSAdmin.t('Einstellungen') }) : CMSAdmin.t('Felder ändern: „Bearbeiten“');
+      const g = this.guard();   // geschützt (Core\BlockGuard): Grund statt „Bearbeiten“-Hinweis
+      hint.textContent = g ? guardNote(g, locks.get(this.blockId)) + ' – ' + CMSAdmin.t('nur verschieben') : central ? CMSAdmin.t('Zentral gepflegt – ändern unter „{title}“', { title: cfg.settingsTitle || CMSAdmin.t('Einstellungen') }) : CMSAdmin.t('Felder ändern: „Bearbeiten“');
       hint.hidden = false; this.bar.host.classList.add('is-hinting'); BarPlace.soon();
       btn.classList.remove('is-hint'); void btn.offsetWidth; btn.classList.add('is-hint');
       clearTimeout(this.hintT);
@@ -1006,7 +1051,14 @@ function makeTool(type, def) {
               <button type="button" class="cms-lay-bar__edit" data-act="edit" aria-label="${E(T('„{label}“ bearbeiten', { label: cdef.label }))}">${E(T('Bearbeiten'))}</button>
               <button type="button" class="cms-iconbtn cms-iconbtn--danger" data-act="del" aria-label="${E(T('„{label}“ löschen', { label: cdef.label }))}" title="${E(T('Löschen'))}">✕</button>
             </span>`);
-          const dis = { up: bi === 0, down: bi === list.length - 1, left: ci === 0, right: ci === cols.length - 1 };
+          const cg = guardOf(child.type, child.lock);
+          const dis = { up: bi === 0, down: bi === list.length - 1, left: ci === 0, right: ci === cols.length - 1, del: !!cg };
+          if (cg) {   // geschützt (Core\BlockGuard): ansehen und verschieben, nicht löschen
+            const eb = $('[data-act="edit"]', sr), db = $('[data-act="del"]', sr);
+            eb.textContent = T('Ansehen'); eb.title = guardNote(cg, child.lock);
+            db.title = T('Löschen nicht möglich – gesperrt'); db.setAttribute('aria-label', T('Löschen nicht möglich – gesperrt'));
+            $('.cms-lay-bar__label', sr).insertAdjacentHTML('beforeend', ` <span class="cms-lay-bar__lock" role="img" aria-label="${E(T('gesperrt'))}" title="${E(guardNote(cg, child.lock))}">${lockIco()}</span>`);
+          }
           $$('[data-act]', sr).forEach(b => {
             if (dis[b.dataset.act]) b.disabled = true;
             b.addEventListener('click', e => { e.stopPropagation(); this.childAction(child.id, b.dataset.act); });
@@ -1028,7 +1080,7 @@ function makeTool(type, def) {
         addHost.addEventListener('keydown', e => e.stopPropagation());
         if (this.focusAfter?.add === ci) { ab.focus({ preventScroll: true }); this.focusAfter = null; }
       });
-      this.decorateResize(pv);
+      if (!this.guard()) this.decorateResize(pv);   // gesperrtes Layout: Spaltenbreiten fest (Core\BlockGuard)
     }
 
     /**
@@ -1129,7 +1181,8 @@ function makeTool(type, def) {
         sec.className = keep;
         return vals.size > 1;
       };
-      if (sec && cfg.spacing) requestAnimationFrame(() => {
+      if (this.guard()) return;   // geschützt (Core\BlockGuard): keine Greifer
+      if (sec && cfg.spacing && DESIGN !== 'none') requestAnimationFrame(() => {
         if (!sec.isConnected) return;
         for (const side of ['top', 'bottom']) {
           const key = side === 'top' ? 'spaceTop' : 'spaceBottom', pre = side === 'top' ? 'pt-' : 'pb-';
@@ -1258,6 +1311,7 @@ function makeTool(type, def) {
       selectBlock(this.el);
       if (act === 'edit') { openDrawer(new ChildRef(this, id)); return; }
       if (act === 'del') {
+        if (guardOf(child.type, child.lock)) return;
         if (!(await (Bar?.ask || (o => Promise.resolve(confirm(o.title + '\n' + o.body))))({ title: T('Block löschen?'), body: T('„{label}“ wird aus dieser Spalte entfernt. Bis zum Speichern lässt sich das mit „Abbrechen“ rückgängig machen; danach über Versionen.', { label }), ok: T('Löschen'), danger: true }))) return;
         list.splice(bi, 1);
         if (drawerFor?.blockId === id) closeDrawer();
@@ -1316,6 +1370,7 @@ class ChildRef {
   set data(v) { const c = this.child; if (c) c.data = v; }
   get tuneData() { return { anchor: '', visible: true, background: '', ...(this.child?.tunes?.section || {}) }; }
   setTunes(t) { const c = this.child; if (c) c.tunes = { section: { ...t } }; }
+  guard() { return guardOf(this.type, this.child?.lock); }
   get el() { return this.parent.el; }
   refresh() { this.parent.refresh(); }
   loadPreview() { return this.parent.loadPreview(); }
@@ -1357,8 +1412,19 @@ async function openDrawer(tool, focusSection = false) {
   if (focusSection) { const s = $('.cms-drawer__section', drawer); s.open = true; s.scrollIntoView(); }
   const res = await api(cfg.endpoints.form, { type: tool.type, data: tool.data, entry: cfg.entry, nested: !!tool.isChild });
   if (drawerFor !== tool) return;
-  form.innerHTML = res.html;
+  // Geschützter Block (Core\BlockGuard): Felder nur lesen – ohne Speichern, ohne Eingabe; Hinweis oben
+  const guard = tool.guard?.();
+  const ro = guard ? `<p class="cms-bindnote cms-locknote" role="note">${lockIco()} <b>${CMSAdmin.esc(guardNote(guard, tool.isChild ? tool.child?.lock : locks.get(tool.blockId)))}.</b> ${CMSAdmin.esc(CMSAdmin.t('Sie können ihn ansehen und verschieben, aber nicht ändern oder löschen – bitte wenden Sie sich an die Agentur.'))}</p>` : '';
+  form.innerHTML = guard ? ro + '<fieldset class="cms-ro" disabled>' + res.html + '</fieldset>' : res.html;
   CMSAdmin.init(form);
+  if (guard) {
+    $$('[contenteditable]', form).forEach(n => { n.contentEditable = 'false'; });
+    form.oninput = form.onchange = null;
+    return;
+  }
+  // Ohne Recht „Blöcke gestalten“ (Core\BlockGuard): Variante nur anzeigen
+  const vSel = DESIGN === 'none' && form.querySelector('[name="f[variant]"]');
+  if (vSel) { vSel.disabled = true; vSel.insertAdjacentHTML('afterend', `<p class="f-help">${CMSAdmin.esc(CMSAdmin.t('Die Variante legt die Gestaltung fest – ändern darf sie, wer „Blöcke gestalten“ darf.'))}</p>`); }
   // Felder nur für bestimmte Varianten (Core\Fields 'variants' → .f-vis[data-variants]) passend zur Auswahl zeigen
   const byVariant = () => {
     const v = form.querySelector('[name="f[variant]"]')?.value;
@@ -1368,7 +1434,7 @@ async function openDrawer(tool, focusSection = false) {
   const onChange = () => {
     byVariant();
     // Nicht im Formular: Bildanpassungen, Rahmen und – beim Layout – die Blöcke der Spalten
-    const keep = Object.fromEntries(['_fx', '_fit', ...(tool.type === LAYOUT ? ['columns'] : [])].filter(k => tool.data[k] !== undefined).map(k => [k, tool.data[k]]));
+    const keep = Object.fromEntries(['_fx', '_fit', ...(tool.type === LAYOUT ? ['columns'] : []), ...(vSel ? ['variant'] : [])].filter(k => tool.data[k] !== undefined).map(k => [k, tool.data[k]]));
     tool.data = { ...formToObject(form), ...keep };
     markDirty(); drawerTouched(); tool.refresh();
     fxFieldButtons(form, tool);
@@ -1632,8 +1698,8 @@ function setVisible(tool, on) {
 function renderVis(tool) {
   const box = $('[data-drawer-vis]', drawer), T = CMSAdmin.t, E = CMSAdmin.esc;
   if (!box) return;
-  const on = tool.tuneData.visible !== false;
-  box.innerHTML = `<button type="button" class="cms-vis${on ? '' : ' is-off'}" role="switch" aria-checked="${on}" aria-describedby="cms-vis-h">
+  const on = tool.tuneData.visible !== false, ro = !!tool.guard?.();
+  box.innerHTML = `<button type="button" class="cms-vis${on ? '' : ' is-off'}" role="switch" aria-checked="${on}" aria-describedby="cms-vis-h"${ro ? ' disabled' : ''}>
       <span class="cms-vis__track" aria-hidden="true"><span class="cms-vis__thumb"></span></span>
       <span class="cms-vis__label">${E(T('Auf der Website sichtbar'))}</span></button>
     <p class="cms-vis__help" id="cms-vis-h">${E(on ? T('Besucher sehen diesen Block.') : T('Ausgeblendet: Besucher sehen diesen Block nicht – nur hier in der Bearbeitung.'))}</p>`;
@@ -1656,6 +1722,8 @@ function renderTuneForm(tool) {
       <div class="f f--half"><label for="t-anchor">Sprungmarke (Anker)</label><input id="t-anchor" name="anchor" value="${E(t.anchor || '')}" placeholder="z. B. termine"></div>`;
     f.classList.add('adm-fields');
     CMSAdmin.init(f);
+    if (tool.guard?.()) { $$('input,select,textarea,button', f).forEach(el => { el.disabled = true; }); f.oninput = f.onchange = null; return; }
+    if (DESIGN === 'none') f.background.disabled = true;   // eigene Fläche = Gestaltung (Core\BlockGuard)
     f.oninput = f.onchange = () => { tool.setTunes({ background: f.background.value, anchor: slug(f.anchor.value), visible: tool.tuneData.visible !== false }); markDirty(); drawerTouched(); tool.refresh(); };   // Sichtbarkeit: Schalter oben (renderVis)
     return;
   }
@@ -1685,6 +1753,13 @@ function renderTuneForm(tool) {
       <p class="f-help" id="t-ns-h">${E(CMSAdmin.t('Der Abschnitt bleibt sichtbar, sein Text wird aber nicht durchsucht (z. B. wiederkehrende Hinweise, Werbetexte). Gilt auch für Spalten eines Layouts.'))}</p></div>`;
   f.classList.add('adm-fields');
   CMSAdmin.init(f);
+  // Rollenrechte (Core\BlockGuard): geschützter Block = alles nur lesen; ohne „Blöcke gestalten“ = Gestaltungs-Optionen nur lesen
+  if (tool.guard?.()) { $$('input,select,textarea,button', f).forEach(el => { el.disabled = true; }); f.oninput = f.onchange = null; return; }
+  if (DESIGN === 'none') {
+    DESIGN_TUNES.forEach(k => { const el = f.elements[k]; if (el) el.disabled = true; });
+    $$('[data-media-pick],[data-media-clear]', f).forEach(b => { b.disabled = true; });
+    f.insertAdjacentHTML('afterbegin', `<p class="f-help cms-designnote">${CMSAdmin.esc(CMSAdmin.t('Hintergrund, Abstände und weitere Gestaltung ändert, wer „Blöcke gestalten“ darf. Sprungmarke und Navigation können Sie einstellen.'))}</p>`);
+  }
   f.oninput = f.onchange = () => {
     const tune = tunes.get(tool.blockId);
     const data = {
@@ -1974,7 +2049,7 @@ async function save(publish = false) {
   Bar?.state(publish ? 'publishing' : 'saving');
   try {
     const out = await editor.save();
-    const blocks = blankState() ? [] : out.blocks.map(b => ({ ...b, tunes: { section: tunes.get(b.id)?.data || b.tunes?.section || {} } }));
+    const blocks = blankState() ? [] : out.blocks.map(b => ({ ...b, tunes: { section: tunes.get(b.id)?.data || b.tunes?.section || {} }, ...(locks.has(b.id) ? { lock: locks.get(b.id) } : {}) }));
     // cms:before-save: Werkzeuge/Erweiterungen dürfen prüfen und abbrechen (auch asynchron, detail.waitUntil)
     const gate = await (CMSAdmin.events?.beforeSave({ kind: 'page', publish, page: cfg.page, blocks }) ?? { ok: true });
     if (!gate.ok) {

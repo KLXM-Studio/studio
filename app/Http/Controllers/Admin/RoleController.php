@@ -16,7 +16,7 @@ final class RoleController extends AdminController
     {
         $this->auth($r, 'users.manage');
         $role = $key ? (Permissions::role($key) ?? throw new HttpException(404)) : null;
-        return $this->view('role', ['role' => $role, 'catalog' => array_filter(array_map(fn($g) => array_filter($g, fn($p) => \Core\Features::allowsPermission($p), ARRAY_FILTER_USE_KEY), Permissions::catalog())), 'tables' => Tables::all(), 'errors' => []]);
+        return $this->view('role', ['role' => $role, 'catalog' => array_filter(array_map(fn($g) => array_filter($g, fn($p) => \Core\Features::allowsPermission($p), ARRAY_FILTER_USE_KEY), Permissions::catalog())), 'tables' => Tables::all(), 'blockCatalog' => \Core\BlockGuard::catalog(), 'errors' => []]);
     }
 
     public function save(Request $r, ?string $key = null): Response
@@ -44,14 +44,24 @@ final class RoleController extends AdminController
         $tables = $r->str('tables_mode') === 'some'
             ? json_encode(array_values(array_intersect((array) ($r->post['tables'] ?? []), array_column(Tables::all(), 'handle'))))
             : null;
+        // Erlaubte Blöcke (Core\BlockGuard): Liste der Typen oder null (alle im Rahmen der Website). Typen außerhalb des Rahmens bleiben
+        // gespeichert, wenn die Rolle sie schon hatte (Rahmen kann sich ändern) – neu angehakt werden nur wählbare
+        $known = array_keys(array_merge(...array_values(\Core\BlockGuard::catalog()) ?: [[]]));
+        $blocks = null;
+        if ($r->str('blocks_mode') === 'some') {
+            $posted = array_values(array_intersect(array_map('strval', (array) ($r->post['blocks'] ?? [])), $known));
+            $kept = array_values(array_filter((array) ($role['blocks'] ?? []), fn($t) => !\Core\Features::allowsBlock((string) $t)));
+            $blocks = array_values(array_unique([...$posted, ...$kept]));
+        }
         // Rolle nach dem Speichern prüfen wie beim Zuweisen – eine auf Tabellen beschränkte Rolle darf sich nicht selbst erweitern
         if ($mine !== null && !in_array('*', $mine['permissions'], true)
-            && !\Core\Invites::assignable(['key' => $role['key'] ?? 'neu', 'permissions' => $perms, 'tables' => $tables === null ? null : json_decode($tables, true)], $mine)) {
+            && !\Core\Invites::assignable(['key' => $role['key'] ?? 'neu', 'permissions' => $perms, 'tables' => $tables === null ? null : json_decode($tables, true), 'blocks' => $blocks], $mine)) {
             return $this->back('/admin/users/rollen', 'error', __('Sie können nur Rechte und Tabellen vergeben, die Ihre eigene Rolle hat.'));
         }
         // Rechte, die die Oberfläche nicht zeigt (abgeschaltete Erweiterung), bleiben erhalten – entfernen nur mit roles:clean
         $data = ['name' => $name, 'description' => mb_substr(trim(strip_tags($r->str('description'))), 0, 200),
-            'permissions_json' => json_encode(Permissions::keepHidden($perms, $role['permissions'] ?? [])), 'tables_json' => $tables];
+            'permissions_json' => json_encode(Permissions::keepHidden($perms, $role['permissions'] ?? [])), 'tables_json' => $tables,
+            'blocks_json' => $blocks === null ? null : json_encode($blocks)];
         if ($role) {
             app()->db->update('roles', $data, 'rkey = :k', ['k' => $role['key']]);
         } else {

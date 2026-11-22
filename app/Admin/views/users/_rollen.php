@@ -18,6 +18,7 @@
         <?php else: foreach ($ro['permissions'] as $p): if (!isset($labels[$p])) continue; ?><li><?= e($labels[$p]) ?></li><?php endforeach; if (!$ro['permissions']): ?><li class="is-none"><?= e(__('Keine Rechte')) ?></li><?php endif; endif; ?>
       </ul>
       <?php if (is_array($ro['tables'])): ?><p class="us-tables"><?= e(__('Datentabellen:')) ?> <?= e(implode(', ', $ro['tables']) ?: __('keine')) ?></p><?php endif; ?>
+      <?php if (is_array($ro['blocks'] ?? null) && !$all): // Erlaubte Blöcke (Core\BlockGuard) ?><p class="us-tables"><?= icon('lock') ?> <?= e(__('Erlaubte Blöcke: {n} ausgewählt', ['n' => count($ro['blocks'])])) ?></p><?php endif; ?>
       <?php if ($k === 'network'): ?><p class="us-tables"><?= e(__('Zentral verwaltet: Konten der Netzwerk-Website, Anmeldung mit Zwei-Faktor-Anmeldung. Hier nicht vergebbar.')) ?></p><?php endif; ?>
       <?php if ($editable): ?><footer class="us-role-card__foot"><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/roles/' . $k)) ?>"><?= e(__('Rechte bearbeiten')) ?></a>
         <?php if (\Core\Impersonation::canStart($user) && isset(\Core\Impersonation::roles()[$k])): // Ansicht als Rolle (Core\Impersonation) ?><form method="post" action="<?= e(url('/admin/impersonate')) ?>"><?= csrf_field() ?><input type="hidden" name="mode" value="role"><input type="hidden" name="value" value="<?= e($k) ?>"><button class="adm-btn adm-btn--small adm-btn--ghost" title="<?= e(__('Die Verwaltung mit den Rechten dieser Rolle ansehen')) ?>"><?= e(__('Als Rolle ansehen')) ?></button></form><?php endif; ?>

@@ -56,6 +56,9 @@
 .cms-block.is-active{outline:2px solid #314164}
 .cms-block.is-hidden .cms-block__preview{opacity:.4;filter:grayscale(.6)}
 .cms-block.is-hidden .is-hidden-block{display:block}
+/* Geschützter Block (Core\BlockGuard): Text nicht direkt bearbeitbar, gestrichelter Rahmen statt Bearbeiten-Hinweis */
+.cms-block.is-locked{outline:1px dashed color-mix(in srgb,#8C1D18 45%,transparent);outline-offset:-1px}
+.cms-block [data-edit].is-guarded{cursor:default}
 /* Blöcke nebeneinander (Tune „row“, editor.js layoutRows): Markierung am Block; ab 1100 px auch im Editor nebeneinander
    (flex-basis 1px: ein voller Block davor bleibt allein in seiner Zeile), schmaler untereinander */
 .cms-block.is-row{box-shadow:inset 4px 0 0 #6B5BA8}
