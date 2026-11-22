@@ -25,6 +25,17 @@ final class CronSelfTest
         $eq('Wochentag Freitag (5)', [Cron::due('30 3 * * 5', $t), Cron::due('30 3 * * 1-4', $t)], [true, false]);
         $eq('Sonntag als 0 und 7', [Cron::due('0 0 * * 7', mktime(0, 0, 0, 10, 18, 2026)), Cron::due('0 0 * * 0', mktime(0, 0, 0, 10, 18, 2026))], [true, true]);
         $eq('Tag ODER Wochentag (wie cron)', Cron::due('30 3 1 * 5', $t), true);
+        $eq('häufig (Meldung erst beim 2. Fehler)', array_map([Cron::class, 'frequent'], ['* * * * *', '*/10 * * * *', '*/15 * * * *', '*/30 * * * *', '7 * * * *', '30 3 * * *']), [true, true, true, false, false, false]);
+        // Pause: abgelaufene Pause gilt nicht, gesetzte schon, aufheben löscht
+        $pf = Cron::dir() . '/pause'; $had = is_file($pf) ? (string) file_get_contents($pf) : null;
+        try {
+            @file_put_contents($pf, (string) (time() - 5)); $eq('abgelaufene Pause gilt nicht', Cron::paused(), false);
+            Cron::pause(5); $eq('Pause gesetzt', Cron::paused(), true);
+            $eq('Pause → keine Läufe', Cron::run(), []);
+            Cron::pause(0); $eq('Pause aufgehoben', Cron::paused(), false);
+        } finally {
+            if ($had !== null) @file_put_contents($pf, $had); else @unlink($pf);
+        }
         $eq('nächster Lauf', Cron::next('15 4 * * *', $t), mktime(4, 15, 0, 10, 16, 2026));
         $eq('nächster Lauf monatlich', Cron::next('0 4 1 * *', $t), mktime(4, 0, 0, 11, 1, 2026));
         $eq('in Worten', [Cron::describe('* * * * *'), Cron::describe('*/15 * * * *'), Cron::describe('15 4 * * *')],

@@ -254,6 +254,27 @@ final class Cron
         return is_file($f) ? (int) file_get_contents($f) : null;
     }
 
+    /**
+     * Pause für Deploys und Wartung: storage/cron/pause enthält einen Zeitstempel (bis wann). Abgelaufene Pausen gelten nicht –
+     * bricht ein Deploy ab, laufen die Aufgaben spätestens danach wieder. Ein Deploy-Skript kann die Datei ohne PHP schreiben:
+     * `echo $(( $(date +%s) + 900 )) > storage/cron/pause` und danach löschen.
+     */
+    public static function paused(?int $now = null): bool
+    {
+        $f = self::dir() . '/pause';
+        if (!is_file($f)) return false;
+        $until = (int) trim((string) @file_get_contents($f));
+        return $until > ($now ?? time());
+    }
+
+    /** Pause setzen (Minuten, höchstens 120) bzw. mit 0 aufheben */
+    public static function pause(int $minutes): void
+    {
+        $f = self::dir() . '/pause';
+        if ($minutes <= 0) { @unlink($f); return; }
+        @file_put_contents($f, (string) (time() + min(120, $minutes) * 60), LOCK_EX);
+    }
+
     public static function running(): bool
     {
         $h = self::heartbeat();
@@ -267,6 +288,7 @@ final class Cron
     {
         $now = $now ?? time();
         @file_put_contents(self::dir() . '/heartbeat', (string) $now, LOCK_EX);
+        if (self::paused($now)) return [];   // Deploy/Wartung: keine Läufe, solange die Pause gilt
         $start = [];
         foreach (self::tasks() as $k => $t) {
             if (!$t['enabled'] || !self::due($t['schedule'], $now)) continue;
@@ -392,10 +414,25 @@ final class Cron
      * Systemmeldung bei Fehler bzw. Zeitüberschreitung einer Aufgabe (Core\Mail\Alerts, Kategorie „Geplante Aufgaben“): einmal je
      * Fehlerserie, nach dem nächsten erfolgreichen Lauf wieder scharf.
      */
+    /** Läuft die Aufgabe mindestens alle 15 Minuten? (Minutenfeld * oder *\/n mit n ≤ 15, jede Stunde) */
+    public static function frequent(string $schedule): bool
+    {
+        $f = preg_split('~\s+~', trim($schedule)) ?: [];
+        if (count($f) !== 5 || $f[1] !== '*') return false;
+        if ($f[0] === '*') return true;
+        return (bool) preg_match('~^\*/(\d+)$~', $f[0], $m) && (int) $m[1] <= 15;
+    }
+
     private static function notice(string $key, string $label, string $status, string $out): void
     {
         try {
             if ($status === 'ok') { Mail\Alerts::clear('cron:' . $key); return; }
+            // Häufige Aufgaben (alle ≤ 15 Minuten): erst melden, wenn auch der vorige Lauf scheiterte – ein einzelner Ausreißer
+            // (z. B. Lauf während eines Deploys) löst keine E-Mail aus
+            if (self::frequent((string) (self::$tasks[$key]['schedule'] ?? ''))) {
+                $prev = self::db()->fetchAll('SELECT status FROM cron_runs WHERE k = ? ORDER BY id DESC LIMIT 2', [$key]);
+                if (count($prev) < 2 || ($prev[1]['status'] ?? 'ok') === 'ok') return;
+            }
             Mail\Alerts::once('cron', 'cron:' . $key, __('Geplante Aufgabe fehlgeschlagen: {name}', ['name' => $label]),
                 __('Die geplante Aufgabe „{name}“ ist fehlgeschlagen ({status}).', ['name' => $label, 'status' => $status === 'timeout' ? __('Zeitlimit überschritten') : __('Fehler')])
                 . "\n\n" . mb_substr($out, -1500) . "\n\n" . __('Protokoll: Verwaltung → {where} → Geplante Aufgaben. Nach dem nächsten erfolgreichen Lauf kommt bei einem neuen Fehler wieder eine Meldung.', ['where' => Sites::multi() ? __('Netzwerk') : __('Grundeinstellungen')]));

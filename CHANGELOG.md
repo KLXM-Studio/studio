@@ -260,6 +260,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   images”, shareable across the network). New field type `hotspots` with a marker editor (click, drag, keyboard), versioned
   data format v1 and the integration point `Extension::hotspotEditor()` for external editors.
 
+### Geplante Aufgaben: keine Fehler-E-Mails mehr durch Deploys
+- Häufige Aufgaben (alle ≤ 15 Minuten, z. B. Video-Aufträge, Push) melden einen Fehler erst, wenn auch der vorige Lauf scheiterte.
+- Pause für Deploys: `storage/cron/pause` mit Zeitstempel hält `cron:run` an (`Cron::paused()`/`pause()`), endet von selbst.
+- *EN:* Scheduled tasks: frequent tasks only alert after two failed runs in a row; deploys can pause the scheduler via `storage/cron/pause`.
+
 ### Seiten: Entwurf nur mit neuen Block-IDs gilt nicht als geändert
 - `Pages::contentDiffers()` vergleicht Entwurf und veröffentlichten Stand ohne Zeitstempel und ohne Block-IDs (auch in Spalten);
   IDs in Blockdaten (z. B. Markierungen) zählen weiter. `Pages::hasUnpublished()` und die Entwürfe-Übersicht nutzen dieselbe Regel –
