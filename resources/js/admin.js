@@ -13,6 +13,7 @@ import { openSpotlight } from './_spotlight.js';
 import { t } from './_i18n.js';
 import { initGeo } from './_geo.js';
 import { conditions } from './_conditions.js';
+import { isVideoUrl } from './_videourl.js';   // Bedingung show_if '~video' (Core\VideoLinks)
 import { initSecCount } from './_fsec.js';
 import { initExposure } from './_exposure.js';
 import { initRowMenus, openMenu } from './_rowmenu.js';   // Eintragslisten: Zeilenmenü (⋯) an den Knopf setzen   // Sichtbarkeit: Merkmal „Öffentlich/Intern“, Formularkopf „Auf der Website: …“ (Core\Data\Exposure)   // aufklappbare Abschnitte: „3 von 7 ausgefüllt“ (Core\Fields 'count')
@@ -369,7 +370,7 @@ function initShowIf(scope = d) {
       el.hidden = ![].concat(cond).some(alt => Object.entries(alt).every(([name, vals]) => {
         const list = $$(`[name="${name.replace(/"/g, '\\"')}"]`, form), radio = list.find(c => c.type === 'radio' && c.checked);
         const box = list.filter(c => c.type === 'checkbox'), v = radio ? radio.value : val(box[0] || list.find(c => c.type !== 'hidden') || list[0]);
-        return vals.some(x => x === '*' ? v !== '' : x === v);
+        return vals.some(x => x === '*' ? v !== '' : x === '~video' ? isVideoUrl(v) : x === v);   // '~video': YouTube-/Vimeo-Adresse (Core\VideoLinks)
       }));
     });
     if (!form._showIf) { form._showIf = true; form.addEventListener('input', run); form.addEventListener('change', run); }
