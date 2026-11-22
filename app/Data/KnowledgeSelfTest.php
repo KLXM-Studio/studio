@@ -151,6 +151,28 @@ final class KnowledgeSelfTest
                 $q = $render(['q' => 'Nacht']);
                 $ck(str_contains($q, 'dl-excerpt') && str_contains($q, '<mark>Nacht</mark>') && str_contains($q, '1 Treffer'), 'Suche im Wissensbereich mit Trefferauszug');
                 $ck(!str_contains($render(['schlagworte' => 'quatsch']), 'checked'), 'Unbekannte Auswahl aus der Adresse wird ignoriert');
+                // Kapitel als Karten: oberste Ebene mit Bild/Nummer/Anreißer, höchstens drei Unterkapitel + „weitere“, Verweis mit Bild der Zielseite
+                $mid0 = (int) (Pages::db()->fetchValue("SELECT id FROM media WHERE deleted_at IS NULL AND mime LIKE 'image/%' ORDER BY id LIMIT 1") ?: 0);
+                $kp = Pages::create(['slug' => 'qa-kn-ziel-' . bin2hex(random_bytes(2)), 'title' => 'Zielseite', 'status' => 'published', 'og_image' => $mid0 ?: null]);
+                $pages[] = $kp;
+                $extraIds = [];
+                foreach (['K1', 'K2', 'K3', 'K4'] as $k) $extraIds[] = $save(['titel' => $k, 'bereich' => $pr, 'oberkapitel' => $d, 'anreisser' => 'Kurz ' . $k]);
+                $extraIds[] = $save(['titel' => 'Zum Ziel', 'bereich' => $pr, 'verweis' => 'page:' . $kp]);
+                Knowledge::flush();
+                $cardsHtml = (function () use ($th, $t): string {
+                    app()->request = new \Core\Http\Request('GET', '/qa', [], [], [], []);
+                    $blk = Pages::sanitizeBlocks([['id' => 'qakc', 'type' => 'data_list', 'data' => ['title' => 'QA', 'chapters_style' => 'cards', 'columns' => '3', 'ratio' => '4:3'] + Knowledge::listBlock($t)]]);
+                    return $blk ? (string) $th->renderInner($th->makeBlock($blk[0])) : '';
+                })();
+                $ck(preg_match_all('~<li class="kn-card( kn-card--img)?"~', $cardsHtml) === 3 && str_contains($cardsHtml, 'kn-card__num">2.1<') && str_contains($cardsHtml, 'kn-cards--c3')
+                    && substr_count($cardsHtml, 'class="kn-card__sub"') === 2, 'Karten: drei Kapitel der obersten Ebene, Nummer als Plakette, Unterkapitel als Links');
+                $ck(str_contains($cardsHtml, ' K3</a>') && !str_contains($cardsHtml, ' K4</a>') && str_contains($cardsHtml, 'kn-card__more'), 'Karten: höchstens drei Unterkapitel, dann „weitere“');
+                $ck(!$mid0 || Knowledge::imageOf($t, Entries::find($t, end($extraIds))) === $mid0, 'Karten: Verweis-Kapitel ohne Bild nimmt das Bild der Zielseite');
+                // Datenliste: Bedingung „ist leer“ / „ist nicht leer“ (ohne Wert)
+                $ck(Entries::count($t, ['where' => [['verweis', 'notempty', '']]]) === 1 && Entries::count($t, ['where' => [['oberkapitel', 'empty', '']]]) === 3
+                    && Entries::count($t, ['where' => [['schlagworte', 'empty', '']]]) === 5, 'Bedingung „ist leer“/„ist nicht leer“ (Text, Verknüpfung, Mehrfachauswahl)');
+                foreach ($extraIds as $x) if ($x) Entries::delete($t, $x);
+                Knowledge::flush();
             }
             // 6. Glossar bleibt websiteweit: keine weitere Glossar-Tabelle entstanden
             $ck(array_values(array_filter(array_diff(array_column(Tables::content(), 'handle'), $tablesBefore), fn($x) => $x !== $h && str_contains($x, 'glossar'))) === [], 'Keine Glossar-Tabelle je Wissensbereich');

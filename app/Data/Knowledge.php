@@ -548,6 +548,56 @@ final class Knowledge
         return $out . '</div>';
     }
 
+    /** Bild eines Kapitels: Feld „Bild“, bei Verweis-Kapiteln ohne eigenes Bild das der Zielseite (Seitenkopf, sonst Vorschaubild) */
+    public static function imageOf(array $t, array $e): int
+    {
+        if (Tables::field($t, 'bild') && (int) ($e['bild'] ?? 0) > 0) return (int) $e['bild'];
+        if (preg_match('~^page:(\d+)~', (string) ($e['verweis'] ?? ''), $m) && ($p = Pages::find((int) $m[1]))) return (int) (\Core\Blocks\SubpageList::item($p)['image'] ?? 0);
+        return 0;
+    }
+
+    /**
+     * Startseite als Karten (Datenliste, Darstellung „Kapitel“ → „Karten“): je Bereich ein Raster der Kapitel der obersten Ebene mit Bild,
+     * Nummer als Plakette, Titel, Anreißer und bis zu drei Unterkapiteln als Links („weitere“). $d: columns, ratio des Blocks.
+     */
+    public static function tocCards(array $t, ?array $tree = null, array $d = []): string
+    {
+        $tree ??= self::tree($t);
+        $cfg = self::config($t);
+        $cols = in_array((string) ($d['columns'] ?? ''), ['2', '3', '4'], true) ? (string) $d['columns'] : '3';
+        $ratio = in_array((string) ($d['ratio'] ?? ''), ['16:9', '16:10', '4:3', '1:1', '3:4'], true) ? (string) $d['ratio'] : '16:10';
+        $sizes = ['2' => '(min-width: 1080px) 520px, (min-width: 640px) 45vw, 90vw', '3' => '(min-width: 1080px) 360px, (min-width: 640px) 45vw, 90vw',
+            '4' => '(min-width: 1080px) 270px, (min-width: 640px) 45vw, 90vw'][$cols];
+        $out = '<div class="kn-cards-all">';
+        foreach ($tree['areas'] as $a) {
+            $out .= '<div class="kn-toc-area">';
+            if ($a['label'] !== '') $out .= '<h2 class="kn-toc-area__h">' . ($cfg['numbers'] && $a['number'] !== '' ? '<span class="dl-knum">' . e($a['number']) . '</span> ' : '') . e($a['label']) . '</h2>';
+            $out .= '<ul class="kn-cards kn-cards--c' . e($cols) . '" role="list">';
+            foreach ($a['ids'] as $id) {
+                $n = $tree['nodes'][$id];
+                $img = self::imageOf($t, $n['entry']);
+                $pic = $img ? img($img, $sizes, ['ratio' => $ratio, 'alt' => '']) : '';
+                $teaser = trim((string) ($n['entry']['anreisser'] ?? ''));
+                $out .= '<li class="kn-card' . ($pic !== '' ? ' kn-card--img' : '') . '">';
+                if ($pic !== '') $out .= '<div class="kn-card__img kn-card__img--r' . e(str_replace(':', '-', $ratio)) . '">' . $pic . '</div>';
+                $out .= '<div class="kn-card__body">';
+                if ($cfg['numbers'] && $n['number'] !== '') $out .= '<span class="kn-card__num">' . e($n['number']) . '</span>';
+                $out .= '<h3 class="kn-card__title">' . ($n['href'] ? '<a href="' . e((string) $n['href']) . '">' . e($n['title']) . '</a>' : e($n['title'])) . '</h3>';
+                if ($teaser !== '') $out .= '<p class="kn-card__text">' . e(mb_strimwidth($teaser, 0, 220, '…')) . '</p>';
+                $kids = array_values(array_filter(array_map(fn($c) => $tree['nodes'][$c], $n['children']), fn($c) => $c['href']));
+                if ($kids) {
+                    $out .= '<ul class="kn-card__sub" role="list" aria-label="' . e(lt('Unterkapitel von {title}', ['title' => $n['title']])) . '">';
+                    foreach (array_slice($kids, 0, 3) as $c) $out .= '<li><a href="' . e((string) $c['href']) . '">' . ($cfg['numbers'] ? '<span class="dl-knum">' . e($c['number']) . '</span> ' : '') . e($c['title']) . '</a></li>';
+                    if (count($kids) > 3 && $n['href']) $out .= '<li class="kn-card__more"><a href="' . e((string) $n['href']) . '">' . e(lt('{n} weitere', ['n' => count($kids) - 3])) . '<span class="dl-sr"> ' . e(lt('in {title}', ['title' => $n['title']])) . '</span></a></li>';
+                    $out .= '</ul>';
+                }
+                $out .= '</div></li>';
+            }
+            $out .= '</ul></div>';
+        }
+        return $out . '</div>';
+    }
+
     // ================================================================= Suche in der Übersicht
 
     /** Klartext eines Eintrags (Anreißer + Inhalt) für Trefferauszüge */

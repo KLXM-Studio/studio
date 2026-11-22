@@ -13,7 +13,7 @@
   <h3>Einrichten (einmal, Administration)</h3>
   <ol class="doc-steps">
     <li><b>Daten → Neue Tabelle → „Inhalte auf der Website“ → Vorlage „Wissen“.</b> Adresse prüfen (z. B. <code>wissen</code> → Kapitel unter <code>/wissen/…</code>) und anlegen. Detailseiten-Vorlage und Übersicht entstehen beim Einsetzen.</li>
-    <li><b>Einsetzen → „Neue Seite“</b> legt die Übersicht an: Suchfeld, Filter nach Bereich und Schlagworten und das <b>Inhaltsverzeichnis</b> (Block „Datenliste“, Darstellung „Kapitel“). Darunter passt eine zweite Datenliste „Neu im Wissensbereich“ (sortiert nach „Geändert“, absteigend, 5 Einträge).</li>
+    <li><b>Einsetzen → „Neue Seite“</b> legt die Übersicht an (Startseite des Wissensbereichs; im Block unter „Kapitel als“ wahlweise <b>Inhaltsverzeichnis</b> oder <b>Karten</b>: Kapitel der obersten Ebene im Raster mit Bild, Nummer, Anreißer und bis zu drei Unterkapiteln; Spalten und Bildformat wie bei anderen Karten; Verweis-Kapitel ohne eigenes Bild zeigen das Bild ihrer Seite): Suchfeld, Filter nach Bereich und Schlagworten und das <b>Inhaltsverzeichnis</b> (Block „Datenliste“, Darstellung „Kapitel“). Darunter passt eine zweite Datenliste „Neu im Wissensbereich“ (sortiert nach „Geändert“, absteigend, 5 Einträge).</li>
     <li><b>Felder &amp; Einstellungen → Auf der Website → Wissensbereich:</b> Layout wählen, Kapitelnummern, Vor/Zurück und verwandte Kapitel ein- oder ausschalten.</li>
     <li>Optional: Glossar einschalten (Kapitel „Glossar“) – dann lassen sich Begriffe mit Kapiteln verknüpfen.</li>
   </ol>

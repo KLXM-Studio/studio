@@ -59,6 +59,8 @@ if (str_starts_with((string) ($d['filter_field'] ?? ''), $pfx)) {
         // Funktionen (Core\Data\Roles): „verknüpft mit dem aufgerufenen Eintrag“ = Funktion mit Verknüpfung entry:{tabelle}:{id}
         if ($op === 'current' && $ctx && (Tables::field($t, $ff)['type'] ?? '') === \Core\Data\Roles::TYPE) $val = 'entry:' . $ctx['table']['handle'] . ':' . (int) $ctx['entry']['id'];
         $o['where'] = [[$ff, '=', $val === null || $val === '' ? '-1' : (string) $val]];
+    } elseif ($op === 'empty' || $op === 'notempty') {
+        $o['where'] = [[$ff, $op, '']];   // ist leer / ist nicht leer (ohne Wert)
     } elseif (trim((string) ($d['filter_value'] ?? '')) !== '') {
         $o['where'] = [[$ff, $op, trim((string) $d['filter_value'])]];
     }
@@ -254,7 +256,7 @@ $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($
   </section>
   <?php endif; ?>
   <?php if ($tocMode && $rows): ?>
-  <?= \Core\Data\Knowledge::tocHtml($t, $ktree, 'h2') ?>
+  <?= ($d['chapters_style'] ?? 'list') === 'cards' ? \Core\Data\Knowledge::tocCards($t, $ktree, $d) : \Core\Data\Knowledge::tocHtml($t, $ktree, 'h2') ?>
   <?php elseif (!$rows && $filtering): ?>
   <p class="dl-empty"><?= e(lt('Keine Einträge für diese Auswahl.')) ?> <a href="<?= e($here . '#' . $b->domId()) ?>"><?= e(lt('Alle anzeigen')) ?></a></p>
   <?php elseif (!$rows): ?>

@@ -32,3 +32,23 @@
 .kn-toc-item--d1 .kn-toc-item__link,.kn-toc-item--d2 .kn-toc-item__link,.kn-toc-item--d3 .kn-toc-item__link{font-weight:500}
 .kn-toc-item__link:hover{text-decoration:underline;color:var(--kit-link,inherit)}
 .kn-toc-item__text{margin:.15rem 0 0;color:var(--kit-text,currentColor);font-size:.93em;line-height:1.5}
+/* Kapitel als Karten (Darstellung „Kapitel“ → „Karten“, Knowledge::tocCards): oberste Ebene mit Bild, Nummer, Titel, Anreißer, Unterkapiteln */
+.kn-cards-all{display:grid;gap:clamp(1.5rem,3vw,2.5rem)}
+.kn-cards{display:grid;gap:1.25rem;margin:0;padding:0;list-style:none;grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr));container-type:inline-size}
+@media (min-width:48rem){.kn-cards--c2{grid-template-columns:repeat(2,1fr)}.kn-cards--c3{grid-template-columns:repeat(3,1fr)}.kn-cards--c4{grid-template-columns:repeat(4,1fr)}}
+@media (min-width:48rem) and (max-width:63.99rem){.kn-cards--c3,.kn-cards--c4{grid-template-columns:repeat(2,1fr)}}
+.kn-card{position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid var(--kit-line,color-mix(in srgb,currentColor 16%,transparent));border-radius:var(--kit-radius,12px);background:color-mix(in srgb,var(--kit-ink,currentColor) 3%,transparent);overflow:hidden}
+.kn-card__img{aspect-ratio:16/10;background:var(--kit-surface,color-mix(in srgb,currentColor 8%,transparent));overflow:hidden}
+.kn-card__img--r16-9{aspect-ratio:16/9}.kn-card__img--r4-3{aspect-ratio:4/3}.kn-card__img--r1-1{aspect-ratio:1}.kn-card__img--r3-4{aspect-ratio:3/4}
+.kn-card__img img,.kn-card__img picture{display:block;width:100%;height:100%;object-fit:cover}
+.kn-card__body{display:flex;flex:1;flex-direction:column;gap:.45rem;padding:1rem 1.1rem 1.15rem}
+.kn-card__num{align-self:flex-start;padding:.1rem .55rem;border-radius:99px;background:var(--kit-accent,currentColor);color:var(--kit-on-accent,#fff);font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kn-card--img .kn-card__num{position:absolute;top:.75rem;left:.75rem;box-shadow:0 2px 8px rgb(0 0 0/.25)}
+.kn-card__title{margin:0;font:700 1.15rem/1.25 var(--kit-font-head,inherit);color:var(--kit-ink,currentColor);text-wrap:balance}
+.kn-card__title a{color:inherit;text-decoration:none}
+.kn-card__title a:hover{text-decoration:underline}
+.kn-card__title a:focus-visible{outline:2px solid var(--kit-link,var(--kit-accent,currentColor));outline-offset:2px}
+.kn-card__text{margin:0;color:var(--kit-text,currentColor);font-size:.95rem;line-height:1.5}
+.kn-card__sub{display:grid;gap:.25rem;margin:.35rem 0 0;padding:.6rem 0 0;border-top:1px solid var(--kit-line,color-mix(in srgb,currentColor 16%,transparent));list-style:none;font-size:.92rem}
+.kn-card__sub a{color:var(--kit-link,inherit)}
+.kn-card__more a{font-weight:600}

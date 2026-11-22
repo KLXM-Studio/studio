@@ -102,6 +102,8 @@
 
   <div class="doc-note doc-note--info"><strong>Suchmaschinen</strong><p>Detailseiten erhalten automatisch Titel, Beschreibung (aus dem gewählten Beschreibungs-Feld), Vorschaubild und stehen in der Sitemap. Einträge im Entwurf sind nur für Angemeldete sichtbar.</p></div>
 
+  <p><b>Nur bestimmte Einträge:</b> Unter „Filter &amp; Sortierung“ einer Datenliste gibt es neben „ist gleich“, „enthält“ usw. auch <b>„ist leer“</b> und <b>„ist nicht leer“</b> – zum Beispiel nur Einträge mit Bild oder nur Kapitel ohne Oberkapitel. Ein Wert ist dafür nicht nötig.</p>
+
   <h3 id="menue">Einträge im Menü</h3>
   <p>Einträge einer Tabelle mit eigener Adresse (z. B. Workshops unter <code>/workshops/…</code>) können im Kopf- und Mobilmenü als Unterpunkte ihrer Übersichtsseite erscheinen – der Seite mit derselben Adresse, die selbst im Menü steht. Einstellen unter <b>Felder &amp; Einstellungen → Auf der Website → Einträge im Menü zeigen</b>: <b>Keine</b> (Standard), <b>Oberste Ebene</b> oder <b>Zwei Ebenen</b>, dazu eine Höchstzahl je Ebene. Die Reihenfolge folgt der Sortierung der Tabelle; bei Wissensbereichen die Kapitel in Lesereihenfolge (zwei Ebenen = Kapitel mit Unterkapiteln, Kapitelnummer wahlweise). Auf der Detailseite eines Eintrags sind die Übersichtsseite und der Eintrag im Menü markiert. Kits zeigen im Fuß meist nur die oberste Ebene – dort steht die Übersichtsseite.</p>
 

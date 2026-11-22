@@ -483,4 +483,8 @@ return [
     'Markierungen im Bild' => 'Hotspots in the image',
     '{n} Markierungen – zum Öffnen anklicken oder mit der Tab-Taste wählen.' => '{n} hotspots – click to open or select with the Tab key.',
     '{n}: {title}' => '{n}: {title}',
+    // Wissen: Kapitel als Karten
+    'Unterkapitel von {title}' => 'Subchapters of {title}',
+    'in {title}' => 'in {title}',
+    '{n} weitere' => '{n} more',
 ];

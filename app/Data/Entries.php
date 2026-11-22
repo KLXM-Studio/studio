@@ -263,6 +263,13 @@ final class Entries
         $names = array_merge(Tables::SYSTEM, array_column($table['fields'], 'name'));
         foreach ($list as $w) {
             [$f, $op, $v] = array_pad(array_values((array) $w), 3, '');
+            // „ist leer“ / „ist nicht leer“ (ohne Wert): Mehrfachauswahl/JSON auch „[]“, Verknüpfungen (mehrere) über die Zwischentabelle
+            if (($op === 'empty' || $op === 'notempty') && in_array($f, $names, true)) {
+                $field = Tables::field($table, (string) $f);
+                $isEmpty = ($field['type'] ?? '') === 'relations' ? 'id NOT IN (SELECT entry_id FROM ' . Tables::pivot($table, (string) $f) . ')' : "($f IS NULL OR $f = '' OR $f = '[]')";
+                $where[] = $op === 'empty' ? $isEmpty : 'NOT ' . $isEmpty;
+                continue;
+            }
             if (!in_array($f, $names, true) || $v === '' || $v === null) continue;
             $field = Tables::field($table, (string) $f);
             // „eine von“ (Besucher-Filter mit Mehrfachauswahl, Datenliste): Auswahl = eine der Optionen, Mehrfachauswahl = enthält eine davon

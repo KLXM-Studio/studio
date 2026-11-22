@@ -34,6 +34,14 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
   `data:kind-upgrade` with dry run and revert.
 
+### Wissen: Startseite mit Karten, Bedingung „ist leer“
+- Datenliste, Darstellung „Kapitel“: **„Kapitel als“ Inhaltsverzeichnis oder Karten** (`chapters_style`). Karten der obersten Ebene im
+  Raster (Spalten, Bildformat) mit Bild, Kapitelnummer als Plakette, Titel, Anreißer und höchstens drei Unterkapiteln plus „weitere“;
+  Verweis-Kapitel ohne Bild zeigen das Bild der Zielseite (Seitenkopf bzw. Vorschaubild). Bei Suche/Filter die Trefferliste wie bisher.
+- Datenliste allgemein: Bedingung **„ist leer“ / „ist nicht leer“** (`filter_op` `empty`/`notempty`, ohne Wert).
+- *EN:* “Chapters” data list can render as cards (image, number badge, teaser, up to three subchapters); link chapters use the target
+  page image. New list conditions “is empty” / “is not empty”.
+
 ### Einträge im Menü (`Core\Data\MenuEntries`)
 - Tabellen mit Adresse zeigen ihre Einträge auf Wunsch als Unterpunkte der Übersichtsseite im Kopf- und Mobilmenü („Einträge im
   Menü zeigen“: keine | oberste Ebene | zwei Ebenen, Höchstzahl, Nummer optional). Wissen in Kapitelreihenfolge mit Unterkapiteln,
