@@ -2,7 +2,7 @@
  * Einstieg als Slider (Core\Blocks\HeroSlider) – lädt nur auf Seiten mit Slider (Merkmal '@heroslider', Theme::conditionalJs).
  * Ohne Skript steht die erste Folie still. Mit Skript: Folien übereinander (.is-ready), Wechsel mit Übergang (.is-moving, nur ohne
  * „Bewegung reduzieren“ – sonst harte Schnitte und kein Auto-Wechsel), Pause/Play (gemeinsamer Schalter, data-hs-toggle), Pause bei
- * Maus und Fokus, Punkte/Nummern und Pfeile, Pfeiltasten/Pos1/Ende in der Steuerung, Wischen auf Touch. Inaktive Folien sind inert.
+ * Maus über Bedienelementen und bei Fokus, Punkte/Nummern und Pfeile, Pfeiltasten/Pos1/Ende in der Steuerung, Wischen auf Touch. Inaktive Folien sind inert.
  * Hintergrundvideos der Folien steuert derselbe Knopf (keine eigenen Video-Schalter im Slider; hero.mjs lässt sie aus).
  * Live-Region (aria-live="polite") nur nach Bedienung; beim automatischen Wechsel „off“. Keine Inline-Stile: Werte per CSSOM.
  */
@@ -133,9 +133,12 @@
       if (onDot) dots[cur]?.focus();
     });
 
-    // Pause bei Maus über dem Slider und bei Fokus darin (ändert den Knopf nicht – APG Carousel)
-    root.addEventListener('mouseenter', () => { hold |= 1; clearTimeout(timer); });
-    root.addEventListener('mouseleave', () => { hold &= ~1; schedule(); });
+    // Pause bei Maus über einem Bedienelement (Steuerung, Knöpfe und Links der Folie) und bei Fokus darin – nicht über der ganzen
+    // Fläche, sonst steht ein bildschirmhoher Slider fast immer still. Ändert den Knopf nicht (APG Carousel).
+    const hot = t => t instanceof Element && t.closest('a, button, .hs__ctrl') && root.contains(t);
+    root.addEventListener('mouseover', e => { if (hot(e.target)) { hold |= 1; clearTimeout(timer); } });
+    root.addEventListener('mouseout', e => { if (hot(e.target) && !hot(e.relatedTarget)) { hold &= ~1; schedule(); } });
+    root.addEventListener('mouseleave', () => { if (hold & 1) { hold &= ~1; schedule(); } });
     root.addEventListener('focusin', () => { hold |= 2; clearTimeout(timer); });
     root.addEventListener('focusout', e => { if (!root.contains(e.relatedTarget)) { hold &= ~2; schedule(); } });
 

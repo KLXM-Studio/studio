@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Einstieg als Slider: Pause nur über Bedienelementen
+- Der Slider hält nicht mehr an, sobald die Maus irgendwo über der Fläche liegt (bei bildschirmhohen Slidern lief er sonst praktisch nie),
+  sondern nur über der Steuerung und über Links/Knöpfen der Folie – dazu wie bisher bei Tastatur-Fokus und mit dem Pause-Knopf.
+
 ### Weitere Links im Fußbereich (Liste und Seitenschalter)
 - Neue Liste **„Weitere Links im Fußbereich“** unter Website → Darstellung (Kit fluid und NativeCSS): je Eintrag Beschriftung und Link aus der
   Linkauswahl (Seite, Eintrag, Datei oder Adresse), sortierbar, je Sprache – z. B. „News abonnieren“, „Presse“, „Downloads“. Die Links stehen unter

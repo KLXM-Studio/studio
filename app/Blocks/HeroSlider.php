@@ -26,7 +26,7 @@ use Core\Theme;
  *  - Skript public/assets/js/hero-slider.js und Stile css/hero-slider.css nur auf Seiten mit Slider (Merkmal '@heroslider'); ein Kit
  *    ersetzt die Stile mit eigener css/hero-slider.css. Pause/Play über den gemeinsamen Schalter (Hero::playToggle, video-toggle.css).
  *  - Barrierefreiheit (WAI-ARIA Carousel): role="region" + aria-roledescription „Karussell“, Folien role="group" + „Folie“ mit
- *    „x von n“, Steuerung vor den Folien (Pause zuerst), Live-Region nur nach Bedienung, Pause bei Maus und Fokus, kein Auto-Wechsel
+ *    „x von n“, Steuerung vor den Folien (Pause zuerst), Live-Region nur nach Bedienung, Pause bei Maus über Bedienelementen und bei Fokus, kein Auto-Wechsel
  *    und harte Schnitte bei „Bewegung reduzieren“, Tastatur (Pfeile, Pos1/Ende), Wischen auf Touch.
  *  - Hintergrundvideos in Folien: der Video-Schalter der Folie entfällt (Hero::$inSlider); EIN Knopf in der Leiste hält Auto-Wechsel
  *    und das Video der aktuellen Folie zusammen an („Bewegung anhalten/fortsetzen“). Das Skript pausiert Videos inaktiver Folien und
@@ -99,7 +99,7 @@ final class HeroSlider
                 'help' => 'Zoomt zum Fokuspunkt des Bildes (Mediathek). Nie bei „Bewegung reduzieren“.'],
             ['name' => 'slides_interval', 'label' => 'Automatisch weiter nach', 'type' => 'select', 'required' => true, 'default' => '7', 'width' => 'half', 'show_if' => $on,
                 'options' => ['0' => 'nie (nur per Klick)', '5' => '5 Sekunden', '7' => '7 Sekunden', '9' => '9 Sekunden', '12' => '12 Sekunden'],
-                'help' => 'Hält bei Maus und Tastatur-Fokus an; mit Pause-Knopf.'],
+                'help' => 'Hält an, solange die Maus auf Knöpfen/Links liegt oder der Tastatur-Fokus im Slider ist; mit Pause-Knopf.'],
             ['name' => 'slides_nav', 'label' => 'Folien-Auswahl', 'type' => 'select', 'required' => true, 'default' => 'dots', 'width' => 'half', 'show_if' => $on,
                 'options' => ['dots' => 'Punkte', 'numbers' => 'Nummern', 'none' => 'keine']],
             ['name' => 'slides_arrows', 'label' => 'Pfeile „zurück“ und „weiter“', 'type' => 'bool', 'default' => true, 'width' => 'half', 'show_if' => $on],
