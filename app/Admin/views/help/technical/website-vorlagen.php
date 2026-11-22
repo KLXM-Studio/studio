@@ -91,7 +91,11 @@
   („NRW-weit“, „nordrhein-westfälisch“) und Zahlen bzw. Zahlwörter (<code>Export::NUMBER_WORDS</code>) neben <code>{{region.*}}</code> (ohne Jahreszahlen,
   Datum, Uhrzeit, Rechtsverweise wie „Art. 6 Abs. 1 lit. a“, „§ 25 Abs. 1“; <code>Export::regionNumber()</code>). Technische Felder und Werte
   (<code>Export::technicalKey()</code>/<code>technicalValue()</code>: Adressen, IDs, Video, Verweise) werden nicht geprüft; Felder mit Block-JSON werden
-  entpackt, der Auszug ist Klartext – als <code>manifest.review</code>
+  entpackt, der Auszug ist Klartext. Filter <code>blueprint.areas</code> (Erweiterungen, z. B. Gebietskarten): <code>places</code> – Ortsnamen der
+  Quell-Region; je Absatz gezählt, ab zwei verschiedenen ein Fund „Absatz ist auf {Region} bezogen“, sonst „Ortsname aus {Region}“;
+  <code>fields</code> – <code>tabelle.feld</code> mit Flächen, nicht geprüft; <code>entries</code> – neutrale Titel je Eintrag (Adresse neu);
+  <code>rename</code> – Ersetzungen in allen Texten (<code>Anonymizer::renames()</code>, ganze Wörter, mit Einzahl davor, Zusammensetzungen bleiben).
+  Ohne Erweiterung bleibt die Prüfung wie bisher – als <code>manifest.review</code>
   {where, link, title, reason, sample}; beim Anlegen je Stelle eine Aufgabe „Text an Ihre Organisation anpassen“. Das Impressum der Quelle wird durch
   <code>Export::IMPRINT</code> ersetzt – mit <code>{{org.representatives}}</code> und <code>{{org.responsible}}</code> (Schritt Organisation, CLI
   <code>--representatives=… --responsible=…</code>); ältere Pakete mit Redaktionsnotizen übersetzt <code>Placeholders::legacyImprint()</code> beim Anlegen. Bilder, die Platzhalter werden, stehen mit Grund (<code>Export::mediaReason()</code>:

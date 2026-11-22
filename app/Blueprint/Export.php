@@ -84,6 +84,10 @@ final class Export
         // Personen der Quelle (Konten, Kontakte, Personenfelder): in allen Texten Platzhalter-Personen, im Paket geprüft (audit)
         $persons = Anonymizer::personNames();
         $anon = new Anonymizer($src, 0, $persons);
+        // Gebiete der Quelle (Filter blueprint.areas, z. B. Gebietskarten): Ortsnamen für die Prüfung, neutrale Namen für Einträge an Flächen
+        $areas = \Core\Extensions::filter('blueprint.areas', [], ['region' => (string) ($src['region.name'] ?? $srcRegion), 'site' => site()->key]);
+        $areas = is_array($areas) ? $areas : [];
+        $anon->renames(array_map('strval', (array) ($areas['rename'] ?? [])), array_values(array_filter(array_map(fn($e) => (string) ($e['singular'] ?? ''), (array) ($areas['entries'] ?? [])))));
         $files = [];
         $copies = [];   // Dateien, die unverändert ins Paket kopiert werden: Pfad im Paket → Quelldatei
         $media = [];   // alte ID → ['demo' => bool] (Verwendung)
@@ -205,7 +209,14 @@ final class Export
                             foreach (Anonymizer::mediaIds(json_decode((string) $r[$f['name']], true)) as $mid) $media[$mid] ??= ['demo' => true];
                         }
                     }
-                    $clean[] = $anon->entry($full, $r, $i, [], $keep);
+                    $row = $anon->entry($full, $r, $i, [], $keep);
+                    // Einträge an Flächen (Gebietskarten): neutraler Name statt der Landschaft der Quelle, Adresse passend
+                    $al = $areas['entries'][$handle] ?? null;
+                    if (is_array($al) && isset($al['labels'][(int) $r['id']]) && array_key_exists((string) $al['field'], $row)) {
+                        $row[(string) $al['field']] = (string) $al['labels'][(int) $r['id']];
+                        if (array_key_exists('slug', $row)) $row['slug'] = Anonymizer::slug((string) $al['labels'][(int) $r['id']]);
+                    }
+                    $clean[] = $row;
                 }
                 // Termine relativ zu heute: liegen alle in der Vergangenheit, rücken sie so, dass der erste in einer Woche ist
                 $rels = [];
@@ -317,7 +328,7 @@ final class Export
             'changelog' => array_values((array) ($o['changelog'] ?? [['version' => $version, 'date' => date('Y-m-d'), 'note' => (string) ($o['note'] ?? 'Erste Version')]])),
         ];
         // Texte der Quelle: was ersetzt wurde und was die neue Website von Hand anpassen sollte (beim Anlegen: Aufgaben)
-        [$replaced, $review] = self::review($pages, $entries, $settings, $tables, $src);
+        [$replaced, $review] = self::review($pages, $entries, $settings, $tables, $src, $areas);
         $manifest['review'] = $review;
         $manifest['media_report'] = $mediaReport;
         $report[] = 'Texte: ' . ($replaced ? implode(', ', array_map(fn($k, $n) => '{{' . $k . '}} ' . $n . '×', array_keys($replaced), $replaced)) : 'keine Angaben der Quelle gefunden')
@@ -419,8 +430,14 @@ final class Export
      * („nordrhein-westfälisch“) und Zahlen neben Angaben der Quelle (Statistik, Anzahl der Gruppen).
      * @return array{0: array<string, int>, 1: list<array{where: string, link: string, title: string, reason: string, sample: string}>}
      */
-    public static function review(array $pages, array $entries, array $settings, array $tables, array $src): array
+    public static function review(array $pages, array $entries, array $settings, array $tables, array $src, array $areas = []): array
     {
+        // Ortsnamen der Quell-Region (blueprint.areas): Kreise, Städte, Landschaften – ganze Wörter, Groß-/Kleinschreibung wie geschrieben
+        $places = array_values(array_unique(array_filter(array_map(fn($p) => trim((string) $p), (array) ($areas['places'] ?? [])), fn($p) => mb_strlen($p) >= 4)));
+        usort($places, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        $placeRe = array_map(fn($chunk) => '~(?<![\p{L}\d-])(' . implode('|', array_map(fn($p) => preg_quote($p, '~'), $chunk)) . ')(?![\p{L}\d])~u', array_chunk($places, 200));
+        $regionName = (string) ($src['region.name'] ?? '') ?: 'die Quell-Region';
+        $skipFields = array_flip(array_map('strval', (array) ($areas['fields'] ?? [])));
         $counts = [];
         $items = [];
         $needles = [];
@@ -433,7 +450,7 @@ final class Export
                 if (mb_strlen($first) >= 5) $needles[mb_substr($first, 0, max(4, mb_strlen($first) - 2))] = $k;
             }
         }
-        $check = function (string $s, string $where, string $link, string $title) use (&$counts, &$items, $needles): void {
+        $check = function (string $s, string $where, string $link, string $title) use (&$counts, &$items, $needles, $placeRe, $regionName): void {
             if ($s === '' || count($items) >= 100) return;
             foreach (Placeholders::found($s) as $k) $counts[$k] = ($counts[$k] ?? 0) + preg_match_all('~\{\{\s*' . preg_quote($k, '~') . '\s*\}\}~', $s);
             $plain = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($s), ENT_QUOTES, 'UTF-8')));
@@ -446,6 +463,24 @@ final class Export
             if (preg_match('~\{\{\s*region\.[a-z_]+\s*\}\}~', $plain)) {
                 $num = self::regionNumber($rest);
                 if ($num !== null) $hits[] = [$num, 'Zahlen und Angaben zur Region (z. B. Anzahl, Statistik) – bitte für die eigene Organisation prüfen'];
+            }
+            // Ortsnamen: je Absatz zählen – mehrere verschiedene in einem Absatz → ein Fund „Absatz ist auf … bezogen“
+            if ($placeRe) {
+                $best = [[], ''];
+                foreach (preg_split('~</p>|<br\s*/?>|</li>|</h\d>|\n{2,}~i', $s) ?: [] as $para) {
+                    $pt = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($para), ENT_QUOTES, 'UTF-8')));
+                    $pt = (string) preg_replace(Placeholders::PATTERN, ' ', $pt);
+                    $found = [];
+                    foreach ($placeRe as $re) if (preg_match_all($re, $pt, $pm)) foreach ($pm[1] as $p) $found[$p] = true;
+                    if (count($found) > count($best[0])) $best = [array_keys($found), $pt];
+                }
+                if (count($best[0]) >= 2) {
+                    $key = $where . "\x1Fplaces";
+                    $items[$key] ??= ['where' => $where, 'link' => $link, 'title' => $title, 'reason' => 'Absatz ist auf ' . $regionName . ' bezogen („' . implode('“, „', array_slice($best[0], 0, 5)) . '“) – bitte für die eigene Region neu schreiben',
+                        'sample' => mb_strimwidth($best[1], 0, 160, '…')];
+                } elseif (count($best[0]) === 1) {
+                    $hits[] = [(string) $best[0][0], 'Ortsname aus ' . $regionName . ' („' . $best[0][0] . '“) – bitte an die eigene Region anpassen'];
+                }
             }
             foreach ($hits as [$needle, $reason]) {
                 $pos = (int) mb_stripos($plain, $needle);
@@ -480,6 +515,7 @@ final class Export
         foreach ($entries as $h => $set) {
             foreach ((array) ($set['rows'] ?? []) as $r) {
                 $where = 'entry:' . $h . ':' . (int) ($r['id'] ?? 0);
+                foreach (array_keys($r) as $c) if (isset($skipFields[$h . '.' . $c])) unset($r[$c]);   // Felder mit Flächen (Gebietskarten)
                 $walk($r, fn(string $s) => $check($s, $where, '/admin/data/' . $h . '/' . (int) ($r['id'] ?? 0), ($names[$h] ?? $h) . ' #' . (int) ($r['id'] ?? 0)));
             }
         }

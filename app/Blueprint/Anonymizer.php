@@ -48,6 +48,11 @@ final class Anonymizer
     private array $personRegex = [];
     /** @var array<string, string> Name → Platzhalter-Person */
     private array $personMap = [];
+    /** Neutrale Namen für Gebiete der Quelle (Filter blueprint.areas → rename): Muster und Zuordnung */
+    private string $renameRegex = '';
+    /** @var array<string, string> */
+    private array $renameMap = [];
+
     /** Wie oft Namen von Personen ersetzt wurden */
     public int $personHits = 0;
 
@@ -64,6 +69,22 @@ final class Anonymizer
         foreach (array_chunk($persons, 150) as $chunk) {
             $this->personRegex[] = '~(?<![\p{L}\d])(?:' . implode('|', array_map(fn($n) => preg_quote($n, '~'), $chunk)) . ')(?![\p{L}\d])~iu';
         }
+    }
+
+    /**
+     * Namen der Quelle in allen Texten ersetzen (z. B. „Musterheide“ → „Regionalgruppe Nord“). $prefixes: Wörter, die davor
+     * stehen dürfen und mit ersetzt werden („Regionalgruppe Musterheide“ → „Regionalgruppe Nord“, nicht doppelt).
+     * @param array<string, string> $map @param list<string> $prefixes
+     */
+    public function renames(array $map, array $prefixes = []): void
+    {
+        $map = array_filter($map, fn($v, $k) => is_string($k) && mb_strlen(trim($k)) >= 3 && is_string($v) && $v !== '', ARRAY_FILTER_USE_BOTH);
+        if (!$map) return;
+        uksort($map, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        $this->renameMap = $map;
+        $pre = array_values(array_filter(array_map('trim', $prefixes), fn($p) => $p !== ''));
+        $this->renameRegex = '~(?<![\p{L}\d])' . ($pre ? '(?:(?:' . implode('|', array_map(fn($p) => preg_quote($p, '~'), $pre)) . ')\s+)?' : '')
+            . '(' . implode('|', array_map(fn($n) => preg_quote($n, '~'), array_keys($map))) . ')(?![\p{L}\d-])~u';   // Zusammensetzungen („…-Fest“) bleiben – die Prüfung meldet sie
     }
 
     /**
@@ -117,6 +138,7 @@ final class Anonymizer
         foreach ($this->personRegex as $re) {
             $s = (string) preg_replace_callback($re, function ($m) { $this->personHits++; return $this->personMap[mb_strtolower($m[0])] ?? 'Erika Musterfrau'; }, $s);
         }
+        if ($this->renameRegex !== '') $s = (string) preg_replace_callback($this->renameRegex, fn($m) => $this->renameMap[$m[1]] ?? $m[0], $s);
         $s = Placeholders::tokenize($s, $this->src);
         // E-Mail-Adressen (außer Beispiel-Domains und Platzhaltern)
         $s = (string) preg_replace_callback('~[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}~', fn($m) => preg_match('~@(example\.(org|com|net)|[a-z0-9-]+\.(test|example|invalid))$~i', $m[0]) ? $m[0] : self::EMAIL, $s);

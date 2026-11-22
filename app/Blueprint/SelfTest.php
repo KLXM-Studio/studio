@@ -141,6 +141,20 @@ final class SelfTest
             ['t' => ['rows' => [['id' => 1, 'inhalt' => json_encode([['type' => 'richtext', 'data' => ['text' => '<p>In zwölf Gruppen in ganz {{region.short}}</p>']]])]]]], [], [['handle' => 't', 'name' => 'T']], ['region.short' => 'NRW']);
         $eq('Prüfung: keine Fehlalarme auf der Seite, Zahlwort im Eintrag mit Klartext-Auszug', [count(array_filter($rv, fn($r) => $r['where'] === 'page:3')),
             array_values(array_map(fn($r) => $r['sample'], array_filter($rv, fn($r) => $r['where'] === 'entry:t:1')))], [0, ['In zwölf Gruppen in ganz {{region.short}}']]);
+        // Ortsnamen der Quell-Region (Filter blueprint.areas): mehrere in einem Absatz → ein Fund, einer → Ortsname; Felder mit Flächen nicht
+        $areas = ['places' => ['Musterhausen', 'Beispielburg', 'Testheide', 'Kreis Probe'], 'fields' => ['gruppen.gebiet']];
+        [, $rv] = Export::review([['id' => 4, 'title' => 'Gruppen', 'content_published' => ['blocks' => [['type' => 'richtext', 'data' => ['text' => '<p>Treffen in Musterhausen, Beispielburg und der Testheide.</p><p>Sonst nichts.</p>']]]]],
+            ['id' => 5, 'title' => 'Ort', 'content_published' => ['blocks' => [['type' => 'richtext', 'data' => ['text' => '<p>Seminar in Beispielburg.</p>']]]]]],
+            ['gruppen' => ['rows' => [['id' => 1, 'gebiet' => "Musterhausen\nBeispielburg"]]]], [], [['handle' => 'gruppen', 'name' => 'Gruppen']], ['region.name' => 'Musterland'], $areas);
+        $by = fn(string $w) => array_values(array_map(fn($r) => $r['reason'], array_filter($rv, fn($r) => $r['where'] === $w)));
+        $eq('Ortsnamen: Absatz mit mehreren → ein Fund, einzelner Ort, Feld mit Flächen nicht', [count($by('page:4')), str_starts_with((string) ($by('page:4')[0] ?? ''), 'Absatz ist auf Musterland bezogen'),
+            str_starts_with((string) ($by('page:5')[0] ?? ''), 'Ortsname aus Musterland („Beispielburg“)'), $by('entry:gruppen:1')], [1, true, true, []]);
+        [, $rv0] = Export::review([['id' => 4, 'title' => 'Gruppen', 'content_published' => ['blocks' => [['type' => 'richtext', 'data' => ['text' => '<p>Treffen in Musterhausen und Beispielburg.</p>']]]]]], [], [], [], ['region.name' => 'Musterland']);
+        $eq('Ortsnamen: ohne Erweiterung wie bisher', $rv0, []);
+        // Neutrale Namen für Gebiete (rename): mit Einzahl davor nicht doppelt
+        $an = new Anonymizer([], 0, []);
+        $an->renames(['Testheide' => 'Gruppe Nord'], ['Gruppe']);
+        $eq('Gebiete umbenennen', [$an->text('Die Gruppe Testheide lädt ein, Testheide-Fest bleibt'), $an->text('Testheide')], ['Die Gruppe Nord lädt ein, Testheide-Fest bleibt', 'Gruppe Nord']);
         // Lizenz aus dem Urheberhinweis
         $eq('Lizenz aus Urheberhinweis', [\Core\Media::licenseFromCredit('Image by Erika Musterfrau from Pixabay'), \Core\Media::licenseFromCredit('Foto: Max Mustermann / pexels.com'),
             \Core\Media::licenseFromCredit('Photo by X on Unsplash'), \Core\Media::licenseFromCredit('Foto: privat'), Export::license(['license' => 'Eigenes Foto', 'credit' => 'Pixabay'])],

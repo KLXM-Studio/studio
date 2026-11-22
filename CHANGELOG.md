@@ -71,12 +71,16 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   „Bild fehlt“ nur für Angemeldete, fehlendes Video im Einstieg zeigt die Fläche statt Schwarz; `--check` ohne Fehlalarme bei Rechtsverweisen
   und technischen Feldern, mit Zahlwörtern und Klartext-Auszug; Impressum: „Vertreten durch“ und inhaltlich Verantwortliche aus der
   Schnelleinrichtung; Beispiel-IBAN im Text wird nicht mehr als Telefonnummer ersetzt.
+- **Gebiete der Quelle** (Filter `blueprint.areas`): Erweiterungen melden Ortsnamen der Quell-Region für `--check` (Absätze mit mehreren
+  Treffern werden ein Fund „Absatz ist auf {Region} bezogen“), Felder mit Flächen (nicht geprüft) und neutrale Namen für Einträge an
+  Flächen („Regionalgruppe Nord/Mitte/Süd“), die in allen Texten ersetzt werden.
 - *EN:* Website templates (blueprints): export a site's structure with anonymised demo content (`site:blueprint`), create new sites from a
   template (`site:create --blueprint`) with a guided quick setup, roll out new template versions as structure-only proposals, and copy whole
   sites without secrets or personal data (`site:copy`); network administration → Website templates. Follow-ups: the palette chosen at
   creation is kept, dark sections keep their hue, chart colours follow the palette, licences are recognised from credits (Pixabay, Pexels,
   Unsplash), a calm accent-coloured placeholder image with an “Image missing” hint for signed-in users only, fewer false positives in
   `--check` (legal references, technical fields) plus number words, and imprint fields for representatives and the person responsible for content.
+  New filter `blueprint.areas`: extensions report place names of the source region for `--check` and neutral names for area-bound entries.
 ### Wissensbereich: Abschnitte mit Hintergrund in der Kapitelspalte als Karte
 - Blöcke mit Abschnitts-Hintergrund (grau, getönt, Akzent …) bekommen in der Kapitelspalte Innenabstand und Kartenradius – vorher klebten
   Dachzeile, Überschrift und Text an der Kante der Fläche. Ohne Hintergrund bleibt alles wie bisher.
