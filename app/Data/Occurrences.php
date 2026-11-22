@@ -109,7 +109,7 @@ final class Occurrences
     {
         try {
             $m = self::meta($t);
-            if (!$m || $m['sig'] !== self::signature($t)) return false;
+            if (!$m || $m['sig'] !== self::signature($t)) return false;  // nosemgrep: klxm-timing-safe-compare – Prüfsumme des Schemas, kein Geheimnis
             [$n, $max] = self::stats($t);
             return (int) $m['row_count'] === $n && (string) $m['max_updated'] === $max;
         } catch (\Throwable) {
@@ -171,7 +171,7 @@ final class Occurrences
             if (self::$disabled || !Calendar::enabled($t)) return;
             $m = self::meta($t);
             if (!$m) return;
-            if ($m['sig'] !== self::signature($t)) { self::rebuild($t); return; }
+            if ($m['sig'] !== self::signature($t)) { self::rebuild($t); return; }  // nosemgrep: klxm-timing-safe-compare – Prüfsumme des Schemas, kein Geheimnis
             if ($id <= 0) return;                            // nur Schema geprüft (Tables::update)
             $db = Tables::db($t);
             $row = $db->fetch("SELECT * FROM {$t['table']} WHERE id = ?", [$id]);
