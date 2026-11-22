@@ -274,6 +274,12 @@ final class Entries
                 $params[] = $tid;
                 continue;
             }
+            // Funktionen (Core\Data\Roles, JSON): Wert = Schlüssel einer Liste, Verknüpfung entry:… oder Funktionstext (enthält)
+            if (($field['type'] ?? '') === Roles::TYPE) {
+                $where[] = ($op === '!=' ? 'COALESCE(' . $f . ", '') NOT LIKE ?" : "$f LIKE ?");
+                $params[] = '%' . ($op === 'contains' ? (string) $v : json_encode((string) $v, JSON_UNESCAPED_UNICODE)) . '%';
+                continue;
+            }
             if (($field['type'] ?? '') === 'multiselect' || $op === 'contains') {
                 $where[] = "$f LIKE ?";
                 $params[] = '%' . (($field['type'] ?? '') === 'multiselect' ? json_encode((string) $v) : $v) . '%';
@@ -368,7 +374,7 @@ final class Entries
             }
             if ($f['type'] === 'media') $def['accept'] = 'visual';   // Medienfelder: Bild oder Video (Media::visual)
             if ($f['type'] === 'mediatext') $def['sections'] = !empty($f['sections']);   // „Mehrere Abschnitte“
-            if (\Core\Combo::is($f['type'])) $def = \Core\Combo::schema($f) + $def;
+            if (\Core\Combo::is($f['type'])) $def = \Core\Combo::schema($f, $table) + $def;
             if ($f['type'] === EntryBlocks::TYPE) $def['blocks'] = (array) ($f['blocks'] ?? []);   // erlaubte Blocktypen   // Kombifeld: Eingabe als Wiederholer mit festen Unterfeldern
             if ($f['type'] === 'datetime' && Calendar::enabled($table)) {
                 // Kalender: Beginn/Ende zeigen bei „ganztägig“ nur das Datum (Core\Fields 'date_only_if', resources/js/_dateonly.js)
@@ -418,9 +424,11 @@ final class Entries
         // Kontakte (Core\Data\Kinds): Felder „Nur Website“ (Vita, Über mich …) gesammelt im Abschnitt „Für die Website“ am Ende
         $web = [];
         $contacts = Kinds::isContacts($table);
+        $roles = $contacts && Roles::has($table);
         foreach (Tables::allFields($table) as $f) {
             $type = $f['type'] ?? '';
             if (!empty($f['legacy'])) continue;            // Altfelder nach data:convert: ausgeblendet (Werte bleiben für --revert)
+            if ($roles && ($f['name'] ?? '') === 'position') continue;   // Hauptfunktion: kommt aus den Funktionen (Core\Data\Roles)
             if ($type === 'section') $out[] = ['type' => 'heading', 'label' => (string) $f['label'], 'help' => (string) ($f['help'] ?? '')]
                 + (($f['style'] ?? '') === 'collapsed' ? ['collapse' => true, 'count' => true] : []);   // eingeklappt mit Zählung (Core\Fields)
             elseif ($type === 'content') $out[] = ['type' => 'heading', 'label' => '', 'html' => \Core\Sanitizer::block((string) ($f['text'] ?? ''))];
@@ -538,6 +546,8 @@ final class Entries
         // Tabellenarten (Core\Data\Kinds): Kontakte – Anzeigename aus Vor-/Nachname, neue Kontakte zuerst nicht öffentlich
         $in = Kinds::beforeSave($table, $current, $in);
         [$values, $errors] = Fields::sanitize(self::schema($table), $in, $current ?? []);
+        // Funktionen je Person (Core\Data\Roles): Verknüpfungen prüfen, Listen ableiten, Hauptfunktion in position
+        if (!$errors) [$values, $errors] = Roles::apply($table, $current, $values);
         // Bedingungen: ausgeblendete Felder leeren, „Pflicht wenn“ und Vergleiche prüfen (gilt für Verwaltung, API, MCP, DAV, Formulare)
         [$values, $errors] = Rules::apply($table['fields'], $values, $errors);
         if ($errors) {
@@ -936,6 +946,8 @@ final class Entries
             'group' => self::groupHtml($f, $v),
             EntryBlocks::TYPE => !empty($o['plain']) ? e(EntryBlocks::summary($v)) : EntryBlocks::render(EntryBlocks::items($v)),
             'person', 'faq', 'address', 'downloads', 'phones', 'emails', 'addresses', 'urls' => !empty($o['plain']) ? e(\Core\Combo::summary($f, $v)) : \Core\Combo::html($f, $v),
+            // Funktionen je Person (Core\Data\Roles): aktuelle Funktionen mit Gremium und Verknüpfung
+            Roles::TYPE => !empty($o['plain']) ? e(Roles::summary($v)) : Roles::html($table, $v, $o),
             'mediatext' => !empty($o['plain']) ? implode("\n", array_map(fn($s) => ($s['title'] !== '' ? '<p>' . e($s['title']) . '</p>' : '') . $s['text'], \Core\Fields::mediaTextSections($v)))
                 : \Core\MediaText::sections(\Core\Fields::mediaTextSections($v, !empty($f['sections'])), ['label' => self::title($table, $e)]),
             default => e((string) $v),

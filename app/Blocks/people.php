@@ -5,6 +5,7 @@
  * Einträge der Tabelle mit bestimmten Werten in einem Feld (Core\Blocks\PeopleSource). Name, Foto, E-Mail, Telefon und
  * Funktion kommen aus dem Eintrag; Funktion, Text und Foto lassen sich je Stelle überschreiben. Visitenkarte (vCard mit Foto)
  * über vcard_entry_url(), wenn die Tabelle den Schema-Typ „Person“ hat. Aussehen: resources/css/people.css (--kit-*).
+ * Adressbücher mit Funktionen (Core\Data\Roles): Funktion passend zum Filter bzw. zur Detailseite, „Ehemalige“ als eigene Liste.
  * @var \Core\Block $b  @var array $d
  */
 use Core\Blocks\PeopleSource;
@@ -24,7 +25,7 @@ if ($t) {
     foreach (PeopleSource::rows($t, $d, is_editing()) as $row) {
         ['i' => $i, 'entry' => $e, 'item' => $it] = $row;
         $role = trim((string) ($it['role'] ?? '')) ?: (string) (StructuredData::field($t, $e, ['text'], ['funktion', 'position', 'rolle', 'job', 'beruf', 'title']) ?? '');
-        $people[] = ['i' => $i, 'name' => Entries::title($t, $e), 'role' => $role, 'note' => trim((string) ($it['note'] ?? '')),
+        $people[] = ['former' => !empty($row['former']), 'i' => $i, 'name' => Entries::title($t, $e), 'role' => $role, 'note' => trim((string) ($it['note'] ?? '')),
             'image' => (int) ($it['image'] ?? 0) ?: ($img !== '' ? (int) ($e[$img] ?? 0) : 0),
             'email' => (string) (StructuredData::field($t, $e, ['email']) ?? ''), 'tel' => (string) (StructuredData::field($t, $e, ['tel']) ?? ''),
             'href' => !empty($d['link_detail']) ? Entries::href($t, $e) : null, 'vcard' => !empty($d['vcard']) ? vcard_entry_url($t, $e) : null];
@@ -45,9 +46,12 @@ $ratio = $layout === 'list' ? '1:1' : '3:4';
     <?php if (!empty($d['intro'])): ?><p class="cms-people__intro"<?= $b->edit('intro') ?>><?= emphasis((string) $d['intro']) ?></p><?php endif; ?>
   </header>
   <?php endif; ?>
-  <?php if ($people): ?>
-  <ul class="cms-people__list" role="list">
-    <?php foreach ($people as $p): $tag = !empty($d['title']) ? 'h3' : 'h2'; ?>
+  <?php if ($people):
+    $groups = array_filter([array_values(array_filter($people, fn($p) => !$p['former'])), array_values(array_filter($people, fn($p) => $p['former']))]);
+    foreach ($groups as $gi => $list): ?>
+  <?php if ($gi === 1): ?><h<?= !empty($d['title']) ? '3' : '2' ?> class="cms-people__former"><?= e(lt('Ehemalige')) ?></h<?= !empty($d['title']) ? '3' : '2' ?>><?php endif; ?>
+  <ul class="cms-people__list<?= $gi === 1 ? ' cms-people__list--former' : '' ?>" role="list">
+    <?php foreach ($list as $p): $tag = !empty($d['title']) ? ($gi === 1 ? 'h4' : 'h3') : ($gi === 1 ? 'h3' : 'h2'); ?>
     <li class="cms-person">
       <div class="cms-person__img<?= $p['image'] ? '' : ' cms-person__img--none' ?>">
         <?php if ($p['image'] && ($pic = img($p['image'], $sizes, ['ratio' => $ratio, 'alt' => $p['name']]))): ?><?= $pic ?>
@@ -68,5 +72,6 @@ $ratio = $layout === 'list' ? '1:1' : '3:4';
     </li>
     <?php endforeach; ?>
   </ul>
+  <?php endforeach; ?>
   <?php elseif (is_editing()): ?><p class="empty-hint"><?= e($byFilter && $t ? __('Keine veröffentlichten Einträge mit diesem Filter.') : __('Noch keine Personen – Tabelle wählen und Personen hinzufügen.')) ?></p><?php endif; ?>
 </div>

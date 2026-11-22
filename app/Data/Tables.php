@@ -42,6 +42,8 @@ final class Tables
         'emails' => ['E-Mail-Adressen (beschriftet)', 'text', 'envelope-simple'],
         'addresses' => ['Adressen (beschriftet)', 'text', 'map-trifold'],
         'urls' => ['Webadressen (beschriftet)', 'text', 'globe'],
+        // Funktionen je Person (Core\Data\Roles): Funktion, Gremium/Liste, Verknüpfung, seit/bis, Reihenfolge – Grundfeld der Adressbücher ab v2
+        'roles' => ['Funktionen (Gremien)', 'text', 'identification-badge'],
         // Inhaltsblöcke: eigene Folge von Blöcken des Kits je Eintrag (Core\Data\EntryBlocks) – JSON wie der Inhalt einer Seite
         'blocks' => ['Inhaltsblöcke', 'text', 'squares-four'],
         'link' => ['Link', 'string', 'link'],
@@ -367,7 +369,10 @@ final class Tables
         }
         $inbox = $kind === 'inbox';
         // Grundschema der Art (Kontakte): fehlende System-Felder ergänzen, Typ fest (Core\Data\Kinds::enforceInput)
-        if (Kinds::isSpecial($kind)) $in['fields'] = Kinds::enforceInput($kind, (array) ($in['fields'] ?? []), $errors);
+        // Version: neue Tabellen und Umwandlungen die aktuelle, bestehende behalten ihre bis data:kind-upgrade (Core\Data\KindUpgrade)
+        $kindVersion = !Kinds::isSpecial($kind) ? 0 : max(1, min(Kinds::version($kind), (int) (isset($in['_kind_version']) ? $in['_kind_version']
+            : ($existing && Kinds::of($existing) === $kind && !isset($in['_kind']) ? Kinds::tableVersion($existing) : Kinds::version($kind)))));
+        if (Kinds::isSpecial($kind)) $in['fields'] = Kinds::enforceInput($kind, (array) ($in['fields'] ?? []), $errors, $kindVersion);
         $fields = [];
         $seen = [];
         $rawFields = [];
@@ -412,7 +417,7 @@ final class Tables
             if (!$inbox && empty($def['private']) && !empty($f['public_ok'])) $def['public_ok'] = true;
             // Altfeld nach data:convert (ausgeblendet, nie öffentlich, bleibt für --revert) bzw. Feld des Grundschemas (Kinds)
             if (!$inbox && !empty($f['legacy'])) $def['legacy'] = true;
-            if (!$inbox && Kinds::isSystem($kind, $fname)) $def['system'] = true;
+            if (!$inbox && Kinds::isSystem($kind, $fname, $kindVersion)) $def['system'] = true;
             if (in_array($type, ['select', 'multiselect'], true)) {
                 $opts = [];
                 foreach (preg_split('~\R~', (string) ($f['options'] ?? '')) as $line) {
@@ -537,7 +542,7 @@ final class Tables
             unset($errors['settings.calendar']);
         }
         // Version des Grundschemas (nur additiv; data:convert/Upgrade ergänzen neue Grundfelder) und Stand einer Umwandlung
-        if (Kinds::isSpecial($kind)) $settings['kind_version'] = Kinds::version($kind);
+        if (Kinds::isSpecial($kind)) $settings['kind_version'] = $kindVersion;
         $conv = $in['_convert'] ?? ($s['convert'] ?? ($existing['settings']['convert'] ?? null));
         if (is_array($conv) && $conv) $settings['convert'] = $conv;
         // Website-Suche je Tabelle (Core\Search\TableSearch) – ohne Formularabschnitt bleibt die bisherige Einstellung

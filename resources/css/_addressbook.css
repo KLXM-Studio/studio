@@ -125,6 +125,13 @@
 .ab-row__v{font-size:15px;line-height:1.4;overflow-wrap:anywhere}
 .ab-row__v a{color:var(--adm-a-ink);text-decoration:none}
 .ab-row__v a:hover{text-decoration:underline}
+/* Funktionen je Person (Core\Data\Roles): je Gremium ein Kopf, Funktion kräftig, Zeitraum klein darunter; Ehemalige zurückhaltend */
+.ab-roles dl+.ab-roles__h{margin-top:12px}
+.ab-roles .ab-row dt{color:var(--adm-t2);font-size:14px}
+.ab-roles__when{display:block;font-size:13px;color:var(--adm-t3)}
+.ab-roles .ab-row__v a{text-decoration:underline;text-underline-offset:.15em}
+.ab-row__v a+.ab-roles__when{margin-top:1px}
+.ab-row--former dt{font-weight:500;color:var(--adm-t3)}
 .ab-reach{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--adm-t2);white-space:nowrap}
 .ab-reach .ico{width:14px;height:14px}
 .ab-reach.is-public{color:var(--adm-ok)}

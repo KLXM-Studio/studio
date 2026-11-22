@@ -18,7 +18,7 @@ namespace Core;
  */
 final class Combo
 {
-    public const TYPES = ['person', 'faq', 'address', 'downloads', 'phones', 'emails', 'addresses', 'urls'];
+    public const TYPES = ['person', 'faq', 'address', 'downloads', 'phones', 'emails', 'addresses', 'urls', 'roles'];
     /** Beschriftete Mehrfachfelder mit Freigabe je Angabe (Kontakte, auch in normalen Tabellen nutzbar) */
     public const MULTI = ['phones', 'emails', 'addresses', 'urls'];
     /** Einfacher Feldtyp, dem ein Mehrfachfeld entspricht (StructuredData::field, Personen-Block, Visitenkarte) */
@@ -121,9 +121,13 @@ final class Combo
         return in_array($type, self::TYPES, true);
     }
 
-    /** Eingabe als Wiederholer (Core\Fields) – Beschriftungen in der Sprache der Verwaltung */
-    public static function schema(array $f): array
+    /**
+     * Eingabe als Wiederholer (Core\Fields) – Beschriftungen in der Sprache der Verwaltung. $table: Tabelle des Feldes (Funktionen
+     * brauchen ihre Listen und schon benutzten Funktionstexte, Core\Data\Roles).
+     */
+    public static function schema(array $f, ?array $table = null): array
     {
+        if ($f['type'] === Data\Roles::TYPE) return Data\Roles::schema($f, $table);
         $fields = match ($f['type']) {
             'person' => [
                 ['name' => 'name', 'label' => __('Name'), 'type' => 'text', 'required' => true, 'width' => 'half'],
@@ -223,6 +227,7 @@ final class Combo
             'address' => self::addresses($items),
             'downloads' => self::downloads($items),
             'phones', 'emails', 'urls', 'addresses' => self::multi($f['type'], $items),
+            // Funktionen brauchen die Tabelle (Listen, Verknüpfungen): Entries::html → Core\Data\Roles::html
             default => '',
         };
     }
@@ -238,6 +243,7 @@ final class Combo
             'address' => implode(' · ', array_map(fn($i) => trim(($i['zip'] ?? '') . ' ' . ($i['city'] ?? '')), $items)),
             'downloads' => count($items) === 1 ? __('1 Datei') : __('{n} Dateien', ['n' => count($items)]),
             'phones', 'emails', 'urls', 'addresses' => mb_strimwidth(implode(' · ', array_filter(array_map(fn($i) => self::itemText($f['type'], $i), $items))), 0, 80, '…'),
+            'roles' => mb_strimwidth(Data\Roles::summary($items), 0, 80, '…'),
             default => '',
         };
     }
@@ -253,6 +259,7 @@ final class Combo
                 'address' => implode(' ', [$i['label'] ?? '', $i['street'] ?? '', $i['zip'] ?? '', $i['city'] ?? '', $i['country'] ?? '']),
                 'downloads' => implode(' ', [self::fileTitle($i), $i['note'] ?? '']),
                 'phones', 'emails', 'urls', 'addresses' => self::itemText($f['type'], $i),
+                'roles' => trim((string) ($i['funktion'] ?? '')),
                 default => '',
             };
         }

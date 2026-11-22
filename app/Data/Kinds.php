@@ -26,8 +26,11 @@ final class Kinds
     public const CALENDAR = 'calendar';
     /** Orte: Veranstaltungsorte mit Anschrift und Kartenpunkt – Verknüpfung „Ort aus der Liste“ (ort_ref) in Kalendern */
     public const PLACES = 'places';
-    /** Aktuelle Version des Grundschemas je Art */
-    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1];
+    /**
+     * Aktuelle Version des Grundschemas je Art. Kontakte v2: Funktionen je Person (Feld funktionen, Core\Data\Roles) – bestehende
+     * Tabellen bleiben auf ihrer Version, bis data:kind-upgrade sie hebt (Core\Data\KindUpgrade, mit Probelauf und Rückweg).
+     */
+    public const VERSIONS = [self::CONTACTS => 2, self::CALENDAR => 1, self::PLACES => 1];
     /** Feste Kalender-Zuordnung der Art calendar (settings.calendar → Grundfelder) */
     public const CALENDAR_MAP = ['start' => 'beginn', 'end' => 'ende', 'all_day' => 'ganztaegig', 'recurrence' => 'wiederholung', 'location' => 'ort',
         'description' => 'beschreibung', 'category' => 'kategorie'];
@@ -82,6 +85,14 @@ final class Kinds
         return self::VERSIONS[$kind] ?? 0;
     }
 
+    /** Version des Grundschemas einer Tabelle (ältere Tabellen ohne Angabe: 1) */
+    public static function tableVersion(array $t): int
+    {
+        $k = self::of($t);
+        if (!self::isSpecial($k)) return 0;
+        return max(1, min(self::version($k), (int) ($t['settings']['kind_version'] ?? 1)));
+    }
+
     /** Bezeichnung der Art (Verwaltung) */
     public static function label(string $kind): string
     {
@@ -113,6 +124,9 @@ final class Kinds
                 ['name' => 'nachname', 'label' => 'Nachname', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'ist_firma', 'label' => 'Ist eine Organisation', 'type' => 'bool', 'width' => 'half', 'since' => 1],
                 ['name' => 'position', 'label' => 'Funktion', 'type' => 'text', 'in_list' => 1, 'width' => 'half', 'since' => 1, 'help' => 'z. B. 1. Vorsitzende'],
+                // v2: mehrere Funktionen je Person (Gremium/Liste, Verknüpfung, seit/bis) – position trägt dann die Hauptfunktion
+                ['name' => Roles::FIELD, 'label' => 'Funktionen', 'type' => Roles::TYPE, 'since' => 2,
+                    'help' => 'Je Funktion Gremium bzw. Liste, optional eine Verknüpfung (z. B. Arbeitskreis) und Zeitraum. Die erste aktuelle ist die Hauptfunktion.'],
                 ['name' => 'firma', 'label' => 'Organisation', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'abteilung', 'label' => 'Abteilung', 'type' => 'text', 'width' => 'half', 'since' => 1],
                 ['name' => 'foto', 'label' => 'Foto', 'type' => 'media', 'width' => 'half', 'since' => 1],
@@ -122,7 +136,7 @@ final class Kinds
                 ['name' => 'web', 'label' => 'Web', 'type' => 'urls', 'since' => 1],
                 ['name' => 'geburtstag', 'label' => 'Geburtstag', 'type' => 'date', 'width' => 'half', 'private' => 1, 'since' => 1],
                 ['name' => 'listen', 'label' => 'Listen', 'type' => 'multiselect', 'in_list' => 1, 'options' => '', 'since' => 1,
-                    'help' => 'Gruppen wie „Vorstand“ oder „Presse“ – in Adressbuch-Apps als Gruppen bzw. Kategorien.'],
+                    'help' => 'Gruppen wie „Vorstand“ oder „Presse“ – in Adressbuch-Apps als Gruppen bzw. Kategorien. Listen aus den Funktionen kommen von selbst dazu.'],
                 ['name' => 'notiz', 'label' => 'Notiz', 'type' => 'textarea', 'private' => 1, 'since' => 1],
             ],
             self::CALENDAR => [
@@ -160,9 +174,9 @@ final class Kinds
         return array_column(self::schema($kind, $version), 'name');
     }
 
-    public static function isSystem(string $kind, string $name): bool
+    public static function isSystem(string $kind, string $name, ?int $version = null): bool
     {
-        return self::isSpecial($kind) && in_array($name, self::systemNames($kind), true);
+        return self::isSpecial($kind) && in_array($name, self::systemNames($kind, $version), true);
     }
 
     /** Auswahlfeld, das ohne Optionen gespeichert werden darf (Listen einer Kontakte-Tabelle) */
@@ -188,9 +202,9 @@ final class Kinds
      * Eingabe des Designers (Tables::validate) an das Grundschema anpassen: fehlende System-Felder anhängen, Typ eines vorhandenen
      * System-Feldes festhalten (mit Hinweis). Beschriftung, Hilfe, Breite, „In der Liste“ und Optionen der Listen bleiben änderbar.
      */
-    public static function enforceInput(string $kind, array $fields, array &$errors): array
+    public static function enforceInput(string $kind, array $fields, array &$errors, ?int $version = null): array
     {
-        $schema = array_column(self::schema($kind), null, 'name');
+        $schema = array_column(self::schema($kind, $version), null, 'name');
         $seen = [];
         foreach ($fields as $i => $f) {
             if (!is_array($f)) continue;
@@ -224,9 +238,9 @@ final class Kinds
      * Vollständige Vorlage für „Neue Tabelle → Adressbuch“: Grundschema mit Abschnitten wie in Adressbuch-Apps
      * (Name & Organisation, Kontakt, Weitere Angaben). Eigene Felder ergänzt die Redaktion danach.
      */
-    public static function presetFields(string $kind): array
+    public static function presetFields(string $kind, ?int $version = null): array
     {
-        $by = array_column(self::schema($kind), null, 'name');
+        $by = array_column(self::schema($kind, $version), null, 'name');
         $pick = function (string ...$names) use ($by): array {
             $out = [];
             foreach ($names as $n) {
@@ -250,14 +264,17 @@ final class Kinds
         }
         if ($kind === self::PLACES) return $pick('name', 'adresse', 'standort', 'hinweise');
         if ($kind !== self::CONTACTS) return [];
+        $v2 = isset($by[Roles::FIELD]);
         return [
             ...$pick(self::PUBLIC_FIELD),
             ['label' => 'Name & Organisation', 'name' => 'abschnitt_name', 'type' => 'section'],
             ...$pick('name', 'praefix', 'vorname', 'nachname', 'position', 'firma', 'abteilung', 'ist_firma', 'foto'),
+            // v2: Funktionen und Listen in einem Abschnitt (die Hauptfunktion „position“ bildet sich aus den Funktionen)
+            ...($v2 ? [['label' => 'Funktionen & Listen', 'name' => 'abschnitt_funktionen', 'type' => 'section'], ...$pick(Roles::FIELD, 'listen')] : []),
             ['label' => 'Kontakt', 'name' => 'abschnitt_kontakt', 'type' => 'section', 'help' => 'Jede Angabe ist zuerst intern – „Öffentlich“ zeigt sie auf der Website.'],
             ...$pick('telefon', 'email', 'adresse', 'web'),
             ['label' => 'Weitere Angaben', 'name' => 'abschnitt_weiteres', 'type' => 'section'],
-            ...$pick('geburtstag', 'listen', 'notiz'),
+            ...$pick(...($v2 ? ['geburtstag', 'notiz'] : ['geburtstag', 'listen', 'notiz'])),
         ];
     }
 
@@ -267,7 +284,7 @@ final class Kinds
      */
     public static function detailFields(array $t): array
     {
-        $first = ['foto', 'listen', 'position', 'firma', 'telefon', 'email', 'web', 'adresse'];
+        $first = ['foto', 'listen', 'position', Roles::FIELD, 'firma', 'telefon', 'email', 'web', 'adresse'];
         $skip = [self::PUBLIC_FIELD, 'name', 'praefix', 'vorname', 'nachname', 'ist_firma', 'abteilung', 'geburtstag', 'notiz'];
         $names = array_column($t['fields'], 'name');
         $out = array_values(array_intersect($first, $names));
@@ -305,7 +322,10 @@ final class Kinds
         $names = self::systemNames(self::CONTACTS);
         $eq('Grundschema Kontakte', array_values(array_intersect(['oeffentlich', 'name', 'vorname', 'nachname', 'position', 'foto', 'telefon', 'email', 'adresse', 'web', 'listen'], $names)),
             ['oeffentlich', 'name', 'vorname', 'nachname', 'position', 'foto', 'telefon', 'email', 'adresse', 'web', 'listen']);
-        $eq('Version 1 = aktuell, nur additiv', [self::version(self::CONTACTS), count(self::schema(self::CONTACTS, 1)) <= count(self::schema(self::CONTACTS))], [1, true]);
+        $eq('Version 2 = aktuell, nur additiv', [self::version(self::CONTACTS), count(self::schema(self::CONTACTS, 1)) < count(self::schema(self::CONTACTS)),
+            array_values(array_diff(self::systemNames(self::CONTACTS), self::systemNames(self::CONTACTS, 1)))], [2, true, [Roles::FIELD]]);
+        $err0 = [];
+        $eq('v1-Tabelle bleibt v1 (Designer ergänzt keine v2-Felder)', array_column(self::enforceInput(self::CONTACTS, [], $err0, 1), 'name') === self::systemNames(self::CONTACTS, 1), true);
         $eq('Mehrfachfelder sind Combo-Typen', array_values(array_filter(array_column(self::schema(self::CONTACTS), 'type'), fn($t) => \Core\Combo::isMulti($t))), ['phones', 'emails', 'addresses', 'urls']);
         $eq('Geburtstag und Notiz nie öffentlich', [Tables::field(['fields' => self::schema(self::CONTACTS)], 'geburtstag')['private'] ?? 0, Tables::field(['fields' => self::schema(self::CONTACTS)], 'notiz')['private'] ?? 0], [1, 1]);
         $err = [];

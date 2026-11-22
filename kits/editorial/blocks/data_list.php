@@ -63,6 +63,7 @@ if (str_starts_with((string) ($d['filter_field'] ?? ''), $pfx)) {
     $ff = substr($d['filter_field'], strlen($pfx));
     if ($op === 'current' || $op === 'same') {
         $val = !$ctx ? null : ($op === 'current' ? $ctx['entry']['id'] : ($ctx['entry'][$ff] ?? null));
+        if ($op === 'current' && $ctx && (Tables::field($t, $ff)['type'] ?? '') === \Core\Data\Roles::TYPE) $val = 'entry:' . $ctx['table']['handle'] . ':' . (int) $ctx['entry']['id'];   // Funktionen
         if (is_array($val)) $val = $val[0] ?? null;
         $o['where'][] = [$ff, '=', $val === null || $val === '' ? '-1' : (string) $val];
     } elseif (trim((string) ($d['filter_value'] ?? '')) !== '') {
@@ -92,6 +93,7 @@ if (str_starts_with((string) ($d['sort_field'] ?? ''), $pfx)) $o['sort'] = subst
 if (!empty($d['sort_dir'])) $o['dir'] = $d['sort_dir'];
 if (!empty($d['featured_first'])) $o['featured_first'] = true;
 $rows = \Core\Data\Exposure::publicRows($t, Entries::query($t, $o));   // ohne „Nie öffentlich“-Felder
+$rows = \Core\Data\Roles::listRows($t, $d, $rows, empty($o['sort']));   // Adressbuch: passende Funktion je Person, beendete fallen heraus
 if (!empty($d['link_detail'])) \Core\StructuredData::itemList($t, $rows, (string) ($d['title'] ?? ''));   // schema.org ItemList
 $pages = !empty($d['paginate']) && $limit ? (int) ceil(max(0, Entries::count($t, $o) - $skip) / $limit) : 1;
 

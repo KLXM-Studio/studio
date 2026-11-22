@@ -453,4 +453,7 @@ return [
     'Nächster Termin' => 'Next date',
     'öffnet Google' => 'opens Google',
     'öffnet Microsoft' => 'opens Microsoft',
+    'Ehemalige' => 'Former members',
+    'Mitglied' => 'Member',
+    'seit {date}' => 'since {date}',
 ];
