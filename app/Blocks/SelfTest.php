@@ -54,6 +54,7 @@ final class SelfTest
             $t->listFilter();
             $t->defaultChanges();
             $t->templateComments();
+            $t->draftIds();
             $t->scrolly();
             $t->hotspots();
             $t->videoToggle();
@@ -225,6 +226,23 @@ final class SelfTest
             }
         }
         $this->assert($bad === [], 'Vorlagen: kein Code hinter einem Zeilenkommentar (' . implode(', ', $bad) . ')');
+    }
+
+    /** Entwurf, der sich nur in Block-IDs/Zeitstempel unterscheidet, gilt nicht als „nicht veröffentlicht“ (Pages::contentDiffers) */
+    private function draftIds(): void
+    {
+        $j = fn(array $blocks, int $t = 1) => (string) json_encode(['time' => $t, 'blocks' => $blocks]);
+        $a = [['id' => 'a1', 'type' => 'paragraph', 'data' => ['text' => 'x']],
+            ['id' => 'a2', 'type' => 'layout', 'data' => ['columns' => [['blocks' => [['id' => 'c1', 'type' => 'paragraph', 'data' => ['text' => 'y']]]]]]],
+            ['id' => 'h1', 'type' => 'hotspots', 'data' => ['items' => [['id' => 'm1', 'shape' => 'point']]]]];
+        $b = $a; $b[0]['id'] = 'b1'; $b[1]['id'] = 'b2'; $b[1]['data']['columns'][0]['blocks'][0]['id'] = 'c2'; $b[2]['id'] = 'h2';
+        $this->assert(!\Core\Pages::contentDiffers($j($a), $j($b, 2)), 'Entwurf: nur neue Block-IDs (auch in Spalten) und Zeitstempel → unverändert');
+        $c = $b; $c[2]['data']['items'][0]['id'] = 'm2';
+        $this->assert(\Core\Pages::contentDiffers($j($a), $j($c)), 'Entwurf: IDs in Blockdaten (Markierungen) zählen als Änderung');
+        $d = $b; $d[0]['data']['text'] = 'neu';
+        $this->assert(\Core\Pages::contentDiffers($j($a), $j($d)), 'Entwurf: geänderter Text zählt als Änderung');
+        $this->assert(!\Core\Pages::hasUnpublished(['content_draft' => $j($b, 3), 'content_published' => $j($a)]), 'hasUnpublished: nur IDs → nein');
+        $this->assert(\Core\Pages::hasUnpublished(['content_draft' => $j($a), 'content_published' => null]), 'hasUnpublished: nie veröffentlicht → ja');
     }
 
     private function firstBlock(): void

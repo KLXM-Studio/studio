@@ -103,6 +103,13 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   images”, shareable across the network). New field type `hotspots` with a marker editor (click, drag, keyboard), versioned
   data format v1 and the integration point `Extension::hotspotEditor()` for external editors.
 
+### Seiten: Entwurf nur mit neuen Block-IDs gilt nicht als geändert
+- `Pages::contentDiffers()` vergleicht Entwurf und veröffentlichten Stand ohne Zeitstempel und ohne Block-IDs (auch in Spalten);
+  IDs in Blockdaten (z. B. Markierungen) zählen weiter. `Pages::hasUnpublished()` und die Entwürfe-Übersicht nutzen dieselbe Regel –
+  Seiten, die ein Import oder Skript mit neuen IDs geschrieben hat, stehen nicht mehr fälschlich auf „geändert – nicht veröffentlicht“.
+- Kontakte: keine PHP-Warnung mehr bei Funktions-Vorschlägen für noch nicht gespeicherte Tabellen.
+- *EN:* A draft that differs only in block IDs/timestamps no longer counts as unpublished changes.
+
 ### Kit fluid/native: lange Adressen im Fließtext brechen um
 - Links, fette und kursive Stellen und Code im Fließtext (`p`, `li`, `td`, Zitat, Bildunterschrift …) brechen bei Bedarf überall um
   (`overflow-wrap: anywhere`). Lange Adressen verbreitern die Seite auf dem Telefon nicht mehr; Texte ohne Überlauf bleiben unverändert.
