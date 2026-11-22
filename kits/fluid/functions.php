@@ -469,13 +469,17 @@ function fluid_min(array $d, string $key = 'size'): string
 
 /**
  * Inhaltsverzeichnis für lange Texte: vergibt IDs an <h3> (und <h4>) – die Zwischenüberschriften des Editors und liefert [html, einträge].
+ * Enthält der Text <h2> (importierte Texte), sind <h2> die oberste Ebene, <h3>/<h4> darunter.
  * @return array{0: string, 1: list<array{id: string, label: string, level: int}>}
  */
 function fluid_toc(string $html, string $prefix): array
 {
     $toc = [];
     $used = [];
-    $html = preg_replace_callback('~<(h[34])([^>]*)>(.*?)</\1>~is', function ($m) use (&$toc, &$used, $prefix) {
+    // Texte mit <h2> (importiert/eingefügt, unter dem Blocktitel): <h2> ist die oberste Ebene – Texte nur mit <h3>/<h4> bleiben wie bisher
+    $top = preg_match('~<h2[\s>]~i', $html) ? 'h2' : 'h3';
+    $levels = $top === 'h2' ? 'h[234]' : 'h[34]';
+    $html = preg_replace_callback('~<(' . $levels . ')([^>]*)>(.*?)</\1>~is', function ($m) use (&$toc, &$used, $prefix, $top) {
         $label = trim(html_entity_decode(strip_tags($m[3]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         if ($label === '') return $m[0];
         if (preg_match('~\sid="([^"]+)"~', $m[2], $idm)) {
@@ -488,7 +492,7 @@ function fluid_toc(string $html, string $prefix): array
             $attrs = $m[2] . ' id="' . e($id) . '"';
         }
         $used[$id] = true;
-        $toc[] = ['id' => $id, 'label' => $label, 'level' => strtolower($m[1]) === 'h3' ? 2 : 3];
+        $toc[] = ['id' => $id, 'label' => $label, 'level' => strtolower($m[1]) === $top ? 2 : 3];
         return '<' . $m[1] . $attrs . '>' . $m[3] . '</' . $m[1] . '>';
     }, $html) ?? $html;
     return [$html, $toc];

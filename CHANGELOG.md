@@ -10,6 +10,13 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Links: reine Anker bleiben auf der Seite
+- Ein Link-Feld mit `#anker` springt auf der aktuellen Seite, auch wenn der Anker keine Sprungmarke eines Blocks ist (Überschrift,
+  Inhaltsverzeichnis, ID im Rich-Text). Nur wenn die Seite den Anker nicht führt, die Startseite aber schon (Menü-Anker wie `#kontakt`),
+  zeigt er auf `/#anker` – wie bisher. Selbsttest `links:selftest`.
+- Kit fluid, Inhaltsverzeichnis („Artikel“): Texte mit `<h2>` (importiert oder eingefügt) nehmen `<h2>` als oberste Ebene;
+  Texte nur mit `<h3>`/`<h4>` bleiben unverändert.
+
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:
   90 %, 100 % (Standard), 112 %, 125 %, 140 %, mit kleinem/großem „A“, Prozentanzeige und **Zurücksetzen**. Wirkt sofort ohne
