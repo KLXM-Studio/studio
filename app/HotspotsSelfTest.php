@@ -96,7 +96,8 @@ final class HotspotsSelfTest
                 ['shape' => 'poly', 'points' => [[10, 10], [30, 10], [20, 40]], 'icon' => 'star'],
             ]];
             $h = Hotspots::render(self::IMG, $data, ['label' => 'Rundgang', 'id' => 'qa']);
-            $eq('Gruppe mit Namen, Alt-Text aus der Mediathek (escaped)', [str_contains($h, 'role="group" aria-label="' . e(lt('Interaktives Bild: {name}', ['name' => 'Rundgang'])) . '"'),
+            $eq('Keine Rolle „group“ an <figure> (axe aria-allowed-role)', str_contains($h, '<figure class="cms-hs') && !preg_match('~<figure[^>]*role="group"~', $h), true);
+            $eq('Abbildung mit Namen (ohne unzulässige Rolle), Alt-Text aus der Mediathek (escaped)', [str_contains($h, '" aria-label="' . e(lt('Interaktives Bild: {name}', ['name' => 'Rundgang'])) . '"'),
                 str_contains($h, 'alt="Garten &lt;mit&gt; Haus"')], [true, true]);
             preg_match_all('~<button type="button" class="cms-hs__pin[^"]*"[^>]*data-n="(\d+)"[^>]*popovertarget="([^"]+)"~', $h, $m);
             $eq('Knöpfe in Reihenfolge der Nummern mit Popover-Ziel', [$m[1], $m[2]], [['1', '2', '3'], ['qa-1', 'qa-2', 'qa-3']]);

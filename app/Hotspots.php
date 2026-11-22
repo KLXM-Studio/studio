@@ -323,7 +323,7 @@ final class Hotspots
         $svg = $areas !== '' ? '<svg class="cms-hs__areas" viewBox="0 0 ' . $w . ' ' . $hgt . '" preserveAspectRatio="none" aria-hidden="true" focusable="false">' . $areas . '</svg>' : '';
         $listMode = ($o['list'] ?? 'auto') === 'always' ? 'always' : 'auto';
         $aria = $label !== '' ? $label : ($alt !== '' ? $alt : lt('Interaktives Bild'));
-        $html = '<figure class="cms-hs cms-hs--list-' . $listMode . '" id="' . e($id) . '" role="group" aria-label="' . e(lt('Interaktives Bild: {name}', ['name' => strip_emphasis($aria)])) . '" data-cms-hs>'
+        $html = '<figure class="cms-hs cms-hs--list-' . $listMode . '" id="' . e($id) . '" aria-label="' . e(lt('Interaktives Bild: {name}', ['name' => strip_emphasis($aria)])) . '" data-cms-hs>'
             . '<div class="cms-hs__stage">' . $img . $svg . $pins . '</div>'
             . ($items ? '<figcaption class="cms-hs__cap"><span class="cms-hs__hint">' . e(lt('{n} Markierungen – zum Öffnen anklicken oder mit der Tab-Taste wählen.', ['n' => count($items)])) . '</span></figcaption>'
                 . '<ol class="cms-hs__list" aria-label="' . e(lt('Markierungen im Bild')) . '">' . $list . '</ol>' : '')
