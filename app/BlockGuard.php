@@ -14,6 +14,7 @@ namespace Core;
  *  - Geschützte Blöcke: gesperrt (Eigenschaft lock an der Wurzel des Block-JSON: {by: 'design', note}) oder von einem Typ, den die
  *    Rolle nicht nutzen darf. Sie bleiben sichtbar und lassen sich verschieben (auch zwischen Spalten eines Layouts), aber weder
  *    ändern noch löschen. Ausgenommen: volle Gestaltung (design.blocks) und Rollen mit allen Rechten.
+ *    Ein gesperrtes Layout sperrt seine Spalten mit: Kinder nicht ändern, löschen oder hinausschieben, nichts hinzufügen.
  *  - Gestaltung (Stufen): ohne design.blocks.basic bleiben Variante und Abschnitts-Optionen (DESIGN_TUNES) unverändert bzw. bei
  *    neuen Blöcken auf dem Standard. Sperren setzen/entfernen nur mit design.blocks – sonst bleibt die Sperre wie vorher (still).
  *
@@ -139,8 +140,14 @@ final class BlockGuard
         $problems = [];
         foreach ($was as $id => $x) {
             $why = self::protection($role, $x['b']);
+            // Gesperrtes Layout: seine Spalten sind mitgesperrt – Kinder nicht ändern, nicht löschen, nicht hinausschieben
+            $lay = $x['parent'] !== null && self::protection($role, $was[$x['parent']]['b'] ?? []) === 'lock' ? $was[$x['parent']]['b'] : null;
+            if ($why === null && $lay) {
+                $why = 'lock';
+                if (isset($now[$id]) && $now[$id]['parent'] !== $x['parent']) $problems[] = __('„{label}“ liegt in einem gesperrten Layout – verschieben nur innerhalb des Layouts', ['label' => $label($x['b'])]);
+            }
             if ($why === null) continue;
-            $msg = $why === 'lock' ? __('„{label}“ ist gesperrt ({note})', ['label' => $label($x['b']), 'note' => self::note($x['b'])])
+            $msg = $why === 'lock' ? __('„{label}“ ist gesperrt ({note})', ['label' => $label($x['b']), 'note' => self::note($lay && empty($x['b']['lock']) ? $lay : $x['b'])])
                 : __('„{label}“ darf Ihre Rolle nicht bearbeiten', ['label' => $label($x['b'])]);
             if (!isset($now[$id])) $problems[] = $msg . ' – ' . __('löschen nicht möglich');
             elseif (self::content($now[$id]['b']) !== self::content($x['b'])) $problems[] = $msg . ' – ' . __('ändern nicht möglich, nur verschieben');
@@ -149,6 +156,12 @@ final class BlockGuard
             $b = $x['b'];
             $prev = $was[$id] ?? null;
             if ($prev && ($prev['b']['type'] ?? '') !== ($b['type'] ?? '')) $prev = null;   // andere Art unter alter ID = neuer Block
+            // In die Spalten eines gesperrten Layouts einfügen bzw. hineinschieben: nur volle Gestaltung
+            $into = $x['parent'] !== null ? ($was[$x['parent']]['b'] ?? null) : null;
+            if ($into && (!$prev || $prev['parent'] !== $x['parent']) && self::protection($role, $into) === 'lock') {
+                $problems[] = __('„{label}“: Die Spalten von „{layout}“ sind gesperrt ({note})', ['label' => $label($b), 'layout' => $label($into), 'note' => self::note($into)]);
+                continue;
+            }
             if (!$prev) {
                 if (!$all && !Permissions::allowsBlock($role, (string) $b['type'])) {
                     $problems[] = __('„{label}“ darf Ihre Rolle nicht einfügen', ['label' => $label($b)]);
@@ -168,14 +181,14 @@ final class BlockGuard
         return $new;
     }
 
-    /** Alle Blöcke einschließlich der Kinder von Layouts: [id => ['b' => Block, 'nested' => bool]] */
-    private static function flat(array $blocks, bool $nested = false, array &$out = []): array
+    /** Alle Blöcke einschließlich der Kinder von Layouts: [id => ['b' => Block, 'nested' => bool, 'parent' => ID des Layouts|null]] */
+    private static function flat(array $blocks, bool $nested = false, array &$out = [], ?string $parent = null): array
     {
         foreach ($blocks as $b) {
             if (!is_array($b) || ($b['id'] ?? '') === '') continue;
-            $out[(string) $b['id']] = ['b' => $b, 'nested' => $nested];
+            $out[(string) $b['id']] = ['b' => $b, 'nested' => $nested, 'parent' => $parent];
             if (($b['type'] ?? '') === Layout::TYPE) {
-                foreach ((array) ($b['data']['columns'] ?? []) as $c) self::flat((array) ($c['blocks'] ?? []), true, $out);
+                foreach ((array) ($b['data']['columns'] ?? []) as $c) self::flat((array) ($c['blocks'] ?? []), true, $out, (string) $b['id']);
             }
         }
         return $out;

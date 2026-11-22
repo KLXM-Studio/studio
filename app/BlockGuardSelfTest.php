@@ -125,6 +125,18 @@ final class BlockGuardSelfTest
                 $eq('Spalte: fremdes Kind ändern → abgelehnt', $denied(fn() => BlockGuard::check($old, $lay([$mk('qa_c1', $B, $fb, 'Anders')], [$mk('qa_c2', $A, $fa, 'Kind A')]), $limited)), true);
                 $eq('Spalte: fremdes Kind in andere Spalte verschieben', $denied(fn() => BlockGuard::check($old, $lay([], [$mk('qa_c2', $A, $fa, 'Kind A'), $mk('qa_c1', $B, $fb, 'Kind')]), $limited)), false);
                 $eq('Spalte: fremdes Kind löschen → abgelehnt', $denied(fn() => BlockGuard::check($old, $lay([], [$mk('qa_c2', $A, $fa, 'Kind A')]), $limited)), true);
+                // Gesperrtes Layout: Spalten mitgesperrt – nur volle Gestaltung fügt ein, ändert, löscht oder schiebt hinaus
+                $locked = fn(array $c1, array $c2, array $after = []) => [...array_map(fn($b) => $b + ['lock' => ['by' => 'design', 'note' => 'Agentur-Raster']], $lay($c1, $c2)), ...Pages::sanitizeBlocks($after)];
+                $lo = $locked([$mk('qa_k1', $A, $fa, 'Eins')], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben')]);
+                $eq('Gesperrtes Layout: in Spalte einfügen → abgelehnt', $denied(fn() => BlockGuard::check($lo, $locked([$mk('qa_k1', $A, $fa, 'Eins'), $mk('qa_k3', $A, $fa, 'Neu')], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben')]), $basic)), true);
+                $eq('Gesperrtes Layout: Kind ändern → abgelehnt', $denied(fn() => BlockGuard::check($lo, $locked([$mk('qa_k1', $A, $fa, 'Anders')], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben')]), $basic)), true);
+                $eq('Gesperrtes Layout: Kind löschen → abgelehnt', $denied(fn() => BlockGuard::check($lo, $locked([], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben')]), $basic)), true);
+                $eq('Gesperrtes Layout: Kind hinausschieben → abgelehnt', $denied(fn() => BlockGuard::check($lo, $locked([], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben'), $mk('qa_k1', $A, $fa, 'Eins')]), $basic)), true);
+                $eq('Gesperrtes Layout: Block hineinschieben → abgelehnt', $denied(fn() => BlockGuard::check($lo, $locked([$mk('qa_k1', $A, $fa, 'Eins'), $mk('qa_top', $A, $fa, 'Oben')], [$mk('qa_k2', $A, $fa, 'Zwei')]), $basic)), true);
+                $eq('Gesperrtes Layout: Kind innerhalb verschieben', $denied(fn() => BlockGuard::check($lo, $locked([$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_k1', $A, $fa, 'Eins')], [$mk('qa_top', $A, $fa, 'Oben')]), $basic)), false);
+                $eq('Gesperrtes Layout: volle Gestaltung fügt ein', $denied(fn() => BlockGuard::check($lo, $locked([$mk('qa_k1', $A, $fa, 'Eins'), $mk('qa_k3', $A, $fa, 'Neu')], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben')]), $full)), false);
+                $eq('Gesperrtes Layout: Admin fügt ein', $denied(fn() => BlockGuard::check($lo, $locked([$mk('qa_k1', $A, $fa, 'Eins'), $mk('qa_k3', $A, $fa, 'Neu')], [$mk('qa_k2', $A, $fa, 'Zwei')], [$mk('qa_top', $A, $fa, 'Oben')]), $admin)), false);
+                $eq('Ungesperrtes Layout: einfügen erlaubt', $denied(fn() => BlockGuard::check($lay([$mk('qa_k1', $A, $fa, 'Eins')], []), $lay([$mk('qa_k1', $A, $fa, 'Eins'), $mk('qa_k3', $A, $fa, 'Neu')], []), $basic)), false);
             }
         }
 
@@ -258,6 +270,29 @@ final class BlockGuardSelfTest
             $eq('Inhaltsblöcke: verbotenen Block einfügen → abgelehnt', isset($e2['inhalt']), true);
             [, $e3] = Data\Entries::save($t, (int) $id, ['inhalt' => $items([['qa_e3', $A, $fa, 'Erlaubt'], ['qa_e1', $B, $fb, 'Fremd']])]);
             $eq('Inhaltsblöcke: erlaubten Block einfügen, fremden verschieben', $e3 ?? [], []);
+            // Formular der Verwaltung: Sperre kommt als verborgenes JSON-Feld zurück und bleibt erhalten (auch bei voller Gestaltung)
+            EditLock::setActor(null);
+            $form = fn(string $data) => ['0' => ['type' => $A, 'id' => 'qa_e9', 'tunes' => '{}', 'lock' => '{"by":"design","note":"Agentur"}', 'data' => [$fa => $data]]];
+            [, $e4] = Data\Entries::save($t, (int) $id, ['inhalt' => $form('Gesperrt')]);
+            $cur = Data\EntryBlocks::items(Data\Entries::find($t, (int) $id)['inhalt'] ?? null);
+            $eq('Formular: Sperre gespeichert (volle Gestaltung, ohne Person)', [$e4 ?? [], $cur[0]['lock']['note'] ?? null], [[], 'Agentur']);
+            $fullUid = (int) app()->db->insert('users', ['email' => 'qa-entry-full-' . bin2hex(random_bytes(3)) . '@example.test', 'name' => 'QA', 'password_hash' => 'x', 'role' => 'admin', 'created_at' => now()]);
+            EditLock::setActor($fullUid);
+            $plain = ['0' => ['type' => $A, 'id' => 'qa_e9', 'tunes' => '{}', 'lock' => '{"by":"design","note":"Agentur"}', 'data' => [$fa => 'Admin ändert']]];
+            Data\Entries::save($t, (int) $id, ['inhalt' => $plain]);
+            $cur = Data\EntryBlocks::items(Data\Entries::find($t, (int) $id)['inhalt'] ?? null);
+            $eq('Formular: Admin speichert, Sperre bleibt', $cur[0]['lock']['note'] ?? null, 'Agentur');
+            $html = Data\EntryBlocks::renderInput(Data\Tables::field($t, 'inhalt') ?? [], 'f[inhalt]', $cur, [], 'inhalt', 'Inhalt', '');
+            $eq('Formular: Sperre als verborgenes Feld', str_contains($html, 'name="f[inhalt][0][lock]"') || str_contains($html, '[lock]'), true);
+            app()->db->query('DELETE FROM users WHERE id = ?', [$fullUid]);
+            // Eingeschränkte Rolle: geschützter Block kommt als „raw“ (Felder nur lesen) zurück – unverändert, also gespeichert
+            EditLock::setActor($uid);
+            $raw = ['0' => ['type' => $A, 'id' => 'qa_e9', 'tunes' => json_encode($cur[0]['tunes']), 'lock' => json_encode($cur[0]['lock']), 'raw' => json_encode($cur[0]['data'])]];
+            [, $e5] = Data\Entries::save($t, (int) $id, ['inhalt' => $raw]);
+            $eq('Formular: geschützter Block unverändert (nur lesen) → gespeichert', $e5 ?? [], []);
+            $raw['0']['raw'] = json_encode(array_replace($cur[0]['data'], [$fa => 'Gehackt']));
+            [, $e6] = Data\Entries::save($t, (int) $id, ['inhalt' => $raw]);
+            $eq('Formular: geschützter Block mit geänderten Daten → abgelehnt', isset($e6['inhalt']), true);
         } catch (\Throwable $e) {
             $eq('Inhaltsblöcke: Ausnahme', $e->getMessage(), '');
         } finally {

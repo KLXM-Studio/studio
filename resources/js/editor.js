@@ -700,7 +700,7 @@ function makeTool(type, def) {
     guard() { return guardOf(type, locks.get(this.blockId)); }
 
     /** Block in einer Spalte (Layout) geschützt? */
-    childGuard(id) { const c = (this.data.columns || []).flatMap(x => x?.blocks || []).find(b => b.id === id); return c ? guardOf(c.type, c.lock) : null; }
+    childGuard(id) { const c = (this.data.columns || []).flatMap(x => x?.blocks || []).find(b => b.id === id); return c ? guardOf(c.type, c.lock) || (this.guard() === 'lock' ? 'lock' : null) : null; }   // gesperrtes Layout sperrt seine Spalten mit
 
     /** Kopie direkt unter diesem Block */
     duplicate() {
@@ -1030,6 +1030,7 @@ function makeTool(type, def) {
     decorateLayout(pv) {
       const T = CMSAdmin.t, E = CMSAdmin.esc;
       const cols = this.data.columns || [];
+      const layLocked = this.guard() === 'lock';   // gesperrtes Layout (Core\BlockGuard): Spalten mitgesperrt, kein Einfügen
       $$('[data-lay-col]', pv).forEach(colEl => {
         const ci = +colEl.dataset.layCol;
         const list = cols[ci]?.blocks || [];
@@ -1051,11 +1052,11 @@ function makeTool(type, def) {
               <button type="button" class="cms-lay-bar__edit" data-act="edit" aria-label="${E(T('„{label}“ bearbeiten', { label: cdef.label }))}">${E(T('Bearbeiten'))}</button>
               <button type="button" class="cms-iconbtn cms-iconbtn--danger" data-act="del" aria-label="${E(T('„{label}“ löschen', { label: cdef.label }))}" title="${E(T('Löschen'))}">✕</button>
             </span>`);
-          const cg = guardOf(child.type, child.lock);
-          const dis = { up: bi === 0, down: bi === list.length - 1, left: ci === 0, right: ci === cols.length - 1, del: !!cg };
+          const cg = guardOf(child.type, child.lock) || (layLocked ? 'lock' : null);
+          const dis = { up: bi === 0, down: bi === list.length - 1, left: layLocked || ci === 0, right: layLocked || ci === cols.length - 1, del: !!cg };   // gesperrtes Layout: nur innerhalb der Spalte
           if (cg) {   // geschützt (Core\BlockGuard): ansehen und verschieben, nicht löschen
             const eb = $('[data-act="edit"]', sr), db = $('[data-act="del"]', sr);
-            eb.textContent = T('Ansehen'); eb.title = guardNote(cg, child.lock);
+            eb.textContent = T('Ansehen'); eb.title = guardNote(cg, child.lock || (layLocked ? locks.get(this.blockId) : null));
             db.title = T('Löschen nicht möglich – gesperrt'); db.setAttribute('aria-label', T('Löschen nicht möglich – gesperrt'));
             $('.cms-lay-bar__label', sr).insertAdjacentHTML('beforeend', ` <span class="cms-lay-bar__lock" role="img" aria-label="${E(T('gesperrt'))}" title="${E(guardNote(cg, child.lock))}">${lockIco()}</span>`);
           }
@@ -1070,6 +1071,7 @@ function makeTool(type, def) {
             this.focusAfter = null;
           }
         });
+        if (layLocked) return;
         const addHost = d.createElement('div');
         addHost.className = 'cms-lay-add'; addHost.contentEditable = 'false';
         colEl.append(addHost);
@@ -1311,7 +1313,7 @@ function makeTool(type, def) {
       selectBlock(this.el);
       if (act === 'edit') { openDrawer(new ChildRef(this, id)); return; }
       if (act === 'del') {
-        if (guardOf(child.type, child.lock)) return;
+        if (this.childGuard(id)) return;
         if (!(await (Bar?.ask || (o => Promise.resolve(confirm(o.title + '\n' + o.body))))({ title: T('Block löschen?'), body: T('„{label}“ wird aus dieser Spalte entfernt. Bis zum Speichern lässt sich das mit „Abbrechen“ rückgängig machen; danach über Versionen.', { label }), ok: T('Löschen'), danger: true }))) return;
         list.splice(bi, 1);
         if (drawerFor?.blockId === id) closeDrawer();
@@ -1321,7 +1323,7 @@ function makeTool(type, def) {
         if (to < 0 || to >= list.length) return;
         [list[bi], list[to]] = [list[to], list[bi]];
         this.focusAfter = { id, act };
-      } else if (act === 'left' || act === 'right') {
+      } else if ((act === 'left' || act === 'right') && this.guard() !== 'lock') {
         const tc = ci + (act === 'left' ? -1 : 1);
         if (tc < 0 || tc >= cols.length) return;
         list.splice(bi, 1);
@@ -1370,7 +1372,7 @@ class ChildRef {
   set data(v) { const c = this.child; if (c) c.data = v; }
   get tuneData() { return { anchor: '', visible: true, background: '', ...(this.child?.tunes?.section || {}) }; }
   setTunes(t) { const c = this.child; if (c) c.tunes = { section: { ...t } }; }
-  guard() { return guardOf(this.type, this.child?.lock); }
+  guard() { return guardOf(this.type, this.child?.lock) || (this.parent.guard?.() === 'lock' ? 'lock' : null); }
   get el() { return this.parent.el; }
   refresh() { this.parent.refresh(); }
   loadPreview() { return this.parent.loadPreview(); }

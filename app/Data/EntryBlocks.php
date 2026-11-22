@@ -78,6 +78,11 @@ final class EntryBlocks
         foreach (is_array($raw) ? $raw : self::items($raw) as $b) {
             if (!is_array($b) || !isset($allowed[(string) ($b['type'] ?? '')])) continue;
             if (is_string($b['tunes'] ?? null)) $b['tunes'] = json_decode($b['tunes'], true) ?: [];
+            // Sperre (Core\BlockGuard) und Daten geschützter Blöcke kommen aus dem Formular als JSON (verborgene Felder) – ohne sie ginge
+            // die Sperre beim Speichern verloren; ob sie gesetzt bleiben darf, prüft BlockGuard
+            if (is_string($b['lock'] ?? null)) $b['lock'] = json_decode($b['lock'], true) ?: null;
+            if (is_string($b['raw'] ?? null) && !isset($b['data'])) $b['data'] = json_decode($b['raw'], true) ?: [];
+            unset($b['raw']);
             $list[] = $b;
             if (count($list) >= self::MAX) break;
         }
@@ -199,6 +204,16 @@ final class EntryBlocks
         }
         $fields .= Fields::renderForm($def['fields'] ?? [], $data, $errors, $n . '[data]', $path);
         $label = (string) ($def['label'] ?? $type);
+        // Geschützter Block (Core\BlockGuard: gesperrt oder Art nicht erlaubt): Felder nur lesen, Daten unverändert als JSON, nicht entfernbar
+        $role = isset(app()->auth) && app()->auth->user() ? app()->auth->role() : null;
+        $guard = $role ? \Core\BlockGuard::protection($role, $b) : null;
+        $lock = !empty($b['lock']) ? '<input type="hidden" name="' . e($n) . '[lock]" value="' . e((string) json_encode($b['lock'], JSON_UNESCAPED_UNICODE)) . '">' : '';
+        if ($guard) {
+            $fields = '<p class="cms-bindnote cms-locknote" role="note">' . icon('lock') . ' <b>' . e($guard === 'lock' ? \Core\BlockGuard::note($b) : __('Diese Blockart kann Ihre Rolle nicht bearbeiten')) . '.</b> '
+                . e(__('Sie können ihn ansehen und verschieben, aber nicht ändern oder löschen – bitte wenden Sie sich an die Agentur.')) . '</p>'
+                . '<fieldset class="cms-ro" disabled>' . $fields . '</fieldset>'
+                . '<input type="hidden" name="' . e($n) . '[raw]" value="' . e((string) json_encode($b['data'] ?? new \stdClass(), JSON_UNESCAPED_UNICODE)) . '">';
+        }
         $peek = self::peek($def['fields'] ?? [], $data);
         return '<fieldset class="rep-item blk-item' . ($open ? '' : ' is-collapsed') . '" data-blk-item data-type="' . e($type) . '"><legend>'
             . '<button type="button" class="rep-toggle" data-blk="toggle" aria-expanded="' . ($open ? 'true' : 'false') . '"><span class="rep-chev" aria-hidden="true"></span>'
@@ -206,10 +221,10 @@ final class EntryBlocks
             . ($peek !== '' ? ' <span class="blk-peek">– ' . e($peek) . '</span>' : '') . '</span></button></legend>'
             . '<div class="rep-tools"><button type="button" class="icon-btn" data-blk="up" aria-label="' . e(__('Nach oben')) . '">↑</button>'
             . '<button type="button" class="icon-btn" data-blk="down" aria-label="' . e(__('Nach unten')) . '">↓</button>'
-            . '<button type="button" class="icon-btn icon-btn--danger" data-blk="remove" aria-label="' . e(__('Block „{label}“ entfernen', ['label' => $label])) . '">✕</button></div>'
+            . ($guard ? '' : '<button type="button" class="icon-btn icon-btn--danger" data-blk="remove" aria-label="' . e(__('Block „{label}“ entfernen', ['label' => $label])) . '">✕</button>') . '</div>'
             . '<input type="hidden" name="' . e($n) . '[type]" value="' . e($type) . '">'
             . '<input type="hidden" name="' . e($n) . '[id]" value="' . e((string) ($b['id'] ?? '')) . '">'
-            . '<input type="hidden" name="' . e($n) . '[tunes]" value="' . e((string) json_encode($b['tunes'] ?? new \stdClass(), JSON_UNESCAPED_UNICODE)) . '">'
+            . '<input type="hidden" name="' . e($n) . '[tunes]" value="' . e((string) json_encode($b['tunes'] ?? new \stdClass(), JSON_UNESCAPED_UNICODE)) . '">' . $lock
             . '<div class="rep-fields blk-fields">' . $fields . '</div></fieldset>';
     }
 

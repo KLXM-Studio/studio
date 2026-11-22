@@ -9605,4 +9605,6 @@ return [
     '{n} geänderte Einzeltermine' => '{n} changed single occurrences',
     '{n} mit Fehlern.' => '{n} with errors.',
     'übersprungen' => 'skipped',
+    '„{label}“ liegt in einem gesperrten Layout – verschieben nur innerhalb des Layouts' => '“{label}” is inside a locked layout – it can only be moved within the layout',
+    '„{label}“: Die Spalten von „{layout}“ sind gesperrt ({note})' => '“{label}”: the columns of “{layout}” are locked ({note})',
 ];

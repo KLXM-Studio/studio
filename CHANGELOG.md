@@ -16,6 +16,8 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   weder ändern noch löschen.
 - **Gesperrte Blöcke:** Block-Menü ⋯ → „Sperren“ (nur mit „Blöcke gestalten (voll)“). Gesperrte Blöcke tragen ein Schloss, „Ansehen“
   öffnet die Felder nur zum Lesen, Löschen ist abgeschaltet, Verschieben geht. Die Sperre liegt an der Wurzel des Block-JSON (`lock`).
+  Ein gesperrtes Layout sperrt seine Spalten mit (nichts einfügen, Kinder nicht ändern, löschen oder hinausschieben). Das Formular für
+  Inhaltsblöcke in Einträgen behält die Sperre beim Speichern und zeigt geschützte Blöcke nur zum Lesen.
 - **Gestaltung in zwei Stufen:** `design.blocks.basic` („im Rahmen des Kits“: Variante, Hintergrund, Abstände, weitere
   Abschnitts-Optionen) und `design.blocks` (voll: zusätzlich sperren, gesperrte Blöcke ändern, Listen-Vorlagen). Ohne Gestaltung sind
   diese Felder im Editor ausgegraut. Eine einmalige Migration gibt allen Rollen mit „Seiten bearbeiten“ die Stufe `basic` – bestehende
