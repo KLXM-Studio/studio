@@ -340,6 +340,18 @@ final class Network
         return [];
     }
 
+    /** Stand der Zusatzangaben dieser Website (für Änderungsmarken, z. B. CTag der Erweiterung dav); '' = keine */
+    public static function extrasStamp(array $t): string
+    {
+        if (empty($t['site_fields'])) return '';
+        try {
+            $r = Shared::db((string) $t['shared']['key'])->fetch('SELECT MAX(extra_at) AS u, COUNT(*) AS n FROM share_extra WHERE extra_site = ?', [site()->key]);
+        } catch (\Throwable) {
+            return '';
+        }
+        return (string) ($r['u'] ?? '') . '/' . (string) ($r['n'] ?? 0);
+    }
+
     // ================================================================= Herkunft aus Kalender-Abos (Kooperationen)
 
     /** Spalte _external anlegen (beim ersten Abo-Abgleich in diesen Kalender) */

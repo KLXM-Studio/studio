@@ -1,5 +1,12 @@
 # Changelog – Erweiterung „dav“
 
+## 1.8.1 (2026-11-22)
+
+- **Netzwerk (Core-Stufe „Netzwerk“, `Core\Data\Network`):** Der CTag geteilter Adressbücher und Kalender ändert sich auch, wenn diese
+  Website Zusatzangaben speichert (z. B. Funktionen je Website) – Apps holen dann die neue Fassung. Fremde Einträge gehen mit Weitergabe-Stufen
+  nur in der öffentlichen Fassung an die Apps (`Exposure::forApps`); Löschen am Ursprung verschwindet über den CTag auch aus den Apps.
+- Braucht Core mit `Core\Data\Network`.
+
 ## 1.8.0 (2026-11-22)
 
 - **Adressbücher (Art „contacts“) mit derselben Abbildung wie der vCard-Austausch des Core** (`Core\Data\VCards::card()`/`fields()`,
