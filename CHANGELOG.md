@@ -10,6 +10,30 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kontakte: mehrere Funktionen je Person (Grundschema contacts v2)
+- **Feld „Funktionen“** (Feldtyp `roles`, `Core\Data\Roles`) im Abschnitt „Funktionen & Listen“: je Funktion Text mit Vorschlägen
+  (Vorsitz, Kassenwart, Schriftführung, Beisitz, Ansprechperson … und schon benutzte), Gremium/Liste, optional Verknüpfung zu einem
+  Eintrag einer beliebigen Tabelle (z. B. Arbeitskreis), seit/bis und Reihenfolge. Die erste laufende Funktion ist die Hauptfunktion
+  (Feld „Funktion“, vCard TITLE, JSON-LD `jobTitle`); Listen ergeben sich aus den Funktionen und bleiben von Hand nutzbar.
+- **Passende Funktion je Zusammenhang:** Block „Personen“ und Datenliste mit Filter nach Liste zeigen die Funktion in dieser Liste
+  (sortiert nach „Reihenfolge“), auf der Detailseite eines verknüpften Eintrags die verknüpfte Funktion, sonst die Hauptfunktion.
+  Beendete Funktionen („bis“ vergangen) erscheinen dort nicht mehr; Block „Personen“ wahlweise mit Abschnitt „Ehemalige“. Filter
+  „Funktionen“ ohne Wert bzw. „verknüpft mit dem aufgerufenen Eintrag“ = Ansprechpersonen des aufgerufenen Eintrags. Kits mit eigener
+  Datenliste (editorial, frameworks) ebenso. Beendete Funktionen fallen schon in der Abfrage heraus (`Entries::query` Option
+  `exclude_ids`) – Anzahl und Blättern stimmen.
+- **Adressbuch-Ansicht:** Funktionen nach Gremium gruppiert mit Verknüpfung und Amtszeit, „Ehemalige Funktionen“; Zähler und Listen
+  ohne beendete Funktionen; „Aus Liste entfernen“ beendet die Funktion in der Liste. Bearbeiten in der Verwaltung und auf der Website
+  (Seitenleiste „Bearbeiten: Funktionen“).
+- **dav 1.7.0:** Listen als Gruppen in Apple Kontakte (`X-ADDRESSBOOKSERVER-KIND:group`, Mitglieder ändern = Liste zuordnen/entfernen),
+  TITLE = Hauptfunktion; Adressbücher ohne Funktionen und Inhaltstabellen unverändert.
+- **`data:kind-upgrade <tabelle>`** (`Core\Data\KindUpgrade`): bestehende Adressbücher bleiben auf Version 1, bis sie gehoben werden –
+  Probelauf, `--apply` (Sicherung, Revision je Eintrag, je Liste eine Funktion, Funktion bei der ersten), `--revert`. Neue Adressbücher
+  und `data:convert --kind=contacts` bekommen Version 2. Selbsttests in `data:selftest` und `dav:selftest`.
+- *EN:* Contacts: several roles per person (base schema v2) – role, board/list, optional link to any entry, since/until, order;
+  people block and data list show the matching role per context (list filter, linked entry's detail page), ended roles drop out
+  (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
+  `data:kind-upgrade` with dry run and revert.
+
 ### Wissensbereich / Handbuch (Tabellenart „Wissen“, `Core\Data\Knowledge`)
 - **Neue Tabellenart `knowledge`** (Vorlage „Wissen“ im Assistenten, `data:template knowledge`): Kapitel als Einträge mit Bereich,
   Oberkapitel (Kapitelbaum, 3+ Ebenen), Reihenfolge, Kapitelnummer (automatisch „2.1.3“, überschreibbar), Anreißer, Inhaltsblöcken,

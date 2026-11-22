@@ -55,6 +55,21 @@ $badge = function (array $r) use ($tg): string {
     <?php else: ?><span aria-disabled="true"><?= icon($ic) ?><span><?= e($label) ?></span></span><?php endif; ?>
     <?php endforeach; ?>
   </div>
+  <?php // Funktionen je Person (Core\Data\Roles): je Gremium/Liste, dann ohne Liste, dann „Ehemalige Funktionen“
+  if (($rf = \Core\Data\Roles::field($t)) && ($rgroups = \Core\Data\Roles::groups($t, $e))): $rreach = $badge(Exposure::reach($t, $rf, $e)); ?>
+  <section class="ab-grp ab-roles">
+    <?php foreach ($rgroups as $g): ?>
+    <h3 class="ab-roles__h"><?= e($g['label']) ?></h3>
+    <dl>
+      <?php foreach ($g['rows'] as $row): ?>
+      <div class="ab-row<?= !empty($row['former']) ? ' ab-row--former' : '' ?>"><dt><?= e($row['role']) ?></dt>
+        <dd class="ab-row__v"><?php if ($row['ref'] !== ''): ?><a href="<?= e((string) $row['href']) ?>"><?= e($row['ref']) ?></a><?php endif; ?><?php if ($row['when'] !== ''): ?><span class="ab-roles__when"><?= e($row['when']) ?></span><?php endif; ?><?php if (!empty($row['future'])): ?><span class="ab-roles__when"><?= e(__('beginnt erst')) ?></span><?php endif; ?></dd>
+        <dd class="ab-row__r"><?= empty($row['former']) ? $rreach : '' ?></dd></div>
+      <?php endforeach; ?>
+    </dl>
+    <?php endforeach; ?>
+  </section>
+  <?php endif; ?>
   <?php foreach (AddressBook::groups($t, $e) as $g): ?>
   <section class="ab-grp">
     <h3><?= e($g['label']) ?></h3>

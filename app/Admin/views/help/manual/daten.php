@@ -171,6 +171,25 @@
     <li><b>Exportieren:</b> Die aktuelle Liste (oder die ausgewählten Kontakte, oder ein einzelner Kontakt über „vCard“) als vCard-Datei – mit <b>allen Angaben</b> oder <b>nur den öffentlichen</b> (dann nur Kontakte, die auf der Website stehen). „In Apps abonnieren …“ führt zur Seite <a href="#abonnieren">Abonnieren</a>.</li>
     <li><b>Auf dem Telefon</b> zeigt das Adressbuch eine Spalte nach der anderen: Listen → Namen → Karte, jeweils mit Zurück-Link oben links.</li>
   </ul>
+  <h4 id="funktionen">Funktionen: mehrere Ämter je Person</h4>
+  <p>Eine Person ist oft mehreres zugleich: Vorsitzende im Vorstand, Ansprechperson im Arbeitskreis, Kassenprüferin. Dafür hat jeder Kontakt das Feld <b>Funktionen</b> (Abschnitt „Funktionen &amp; Listen“). Je Funktion tragen Sie ein:</p>
+  <ul>
+    <li><b>Funktion / Amt</b> – frei, mit Vorschlägen beim Tippen (Vorsitz, Stellv. Vorsitz, Kassenwart, Schriftführung, Beisitz, Geschäftsführung, Ansprechperson, Kassenprüfung … und alles, was in der Tabelle schon vorkommt).</li>
+    <li><b>Gremium / Liste</b> – eine der Listen des Adressbuchs, z. B. „Vorstand“.</li>
+    <li><b>Verknüpft mit</b> (optional) – ein Eintrag einer beliebigen Tabelle, z. B. ein Arbeitskreis oder eine Regionalgruppe (Auswahl über den Struktur-Browser → Datentabellen).</li>
+    <li><b>Seit / Bis</b> – Amtszeit. Nach dem Tag „Bis“ gilt die Funktion als beendet.</li>
+    <li><b>Reihenfolge in der Liste</b> – z. B. 1 für den Vorsitz, 2 für die Stellvertretung; leer = danach.</li>
+  </ul>
+  <p>Daraus ergibt sich alles Weitere von selbst:</p>
+  <ul>
+    <li><b>Hauptfunktion:</b> Die erste laufende Funktion steht unter dem Namen – in der Namensliste, auf Visitenkarten („Kontakt speichern“), in Adressbuch-Apps und überall, wo bisher „Funktion“ stand. Reihenfolge der Funktionen mit ↑ ↓.</li>
+    <li><b>Listen:</b> Wer eine laufende Funktion im Vorstand hat, steht in der Liste „Vorstand“. Endet die Funktion, fällt die Person aus der Liste. Listen ohne Funktion (z. B. „Presseverteiler“) setzen Sie wie bisher von Hand. <b>Aus Liste entfernen</b> beendet die Funktion in dieser Liste (sie bleibt als ehemalige Funktion erhalten).</li>
+    <li><b>Auf der Website</b> zeigt jede Person die passende Funktion: im Block „Personen“ oder in der Datenliste mit Filter „Listen = Vorstand“ die Funktion im Vorstand (sortiert nach „Reihenfolge“), auf der Detailseite eines Arbeitskreises die Funktion in diesem Arbeitskreis, sonst die Hauptfunktion. Beendete Funktionen erscheinen dort nicht mehr; im Block „Personen“ zeigt <b>Ehemalige → darunter als „Ehemalige“</b> sie in einer eigenen Liste.</li>
+    <li><b>Ansprechpersonen eines Arbeitskreises:</b> In der Detailseiten-Vorlage des Arbeitskreises einen Block „Personen“ mit „Alle aus der Tabelle, gefiltert“, Feld <b>Funktionen</b> und leerem Wert einsetzen – jede Seite zeigt dann die Personen, deren Funktion mit genau diesem Arbeitskreis verknüpft ist.</li>
+    <li><b>Adressbuch-Ansicht:</b> Die Karte zeigt die Funktionen nach Gremium gruppiert, mit verknüpftem Eintrag und Amtszeit, darunter „Ehemalige Funktionen“. Bearbeiten wie gewohnt – in der Verwaltung und direkt auf der Website („Bearbeiten: Funktionen“ auf der Detailseite).</li>
+    <li><b>Adressbuch-Apps:</b> Die Hauptfunktion ist die Funktion (TITLE) des Kontakts; jede Liste erscheint in Apple Kontakte als Gruppe. Ändern Sie dort die Funktion, landet der Text in der Hauptfunktion; Mitglieder einer Gruppe hinzufügen oder entfernen wirkt wie „Zu Liste hinzufügen/entfernen“.</li>
+  </ul>
+  <p><b>Ältere Adressbücher</b> (vor den Funktionen angelegt) bleiben, wie sie sind, bis die technische Betreuung sie hebt (<code>data:kind-upgrade</code>, mit Probelauf und Rückweg): Aus „Funktion“ und „Listen“ wird je Liste eine Funktion, die bisherige Funktion steht bei der ersten. Auf der Website ändert sich dadurch nichts.</p>
   <p><b>Bestehende Personen-Tabelle umwandeln:</b> Eine vorhandene Tabelle (z. B. „Team“) lässt sich an Ort und Stelle in ein Adressbuch umwandeln – Einträge, Verknüpfungen und Detailseiten bleiben. Das erledigt die Technik mit dem Befehl <code>data:convert</code>: zuerst ein Probelauf mit Bericht (welches Feld wohin, wie Namen aufgeteilt werden, was danach nicht mehr öffentlich ist), erst dann die Umwandlung; sie lässt sich zurückdrehen.</p>
 
   <h3 id="gruppe">Mehrere gleichartige Angaben (Wiederholbare Gruppe)</h3>

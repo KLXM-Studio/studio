@@ -1,5 +1,16 @@
 # Changelog – Erweiterung „dav“
 
+## 1.7.0 (2026-11-22)
+
+- **Listen als Gruppen** (Adressbücher mit Funktionen, Core-Grundschema contacts v2): je Liste eine Gruppen-Karte `liste-{schlüssel}.vcf`
+  (`X-ADDRESSBOOKSERVER-KIND:group`, Mitglieder `X-ADDRESSBOOKSERVER-MEMBER:urn:uuid:…`) – Apple Kontakte zeigt sie als Gruppen,
+  andere Apps nutzen weiter CATEGORIES. Mitglied ist, wer eine laufende Funktion in der Liste hat oder von Hand zugeordnet ist.
+  Mitglieder in der App ändern = Kontakt der Liste zuordnen bzw. entfernen (mit Revision; entfernen beendet die Funktion). Neue
+  Gruppen und das Löschen von Gruppen nur im CMS.
+- **TITLE = Hauptfunktion** (erste laufende Funktion, stets frisch); eine in der App geänderte Funktion landet in der Hauptfunktion.
+  Das Feld „Funktionen“ reist nie als `X-MYCMS-*`.
+- Adressbücher ohne Funktionen und Inhaltstabellen mit „Als Adressbuch nutzen“: unverändert (keine Gruppen-Karten).
+
 ## 1.6.0 (2026-11-21)
 
 - **Kalender (Tabellenart „calendar“, Core) ohne Zuordnung:** Das Grundschema geht fest auf VEVENT – SUMMARY, DTSTART/DTEND

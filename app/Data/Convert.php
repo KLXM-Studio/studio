@@ -561,6 +561,8 @@ final class Convert
             $n++;
         }
         $log[] = "✓ Werte übernommen ({$n} Einträge)";
+        // Adressbuch ab Grundschema 2: Funktionen aus Funktion (position) und Listen (Core\Data\KindUpgrade::fill)
+        if ($kind === Kinds::CONTACTS && Roles::has($nt)) $log[] = '✓ Funktionen aus Funktion und Listen (' . KindUpgrade::fill($nt) . ' Einträge)';
         // 6. Verweise in Blöcken
         $after = [];
         foreach ($plan['refs'] as $id => [$title, $hit]) {

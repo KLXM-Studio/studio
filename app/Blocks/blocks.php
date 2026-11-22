@@ -498,12 +498,16 @@ return [
                 'show_if' => ['source' => ['filter']]],
             ['name' => 'filter_values', 'label' => '… einen dieser Werte hat', 'type' => 'textarea', 'rows' => 2, 'max' => 600, 'width' => 'half',
                 'show_if' => ['source' => ['filter']],
-                'help' => 'Einer je Zeile oder durch Komma getrennt, z. B. „Vorstand, Kassenwart“. Auswahlfelder: Beschriftung oder Kurzname; Textfelder: enthält.'],
+                'help' => 'Einer je Zeile oder durch Komma getrennt, z. B. „Vorstand, Kassenwart“. Auswahlfelder: Beschriftung oder Kurzname; Textfelder: enthält. Adressbuch-Feld „Funktionen“: Liste oder Funktion – leer auf einer Detailseite = Personen mit einer Funktion, die mit diesem Eintrag verknüpft ist.'],
             ['name' => 'sort_field', 'label' => 'Sortieren nach', 'type' => 'datafield', 'system' => true, 'width' => 'half', 'empty_label' => '– wie in der Tabelle eingestellt –',
                 'show_if' => ['source' => ['filter']], 'help' => '„Reihenfolge“ = Ihre Reihenfolge von Hand in der Tabelle.'],
             ['name' => 'sort_dir', 'label' => 'Richtung', 'type' => 'select', 'default' => '', 'width' => 'half', 'show_if' => ['source' => ['filter']],
                 'options' => ['' => 'wie eingestellt', 'asc' => 'aufsteigend (A–Z, 1–9)', 'desc' => 'absteigend (Z–A, 9–1)']],
             ['name' => 'limit', 'label' => 'Höchstens', 'type' => 'number', 'default' => 0, 'width' => 'half', 'show_if' => ['source' => ['filter']], 'help' => '0 = alle'],
+            // Adressbücher mit Funktionen (Core\Data\Roles): beendete Funktionen einer Liste
+            ['name' => 'former', 'label' => 'Ehemalige (Funktion beendet)', 'type' => 'select', 'default' => '', 'width' => 'half', 'show_if' => ['source' => ['filter']],
+                'options' => ['' => 'nicht zeigen', 'below' => 'darunter als „Ehemalige“'],
+                'help' => 'Nur bei Adressbüchern mit Funktionen und einem Filter nach Liste: Personen, deren Funktion in dieser Liste beendet ist („bis“ vergangen).'],
             ['name' => 'items', 'label' => 'Personen', 'type' => 'repeater', 'item_label' => 'Person', 'title_field' => 'person', 'max_items' => 30,
                 'show_if' => ['source' => ['manual']], 'fields' => [
                 ['name' => 'person', 'label' => 'Person', 'type' => 'link', 'required' => true,

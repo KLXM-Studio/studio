@@ -189,6 +189,9 @@
  *   data:convert <tabelle> --kind=contacts|calendar [--map=quelle:ziel[beschriftung+|-],…] [--apply] | --revert | --drop-legacy
  *                                                     Tabelle an Ort und Stelle in ein Adressbuch bzw. einen Kalender mit Serien umwandeln
  *                                                     (Standard: Probelauf mit Bericht)
+ *   data:kind-upgrade <tabelle> [--to=N] [--dry-run|--apply] | --revert
+ *                                                     Grundschema einer Tabellenart heben (nur additiv), z. B. Adressbuch v1 → v2
+ *                                                     (Funktionen je Person aus Funktion + Listen); Standard: Probelauf
  *   calendar:reindex [<tabelle>…] [--all] [--status]  Vorkommens-Index der Kalender neu aufbauen (Cron täglich) bzw. Stand zeigen
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
  *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
@@ -1494,7 +1497,7 @@ switch ($cmd) {
         $res = Core\Data\SchemaPanel::selftest(in_array('--roundtrip', $args, true));
         // Verwendungszweck (Ableitung, Passung) und – ohne --roundtrip – der Assistent „Neue Tabelle“ je Zweck (vorübergehende Tabellen)
         // … dazu Abschnitte und Freitext im Formular (Core\Data\LayoutSelfTest, vorübergehende Tabelle)
-        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data()] as $x) {
+        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data(), Core\Data\RolesSelfTest::run()] as $x) {
             $res['ok'] += $x['ok'];
             array_push($res['fails'], ...$x['fails']);
         }
@@ -1524,6 +1527,26 @@ switch ($cmd) {
             if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply umwandeln.\n"; break; }
             echo "\n";
             foreach (Core\Data\Convert::apply($t, $plan) as $l) echo "$l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
+    case 'data:kind-upgrade':
+        // Grundschema einer Tabellenart auf eine neuere Version heben (Core\Data\KindUpgrade) – Standard: Probelauf
+        $handle = (string) ($args[0] ?? '');
+        if ($handle === '' || str_starts_with($handle, '--')) {
+            fwrite(STDERR, "Aufruf: data:kind-upgrade <tabelle> [--to=N] [--dry-run|--apply] | --revert\n"); exit(1);
+        }
+        $t = Core\Data\Tables::find($handle) ?? (fwrite(STDERR, "Tabelle „{$handle}“ gibt es nicht.\n") && exit(1));
+        try {
+            if (in_array('--revert', $args, true)) { foreach (Core\Data\KindUpgrade::revert($t) as $l) echo "$l\n"; break; }
+            $to = null;
+            foreach ($args as $a) if (preg_match('~^--to=(\d+)$~', $a, $m)) $to = (int) $m[1];
+            $plan = Core\Data\KindUpgrade::plan($t, $to);
+            foreach (Core\Data\KindUpgrade::report($plan, $t) as $l) echo "$l\n";
+            if (!$plan['ok']) exit(1);
+            if (!in_array('--apply', $args, true) || in_array('--dry-run', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply ausführen.\n"; break; }
+            echo "\n";
+            foreach (Core\Data\KindUpgrade::apply($t, $plan) as $l) echo "$l\n";
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         break;
 

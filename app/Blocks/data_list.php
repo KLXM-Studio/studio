@@ -48,6 +48,8 @@ if (str_starts_with((string) ($d['filter_field'] ?? ''), $pfx)) {
         // Kontext-Filter auf Detailseiten: verknüpft mit / gleich wie der aufgerufene Eintrag
         $val = !$ctx ? null : ($op === 'current' ? $ctx['entry']['id'] : ($ctx['entry'][$ff] ?? null));
         if (is_array($val)) $val = $val[0] ?? null;
+        // Funktionen (Core\Data\Roles): „verknüpft mit dem aufgerufenen Eintrag“ = Funktion mit Verknüpfung entry:{tabelle}:{id}
+        if ($op === 'current' && $ctx && (Tables::field($t, $ff)['type'] ?? '') === \Core\Data\Roles::TYPE) $val = 'entry:' . $ctx['table']['handle'] . ':' . (int) $ctx['entry']['id'];
         $o['where'] = [[$ff, '=', $val === null || $val === '' ? '-1' : (string) $val]];
     } elseif (trim((string) ($d['filter_value'] ?? '')) !== '') {
         $o['where'] = [[$ff, $op, trim((string) $d['filter_value'])]];
@@ -110,8 +112,11 @@ $vq = $vsearch && is_string($query['q'] ?? null) ? trim(mb_substr($query['q'], 0
 if ($vq !== '') { $o['q'] = $vq; $o['q_public'] = true; }   // Besucher-Suche: nie in „Nie öffentlich“-Feldern
 $filtering = $vq !== '' || array_filter(array_column($vfilters, 'sel'), fn($v) => $v !== null && $v !== []);
 if ($az && ($tf = (string) ($t['settings']['title_field'] ?? '')) !== '') { $o['sort'] = $tf; $o['dir'] = 'asc'; }
-$o = $extend($o);
+$o = \Core\Data\Roles::listQuery($t, $d, $extend($o));   // Adressbuch: beendete Funktionen schon in der Abfrage (Blättern, Anzahl)
 $rows = \Core\Data\Exposure::publicRows($t, Entries::query($t, $o));   // Stellenangebote: abgelaufene fehlen schon hier (Core\Data\Jobs, Entries::where)
+// Adressbuch mit Funktionen (Core\Data\Roles): Filter nach Liste → deren Funktion, Detailseite eines verknüpften Eintrags → die
+// verknüpfte Funktion, sonst die Hauptfunktion (in position); beendete Funktionen der gefilterten Liste fallen heraus
+$rows = \Core\Data\Roles::listRows($t, $d, $rows, empty($o['sort']) && !$az);
 // Wissen ohne eigene Sortierung: Lesereihenfolge des Kapitelbaums (Bereich, Oberkapitel, Reihenfolge)
 if ($know && empty($d['sort_field']) && !$az) {
     $kpos = array_flip($ktree['order']);

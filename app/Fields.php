@@ -783,6 +783,8 @@ final class Fields
                 'email' => 'email', 'tel' => 'tel', 'url' => 'url', 'number' => 'number', 'date' => 'date', 'time' => 'time', default => 'text'
             } . '" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '"' . $aria . $ph
                 . ($type === 'link' ? ' list="cms-links"' : '')
+                // Vorschläge ('suggest' => [Text, …]): eigene Liste je Feld (Funktionen je Person, Core\Data\Roles) – freie Eingabe bleibt
+                . ($type === 'text' && !empty($f['suggest']) ? ' list="' . $id . '-dl" autocomplete="off"' : '')
                 // Zahlen: Dezimalwerte erlauben (sonst meldet der Browser „0.4“ als ungültig); eigene Schrittweite per 'step'
                 . ($type === 'number' ? ' step="' . e((string) ($f['step'] ?? 'any')) . '"' : '')
                 // Höchstlänge: kurze Felder (< 40 Zeichen) begrenzt der Browser selbst, ohne Zähler; längere zeigen „n/max“ (admin.js initCounters)
@@ -791,6 +793,9 @@ final class Fields
                 . ((!empty($f['max']) && (int) $f['max'] <= 12) || $type === 'number' ? ' class="f-in--short"' : '') . '>',
         };
 
+        if ($type === 'text' && !empty($f['suggest'])) {
+            $control .= '<datalist id="' . $id . '-dl">' . implode('', array_map(fn($o) => '<option value="' . e((string) $o) . '"></option>', array_slice((array) $f['suggest'], 0, 60))) . '</datalist>';
+        }
         // Kompakte Felder: in Einstellungslisten (renderGroups) Beschriftung links, Feld rechts in derselben Zeile
         $inline = in_array($type, ['select', 'number', 'color', 'date', 'time', 'datetime', 'text', 'email', 'tel', 'secret', 'iban'], true) && empty($f['relation']) ? ' f--inline' : '';
         return '<div class="f' . $width . $inline . ($err ? ' f--error' : '') . '"><label for="' . $id . '" id="' . $id . '-l">' . $label . '</label>'
