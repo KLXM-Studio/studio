@@ -186,6 +186,16 @@ final class KnowledgeImport
             $t = Tables::find($t['handle']);
             $log[] = '✓ ' . __('Feld „Inhalt“ erlaubt: {list}', ['list' => implode(', ', $plan['allowed'])]);
         }
+        // Menüstand der alten Seiten übernehmen (Core\Data\MenuEntries): Unterseiten im Menü → Einträge im Menü (oberste bzw. zwei Ebenen)
+        $inMenu = fn(int $depth) => (bool) array_filter($plan['items'], fn($i) => $i['depth'] === $depth && $i['menu'] && $i['status'] === 'published' && !$i['keep']);
+        $mode = $inMenu(1) ? 'two' : ($inMenu(0) ? 'top' : '');
+        if ($mode !== '' && MenuEntries::config($t)['mode'] !== $mode) {
+            $st['menu_before'] = $t['settings']['menu_entries'] ?? null;
+            $in = Tables::toInput($t);
+            $in['settings']['menu_entries'] = ['mode' => $mode] + MenuEntries::config($t);
+            [$clean, $err] = Tables::validate($in, $t);
+            if (!$err) { Tables::update($t, $clean); $t = Tables::find($t['handle']); $log[] = '✓ ' . __('Einträge im Menü: {mode} (wie die alten Seiten)', ['mode' => __(MenuEntries::MODES[$mode])]); }
+        }
         $hasImage = (bool) Tables::field($t, 'bild');
         // 1. Einträge (Reihenfolge wie im Seitenbaum); Verweis-Kapitel ohne Inhalt, mit Verweis auf die Seite
         $db = Tables::db($t);
@@ -350,6 +360,12 @@ final class KnowledgeImport
                 foreach ((array) $st['entries'] as $eid) Entries::delete($t, (int) $eid);
                 $log[] = '✓ ' . __('{n} Einträge entfernt', ['n' => count((array) $st['entries'])]);
                 if (is_array($st['blocks_before'] ?? null) && self::setAllowed($t, $st['blocks_before']) !== null) $log[] = '✓ ' . __('Feld „Inhalt“: erlaubte Blöcke wie vorher');
+                if (array_key_exists('menu_before', $st) && ($tt = Tables::find($t['handle']))) {
+                    $in = Tables::toInput($tt);
+                    $in['settings']['menu_entries'] = (array) ($st['menu_before'] ?? []);
+                    [$clean, $err] = Tables::validate($in, $tt);
+                    if (!$err) Tables::update($tt, $clean);
+                }
             }
         }
         unset($all[(string) $root['id']]);

@@ -96,6 +96,44 @@ final class KnowledgeSelfTest
             Knowledge::flush();
             $rel = Knowledge::related($t, Entries::find($t, $a), Knowledge::tree($t));
             $ck(array_column($rel, 'id') === [$b], 'Verwandte Kapitel über gemeinsame Schlagworte');
+            // 4b. Einträge im Menü (Core\Data\MenuEntries) unter der Übersichtsseite: zwei Ebenen mit Nummern, oberste Ebene, aus
+            $setMenu = function (array $me) use (&$t, $h): void {
+                $in = Tables::toInput($t);
+                $in['settings']['menu_entries'] = $me;
+                [$clean, $err] = Tables::validate($in, $t);
+                if (!$err) Tables::update($t, $clean);
+                Tables::flush();
+                Knowledge::flush();
+                $t = Tables::find($h);
+            };
+            $lpRow = $pages ? Pages::find($pages[0]) : null;
+            if ($lpRow) {
+                Pages::db()->update('pages', ['menu' => 1], 'id = :id', ['id' => (int) $lpRow['id']]);
+                $prevPage = app()->currentPage;
+                app()->currentPage = null;
+                $find = function () use ($lpRow): ?array {
+                    foreach (Pages::menu() as $m) if ($m['href'] === Pages::url($lpRow)) return $m;
+                    return null;
+                };
+                $ck(($find()['children'] ?? null) === [], 'Menü: ohne Einstellung keine Einträge (Bestand unverändert)');
+                $setMenu(['mode' => 'two', 'numbers' => true]);
+                app()->entry = ['table' => $t, 'entry' => Entries::find($t, $b)];
+                $m = $find();
+                $ck(array_column($m['children'] ?? [], 'label') === ['1.1 Anfang', '2.1 Draußen'] && array_column($m['children'][0]['children'] ?? [], 'label') === ['1.1.1 Bestand'],
+                    'Menü: zwei Ebenen in Kapitelreihenfolge mit Nummern: ' . json_encode(array_column($m['children'] ?? [], 'label'), JSON_UNESCAPED_UNICODE));
+                $ck(!empty($m['active']) && !empty($m['children'][0]['active']) && !empty($m['children'][0]['children'][0]['active']) && empty($m['children'][1]['active']),
+                    'Menü: auf der Detailseite sind Übersicht und Kapitelkette aktiv');
+                $setMenu(['mode' => 'top', 'limit' => 1]);
+                $m = $find();
+                $ck(array_column($m['children'] ?? [], 'label') === ['Anfang'] && ($m['children'][0]['children'] ?? null) === [], 'Menü: oberste Ebene, Höchstzahl, ohne Nummern');
+                $setMenu(['mode' => '']);
+                app()->entry = null;
+                app()->currentPage = $prevPage;
+                Pages::db()->update('pages', ['menu' => 0], 'id = :id', ['id' => (int) $lpRow['id']]);
+            }
+            $mu = MenuEntries::selftest();
+            $ok += $mu['ok'];
+            array_push($fails, ...$mu['fails']);
             // 5. Datenliste: Inhaltsverzeichnis, Mehrfach-Filter („eine davon“ je Feld, Felder zusammen), Trefferauszug
             $th = app()->theme;
             if ($th->block('data_list') && !$th->files('blocks/data_list.php')) {

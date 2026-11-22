@@ -34,6 +34,15 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
   `data:kind-upgrade` with dry run and revert.
 
+### Einträge im Menü (`Core\Data\MenuEntries`)
+- Tabellen mit Adresse zeigen ihre Einträge auf Wunsch als Unterpunkte der Übersichtsseite im Kopf- und Mobilmenü („Einträge im
+  Menü zeigen“: keine | oberste Ebene | zwei Ebenen, Höchstzahl, Nummer optional). Wissen in Kapitelreihenfolge mit Unterkapiteln,
+  andere Tabellen nach ihrer Sortierung. Auf Detailseiten sind Übersicht und Eintrag aktiv; das Fragment „breadcrumb“ zeigt die
+  Kette. Verweis-Kapitel erscheinen nicht doppelt; `data:import-pages` übernimmt den Menüstand der alten Seiten. Standard aus –
+  bestehende Websites unverändert.
+- *EN:* Tables with an address can list their entries as sub-items of their overview page in the header and mobile menu (none |
+  top level | two levels, limit, optional numbers); knowledge tables use chapter order. Off by default.
+
 ### Wissensbereich / Handbuch (Tabellenart „Wissen“, `Core\Data\Knowledge`)
 - **Neue Tabellenart `knowledge`** (Vorlage „Wissen“ im Assistenten, `data:template knowledge`): Kapitel als Einträge mit Bereich,
   Oberkapitel (Kapitelbaum, 3+ Ebenen), Reihenfolge, Kapitelnummer (automatisch „2.1.3“, überschreibbar), Anreißer, Inhaltsblöcken,

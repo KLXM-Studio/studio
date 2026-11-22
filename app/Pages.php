@@ -240,7 +240,12 @@ final class Pages
     {
         $cur = app()->currentPage;
         $activeIds = $cur ? array_merge(array_map(fn($p) => (int) $p['id'], self::ancestors($cur)), [(int) $cur['id']]) : [];
-        $walk = function (array $nodes) use (&$walk, $includeDrafts, $activeIds): array {
+        // Einträge im Menü (Core\Data\MenuEntries): auf der Detailseite eines Eintrags ist seine Übersichtsseite aktiv
+        if (($ctx = app()->entry) && ($ov = Data\MenuEntries::overviewPage($ctx['table']))) {
+            $activeIds = array_merge($activeIds, array_map(fn($p) => (int) $p['id'], self::ancestors($ov)), [(int) $ov['id']]);
+        }
+        $menuIds = null;   // Seiten im Menü (Verweis-Kapitel nicht doppelt) – nur bei Bedarf
+        $walk = function (array $nodes) use (&$walk, &$menuIds, $includeDrafts, $activeIds): array {
             $out = [];
             foreach ($nodes as $n) {
                 $p = $n['page'];
@@ -250,8 +255,14 @@ final class Pages
                 // Angemeldet: neue, noch nie veröffentlichte Seiten erscheinen (Vorschau, 'draft' => true); offline gestellte
                 // (schon einmal veröffentlicht) nicht – sie sollen aus dem Menü verschwinden, z. B. nach dem Zusammenlegen
                 if ($p['status'] !== 'published' && $p['content_published'] !== null) continue;
+                $children = $walk($n['children']);
+                // Übersichtsseite einer Tabelle mit „Einträge im Menü“: Einträge als weitere Unterpunkte
+                if (Data\MenuEntries::tableFor($p)) {
+                    $menuIds ??= array_map('intval', array_column(self::db()->fetchAll("SELECT id FROM pages WHERE menu = 1 AND status = 'published' AND type = 'page'"), 'id'));
+                    array_push($children, ...Data\MenuEntries::itemsFor($p, $menuIds));
+                }
                 $out[] = ['id' => (int) $p['id'], 'label' => $p['nav_title'] ?: $p['title'], 'href' => self::url($p),
-                    'active' => in_array((int) $p['id'], $activeIds, true), 'children' => $walk($n['children']),
+                    'active' => in_array((int) $p['id'], $activeIds, true), 'children' => $children,
                     'draft' => $p['status'] !== 'published'];
             }
             return $out;

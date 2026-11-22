@@ -9394,4 +9394,11 @@ return [
     'bleibt Seite, Kapitel-Adresse leitet dorthin' => 'stays a page, the chapter address redirects there',
     'nicht übertragbar: {list}' => 'not transferable: {list}',
     'Datenliste in einer Datenliste: wird nicht ausgegeben (höchstens eine Ebene).' => 'Data list inside a data list: not shown (one level at most).',
+    // Einträge im Menü (Core\Data\MenuEntries)
+    'Einträge im Menü zeigen' => 'Show entries in the menu',
+    'Einträge im Menü: {mode} (wie die alten Seiten)' => 'Entries in the menu: {mode} (like the old pages)',
+    'Höchstens … Einträge je Ebene' => 'At most … entries per level',
+    'Kapitelnummer vor dem Menüpunkt (Wissen)' => 'Chapter number before the menu item (knowledge)',
+    'Unter der Übersichtsseite (Seite mit derselben Adresse, im Menü): die Einträge als Unterpunkte in Kopf- und Mobilmenü. Wissen: Kapitelbaum in Kapitelreihenfolge, sonst die Sortierung der Tabelle.' => 'Below the overview page (page with the same address, in the menu): the entries as sub-items in the header and mobile menu. Knowledge: chapter tree in chapter order, otherwise the table\'s sort order.',
+    'Zwei Ebenen' => 'Two levels',
 ];

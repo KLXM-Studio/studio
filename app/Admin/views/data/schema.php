@@ -224,6 +224,15 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
           <?php endif; ?>
         </div>
         <?php endif; ?>
+        <?php $me = \Core\Data\MenuEntries::validate((array) ($s['menu_entries'] ?? [])); // Einträge im Menü (Core\Data\MenuEntries) ?>
+        <div class="f f--inline"><label for="t-menu-entries"><?= e(__('Einträge im Menü zeigen')) ?></label>
+          <p class="f-help"><?= e(__('Unter der Übersichtsseite (Seite mit derselben Adresse, im Menü): die Einträge als Unterpunkte in Kopf- und Mobilmenü. Wissen: Kapitelbaum in Kapitelreihenfolge, sonst die Sortierung der Tabelle.')) ?></p>
+          <select id="t-menu-entries" name="settings[menu_entries][mode]">
+            <?php foreach (\Core\Data\MenuEntries::MODES as $mk => $ml): ?><option value="<?= e($mk) ?>"<?= $me['mode'] === $mk ? ' selected' : '' ?>><?= e(__($ml)) ?></option><?php endforeach; ?>
+          </select></div>
+        <div class="f f--inline"><label for="t-menu-limit"><?= e(__('Höchstens … Einträge je Ebene')) ?></label>
+          <input type="number" id="t-menu-limit" name="settings[menu_entries][limit]" min="1" max="50" value="<?= (int) $me['limit'] ?>"></div>
+        <?= $sw('settings[menu_entries][numbers]', $me['numbers'], __('Kapitelnummer vor dem Menüpunkt (Wissen)')) ?>
       </div>
     </section>
     <?php $sel = function (string $name, string $label, array $opts, string $help = '') use ($s) {
