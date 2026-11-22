@@ -163,9 +163,10 @@ final class Nearby
     {
         app()->theme->markUsed('@nearby');
         $q = $loc['q'] ?? '';
-        $id = 'nb-' . substr(hash('crc32b', (string) json_encode([$d['table'] ?? '', $d['nearby_km'] ?? ''])), 0, 6);
-        $h = '<form class="nearby" method="get" role="search" aria-label="' . e(lt('In deiner Nähe')) . '">'
-            . '<label class="nearby__label" for="' . e($id) . '">' . e(lt('In deiner Nähe – PLZ oder Ort')) . '</label>'
+        static $n = 0;
+        $id = 'nb-' . substr(hash('crc32b', (string) json_encode([$d['table'] ?? '', $d['title'] ?? ''])), 0, 6) . '-' . (++$n);   // je Block eindeutig (Landmarke über das Etikett)
+        $h = '<form class="nearby" method="get" role="search" aria-labelledby="' . e($id) . '-l">'
+            . '<label class="nearby__label" id="' . e($id) . '-l" for="' . e($id) . '">' . e(lt('In deiner Nähe – PLZ oder Ort')) . (!empty($d['title']) ? '<span class="nearby__sr"> (' . e(strip_emphasis((string) $d['title'])) . ')</span>' : '') . '</label>'
             . '<span class="nearby__row"><input class="nearby__input" id="' . e($id) . '" type="search" name="' . self::PARAM . '" value="' . e($q) . '" maxlength="80" autocomplete="postal-code" inputmode="text">'
             . '<button class="nearby__btn" type="submit">' . e(lt('Suchen')) . '</button></span></form>';
         if ($q !== '') {

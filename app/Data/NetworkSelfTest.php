@@ -71,7 +71,7 @@ final class NetworkSelfTest
             self::$ok += (int) $res['ok'];
             foreach ((array) $res['fails'] as $f) self::$fail[] = "$step ($site): $f";
         };
-        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup']] as [$s, $st]) {
+        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB']] as [$s, $st]) {
             $call($s, $st);
         }
         @unlink($file);
@@ -91,7 +91,7 @@ final class NetworkSelfTest
         try {
             $st = match ($step) {
                 'setup' => self::setup($st, $eq), 'landA' => self::landA($st, $eq), 'landB' => self::landB($st, $eq), 'bund' => self::bund($st, $eq),
-                'landA2' => self::landA2($st, $eq), 'bund2' => self::bund2($st, $eq), 'join' => self::join($st, $eq), 'cleanup' => self::cleanup($st, $eq),
+                'landA2' => self::landA2($st, $eq), 'bund2' => self::bund2($st, $eq), 'join' => self::join($st, $eq), 'cleanup' => self::cleanup($st, $eq), 'cleanupB' => self::cleanupB($st, $eq),
                 default => throw new \InvalidArgumentException('Unbekannter Schritt'),
             };
         } catch (\Throwable $e) {
@@ -347,6 +347,15 @@ final class NetworkSelfTest
             if ($lt = Tables::find($k[$x])) Tables::delete($lt);
         }
         $eq('Aufgeräumt', Shared::meta($k['t']), null);
+        return $st;
+    }
+
+    /** Land B: nach dem Rückweg wieder eigene Tabelle – im Test entfernen */
+    private static function cleanupB(array $st, \Closure $eq): array
+    {
+        $k = self::keys($st);
+        if ($lt = Tables::find($k['k'])) Tables::delete($lt);
+        $eq('Land B aufgeräumt', Tables::find($k['k']), null);
         return $st;
     }
 }

@@ -100,6 +100,13 @@ final class Shared
         return $m;
     }
 
+    /** Register einer geteilten Tabelle schreiben (Netzwerk-Schalter, Zusatzfelder je Website – Core\Data\Network) */
+    public static function writeMeta(string $key, array $meta): void
+    {
+        if (!self::validKey($key) || !self::meta($key)) throw new \InvalidArgumentException(__('Unbekannte geteilte Tabelle.'));
+        self::saveMeta($key, self::normMeta($key, $meta));
+    }
+
     private static function saveMeta(string $key, array $meta): void
     {
         @mkdir(self::dir($key), 0770, true);

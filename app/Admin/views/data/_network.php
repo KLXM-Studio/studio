@@ -18,7 +18,7 @@ if ($part === 'level' && Network::levelsOn($t)):
     if (isset($values[Network::COL_SITES])) $chosen = array_map('strval', (array) $values[Network::COL_SITES]);
     $others = array_values(array_diff(Shared::participants(Shared::meta($key) ?? ['owner' => '', 'members' => []]), [site()->key]));
     $may = can('data.publish', $t['handle']); ?>
-<fieldset class="f net-level"<?= $may ? '' : ' disabled' ?>>
+<fieldset class="f sh-fieldset net-level"<?= $may ? '' : ' disabled' ?>>
   <legend><?= e(__('Weitergabe im Netzwerk')) ?></legend>
   <?php foreach (Network::LEVELS as $lv): ?>
   <label class="f-check"><input type="radio" name="share_level" value="<?= e($lv) ?>"<?= $level === $lv ? ' checked' : '' ?>> <span><?= e(Network::levelLabel($lv)) ?></span></label>

@@ -97,9 +97,11 @@ $types = array_combine(\Core\Data\Network::SITE_TYPES, array_map(fn($ty) => __(\
   <?php if (Shared::canAdmin($key)): ?>
   <form method="post" action="<?= e(url($base . '/netzwerk')) ?>">
     <?= csrf_field() ?>
+    <fieldset class="sh-fieldset"><legend><?= e(__('Schalter für alle beteiligten Websites')) ?></legend>
     <label class="f-check"><input type="hidden" name="levels" value="0"><input type="checkbox" name="levels" value="1"<?= $flags['levels'] ? ' checked' : '' ?>> <span><?= e(__('Weitergabe je Eintrag: nur diese Website, ausgewählte Websites oder ganzes Netzwerk')) ?></span></label>
     <p class="adm-muted"><?= e(__('Andere Websites sehen fremde Einträge dann überall nur in der öffentlichen Fassung – auch in Verwaltung, Apps und Visitenkarten. Vorhandene Einträge gelten als „Ganzes Netzwerk“, neue Kontakte als „Nur diese Website“.')) ?></p>
     <label class="f-check"><input type="hidden" name="site_fields" value="0"><input type="checkbox" name="site_fields" value="1"<?= $flags['site_fields'] ? ' checked' : '' ?>> <span><?= e(__('Zusatzfelder je Website (nur auf der jeweiligen Website sichtbar)')) ?></span></label>
+    </fieldset>
     <div class="adm-row"><button class="adm-btn" type="submit"><?= e(__('Netzwerk speichern')) ?></button></div>
   </form>
   <?php else: ?>

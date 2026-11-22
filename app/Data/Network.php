@@ -90,9 +90,7 @@ final class Network
 
     private static function saveMeta(string $key, array $meta): void
     {
-        file_put_contents(Shared::dir($key) . '/share.json', json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
-        Shared::flush();
-        Tables::flush();
+        Shared::writeMeta($key, $meta);
     }
 
     // ================================================================= Weitergabe-Stufe
