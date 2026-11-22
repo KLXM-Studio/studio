@@ -736,6 +736,22 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .qg-dupe:empty{display:none}
 .qg-dupe b{color:var(--adm-t2,#3F4A47)}
 .qg-dupe .qg-linkbtn{margin-left:4px}
+.qg-dupe p{margin:0}
+/* Als Schreibweise eines vorhandenen Begriffs (Doppelprüfung + Suche) */
+.qg-sim{display:flex;flex-direction:column;gap:6px;margin:6px 0 0;padding:0;list-style:none}
+.qg-sim__i{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px 10px;border-radius:9px;box-shadow:0 0 0 1px var(--adm-line,#E6E6E9)}
+.qg-sim__t{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px}
+.qg-sim__t .qg-linkbtn{margin:0;font-weight:700}
+.qg-sim__note{font-size:12px;color:var(--adm-t3,#5A6461)}
+.qg-sim .adm-btn{gap:5px;text-align:left;white-space:normal}
+.qg-sim .adm-btn .ico{flex:none;width:15px;height:15px}
+.qg-addto{margin:8px 0 0;font-size:13px}
+.qg-addto[hidden]{display:none}
+.qg-addto summary{cursor:pointer;font-weight:700;color:var(--adm-a-ink,#314164)}
+.qg-addto .qg-search{margin-top:8px}
+.qg-addto .qg-search input{padding-left:34px}
+.qg-done [role=status]:focus{outline:none}
+.qg-done [role=status]:focus-visible{outline:2px solid var(--adm-a-ink,#314164);outline-offset:2px}
 .qg-auto{margin:0 0 12px;padding:7px 10px;border-radius:8px;background:var(--adm-fill,#EEF0F4);font-size:13px;color:var(--adm-t2,#3F4A47)}
 .qg-viewnote{margin:10px 0 0;font-size:13px;color:var(--adm-t3,#5A6461)}
 .qg-viewnote a{color:var(--adm-a-ink,#314164)}

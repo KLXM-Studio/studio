@@ -37,6 +37,36 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   images”, shareable across the network). New field type `hotspots` with a marker editor (click, drag, keyboard), versioned
   data format v1 and the integration point `Extension::hotspotEditor()` for external editors.
 
+### Links: reine Anker bleiben auf der Seite
+- Ein Link-Feld mit `#anker` springt auf der aktuellen Seite, auch wenn der Anker keine Sprungmarke eines Blocks ist (Überschrift,
+  Inhaltsverzeichnis, ID im Rich-Text). Nur wenn die Seite den Anker nicht führt, die Startseite aber schon (Menü-Anker wie `#kontakt`),
+  zeigt er auf `/#anker` – wie bisher. Selbsttest `links:selftest`.
+- Kit fluid, Inhaltsverzeichnis („Artikel“): Texte mit `<h2>` (importiert oder eingefügt) nehmen `<h2>` als oberste Ebene;
+  Texte nur mit `<h3>`/`<h4>` bleiben unverändert.
+- *EN:* Links: a plain `#anchor` stays on the current page; fluid table of contents also uses `<h2>` in imported texts.
+
+### Quick-Glossar: markierten Text als Schreibweise eines vorhandenen Begriffs
+- **Ein Klick statt neuem Begriff:** In der Doppelprüfung „Gibt es schon?“ (Reiter „Neuer Begriff“) steht bei jedem ähnlichen
+  Begriff **Als Schreibweise zu „…“ hinzufügen**; ohne ähnlichen Treffer sucht **Als Schreibweise zu einem anderen Begriff …** nach
+  einem beliebigen. Der Text wird Variante des Eintrags – mit Version („Schreibweise … ergänzt“), Recht wie beim Bearbeiten des
+  Eintrags (`data.edit` auf die Tabelle, veröffentlichte Begriffe zusätzlich `data.publish`), CSRF. Vorbild: „Ins Glossar“ des
+  REDAXO-AddOns knowledgebase.
+- **Sofort erkannt:** beim Ansehen wird die markierte Stelle live markiert (Annotator-Markup vom Server, Stylesheet/Skript bei Bedarf
+  nachgeladen; nur außerhalb von Links, Knöpfen, Überschriften, je Seite das erste Vorkommen), beim Bearbeiten kurz hervorgehoben
+  und „Auf dieser Seite“ neu geprüft.
+- **Gibt es schon?** prüft jetzt über alle Begriffe auf dem Server (`exact`: Begriff oder Schreibweise, ohne Groß-/Kleinschreibung
+  und Leerraum – `QuickTool::variantKey()`) und verlinkt den vorhandenen Eintrag. „Ähnlich“ findet auch Schreibweisen mit ß/ss,
+  Akzenten oder Bindestrich („Anmeldeschluß“ → „Anmeldeschluss“, „E-Mail-Adresse“ → „E-Mail“) – genau die lassen sich ergänzen,
+  weil die Markierung sie sonst nicht fände. Keine doppelte Schreibweise, auch nicht bei einem anderen Begriff; Komma/Semikolon,
+  leere, zu kurze und zu lange Schreibweisen werden abgelehnt.
+- **Geteiltes Glossar:** nur eigene Begriffe; bei Begriffen einer anderen Website der Hinweis „gehört der Website X – dort ergänzen“.
+- Endpunkt `POST /admin/api/glossar/schreibweise` (`QuickTool::addVariant()`), Tastatur (Enter sucht, ↓ in die Knöpfe), ARIA;
+  Geprüft auch im Kit native (Desktop/Telefon, axe). Selbsttests `glossary:selftest` (20 neue Prüfungen) und `glossary:sharetest` (fremder Begriff); Handbuch → Glossar → Quick-Glossar.
+- *EN:* Quick glossary: add the selected text as a further spelling (variant) of an existing term with one click – from the
+  duplicate check (“Already there?”) or a search for any term. Saved with a revision, permission as for editing the entry, no
+  duplicate spellings (case and spaces ignored; ß/ss, accent and hyphen variants can be added); recognised immediately (live highlight when viewing, “On this page” when
+  editing). Shared glossary: own terms only, a hint names the owning website for others.
+
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:
   90 %, 100 % (Standard), 112 %, 125 %, 140 %, mit kleinem/großem „A“, Prozentanzeige und **Zurücksetzen**. Wirkt sofort ohne
@@ -57,6 +87,24 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   applies instantly and is saved without reload. Implemented without CSS `zoom`: the build converts admin CSS to `rem`
   (shadow-DOM CSS to `calc(px * var(--adm-s))`), so coordinates, drag & drop and the website preview stay unaffected; the website
   toolbar scales too. Halved effect on phones. Self-test `uiscale:selftest`.
+
+### Kit fluid: Handlungsaufruf und kompakte Darstellung im Fußbereich
+- **Handlungsaufruf im Fußbereich** (Website → Darstellung: Beschriftung + Link, Seite über die Linkauswahl `page:ID` oder Adresse),
+  getrennt vom Button im Kopf: „Spalten“ → Button unter Claim und Text, „Schlicht“/„Zentriert“ → in der Zeile, „Großer Schriftzug“ →
+  statt des Kopf-Buttons; auf farbigem Fuß in der Schriftfarbe der Fläche. Felder
+  `footer_cta_label`/`footer_cta_link` zählen zu den „Website-Angaben“ (`settings.info`, `Core\SiteSettings::INFO`). Leer = wie bisher.
+- **Dichte des Fußbereichs** (Design → Kopf & Fuß, Token `footer_density`, Klasse `fd-{normal,compact}`): „Kompakt“ mit weniger
+  Innenabstand, engeren Listen, auf dem Telefon Kontakt, Seiten und Social Media als umbrechende Zeilen, Adresse einzeilig mit
+  Trennern, Copyright und Rechtliches in einer Zeile – etwa halbe Höhe auf dem Telefon (Demo: 991 → 539 px); Touch-Ziele bleiben
+  ≥ 2,75 rem. CSS `opt-footer_density.css` lädt nur bei „Kompakt“. Standard „Normal“: Websites unverändert (Pixelvergleich 0).
+- **Kind-Kit native** zieht mit: Button unter dem Text, „Dichte des Fußbereichs“ unter Design → Seite (Telefon 756 → 598 px),
+  Kopfleiste weicht am Seitenende dem Fuß.
+- **Fehler behoben:** Auf dem Telefon lag der haftende Kopf beim Scrollen zum Fuß über Logo und Claim des Fußbereichs. Der Kopf
+  gleitet jetzt mit dem Anfang des Fußes nach oben weg (View-Timeline, ohne JavaScript; Browser ohne View-Timelines wie bisher).
+- *EN:* Kit fluid: a separate footer call to action (Website → Display: label + link; placed per footer variant, “website info”
+  permission), a “Footer density” design option (normal | compact – roughly half the footer height on phones, touch targets
+  ≥ 2.75 rem) and a fix for the sticky header covering the footer logo on phones (it now slides away as the footer reaches it).
+  Defaults leave existing websites unchanged.
 
 ### Veröffentlichte Assets bleiben auf dem Stand des Kerns (`Core\AssetSync`)
 - **Projekt-Installation mit verknüpftem Kern** (`KLXM_ROOT`, eigenes `public/`): `extensions:publish` verknüpft Kern-Assets

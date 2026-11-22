@@ -16,6 +16,8 @@ use Core\Lang;
  *  - Suchen: Begriff, Varianten und Kurz-Erklärung; „Einfügen“ setzt einen Link entry:glossar:{id} an die Schreibmarke bzw. um
  *    den markierten Text (wie die Linkauswahl).
  *  - „Neuer Begriff“: vorbelegt mit dem markierten Text; Entwurf – veröffentlicht nur mit Recht data.publish auf die Tabelle.
+ *    Die Doppelprüfung („Gibt es schon?“) bietet je ähnlichem Begriff – und über eine Suche nach beliebigem Begriff – „Als Schreibweise
+ *    hinzufügen“ (addVariant): der Text wird Variante des vorhandenen Eintrags (Version, Recht wie beim Bearbeiten des Eintrags).
  *  - „Auf dieser Seite“: Begriffe, die die automatische Markierung (Annotator) auf der Seite kennzeichnen würde, mit Sprung.
  *  - Auch beim Ansehen ('view' => true): dort ist JEDER Text der Seite markierbar (beim Bearbeiten nur die Textfelder) – Markierung
  *    + ⌥G bzw. der schwebende Knopf „Als Glossar-Begriff“ (chip) öffnet „Neuer Begriff“ vorbelegt; „Einfügen“ gibt es nur beim Bearbeiten.
@@ -37,7 +39,8 @@ final class QuickTool
             'feature' => Glossary::FEATURE,
             'visible' => fn(array $bar) => ($t = Glossary::table()) !== null && can('data.edit', $t['handle']),
             'panel' => ['title' => __('Quick-Glossar')],
-            'endpoints' => ['search' => '/admin/api/glossar/suche', 'create' => '/admin/api/glossar/begriff', 'page' => '/admin/api/glossar/seite'],
+            'endpoints' => ['search' => '/admin/api/glossar/suche', 'create' => '/admin/api/glossar/begriff', 'page' => '/admin/api/glossar/seite',
+                'variant' => '/admin/api/glossar/schreibweise'],
             'data' => fn(array $bar) => self::data($bar),
             'texts' => self::texts(),
         ];
@@ -96,6 +99,18 @@ final class QuickTool
             'reload' => __('Seite neu laden'),
             'from' => __('von {site}'), 'foreignHint' => __('Begriff einer anderen Website des geteilten Glossars – ändern lässt er sich nur dort.'),
             'dupeQ' => __('Gibt es schon?'), 'dupeNone' => __('Noch kein ähnlicher Begriff.'), 'dupeSome' => __('Ähnlich:'),
+            // Als Schreibweise (Variante) eines vorhandenen Begriffs
+            'existsTerm' => __('„{text}“ steht schon als Begriff im Glossar.'), 'existsVariant' => __('„{text}“ steht schon als Schreibweise von „{term}“ im Glossar.'),
+            'openEntry' => __('Eintrag öffnen'), 'openEntryAria' => __('Eintrag „{term}“ in der Verwaltung öffnen'),
+            'addVariant' => __('Als Schreibweise zu „{term}“ hinzufügen'),
+            'foreignVariant' => __('„{term}“ gehört der Website {site} – die Schreibweise bitte dort ergänzen.'),
+            'noVariantRight' => __('„{term}“ ist veröffentlicht – Schreibweisen ergänzen darf, wer veröffentlichen darf.'),
+            'addTo' => __('Als Schreibweise zu einem anderen Begriff …'), 'addToSearch' => __('Vorhandenen Begriff suchen'),
+            'addToPh' => __('Begriff suchen …'), 'addToNone' => __('Kein Begriff gefunden.'),
+            'variantAdded' => __('„{text}“ ist jetzt eine Schreibweise von „{term}“.'),
+            'variantLive' => __('Die Stelle im Text ist jetzt markiert.'), 'variantLater' => __('Auf der Website wird der Text ab jetzt automatisch als Glossar-Begriff markiert.'),
+            'variantEdit' => __('Beim Bearbeiten markiert die Website nichts – unter „Auf dieser Seite“ steht der Begriff jetzt mit dieser Stelle.'),
+            'showOnPage' => __('Auf dieser Seite zeigen'),
         ];
     }
 
@@ -116,6 +131,7 @@ final class QuickTool
         $t = Glossary::table();
         if (!$t) return ['items' => [], 'total' => 0];
         $q = mb_strtolower(trim($q));
+        $nq = Sharing::norm($q);
         $scored = [];
         foreach (Glossary::terms(true, $lang) as $i => $x) {
             if ($q === '') { $scored[] = [0, $i, $x]; continue; }
@@ -124,12 +140,52 @@ final class QuickTool
                 $term === $q => 100, str_starts_with($term, $q) => 80, str_contains($term, $q) => 60, default => 0,
             };
             if (!$s) foreach ($x['variants'] as $v) { $v = mb_strtolower($v); if (str_starts_with($v, $q)) { $s = 50; break; } if (str_contains($v, $q)) $s = max($s, 40); }
+            // Ähnlich ohne Akzente, ß/ss, Binde- und Leerzeichen („Anmeldeschluß“ → „Anmeldeschluss“, „E Mail“ → „E-Mail“)
+            if (!$s && mb_strlen($nq) >= 3) foreach (array_keys(Sharing::keys($x)) as $k) { if (str_contains((string) $k, $nq) || (mb_strlen((string) $k) >= 3 && str_contains($nq, (string) $k))) { $s = 30; break; } }
             if (!$s && str_contains(mb_strtolower($x['short']), $q)) $s = 20;
             if ($s) $scored[] = [-$s, $i, $x];
         }
         usort($scored, fn($a, $b) => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
         $limit = max(1, min(100, $limit));
         return ['items' => array_map(fn($r) => self::item($t, $r[2]), array_slice($scored, 0, $limit)), 'total' => count($scored)];
+    }
+
+    /**
+     * Vergleichsform einer Schreibweise: ohne Groß-/Kleinschreibung, Leerraum zusammengefasst, ohne Anführungszeichen außen. Bewusst
+     * enger als Sharing::norm (das auch Akzente, ß/ss und Bindestriche gleichsetzt): „Anmeldeschluß“ oder „E Mail“ sind eigene
+     * Schreibweisen, die die Markierung (Annotator) sonst nicht fände – genau die soll man ergänzen können.
+     */
+    public static function variantKey(string $s): string
+    {
+        $s = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($s), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        return mb_strtolower(trim((string) preg_replace('~^["„“](.+)["“”]$~u', '$1', $s)));
+    }
+
+    /** Begriff + Schreibweisen eines Begriffs als Vergleichsformen (variantKey) → Original */
+    private static function variantKeys(array $x): array
+    {
+        $out = [];
+        foreach ([(string) $x['term'], ...array_map('strval', (array) ($x['variants'] ?? []))] as $v) {
+            $k = self::variantKey($v);
+            if ($k !== '' && !isset($out[$k])) $out[$k] = $v;
+        }
+        return $out;
+    }
+
+    /**
+     * Steht der Text schon im Glossar – als Begriff oder als Schreibweise (Variante)? Ohne Groß-/Kleinschreibung und Leerraum
+     * (variantKey); im geteilten Glossar auch Begriffe der anderen Websites. @return array|null Begriff + matched (term|variant)
+     */
+    public static function exact(string $text, string $lang): ?array
+    {
+        $t = Glossary::table();
+        $k = self::variantKey($text);
+        if (!$t || mb_strlen(Sharing::norm($k)) < 2) return null;
+        foreach (Glossary::terms(true, $lang) as $x) {
+            if (!isset(self::variantKeys($x)[$k])) continue;
+            return self::item($t, $x) + ['matched' => self::variantKey($x['term']) === $k ? 'term' : 'variant'];
+        }
+        return null;
     }
 
     /** Begriff für das Werkzeug: Verweis entry:glossar:{id} (wie die Linkauswahl) + Adresse der Detailseite */
@@ -140,7 +196,9 @@ final class QuickTool
             'category' => $x['category'], 'draft' => (bool) $x['draft'], 'href' => (string) ($x['url'] ?? ''),
             'ref' => 'entry:' . $t['handle'] . ':' . (int) $x['id'], 'edit' => url('/admin/data/' . $t['handle'] . '/' . (int) $x['id']),
             // Geteiltes Glossar: Begriff einer anderen Website (nur lesbar) mit deren Namen
-            'foreign' => $foreign, 'origin' => $foreign && isset($t['shared']) ? \Core\Data\Shared::siteInfo((string) $x['origin'], $t['shared']['key'])['name'] : ''];
+            'foreign' => $foreign, 'origin' => $foreign && isset($t['shared']) ? \Core\Data\Shared::siteInfo((string) $x['origin'], $t['shared']['key'])['name'] : '',
+            // „Als Schreibweise hinzufügen“: eigener Begriff; veröffentlicht nur mit data.publish (wie EntryEdit::reason – der Server prüft erneut)
+            'canVariant' => !$foreign && (!empty($x['draft']) || can('data.publish', $t['handle']))];
     }
 
     /**
@@ -182,6 +240,71 @@ final class QuickTool
         Glossary::flush();
         $e = Entries::find($t, (int) $id);
         return ['ok' => true, 'item' => self::item($t, Glossary::term($t, $e)), 'published' => ($e['status'] ?? '') === 'published'];
+    }
+
+    /** Text als Schreibweise: Tags weg, Leerraum zusammengefasst, Satzzeichen am Ende (außer Punkt, z. B. „z. B.“) entfernt */
+    public static function cleanVariant(string $s): string
+    {
+        $s = trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags($s), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        return trim((string) preg_replace('~[\s,;:!?]+$~u', '', $s));
+    }
+
+    /**
+     * Markierten Text als weitere Schreibweise (Variante) eines vorhandenen Begriffs ergänzen. $in: id (Begriff), text, lang,
+     * view (Ansehen: Markup für die Live-Markierung), match (Text wie auf der Seite). Prüft: Eintrag da, eigener Begriff (geteiltes
+     * Glossar: fremde nur dort), Recht wie beim Bearbeiten des Eintrags (EntryEdit::reason), keine Dublette in dieser Sprache
+     * (variantKey – Groß/Klein, Leerraum, Anführungszeichen). Speichern mit Version („Schreibweise … ergänzt“).
+     * @return array{ok: bool, status?: int, error?: string, code?: string, item?: array, exists?: array, origin?: string, text?: string, markup?: string, assets?: array}
+     */
+    public static function addVariant(array $in): array
+    {
+        $t = Glossary::table();
+        if (!$t) return ['ok' => false, 'status' => 404, 'error' => __('Das Glossar ist noch nicht eingerichtet.')];
+        if (!in_array('varianten', array_column($t['fields'], 'name'), true)) return ['ok' => false, 'status' => 422, 'error' => __('Die Glossar-Tabelle hat kein Feld für Varianten.')];
+        $text = self::cleanVariant((string) ($in['text'] ?? ''));
+        $lang = self::lang((string) ($in['lang'] ?? ''));
+        if ($text === '') return ['ok' => false, 'status' => 422, 'code' => 'text', 'error' => __('Bitte einen Text markieren oder eingeben.')];
+        if (mb_strlen($text) > 80) return ['ok' => false, 'status' => 422, 'code' => 'text', 'error' => __('Eine Schreibweise hat höchstens {n} Zeichen.', ['n' => 80])];
+        if (preg_match('~[,;]~u', $text)) return ['ok' => false, 'status' => 422, 'code' => 'text', 'error' => __('Eine Schreibweise darf kein Komma oder Semikolon enthalten.')];
+        $n = self::variantKey($text);
+        if (mb_strlen(Sharing::norm($n)) < 2) return ['ok' => false, 'status' => 422, 'code' => 'text', 'error' => __('Die Schreibweise ist zu kurz.')];
+        $e = Entries::find($t, (int) ($in['id'] ?? 0));
+        if (!$e) return ['ok' => false, 'status' => 404, 'error' => __('Begriff nicht gefunden.')];
+        $x = Glossary::term($t, $e);
+        // Geteiltes Glossar: nur eigene Begriffe – fremde ergänzt die Website, der sie gehören
+        if (!empty($x['foreign'])) {
+            $site = isset($t['shared']) ? \Core\Data\Shared::siteInfo((string) $x['origin'], $t['shared']['key'])['name'] : (string) $x['origin'];
+            return ['ok' => false, 'status' => 403, 'code' => 'foreign', 'origin' => $site,
+                'error' => __('„{term}“ gehört der Website {site} – die Schreibweise bitte dort ergänzen.', ['term' => $x['term'], 'site' => $site])];
+        }
+        if ($x['lang'] !== $lang) return ['ok' => false, 'status' => 422, 'error' => __('Der Begriff gehört zu einer anderen Sprache.')];
+        if (($why = \Core\Data\EntryEdit::reason($t, $e)) !== null) return ['ok' => false, 'status' => 403, 'error' => $why];
+        // Dublette: Text ist schon Begriff oder Schreibweise – dieses oder eines anderen Eintrags (auch fremder im geteilten Glossar)
+        foreach (Glossary::terms(true, $lang) as $o) {
+            if (!isset(self::variantKeys($o)[$n])) continue;
+            $msg = (int) $o['id'] === (int) $x['id']
+                ? (self::variantKey($o['term']) === $n ? __('„{text}“ ist der Begriff selbst.', ['text' => $text]) : __('„{text}“ ist schon eine Schreibweise von „{term}“.', ['text' => $text, 'term' => $o['term']]))
+                : __('„{text}“ steht schon im Glossar – bei „{term}“.', ['text' => $text, 'term' => $o['term']]);
+            return ['ok' => false, 'status' => 409, 'code' => 'exists', 'error' => $msg, 'exists' => self::item($t, $o)];
+        }
+        $variants = Glossary::splitVariants((string) ($e['varianten'] ?? ''));
+        if (count($variants) >= 20) return ['ok' => false, 'status' => 422, 'error' => __('Höchstens {n} Schreibweisen je Begriff.', ['n' => 20])];
+        $variants[] = $text;
+        [, $errors] = Entries::save($t, (int) $e['id'], ['varianten' => implode("\n", $variants)], __('Schreibweise „{text}“ ergänzt', ['text' => $text]));
+        if ($errors) return ['ok' => false, 'status' => 422, 'error' => implode(' ', array_map('strval', $errors))];
+        Glossary::flush();
+        $saved = Entries::find($t, (int) $e['id']) ?? $e;
+        $term = Glossary::term($t, $saved);
+        $out = ['ok' => true, 'item' => self::item($t, $term), 'text' => $text];
+        // Ansehen: Markup der automatischen Markierung für genau diese Stelle (Live-Markierung ohne Neuladen) + Stylesheet/Skript
+        if (!empty($in['view'])) {
+            $match = trim((string) preg_replace('~\s+~u', ' ', (string) ($in['match'] ?? '')));
+            if ($match === '' || mb_strlen($match) > 120 || self::variantKey($match) !== $n) $match = $text;
+            $a = new Annotator([$term], ['labels' => Glossary::labels(), 'prefix' => 'glq' . bin2hex(random_bytes(3)) . '-', 'lang' => $lang]);
+            $out['markup'] = $a->markup($term, e($match));
+            $out['assets'] = ['css' => Glossary::stylesheets(), 'js' => asset('js/glossary.js')];
+        }
+        return $out;
     }
 
     /**
@@ -227,6 +350,7 @@ final class QuickTool
         $t = Glossary::table();
         if (!$t) return false;
         $pdo = \Core\Data\Tables::db($t)->pdo;
+        $auth = self::authState();   // Anmeldung merken – der Selbsttest setzt Rollen vorübergehend (actAs)
         $pdo->beginTransaction();
         try {
             $lang = Lang::default();
@@ -251,10 +375,64 @@ final class QuickTool
             $p = self::onPage('<p contenteditable="true">Hier steht der QA-Selbsttestbegriff im Text.</p>', $lang, '/x');
             $eq('Auf dieser Seite: Entwurf gefunden, Text wie im Inhalt', [array_column($p['items'], 'term'), $p['items'][0]['match'] ?? null], [['QA-Selbsttestbegriff'], 'QA-Selbsttestbegriff']);
             $eq('Auf dieser Seite: eigene Detailseite ausgenommen', self::onPage('<p>QA-Selbsttestbegriff</p>', $lang, '/x', (int) ($r['item']['id'] ?? 0))['items'], []);
+            // Doppelprüfung (exact): Begriff bzw. Schreibweise, ohne Groß/Klein und Leerraum – ß/ss und Bindestriche bleiben verschieden
+            $eq('Gibt es schon: Begriff', [self::exact(' qa-SELBSTTESTbegriff ', $lang)['id'] ?? null, self::exact('QA-Selbsttestbegriff', $lang)['matched'] ?? null], [$r['item']['id'] ?? null, 'term']);
+            $eq('Gibt es schon: Schreibweise', self::exact('QA-SELBSTTESTWORT', $lang)['matched'] ?? null, 'variant');
+            $eq('Gibt es schon: unbekannt', self::exact('QA-Unbekanntwort', $lang), null);
+            // Als Schreibweise hinzufügen: angemeldet mit Recht data.edit (+ data.publish) auf die Tabelle
+            $id = (int) ($r['item']['id'] ?? 0);
+            self::actAs(null);
+            $eq('Schreibweise: ohne Anmeldung abgelehnt (Recht)', [self::addVariant(['id' => $id, 'text' => 'QA-Schreibweise', 'lang' => $lang])['status'] ?? null], [403]);
+            self::actAs(['data.edit', 'data.publish'], [$t['handle']]);
+            $v = self::addVariant(['id' => $id, 'text' => '  QA-Schreibweise ,', 'lang' => $lang, 'view' => true, 'match' => 'QA-Schreibweise']);
+            $eq('Schreibweise: ergänzt (bereinigt)', [$v['ok'], $v['text'] ?? null, in_array('QA-Schreibweise', $v['item']['variants'] ?? [], true)], [true, 'QA-Schreibweise', true]);
+            $eq('Schreibweise: Version mit Notiz', str_contains((string) json_encode(\Core\Data\Revisions::list($t, $id), JSON_UNESCAPED_UNICODE), 'QA-Schreibweise'), true);
+            $eq('Schreibweise: Markup für die Live-Markierung', str_contains((string) ($v['markup'] ?? ''), 'class="gl-term"') && str_contains((string) ($v['markup'] ?? ''), '>QA-Schreibweise</button>'), true);
+            $eq('Schreibweise: Markierung erkennt sie sofort', array_column(self::onPage('<p>Hier steht die QA-Schreibweise.</p>', $lang, '/x')['items'], 'id'), [$id]);
+            $d2 = self::addVariant(['id' => $id, 'text' => '  qa-SCHREIBweise ', 'lang' => $lang]);
+            $eq('Schreibweise: doppelt (Groß/Klein, Leerzeichen) abgelehnt', [$d2['ok'], $d2['status'] ?? null, $d2['exists']['id'] ?? null], [false, 409, $id]);
+            $eq('Gibt es schon: ß/ss ist eine eigene Schreibweise', self::exact('QA-Selbsttestwort-ß', $lang), null);
+            $eq('Ähnlich: ohne Bindestrich gefunden', array_column(self::search('QA Selbsttestbegriff', $lang)['items'], 'id'), [$id]);
+            $ss = self::addVariant(['id' => $id, 'text' => 'QA-Selbsttestbegriffß', 'lang' => $lang]);
+            $eq('Schreibweise: ß als eigene Schreibweise erlaubt', $ss['ok'], true);
+            $eq('Schreibweise: Begriff selbst abgelehnt', self::addVariant(['id' => $id, 'text' => 'QA-SELBSTTESTBEGRIFF', 'lang' => $lang])['status'] ?? null, 409);
+            $o = self::create(['term' => 'QA-Zweitbegriff', 'short' => 'Zweiter Begriff.', 'lang' => $lang]);
+            $eq('Schreibweise: bei anderem Begriff vorhanden abgelehnt', self::addVariant(['id' => (int) ($o['item']['id'] ?? 0), 'text' => 'QA-Schreibweise', 'lang' => $lang])['exists']['id'] ?? null, $id);
+            $eq('Schreibweise: Komma abgelehnt', self::addVariant(['id' => $id, 'text' => 'QA a, b', 'lang' => $lang])['code'] ?? null, 'text');
+            $eq('Schreibweise: leer/zu kurz abgelehnt', [self::addVariant(['id' => $id, 'text' => ' ', 'lang' => $lang])['code'] ?? null, self::addVariant(['id' => $id, 'text' => 'x', 'lang' => $lang])['code'] ?? null], ['text', 'text']);
+            $eq('Schreibweise: zu lang abgelehnt', self::addVariant(['id' => $id, 'text' => str_repeat('q', 81), 'lang' => $lang])['code'] ?? null, 'text');
+            $eq('Schreibweise: unbekannter Begriff', self::addVariant(['id' => 999999999, 'text' => 'QA-Irgendwas', 'lang' => $lang])['status'] ?? null, 404);
+            self::actAs(['data.edit'], ['qa-andere-tabelle']);
+            $eq('Schreibweise: Recht nur auf andere Tabelle abgelehnt', self::addVariant(['id' => $id, 'text' => 'QA-Drittwort', 'lang' => $lang])['status'] ?? null, 403);
+            self::actAs(['data.edit'], [$t['handle']]);
+            $pub = Entries::find($t, $id);
+            $eq('Schreibweise: veröffentlicht ohne data.publish abgelehnt', ($pub['status'] ?? '') === 'published' && $t['settings']['workflow'] ? self::addVariant(['id' => $id, 'text' => 'QA-Drittwort', 'lang' => $lang])['status'] ?? null : 403, 403);
         } finally {
             if ($pdo->inTransaction()) $pdo->rollBack();
+            self::authState($auth);
             Glossary::flush();
         }
         return true;
+    }
+
+    /** Selbsttest: Anmeldung lesen bzw. ($restore) wiederherstellen – loaded, user, role von Core\Auth */
+    private static function authState(?array $restore = null): array
+    {
+        $a = app()->auth;
+        $out = [];
+        foreach (['loaded', 'user', 'role'] as $prop) {
+            $p = new \ReflectionProperty($a, $prop);
+            if ($restore !== null) $p->setValue($a, $restore[$prop]);
+            else $out[$prop] = $p->getValue($a);
+        }
+        return $out;
+    }
+
+    /** Selbsttest: vorübergehend angemeldet mit diesen Rechten (null = abgemeldet), $tables = Tabellenauswahl der Rolle */
+    private static function actAs(?array $perms, ?array $tables = null): void
+    {
+        self::authState(['loaded' => true,
+            'user' => $perms === null ? null : ['id' => 0, 'email' => 'selbsttest@example.test', 'name' => 'Selbsttest', 'role' => 'qa', 'appearance' => null, 'locale' => null],
+            'role' => $perms === null ? null : ['key' => 'qa', 'name' => 'QA', 'description' => '', 'permissions' => $perms, 'tables' => $tables, 'builtin' => false]]);
     }
 }

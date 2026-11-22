@@ -225,6 +225,10 @@ return [
                 'options' => ['columns' => 'Spalten (Kontakt, Seiten, Social)', 'simple' => 'Schlicht in einer Zeile', 'centered' => 'Zentriert (Logo, Seiten, Social untereinander)', 'statement' => 'Großer Schriftzug mit Handlungsaufruf']],
             ['name' => 'footer_bg', 'label' => 'Hintergrund des Fußbereichs', 'type' => 'choice', 'class' => 'fbg-{value}', 'default' => 'surface',
                 'options' => ['surface' => 'Getönte Fläche', 'page' => 'Wie die Seite', 'dark' => 'Dunkel', 'accent' => 'Akzentfarbe', 'secondary' => 'Zweite Markenfarbe']],
+            // markup: „Kompakt“ gibt die Adresse einzeilig aus (templates/partials/footer.php); CSS css/opt-footer_density.css
+            ['name' => 'footer_density', 'markup' => true, 'label' => 'Dichte des Fußbereichs', 'type' => 'choice', 'class' => 'fd-{value}', 'default' => 'normal',
+                'options' => ['normal' => 'Normal', 'compact' => 'Kompakt – weniger Abstand, Links als Zeilen, Adresse in einer Zeile'],
+                'help' => '„Kompakt“ halbiert etwa die Höhe des Fußbereichs auf dem Telefon: Seiten und Social Media stehen nebeneinander statt untereinander, Copyright und Rechtliches in einer Zeile. Auf Touch-Geräten bleiben die Links groß genug zum Tippen.'],
             ['name' => 'footer_line', 'label' => 'Linie über dem Fußbereich', 'type' => 'choice', 'class' => 'fl-{value}', 'default' => 'auto',
                 'options' => ['auto' => 'Wie Farbwirkung (feine Linie, bei „Farbenfroh“ Farbband)', 'none' => 'Keine Linie', 'line' => 'Linie', 'shadow' => 'Linie mit Schatten nach unten',
                     'emboss' => 'Geprägte Linie', 'band' => 'Farbband (Markenfarben im Wechsel)']],

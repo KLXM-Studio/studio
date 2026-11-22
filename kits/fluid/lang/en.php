@@ -634,4 +634,12 @@ return [
     'Ein Knopf „Darstellung“ im Kopf: Besucher wählen Farbschema, Kontrast, Bewegung, Schriftgröße, Textabstände, unterstrichene Links und einen deutlicheren Fokus-Rahmen – gespeichert nur in ihrem Browser. Ohne Wahl gelten die Einstellungen ihres Geräts. Ersetzt keine barrierefreie Gestaltung, ergänzt sie. Mit Hell/Dunkel-Schalter entfällt dort das Farbschema.' => 'A “Display” button in the header: visitors choose colour scheme, contrast, motion, text size, text spacing, underlined links and a stronger focus outline – stored only in their browser. Without a choice their device settings apply. It does not replace accessible design, it complements it. With the light/dark switch, the colour scheme is left out there.',
     'Video von YouTube, Vimeo oder aus der Mediathek, oder Audio als Podcast oder Playlist – externe Videos laden erst nach Klick.' => 'Video from YouTube, Vimeo or the media library, or audio as a podcast or playlist – external videos only load after a click.',
     'Zwei Bilder mit Regler – zeigt Umbau, Renovierung oder Bildbearbeitung im direkten Vergleich.' => 'Two images with a slider – shows a conversion, renovation or photo edit in direct comparison.',
+    // Fußbereich: Handlungsaufruf und Dichte
+    'Handlungsaufruf im Fußbereich – Beschriftung (optional)' => 'Footer call to action – label (optional)',
+    'Z. B. „Mitglied werden“ oder „Termin anfragen“. Erscheint als Button im Fußbereich – bei „Großer Schriftzug“ statt des Buttons aus dem Kopfbereich. Leer = kein Button.' => 'E.g. “Become a member” or “Request an appointment”. Appears as a button in the footer – with “Big statement” instead of the header button. Empty = no button.',
+    'Handlungsaufruf im Fußbereich – Link' => 'Footer call to action – link',
+    'Seite der Website auswählen oder eine Adresse eingeben.' => 'Choose a page of the website or enter an address.',
+    'Dichte des Fußbereichs' => 'Footer density',
+    'Kompakt – weniger Abstand, Links als Zeilen, Adresse in einer Zeile' => 'Compact – less spacing, links in rows, address on one line',
+    '„Kompakt“ halbiert etwa die Höhe des Fußbereichs auf dem Telefon: Seiten und Social Media stehen nebeneinander statt untereinander, Copyright und Rechtliches in einer Zeile. Auf Touch-Geräten bleiben die Links groß genug zum Tippen.' => '“Compact” roughly halves the footer height on phones: pages and social media sit side by side instead of stacked, copyright and legal links on one line. On touch devices the links stay large enough to tap.',
 ];
