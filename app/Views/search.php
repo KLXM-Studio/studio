@@ -73,6 +73,7 @@ $external = $r['mode'] === 'hybrid' && \Core\AI\Ai::capability('embed')['externa
             <?php if ($it['origin'] !== ''): ?><span class="srch-hit__origin"><?= e(lt('von {name}', ['name' => $it['origin']])) ?></span><?php endif; ?>
           </p>
           <h2 class="srch-hit__title"><a href="<?= e($it['url']) ?>"<?= $ext ? ' rel="noopener"' : '' ?>><?= $it['title'] ?></a></h2>
+          <?php if (($it['section'] ?? '') !== ''): // passende Überschrift: Link führt zum Abschnitt ?><p class="srch-hit__text srch-hit__section"><?= e(lt('Abschnitt „{name}“', ['name' => $it['section']])) ?></p><?php endif; ?>
           <?php if ($it['snippet'] !== ''): ?><p class="srch-hit__text"><?= $it['snippet'] ?></p><?php endif; ?>
           <p class="srch-hit__url" aria-hidden="true"><?= e(preg_replace('~^https?://(www\.)?~', '', $ext ? $it['url'] : (preg_replace('~^https?://~', '', site_url()) . $it['url']))) ?></p>
         </li>

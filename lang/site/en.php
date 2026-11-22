@@ -457,6 +457,8 @@ return [
     'Mitglied' => 'Member',
     'seit {date}' => 'since {date}',
     // Wissensbereich (Core\Data\Knowledge)
+    'Wissen' => 'Knowledge',
+    'Abschnitt „{name}“' => 'Section “{name}”',
     'Allgemein' => 'General',
     'Begriffe in diesem Kapitel' => 'Terms in this chapter',
     'Einträge' => 'entries',
