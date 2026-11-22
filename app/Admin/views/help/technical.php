@@ -41,6 +41,7 @@ $fieldInfo = [
     'color' => 'Farbe #RRGGBB oder #RGB (Farbwähler + Hex-Eingabe)', 'multiselect' => 'Mehrfachauswahl (options) → Array',
     'collection' => 'Medien-Sammlung (ID)', 'datatable' => 'Datentabelle (Kurzname)', 'datafield' => 'Feld einer Tabelle „tabelle.feld“ (optional mit system-Sortierfeldern)',
     'datafields' => 'Mehrere Felder „tabelle.feld“; das Formular zeigt nur die der gewählten Tabelle',
+    'listtemplate' => 'Listen-Vorlage eines Listenblocks (Core\\Blocks\\ListTemplates): Schlüssel der Website oder kit:…/ext:…, leer = eigene Einstellungen; Kacheln mit Vorschaubild je Vorlage der gewählten Tabelle, „Als Vorlage speichern“ mit Recht design.blocks. Setzt ListTemplates::decorate() für Blöcke mit list_template => true',
     'repeater' => 'Liste von Einträgen (fields)', 'group' => 'Wiederholbare Gruppe der Datentabellen: fields (Unterfelder), min/max (Anzahl, Fehler statt Kürzen), item_label – leere Zeilen fallen weg, Fehler je Zeile unter feld.position.unterfeld',
 'secret' => 'Passwort – leer = unverändert', 'heading' => 'Nur Zwischenüberschrift im Formular',
     'iban' => 'IBAN: gespeichert ohne Leerzeichen in Großbuchstaben, Prüfung Ländercode + Länge (SEPA-Raum) + Prüfziffer (ISO 13616, Mod 97); Anzeige in Vierergruppen, in Listen/Ausgaben maskiert (Feldoption mask, Standard an)',
