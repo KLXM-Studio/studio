@@ -8,6 +8,8 @@ return [
         'label' => 'Datenliste', 'icon' => 'list-bullets', 'group' => 'Daten',
         'description' => 'Einträge einer Datentabelle als Karten, Liste oder Tabelle – mit Filter und Sortierung.',
         'reload' => true,   // Filtern, Suche, Blättern ohne Seitenwechsel (Core\Live::region, live.js)
+        // Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“, Darstellungsfelder nur ohne Vorlage – gilt auch für Kits, die den Block übernehmen
+        'list_template' => true,
         'help' => 'Gibt Einträge einer Datentabelle aus (z. B. Aktuelles, Team, Produkte) – mit Feldauswahl, Filter, Sortierung und Link zur Detailseite. Auch in den Inhaltsblöcken eines Eintrags möglich: Dann bezieht sich „aufgerufener Eintrag“ auf diesen Eintrag, er selbst erscheint nicht in der Liste, und eine Datenliste in den gelisteten Einträgen wird nicht ausgegeben (höchstens eine Ebene).',
         'fields' => [
             ['name' => 'eyebrow', 'label' => 'Dachzeile (optional)', 'type' => 'text', 'width' => 'half'],

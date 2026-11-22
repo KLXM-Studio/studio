@@ -10,6 +10,39 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Listen-Vorlagen für die Datenliste (Stufe 1)
+- **Vorlage statt zwanzig Einstellungen:** Eine Listen-Vorlage speichert die Darstellung einer Datenliste – Darstellung, angezeigte
+  Felder, Spalten, Bildformat, Bilder, Textlänge, Sortierung, Filter für Besucher, Verlinkung. In der Seitenleiste wählt die Redaktion
+  unter **Vorlage** eine Kachel mit Vorschaubild; danach zeigt der Block nur noch Überschrift, Tabelle, Anzahl, Vorlage und
+  „Nur Einträge, bei denen …“. **Anpassen (Vorlage lösen)** übernimmt die Werte der Vorlage in den Block und macht sie änderbar.
+- **Daten → Tabelle → Listen-Vorlagen:** Karten mit Vorschaubild, Grundform, Standard und Verwendung („auf 2 Seiten“), Zeilenmenü
+  (Bearbeiten, Duplizieren, Als Standard, Löschen); das Formular ist dasselbe wie in der Seitenleiste. Eine geänderte Vorlage gilt
+  sofort überall, wo sie gewählt ist (Seiten-Cache wird geleert); verwendete Vorlagen lassen sich erst löschen, wenn keine Seite sie
+  mehr wählt.
+- **Vorschläge je Tabelle:** beim ersten Öffnen legt Studio passende Vorlagen an – „Neueste als Karten“, „Kompakte Liste“, „Liste
+  mit Bild“ (mit Bildfeld), „Verzeichnis A–Z mit Filter“ (mit Auswahlfeld), „Tabelle sortierbar“, „Team mit Foto“ (Bild + Funktion),
+  „Termine der Reihe nach“ (Kalender-Tabellen), „Kapitel mit Suche“ (Wissensbereiche: Darstellung „Kapitel“, Suchfeld,
+  Trefferauszug, Glossar). Gelöschte Vorschläge kommen nicht wieder. Die neuen Optionen der Datenliste (Kapitel, Mehrfachauswahl
+  je Filter, Trefferauszug, Glossarbegriffe) gehören zur Vorlage; „Ohne Lightbox öffnen“ am Button-Link bleibt beim Block.
+- **„Als Vorlage speichern …“** in der Seitenleiste macht aus der aktuellen Einstellung eines Blocks eine Vorlage der Tabelle und
+  wählt sie aus – so werden bestehende Listen zu Vorlagen.
+- **Standard je Tabelle:** neue Datenlisten (Editor, „Einsetzen“) beginnen nach der Wahl der Tabelle mit der Standard-Vorlage;
+  ohne Standard wie bisher mit eigenen Einstellungen.
+- **Recht „Blöcke gestalten“** (`design.blocks`, neue Gruppe „Gestaltung“): Vorlagen anlegen, ändern, löschen, Standard festlegen.
+  Neu, darum hat es zunächst nur die Administration; auswählen dürfen alle, die Seiten bearbeiten.
+- **Bestehende Blöcke bleiben unverändert:** ohne gewählte Vorlage (alle bisherigen Blöcke) gilt alles wie bisher; eine Vorlage
+  legt nur Blockdaten vor (`Core\Theme::makeBlock`), darum funktioniert sie mit jedem Kit-Renderer der Datenliste (Kern, editorial,
+  frameworks). Pixelvergleich bestehender Seiten in den Kits fluid, native und frameworks: 0 abweichende Pixel.
+- **Für Entwickler:** Vorlagen per Kit (`theme.php` → `'list_templates'`, Schlüssel `kit:…`) oder Erweiterung (Filter
+  `list_templates`, Schlüssel `ext:…`) vordefinieren – nur lesbar, mit `tables`/`requires` und `default`. Eigene Listenblöcke nehmen mit
+  `'list_template' => true` teil. Neue Tabelle `list_templates` (additiv), Feldtyp `listtemplate`, `show_if` auch an aufklappbaren
+  Abschnitten, Klasse `Core\Blocks\ListTemplates`, Selbsttest `listtemplates:selftest`.
+- *EN:* List templates for the data list: a saved set of display options (layout, fields, columns, image, sorting, visitor
+  filters) chosen in the block sidebar as tiles with a preview; editors then only see heading, table, number, template and filter.
+  Data → table → List templates (cards, row menu, default per table, usage), suggestions per table, “Save as template” from a block,
+  new permission `design.blocks`. Existing blocks are unchanged; templates work with every kit renderer. Kits and extensions can
+  predefine read-only templates (`list_templates`).
+
 ### Kontakte: mehrere Funktionen je Person (Grundschema contacts v2)
 - **Feld „Funktionen“** (Feldtyp `roles`, `Core\Data\Roles`) im Abschnitt „Funktionen & Listen“: je Funktion Text mit Vorschlägen
   (Vorsitz, Kassenwart, Schriftführung, Beisitz, Ansprechperson … und schon benutzte), Gremium/Liste, optional Verknüpfung zu einem

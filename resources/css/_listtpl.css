@@ -1,0 +1,51 @@
+/* Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“ in der Seitenleiste (Kacheln mit Vorschaubild, resources/js/_listtpl.js)
+   und Daten → Tabelle → Listen-Vorlagen (Karten, Formular). Farben nur über die Verwaltungs-Tokens (hell/dunkel). */
+.f--ltpl{border:0;padding:0;margin:0 0 14px;min-width:0}
+.f--ltpl>legend{font-weight:600;margin-bottom:6px;padding:0}
+.ltpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.ltpl-tile{position:relative;display:grid;gap:4px;justify-items:center;align-content:start;padding:8px 6px 7px;border:1px solid var(--adm-in);border-radius:10px;background:var(--adm-surface);color:var(--adm-t2);font:500 12px/1.25 var(--adm-font);text-align:center;cursor:pointer;transition:border-color .15s,box-shadow .15s,background-color .15s}
+.ltpl-tile:hover{border-color:var(--adm-a);color:var(--adm-ink)}
+.ltpl-tile input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.ltpl-tile:has(input:focus-visible){outline:2px solid var(--adm-a);outline-offset:2px}
+.ltpl-tile:has(input:checked){border-color:var(--adm-a);box-shadow:0 0 0 1px var(--adm-a);background:var(--adm-accent-bg);color:var(--adm-ink);font-weight:650}
+.ltpl-tile__name{overflow-wrap:anywhere}
+.ltpl-tile__own{display:grid;place-items:center;width:52px;height:50px;color:var(--adm-a)}
+.ltpl-tile__own svg{width:26px;height:26px}
+.ltpl-tile__std{font-size:11px;font-weight:700;color:var(--adm-ok)}
+.ltpl-svg{display:block;width:52px;height:50px}
+.ltpl-svg__b{fill:color-mix(in srgb,var(--adm-a) 18%,var(--adm-surface))}
+.ltpl-svg__i{fill:color-mix(in srgb,var(--adm-a) 34%,var(--adm-surface))}
+.ltpl-svg__t{fill:color-mix(in srgb,var(--adm-a) 70%,var(--adm-surface))}
+.ltpl-svg__c{fill:color-mix(in srgb,var(--adm-ok) 55%,var(--adm-surface))}
+.ltpl-tile:has(input:checked) .ltpl-svg__i{fill:color-mix(in srgb,var(--adm-a) 55%,var(--adm-surface))}
+.ltpl-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px;margin-top:10px}
+.ltpl-actions .adm-btn svg{width:15px;height:15px}
+.ltpl-save{flex:1 1 100%}
+.ltpl-save>summary{list-style:none;display:inline-flex;cursor:pointer}
+.ltpl-save>summary::-webkit-details-marker{display:none}
+.ltpl-save__row{display:flex;gap:6px;margin-top:8px}
+.ltpl-save__row input{flex:1;min-width:0}
+.ltpl-manage{font-size:13px}
+.f--ltpl .f-warn{color:var(--adm-warn)}
+
+/* Verwaltung: Übersicht als Karten */
+.ltpl-cards{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.ltpl-card{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:start;padding:14px;border-radius:10px;background:var(--adm-card);box-shadow:0 0 0 1px var(--adm-line)}
+.ltpl-card.is-default{box-shadow:0 0 0 2px var(--adm-a)}
+.ltpl-card__prev .ltpl-svg{width:64px;height:62px}
+.ltpl-card__name{margin:0 0 2px;font-size:15px;line-height:1.3}
+.ltpl-card__name a{color:var(--adm-ink);text-decoration:none}
+.ltpl-card__name a:hover{text-decoration:underline}
+.ltpl-card__meta{margin:0 0 6px;font-size:13px;color:var(--adm-t3)}
+.ltpl-card__tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0;font-size:12px;color:var(--adm-t3)}
+.ltpl-card__tags .adm-badge svg{width:12px;height:12px;margin-right:3px}
+.ltpl-note{max-width:70ch}
+
+/* Verwaltung: Formular einer Vorlage */
+.ltpl-edit{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start}
+.ltpl-edit__fs{border:0;padding:0;margin:0;min-width:0}
+.ltpl-edit__side{position:sticky;top:16px}
+.ltpl-edit__prev .ltpl-svg{width:128px;height:124px;margin-bottom:8px}
+.ltpl-edit__h{font-size:14px;margin:16px 0 6px}
+.ltpl-edit__pages{margin:0 0 12px;padding-left:18px}
+@media (max-width:900px){.ltpl-edit{grid-template-columns:minmax(0,1fr)}.ltpl-edit__side{position:static}}
