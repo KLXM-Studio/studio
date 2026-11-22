@@ -24,6 +24,7 @@ final class Console
             return match ($cmd) {
                 'site:blueprint' => self::export($args),
                 'blueprint:apply' => self::apply($args),
+                'blueprint:apply-ext' => self::applyExt($args),
                 'blueprint:list' => self::list(),
                 'blueprint:propose' => self::propose($args),
                 'blueprint:update' => self::update($args),
@@ -65,12 +66,13 @@ final class Console
         if (($c = self::inSite('site:blueprint', $key, $args)) !== null) return $c;
         $o = [];
         if (($f = Cli::opt($args, 'options')) !== null) $o = (array) json_decode((string) @file_get_contents($f), true);
-        foreach (['out', 'demo', 'name', 'title', 'description', 'version', 'note'] as $k) if (($v = Cli::opt($args, $k)) !== null) $o[$k] = $v;
+        foreach (['out', 'demo', 'name', 'title', 'description', 'version', 'note', 'region'] as $k) if (($v = Cli::opt($args, $k)) !== null) $o[$k] = $v;
+        if (Cli::flag($args, 'check')) $o['check'] = true;
         if (($v = Cli::opt($args, 'per-table')) !== null) $o['per_table'] = (int) $v;
         $o['out'] ??= ROOT . '/storage/blueprints-export/' . $key . '-' . date('Ymd-His');
         $r = Export::run($o);
         foreach ($r['report'] as $l) self::out("  $l\n");
-        self::out("Website-Vorlage „{$r['manifest']['name']}“ {$r['manifest']['version']}: {$r['path']}\n");
+        if ($r['path'] !== '') self::out("Website-Vorlage „{$r['manifest']['name']}“ {$r['manifest']['version']}: {$r['path']}\n");
         return 0;
     }
 
@@ -79,7 +81,7 @@ final class Console
     {
         $p = [];
         if (($f = Cli::opt($args, 'params')) !== null) $p = (array) json_decode((string) @file_get_contents($f), true);
-        foreach (['name', 'short', 'color', 'logo', 'region'] as $k) if (($v = Cli::opt($args, $k)) !== null) $p[$k] = $v;
+        foreach (['name', 'short', 'color', 'palette', 'logo', 'region'] as $k) if (($v = Cli::opt($args, $k)) !== null) $p[$k] = $v;
         return $p;
     }
 
@@ -126,8 +128,24 @@ final class Console
                 foreach ($res['lines'] as $l) self::out("  Netzwerk: $l\n");
                 if ($res['error'] !== null) self::out("  ! Netzwerk: {$res['error']} – später in der Schnelleinrichtung (Schritt Netzwerk)\n");
             }
+            // Alles verbunden: der Schritt „Netzwerk“ ist erledigt (Vorbelegung, nicht erneut abfragen)
+            if (QuickConfig::open() && !array_filter(Network::refs(), fn($x) => !$x['joined'])) QuickConfig::markDone('network');
         }
+        // Zweiter Schritt als eigener Prozess: jetzt eingeschaltete Erweiterungen (blueprint.apply) und Gebiet aus den Parametern
+        $pf = Package::tempDir() . '/params.json';
+        file_put_contents($pf, Package::json($params));
+        $code = Network::console(['blueprint:apply-ext', $path, '--params=' . $pf, '--site=' . site()->key], $out);
+        Package::remove(dirname($pf));
+        self::out((string) $out);
+        if ($code !== 0) self::out("  ! Erweiterungen/Gebiet: Schritt fehlgeschlagen – später in der Schnelleinrichtung\n");
         if ($r['open']) self::out("  Offene Platzhalter: " . implode(', ', array_keys($r['open'])) . " – Schnelleinrichtung füllt sie\n");
+        return 0;
+    }
+
+    private static function applyExt(array $args): int
+    {
+        $path = (string) (Cli::positional($args)[0] ?? '');
+        foreach (Apply::applyExtensions($path, self::params($args)) as $l) self::out("  $l\n");
         return 0;
     }
 

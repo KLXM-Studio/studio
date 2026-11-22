@@ -44,10 +44,67 @@ final class Anonymizer
     /** schema.org-Typen von Tabellen mit Organisationen (Mitglieder, Vereine, Partner) – Titel und Beschreibung werden Beispiele */
     public const ORG_TYPES = ['Organization', 'LocalBusiness', 'NGO', 'EducationalOrganization', 'SportsOrganization', 'Corporation', 'MedicalOrganization', 'Person'];
 
-    /** @param array<string, string> $src Werte der Quelle für Platzhalter */
-    public function __construct(private array $src = [], private int $today = 0)
+    /** Namen von Personen der Quelle (Konten, Kontakte, Personenfelder) → Platzhalter-Person; Muster in Blöcken zu je 150 Namen */
+    private array $personRegex = [];
+    /** @var array<string, string> Name → Platzhalter-Person */
+    private array $personMap = [];
+    /** Wie oft Namen von Personen ersetzt wurden */
+    public int $personHits = 0;
+
+    /** @param array<string, string> $src Werte der Quelle für Platzhalter  @param list<string> $persons Namen von Personen der Quelle */
+    public function __construct(private array $src = [], private int $today = 0, array $persons = [])
     {
         $this->today = $today ?: (int) strtotime('today');
+        $persons = array_values(array_unique(array_filter(array_map('trim', $persons), fn($n) => mb_strlen($n) >= 5)));
+        usort($persons, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        foreach ($persons as $i => $n) {
+            [$f, $l] = self::person($i);
+            $this->personMap[mb_strtolower($n)] = $f . ' ' . $l;
+        }
+        foreach (array_chunk($persons, 150) as $chunk) {
+            $this->personRegex[] = '~(?<![\p{L}\d])(?:' . implode('|', array_map(fn($n) => preg_quote($n, '~'), $chunk)) . ')(?![\p{L}\d])~iu';
+        }
+    }
+
+    /**
+     * Namen von Personen aus den Daten der Website: Konten, Kontakte (Art contacts), Personenfelder (Ansprechperson, Autor, Leitung …) und
+     * Kombifelder „Ansprechperson“ – auch kommagetrennt („A, B und C“). Nur Namen aus mindestens zwei Wörtern. @return list<string>
+     */
+    public static function personNames(): array
+    {
+        $names = [];
+        $add = function (mixed $v) use (&$names): void {
+            foreach (preg_split('~\s*(?:,|;|/|\bund\b|&|\n)\s*~u', trim(strip_tags((string) $v))) ?: [] as $n) {
+                $n = trim((string) preg_replace('~^(Dr\.|Prof\.|Frau|Herr)\s+~u', '', trim($n)));
+                if (preg_match('~^\p{Lu}[\p{L}.\'-]+(?:\s+\p{Lu}?[\p{L}.\'-]+){1,3}$~u', $n) && mb_strlen($n) <= 60) $names[$n] = true;
+            }
+        };
+        try {
+            foreach (app()->db->fetchAll('SELECT name FROM users') as $u) $add($u['name']);
+        } catch (\Throwable) {
+        }
+        foreach (Tables::all() as $t) {
+            if (Tables::isShared($t) || Tables::isInbox($t)) continue;
+            $contacts = Kinds::isContacts($t);
+            $title = (string) ($t['settings']['title_field'] ?? '');
+            $cols = [];
+            $persons = [];
+            foreach (Tables::dataFields($t['fields']) as $f) {
+                $n = (string) $f['name'];
+                if ($f['type'] === 'person') $persons[] = $n;
+                elseif ($f['type'] === 'text' && (($contacts && in_array($n, ['name', 'vorname', 'nachname'], true)) || ($n !== 'name' && $n !== $title && preg_match(self::PERSON_NAMES, $n)))) $cols[] = $n;
+            }
+            if (!$cols && !$persons) continue;
+            try {
+                foreach (Tables::db($t)->fetchAll('SELECT * FROM ' . $t['table'] . ' LIMIT 5000') as $r) {
+                    foreach ($cols as $c) $add($r[$c] ?? '');
+                    if ($contacts) $add(trim((string) ($r['vorname'] ?? '') . ' ' . (string) ($r['nachname'] ?? '')));
+                    foreach ($persons as $c) foreach ((array) json_decode((string) ($r[$c] ?? ''), true) as $p) if (is_array($p)) $add($p['name'] ?? '');
+                }
+            } catch (\Throwable) {
+            }
+        }
+        return array_keys($names);
     }
 
     /** Fließtext säubern: E-Mail, Telefon, IBAN, eigene Domains → Beispielwerte, Angaben der Organisation → Platzhalter */
@@ -56,6 +113,10 @@ final class Anonymizer
         if ($s === '') return $s;
         // Redaktionsnotizen [# … #] sind intern (Core\EditorNotes) – nie in eine Vorlage
         if (str_contains($s, '[#')) $s = (string) preg_replace('~\s?\[#.*?#\]~su', '', $s);
+        // Personen der Quelle (aus Konten und Daten) → immer dieselbe Platzhalter-Person je Name
+        foreach ($this->personRegex as $re) {
+            $s = (string) preg_replace_callback($re, function ($m) { $this->personHits++; return $this->personMap[mb_strtolower($m[0])] ?? 'Erika Musterfrau'; }, $s);
+        }
         $s = Placeholders::tokenize($s, $this->src);
         // E-Mail-Adressen (außer Beispiel-Domains und Platzhaltern)
         $s = (string) preg_replace_callback('~[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}~', fn($m) => preg_match('~@(example\.(org|com|net)|[a-z0-9-]+\.(test|example|invalid))$~i', $m[0]) ? $m[0] : self::EMAIL, $s);

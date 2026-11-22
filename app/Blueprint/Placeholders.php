@@ -29,6 +29,7 @@ final class Placeholders
         'org.email' => ['E-Mail', 'org', 'email'],
         'org.domain' => ['Domain', 'org', ''],
         'region.name' => ['Region', 'region', 'region'],
+        'region.short' => ['Region (Abkürzung)', 'region', ''],
     ];
 
     public const PATTERN = '~\{\{\s*([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+)\s*\}\}~';
@@ -49,8 +50,13 @@ final class Placeholders
      * Werte der Quell-Website, die beim Export zu Platzhaltern werden (nur nicht leere, mindestens 3 Zeichen; PLZ nur zusammen mit
      * dem Ort). @return array<string, string> Platzhalter → Wert
      */
-    public static function sourceValues(callable $setting, string $host): array
+    public static function sourceValues(callable $setting, string $host, string $region = ''): array
     {
+        // Region der Quelle (Bundesland, Schlüssel oder Abkürzung): Langname und Abkürzung ab drei Zeichen („NRW“) werden Platzhalter
+        $r = QuickConfig::region($region !== '' ? $region : trim((string) $setting('org.region')));
+        $reg = [];
+        if (mb_strlen($r['name']) >= 3) $reg['region.name'] = $r['name'];
+        if (mb_strlen($r['short']) >= 3 && $r['short'] !== $r['name']) $reg['region.short'] = $r['short'];
         $v = [];
         $name = trim((string) ($setting('org_name') ?: $setting('site_title')));
         foreach (['org.name' => $name, 'org.short' => trim((string) $setting('short_name')), 'org.claim' => trim((string) $setting('tagline')),
@@ -60,7 +66,7 @@ final class Placeholders
         }
         $h = preg_replace('~^www\.~', '', strtolower(preg_replace('~:\d+$~', '', $host) ?? ''));
         if ($h !== '' && str_contains((string) $h, '.') && !preg_match('~\.(localhost|test|local)$~', (string) $h)) $v['org.domain'] = (string) $h;
-        return $v;
+        return $v + $reg;
     }
 
     /**

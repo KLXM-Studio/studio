@@ -42,6 +42,14 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   per Einladung und Beitritt. Selbsttest `blueprint:selftest` (mit `--sandbox` Rundlauf mit Testdaten in einer Kopie).
 - **Domains ohne Website:** `site:list` und `health` nennen Domains, die über `fallback_site` eine andere Website ausliefern.
 - **Demo-Einträge** tragen in der Datenliste das Merkmal „Demo“; das Vorschaubild einer Vorlage kommt über den Upload der Mediathek.
+- **Farben aus der Akzentfarbe** (`Core\Blueprint\Palette`): `--color` bzw. Schritt „Erscheinungsbild“ leiten alle abhängigen Farben des Kits ab
+  (kräftiger Akzent, Schrift auf Akzent, zweite Farbe, dunkle Abschnitte und Kopf, Flächen, Linien – hell und dunkel), je Token mit
+  Kontrastprüfung; vier Paletten mit Live-Vorschau. Nur in der neuen Website.
+- **Texte der Quelle:** Region (Langname, Abkürzung wie „NRW“, Landesschlüssel) wird Platzhalter; Wortteile und Zahlen zur Region werden je
+  Stelle zur Aufgabe „Text an Ihre Organisation anpassen“; das Impressum der Quelle wird eine Vorlage mit Platzhaltern. `site:blueprint --check`
+  zeigt den Plan; der Bericht nennt Bilder, die Platzhalter werden, und wie sie mitgehen (Lizenz und Urheber).
+- **Erweiterungen und Gebiet** im zweiten Schritt (`blueprint:apply-ext`); Filter `blueprint.source`, Aufgaben aus `blueprint.apply/region`.
+  Werte aus `site:create` gelten in der Schnelleinrichtung als Vorbelegung (Erscheinungsbild, Gebiet, Netzwerk erledigt).
 - *EN:* Website templates (blueprints): export a site's structure with anonymised demo content (`site:blueprint`), create new sites from a
   template (`site:create --blueprint`) with a guided quick setup, roll out new template versions as structure-only proposals, and copy whole
   sites without secrets or personal data (`site:copy`); network administration → Website templates.

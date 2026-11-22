@@ -37,6 +37,7 @@ return function (Router $r): void {
     // Erststart: Kit und Startinhalte wählen (Core\Onboarding)
     // Schnelleinrichtung einer Website aus einer Vorlage (Core\Blueprint\QuickConfig)
     $r->get('/admin/schnelleinrichtung', [Admin\QuickConfigController::class, 'index']);
+    $r->get('/admin/schnelleinrichtung/paletten', [Admin\QuickConfigController::class, 'palettes']);
     $r->post('/admin/schnelleinrichtung/{step}', [Admin\QuickConfigController::class, 'save']);
     $r->get('/admin/willkommen', [Admin\WelcomeController::class, 'index']);
     $r->post('/admin/willkommen', [Admin\WelcomeController::class, 'save']);

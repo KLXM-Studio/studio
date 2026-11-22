@@ -41,12 +41,25 @@ final class QuickConfigController extends AdminController
             $org[$f] = str_contains($v, '{{') ? '' : $v;
         }
         $design = \Core\Design::enabled() ? \Core\Design::values() : [];
+        // Farbe der Auswahl: zuletzt gewählte Ausgangsfarbe (nicht der angepasste Akzent), sonst der Akzent der Vorlage
+        $pick = \Core\Design::color((string) ($values['look.color'] ?? '')) ?? \Core\Design::color((string) ($design['accent'] ?? '')) ?? '#0F766E';
+        $hasAccent = isset(\Core\Design::tokens()['accent']);
         return $this->view('quickconfig/index', ['me' => $user, 'bp' => $bp, 'steps' => $steps, 'state' => $state, 'step' => $step, 'org' => $org,
-            'values' => $values, 'accent' => (string) ($design['accent'] ?? ''), 'hasAccent' => isset(\Core\Design::tokens()['accent']),
+            'values' => $values, 'accent' => (string) ($design['accent'] ?? ''), 'hasAccent' => $hasAccent, 'pickColor' => $pick,
+            'palettes' => $hasAccent && $step === 'look' ? \Core\Blueprint\Palette::options($pick) : [],
             'logo' => (int) app()->settings->get('logo', 0), 'region' => $set('org.region'), 'refs' => \Core\Blueprint\Network::refs(),
             'roles' => \Core\Invites::roleOptions(\Core\Permissions::role((string) ($user['role'] ?? ''))), 'demo' => Demo::counts(),
             'mail' => \Core\Mail\Accounts::standard(), 'netMail' => \Core\Mail\Accounts::network() !== null, 'checklist' => QuickConfig::checklist(),
             'proposal' => Diff::proposal(), 'placeholders' => (array) ($bp['placeholders'] ?? []), 'css' => ['css/blueprint.css']]);
+    }
+
+    /** Paletten zu einer Farbe (Live-Vorschau im Schritt Erscheinungsbild, resources/js/_quickconfig.js) – nur berechnen, nichts speichern */
+    public function palettes(Request $r): Response
+    {
+        $this->auth($r, 'system.manage');
+        $c = \Core\Design::color($r->str('color'));
+        if ($c === null || !isset(\Core\Design::tokens()['accent'])) return Response::json(['ok' => false], 422);
+        return Response::json(['ok' => true, 'palettes' => \Core\Blueprint\Palette::options($c)])->header('Cache-Control', 'no-store');
     }
 
     public function save(Request $r, string $step): Response
