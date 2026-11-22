@@ -103,6 +103,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   images”, shareable across the network). New field type `hotspots` with a marker editor (click, drag, keyboard), versioned
   data format v1 and the integration point `Extension::hotspotEditor()` for external editors.
 
+### Kit fluid/native: lange Adressen im Fließtext brechen um
+- Links, fette und kursive Stellen und Code im Fließtext (`p`, `li`, `td`, Zitat, Bildunterschrift …) brechen bei Bedarf überall um
+  (`overflow-wrap: anywhere`). Lange Adressen verbreitern die Seite auf dem Telefon nicht mehr; Texte ohne Überlauf bleiben unverändert.
+- *EN:* Long URLs and words in running text wrap instead of widening the page on phones (fluid, native).
+
 ### Links: reine Anker bleiben auf der Seite
 - Ein Link-Feld mit `#anker` springt auf der aktuellen Seite, auch wenn der Anker keine Sprungmarke eines Blocks ist (Überschrift,
   Inhaltsverzeichnis, ID im Rich-Text). Nur wenn die Seite den Anker nicht führt, die Startseite aber schon (Menü-Anker wie `#kontakt`),
