@@ -5,6 +5,7 @@ namespace Core\Search;
 
 use Core\Data\Calendar;
 use Core\Data\Entries;
+use Core\Data\EntryBlocks;
 use Core\Data\Exposure;
 use Core\Data\Shared;
 use Core\Data\Tables;
@@ -21,8 +22,10 @@ use Core\Pages;
  *   Dokumente   PDFs der Mediathek (Titel, Alt-Text, Dateiname) – nur wenn eingeschaltet
  *
  * Dokument: id, type (page|entry|file), table, badge, title, headings (hoch), keywords (Synonyme), text (normal), extra (niedrig),
- *           summary, image (Medien-ID), facets (JSON), url, date, date_label, origin
- * Einträge folgen den Such-Einstellungen der Tabelle (Core\Search\TableSearch).
+ *           summary, image (Medien-ID), facets (JSON), url, date, date_label, origin,
+ *           anchors (JSON [{id, label}] – Abschnitte mit Sprungmarke; Search::query hängt #id an, wenn eine Überschrift passt)
+ * Einträge folgen den Such-Einstellungen der Tabelle (Core\Search\TableSearch). Felder „Inhaltsblöcke“ (blocks) liefern ihren
+ * Text über dieselbe Extraktion wie Seiten (blocksText); Datenlisten darin werden nicht rekursiv indexiert (SKIP_BLOCKS).
  */
 final class Documents
 {
@@ -77,7 +80,7 @@ final class Documents
     {
         // *Betonung*-Sternchen nie in Titel, Treffertext oder Auszug (strip_emphasis; Adresse/Bild bleiben unverändert)
         return array_map(fn($v) => strip_emphasis(\Core\EditorNotes::strip((string) $v)), $d + ['type' => 'page', 'table' => '', 'badge' => '', 'title' => '', 'headings' => '', 'keywords' => '',
-            'text' => '', 'extra' => '', 'summary' => '', 'image' => '', 'facets' => '', 'url' => '', 'date' => '', 'date_label' => '', 'origin' => '']);
+            'text' => '', 'extra' => '', 'summary' => '', 'image' => '', 'facets' => '', 'url' => '', 'date' => '', 'date_label' => '', 'origin' => '', 'anchors' => '']);
     }
 
     // ------------------------------------------------------------------ Seiten
@@ -90,11 +93,15 @@ final class Documents
             $rb = Pages::readBlocks($p);   // Erweiterungen (z. B. gemeinsame Bausteine) aufgelöst
             foreach (Media::idsInBlocks($rb) as $mid) self::$used[$mid] = true;
             [$head, $text] = self::blocksText($rb, $p);
+            // Sprungmarken der Abschnitte (Tune „Anker“) – dieselbe Liste wie die Linkauswahl (Pages::anchors)
+            $anchors = [];
+            foreach (Pages::anchors($p) as $aid => $label) $anchors[] = ['id' => (string) $aid, 'label' => Text::plain((string) $label)];
             yield self::doc([
                 'id' => 'p-' . $p['id'], 'type' => 'page', 'badge' => lt('Seite'),
                 'title' => $p['title'], 'headings' => implode(' · ', array_unique($head)),
                 'text' => trim(trim((string) $p['meta_description']) . ' ' . implode(' ', $text)),
                 'url' => Pages::url($p), 'image' => $p['og_image'] ? (string) (int) $p['og_image'] : '',
+                'anchors' => self::anchorsJson($anchors),
             ]);
         }
     }
@@ -155,6 +162,14 @@ final class Documents
                 }
                 continue;
             }
+            if ($type === \Core\Hotspots::TYPE) {
+                // Interaktives Bild: Titel und Text der Markierungen (Reihenfolge der Liste unter dem Bild)
+                foreach (\Core\Hotspots::normalize($v)['items'] as $h) {
+                    $x = trim(trim((string) ($h['title'] ?? '')) . ' ' . Text::plain((string) ($h['text'] ?? '')));
+                    if ($x !== '' && !str_contains($x, '{{')) $text[] = $x;
+                }
+                continue;
+            }
             if ($type === 'file' && is_numeric($v)) {
                 // Video/Audio im Block: veröffentlichtes Transkript mitsuchen (Core\MediaTracks)
                 if (($tr = self::transcript((int) $v)) !== '') $text[] = $tr;
@@ -186,6 +201,7 @@ final class Documents
 
     private static function entries(string $lang): \Generator
     {
+        $detail = [];   // Detailseiten-Vorlage je Tabelle (Kontext für zentrale Blöcke und Sprungmarken; false = keine)
         foreach (self::tables() as $t) {
             $cfg = TableSearch::config($t);
             try {
@@ -208,9 +224,20 @@ final class Documents
                 if (!$url) continue;
                 foreach (Media::idsInEntry($t, $e) as $mid) self::$used[$mid] = true;
                 $bucket = ['high' => [], 'normal' => [], 'low' => []];
+                $anchors = [];
                 foreach ($t['fields'] as $f) {
                     $w = $cfg['fields'][$f['name']] ?? 'off';
                     if ($w === 'off' || $f['name'] === $cfg['title']) continue;
+                    if (($f['type'] ?? '') === EntryBlocks::TYPE) {
+                        // Inhaltsblöcke: wie Seiten – Überschriften hoch, Text mit dem Gewicht des Feldes, Sprungmarken der Abschnitte
+                        $items = EntryBlocks::items($e[$f['name']] ?? null);
+                        $page = $detail[$t['handle']] ??= self::detailPage($t);
+                        [$h, $tx] = self::blocksText($items, $page ?: null);
+                        foreach ($h as $x) $bucket['high'][] = $x;
+                        if ($tx) $bucket[$w][] = implode(' ', $tx);
+                        if ($h) array_push($anchors, ...self::entryAnchors($t, $e, $items, $page ?: null));
+                        continue;
+                    }
                     $v = self::fieldText($t, $e, $f);
                     if ($v !== '') $bucket[$w][] = $v;
                 }
@@ -223,12 +250,13 @@ final class Documents
                 yield self::doc([
                     'id' => 'e-' . $t['handle'] . '-' . $e['id'], 'type' => 'entry', 'table' => $t['handle'], 'badge' => $badge,
                     'title' => $title !== '' ? $title : Entries::title($t, $e),
-                    'headings' => implode(' · ', $bucket['high']), 'text' => implode(' ', $bucket['normal']), 'extra' => implode(' ', $bucket['low']),
+                    'headings' => implode(' · ', array_unique($bucket['high'])), 'text' => implode(' ', $bucket['normal']), 'extra' => implode(' ', $bucket['low']),
                     'summary' => $cfg['summary'] !== '' ? Text::plain(Entries::html($t, $e, $cfg['summary'])) : '',
                     'image' => $cfg['image'] !== '' && !empty($e[$cfg['image']]) ? (string) (int) $e[$cfg['image']] : '',
                     'facets' => $facets ? json_encode($facets, JSON_UNESCAPED_UNICODE) : '',
                     'url' => $url, 'date' => $date, 'date_label' => $label,
                     'origin' => $shared && Shared::isForeign($t, $e) ? Entries::html($t, $e, '_origin') : '',
+                    'anchors' => self::anchorsJson($anchors),
                 ]);
             }
         }
@@ -256,6 +284,85 @@ final class Documents
         $v = in_array($f['type'], ['relation', 'relations', 'richtext'], true) ? Text::plain(Entries::html($t, $e, $n, ['link' => false])) : Entries::text($t, $e, $n);
         if ($f['type'] === 'file' && is_numeric($e[$n] ?? null)) $v .= ' ' . self::transcript((int) $e[$n]);
         return trim((string) preg_replace('~\s+~u', ' ', $v));
+    }
+
+    /** Detailseiten-Vorlage einer Tabelle (false = keine) */
+    private static function detailPage(array $t): array|false
+    {
+        $id = (int) ($t['settings']['detail_page_id'] ?? 0);
+        return $id ? (Pages::find($id) ?: false) : false;
+    }
+
+    /**
+     * Sprungmarken der Inhaltsblöcke eines Eintrags – so, wie die Detailseite sie vergibt: Blöcke mit den IDs der Einbindung
+     * (EntryBlocks::forContext: e{eintrag}-{block}) im Kontext des Eintrags ausgeben; Wissensbereich: IDs der Abschnitte wie
+     * „In diesem Kapitel“ (Knowledge::sections, h2), sonst vorhandene IDs von Überschriften (z. B. Inhaltsverzeichnis eines Kits).
+     * Datenlisten und andere dynamische Blöcke (SKIP_BLOCKS) werden dabei nicht ausgegeben.
+     * @return list<array{id: string, label: string}>
+     */
+    private static function entryAnchors(array $t, array $e, array $items, ?array $page): array
+    {
+        $items = array_values(array_filter($items, fn($b) => !in_array((string) ($b['type'] ?? ''), self::SKIP_BLOCKS, true)
+            && empty($b['tunes']['section']['noSearch'])));
+        if (!$items || !$page) return [];
+        $blocks = array_map(fn($b) => ['id' => 'e' . $e['id'] . '-' . ($b['id'] ?? '')] + $b, $items);
+        $app = app();
+        $prev = [$app->currentPage, $app->editing];
+        $app->currentPage = $page;
+        $app->editing = false;
+        try {
+            $html = EntryBlocks::render($blocks, $t, $e);
+        } catch (\Throwable $ex) {
+            error_log('[search] anchors ' . $t['handle'] . '-' . $e['id'] . ': ' . $ex->getMessage());
+            return [];
+        } finally {
+            [$app->currentPage, $app->editing] = $prev;
+        }
+        $out = [];
+        if (\Core\Data\Knowledge::is($t)) {
+            [$html, $secs] = \Core\Data\Knowledge::sections($html);
+            foreach ($secs as $sec) $out[$sec['id']] = ['id' => $sec['id'], 'label' => $sec['label']];
+        }
+        if (preg_match_all('~<h([1-6])\b([^>]*\sid="([^"]+)"[^>]*)>(.*?)</h\1>~is', $html, $m, PREG_SET_ORDER)) {
+            foreach ($m as $x) {
+                $aid = html_entity_decode($x[3], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $label = Text::plain($x[4]);
+                if ($label !== '' && !isset($out[$aid])) $out[$aid] = ['id' => $aid, 'label' => $label];
+            }
+        }
+        return array_values($out);
+    }
+
+    /** Sprungmarken als JSON (höchstens 80, Beschriftung gekürzt) – leer ohne */
+    private static function anchorsJson(array $anchors): string
+    {
+        $list = [];
+        foreach ($anchors as $a) {
+            $aid = (string) ($a['id'] ?? '');
+            $label = mb_substr(trim((string) ($a['label'] ?? '')), 0, 160);
+            if ($aid === '' || $label === '' || !preg_match('~^[A-Za-z][A-Za-z0-9_\-:.]*$~', $aid)) continue;
+            $list[$aid] ??= ['id' => $aid, 'label' => $label];
+            if (count($list) >= 80) break;
+        }
+        return $list ? (string) json_encode(array_values($list), JSON_UNESCAPED_UNICODE) : '';
+    }
+
+    /**
+     * Passende Sprungmarke für einen Treffer: erste Überschrift, in der alle Suchwörter (gefaltet, als Wortanfang) vorkommen.
+     * @param list<string> $words Text::words() der Anfrage
+     * @return ?array{id: string, label: string}
+     */
+    public static function anchorFor(string $json, array $words): ?array
+    {
+        if ($json === '' || !$words) return null;
+        foreach ((array) json_decode($json, true) as $a) {
+            if (!is_array($a) || !isset($a['id'], $a['label'])) continue;
+            $hay = ' ' . preg_replace('~[^\p{L}\p{N}]+~u', ' ', Text::fold((string) $a['label']));
+            $all = true;
+            foreach ($words as $w) if (!str_contains($hay, ' ' . $w)) { $all = false; break; }
+            if ($all) return ['id' => (string) $a['id'], 'label' => (string) $a['label']];
+        }
+        return null;
     }
 
     /** Veröffentlichtes Transkript eines Videos/Audios in der Sprache des Index (ohne Rückfall auf andere Sprachen) */

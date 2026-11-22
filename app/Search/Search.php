@@ -30,6 +30,12 @@ final class Search
     /** Maximal berücksichtigte Treffer je Liste (Stichwort, semantisch) */
     public const MAX_HITS = 60;
     private const RRF_K = 60;
+    /**
+     * Aufbau der Dokumente (Documents). Erhöhen, wenn neue Inhalte in den Index kommen – der nächste Abgleich (Cron search:index alle
+     * 15 Minuten bzw. nach der nächsten Änderung) baut dann einmal vollständig neu auf; Health meldet den alten Stand bis dahin.
+     *   2  Inhaltsblöcke (blocks) in Einträgen, Sprungmarken (anchors), Reiter „Wissen“
+     */
+    public const FORMAT = 2;
 
     private static ?Database $db = null;
     private static ?string $dbSite = null;
@@ -165,7 +171,8 @@ final class Search
         $db->pdo->exec("CREATE TABLE IF NOT EXISTS docs (id TEXT NOT NULL, lang TEXT NOT NULL, hash TEXT NOT NULL DEFAULT '', type TEXT, tbl TEXT,
             badge TEXT, title TEXT, headings TEXT, url TEXT, date TEXT, date_label TEXT, origin TEXT, excerpt TEXT,
             vhash TEXT NULL, vmodel TEXT NULL, updated INT, PRIMARY KEY (id, lang))");
-        $db->ensureColumns('docs', ['summary' => 'TEXT NULL', 'image' => 'TEXT NULL', 'facets' => 'TEXT NULL']);   // Anzeige & Filter (TableSearch)
+        $db->ensureColumns('docs', ['summary' => 'TEXT NULL', 'image' => 'TEXT NULL', 'facets' => 'TEXT NULL',   // Anzeige & Filter (TableSearch)
+            'anchors' => 'TEXT NULL']);   // Sprungmarken der Abschnitte (Documents::anchorFor)
         $db->pdo->exec('CREATE TABLE IF NOT EXISTS state (k TEXT PRIMARY KEY, v TEXT)');
         // Vektoren der Suchanfragen: nur Hash der Anfrage (kein Klartext), für wiederholte Suchen ohne erneuten Anbieter-Aufruf
         $db->pdo->exec('CREATE TABLE IF NOT EXISTS qcache (h TEXT PRIMARY KEY, vec BLOB NOT NULL, t INT NOT NULL)');
@@ -222,12 +229,18 @@ final class Search
         return is_file(self::dir() . '/dirty');
     }
 
+    /** Index mit älterem Aufbau (FORMAT) – der nächste Abgleich baut vollständig neu auf (nach der Antwort bzw. per Cron, nie während einer Suche) */
+    public static function outdated(): bool
+    {
+        return (int) (self::state('format') ?? 0) < self::FORMAT;
+    }
+
     /** Nach der Antwort: Abgleich (Stichwort + fehlende Vektoren) – Besucher und Redaktion warten nicht */
     public static function afterResponse(): void
     {
         try {
             if (!self::enabled()) return;
-            $dirty = self::isDirty();
+            $dirty = self::isDirty() || self::outdated();
             $vec = !$dirty && self::semanticActive() && self::pendingVectors() > 0 && !Ai::paused();
             if (!$dirty && !$vec) return;
             if (function_exists('fastcgi_finish_request')) @fastcgi_finish_request();
@@ -307,7 +320,10 @@ final class Search
         if ($q === '' || !self::enabled()) return $out;
 
         // Vorgemerkte Änderungen (oder neuer Tag: „nur künftige Termine“, Datumsangaben): Stichwort-Index sofort abgleichen, Vektoren nach der Antwort
-        if (self::isDirty() || self::state('synced_day') !== date('Y-m-d')) {
+        // Älterer Aufbau (FORMAT): vollständiger Neuaufbau erst nach der Antwort – die Suche nutzt bis dahin den bisherigen Index
+        if (self::outdated()) {
+            if (!self::$shutdown) { self::$shutdown = true; register_shutdown_function([self::class, 'afterResponse']); }
+        } elseif (self::isDirty() || self::state('synced_day') !== date('Y-m-d')) {
             try {
                 self::process(vectors: false, budget: 8.0);
             } catch (\Throwable $e) {
@@ -389,14 +405,24 @@ final class Search
             $k = $kwHits[$id] ?? null;
             $v = $vecHits[$id] ?? null;
             // Auszug: Zusammenfassungsfeld der Tabelle (Treffer markiert), sonst Fundstelle im Text
-            $snippet = ($d['summary'] ?? '') !== '' ? Text::excerpt((string) $d['summary'], $words)
-                // Loupe-Ausschnitt nur, wenn der Treffer im Text liegt (sonst liefert Loupe den ungekürzten Text) und er kurz ist
-                : ($k && str_contains((string) $k['text'], '<mark') && mb_strlen(strip_tags((string) $k['text'])) <= 400 ? $k['text']
+            // Fundstelle im Text (Loupe markiert sie): kurz unverändert, lang als Auszug um den ersten Treffer (z. B. tief im Kapiteltext)
+            $hit = '';
+            if ($k && str_contains((string) $k['text'], '<mark')) {
+                $plain = strip_tags((string) $k['text']);
+                $hit = mb_strlen($plain) <= 400 ? (string) $k['text'] : Text::excerpt(html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8'), $words);
+            }
+            $sum = ($d['summary'] ?? '') !== '' ? Text::excerpt((string) $d['summary'], $words) : '';
+            // Zusammenfassung, wenn sie selbst passt oder der Text keine Fundstelle hat – sonst die Fundstelle
+            $snippet = $sum !== '' && (str_contains($sum, '<mark') || $hit === '') ? $sum
+                : ($hit !== '' ? $hit
                 : ($v ? Text::excerpt($v['text'], $words) : (($k['text'] ?? '') ?: Text::excerpt((string) $d['excerpt'], $words))));
+            // Überschrift eines Abschnitts passt (Inhaltsblöcke, Wissen, Anker einer Seite): direkt dorthin springen
+            $sec = Documents::anchorFor((string) ($d['anchors'] ?? ''), $words);
+            $href = (string) $d['url'] . ($sec && !str_contains((string) $d['url'], '#') ? '#' . rawurlencode($sec['id']) : '');
             $out['items'][] = [
                 'id' => $id, 'type' => (string) $d['type'], 'table' => (string) $d['tbl'], 'badge' => (string) $d['badge'],
                 'title' => $k ? $k['title'] : Text::mark((string) $d['title'], $words), 'title_plain' => (string) $d['title'],
-                'snippet' => $snippet, 'url' => $landing ? $landing->mapHref((string) $d['url']) : (string) $d['url'], 'date' => (string) $d['date'], 'date_label' => (string) $d['date_label'],
+                'snippet' => $snippet, 'url' => $landing ? $landing->mapHref($href) : $href, 'section' => $sec['label'] ?? '', 'date' => (string) $d['date'], 'date_label' => (string) $d['date_label'],
                 'origin' => (string) $d['origin'], 'image' => (int) ($d['image'] ?? 0) ?: null,
                 'match' => $k && $v ? 'both' : ($k ? 'keyword' : 'semantic'),
             ];
@@ -510,7 +536,13 @@ final class Search
             $ok = false;
             $n = 0;
         }
-        return ['Suchindex beschreibbar (' . $n . ' Dokumente)' => $ok];
+        $out = ['Suchindex beschreibbar (' . $n . ' Dokumente)' => $ok];
+        // Nach einem Update mit neuem Aufbau: Neuaufbau steht aus (läuft mit dem nächsten Abgleich; sofort: search:index --all)
+        try {
+            if ($ok && $n > 0 && self::outdated()) $out['Suchindex auf aktuellem Stand (Neuaufbau ausstehend: php bin/console search:index --all)'] = false;
+        } catch (\Throwable) {
+        }
+        return $out;
     }
 
     /** Index löschen (z. B. nach Wiederherstellen einer Sicherung) – wird beim nächsten Abgleich neu aufgebaut */

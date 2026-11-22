@@ -29,6 +29,18 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   „Zuletzt geprüft“, Inhaltsverzeichnis) – beim Anlegen wählbar, später umschaltbar; `data:template knowledge --style=…`.
 - **Kapitelnummer steuerbar:** im Einstieg automatisch (Dachzeile bzw. Plakette), als Plakette oder keine, Text der Dachzeile mit
   `{nummer}`; im Kopf „Datensatz-Felder“ große Nummer an/aus. Selbsttest `detailtemplates:selftest`.
+### Website-Suche: Inhaltsblöcke in Einträgen, Reiter „Wissen“, Sprung zum Abschnitt (`Core\Search\Documents`)
+- **Inhaltsblöcke (`blocks`) im Index:** Wissens-Kapitel, „weitere Inhalte“ von Nachrichten, Workshops usw. werden über ihren Text gefunden –
+  mit derselben Extraktion wie Seiten (`Documents::blocksText`: Rich-Text, Text + Bild, Reiter, Scrolly, FAQ, Zitat, Merkmale, Karten, Schritte,
+  neu auch Titel/Text der Markierungen interaktiver Bilder). Überschriften zählen hoch, der Text normal (Standard an, je Tabelle unter
+  „Suche“ einstellbar). „Nie öffentlich“ gilt; Datenlisten in Einträgen werden nicht rekursiv indexiert. Gilt auch für Vektoren, Besucher-Chat
+  und KI-Antwort.
+- **Reiter „Wissen“** für Wissenstabellen statt „Kapitel“ (eigene Beschriftung je Tabelle bleibt möglich).
+- **Sprung zum Abschnitt:** passt eine Zwischenüberschrift, führt der Treffer auf `#anker` – dieselben IDs wie „In diesem Kapitel“ bzw. das
+  Inhaltsverzeichnis des Kits, bei Seiten die Abschnitts-Anker; Hinweis „Abschnitt „…““ im Treffer. Lange Texte zeigen den Auszug um die Fundstelle.
+- **Nach dem Update Neuaufbau:** Index-Aufbau `Search::FORMAT` 2 – der nächste Abgleich (Cron `search:index` bzw. nach der nächsten Änderung)
+  baut einmal vollständig neu auf, Health meldet bis dahin „Suchindex auf aktuellem Stand“ als offen. Sofort: `php bin/console search:index --all`.
+  Selbsttest `search:selftest` (Wissenstabelle mit Inhaltsblöcken, Überschrift, Anker = ID der Detailseite, privates Feld, Reiter).
 
 ### Detailseiten mit Kopf wie Seiten: Einstieg mit Quelle „Felder des Eintrags“ (`Core\Blocks\EntryHero`)
 - **Einstieg (Hero) in Detailseiten-Vorlagen:** neue Option „Quelle: Eigene Inhalte | Felder des Eintrags“ am Hero jedes Kits (mit Titel

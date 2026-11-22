@@ -39,6 +39,8 @@ final class Indexer
         $db = Search::db();
         $stats = ['added' => 0, 'updated' => 0, 'removed' => 0, 'docs' => 0, 'vectors' => 0, 'chunks' => 0, 'vector_error' => null, 'pending' => 0];
         $langs = array_keys(Lang::all());
+        // Neuer Aufbau der Dokumente (Search::FORMAT, z. B. Inhaltsblöcke in Einträgen): einmal vollständig neu aufbauen
+        $outdated = Search::outdated();
         // Sprachen, die es nicht mehr gibt
         foreach ($db->fetchAll('SELECT DISTINCT lang FROM docs') as $r) {
             if (!in_array($r['lang'], $langs, true)) {
@@ -49,7 +51,7 @@ final class Indexer
         }
         foreach ($langs as $lang) {
             $idx = Search::keyword($lang);
-            if ($full || $idx->needsRebuild() || ($idx->count() === 0 && (int) $db->fetchValue('SELECT COUNT(*) FROM docs WHERE lang = ?', [$lang]) > 0)) {
+            if ($full || $outdated || $idx->needsRebuild() || ($idx->count() === 0 && (int) $db->fetchValue('SELECT COUNT(*) FROM docs WHERE lang = ?', [$lang]) > 0)) {
                 $idx->clear();
                 $db->query("UPDATE docs SET hash = '' WHERE lang = ?", [$lang]);
                 $this->log("  $lang: Stichwort-Index wird neu aufgebaut");
@@ -61,15 +63,16 @@ final class Indexer
             $idx->upsert(array_values($changed));
             $idx->delete($removed);
             $db->transaction(function (\Core\Database $db) use ($changed, $removed, $lang, $have, &$stats) {
-                $st = $db->pdo->prepare('INSERT INTO docs (id, lang, hash, type, tbl, badge, title, headings, url, date, date_label, origin, excerpt, summary, image, facets, updated)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                $st = $db->pdo->prepare('INSERT INTO docs (id, lang, hash, type, tbl, badge, title, headings, url, date, date_label, origin, excerpt, summary, image, facets, anchors, updated)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id, lang) DO UPDATE SET hash = excluded.hash, type = excluded.type, tbl = excluded.tbl, badge = excluded.badge,
                     title = excluded.title, headings = excluded.headings, url = excluded.url, date = excluded.date, date_label = excluded.date_label,
-                    origin = excluded.origin, excerpt = excluded.excerpt, summary = excluded.summary, image = excluded.image, facets = excluded.facets, updated = excluded.updated');
+                    origin = excluded.origin, excerpt = excluded.excerpt, summary = excluded.summary, image = excluded.image, facets = excluded.facets,
+                    anchors = excluded.anchors, updated = excluded.updated');
                 foreach ($changed as $d) {
                     $st->execute([$d['id'], $lang, $d['hash'], $d['type'], $d['table'], $d['badge'], $d['title'], mb_substr($d['headings'], 0, 500),
                         $d['url'], $d['date'], $d['date_label'], $d['origin'], mb_substr(trim($d['text'] . ' ' . $d['extra']), 0, 600),
-                        mb_substr($d['summary'], 0, 600), $d['image'], $d['facets'], time()]);
+                        mb_substr($d['summary'], 0, 600), $d['image'], $d['facets'], $d['anchors'] ?? '', time()]);
                     isset($have[$d['id']]) ? $stats['updated']++ : $stats['added']++;
                 }
                 foreach (array_chunk($removed, 400) as $chunk) {
@@ -84,7 +87,8 @@ final class Indexer
         }
         Search::state('synced_at', date('c'));
         Search::state('synced_day', date('Y-m-d'));
-        if ($full) Search::state('full_at', date('c'));
+        if ($full || $outdated) Search::state('full_at', date('c'));
+        if ($outdated) Search::state('format', (string) Search::FORMAT);
         Search::state('error', null);
 
         if ($vectors) {
