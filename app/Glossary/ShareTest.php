@@ -84,6 +84,7 @@ final class ShareTest
             $eq('B: Quick-Glossar findet fremden Begriff mit Herkunft', $rb['quickOrigin'] ?? null, true);
             $eq('B: Doppelprüfung über das geteilte Glossar (Variante von A)', $rb['quickDupe'] ?? null, true);
             $eq('B: fremder Begriff nicht änderbar', $rb['editForeign'] ?? null, false);
+            $eq('B: Schreibweise zu fremdem Begriff abgelehnt („gehört Website X“)', $rb['variantForeign'] ?? null, ['foreign', true]);
             $eq('B: Ausblenden je Website', $rb['hideWorks'] ?? null, true);
             $eq('B: neuer Begriff gehört B', $rb['newOrigin'] ?? null, $b);
             $eq('B: Linkauswahl zeigt fremden Begriff', $rb['links'] ?? null, true);
@@ -220,6 +221,9 @@ final class ShareTest
                 $res['quickOrigin'] = ($s['items'][0]['foreign'] ?? false) && ($s['items'][0]['origin'] ?? '') !== '';
                 $q = QuickTool::create(['term' => 'sender policy framework', 'short' => 'x', 'lang' => $lang]);
                 $res['quickDupe'] = !$q['ok'] && (int) ($q['exists']['id'] ?? 0) === (int) $state['idsA']['SPF'];
+                // Als Schreibweise: fremder Begriff nur bei der Website, der er gehört (Hinweis mit deren Namen)
+                $fv = QuickTool::addVariant(['id' => (int) $state['idsA']['SPF'], 'text' => 'SPF-Eintrag', 'lang' => $lang]);
+                $res['variantForeign'] = [$fv['code'] ?? null, ($fv['origin'] ?? '') !== '' && str_contains((string) ($fv['error'] ?? ''), (string) $fv['origin'])];
                 try {
                     [, $err] = Entries::save($t, (int) $state['idsA']['SPF'], ['begriff' => 'SPF', 'kurz' => 'geändert', 'status' => 'published']);
                     $res['editForeign'] = !$err;

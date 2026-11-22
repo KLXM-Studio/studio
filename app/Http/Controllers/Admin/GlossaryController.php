@@ -196,8 +196,11 @@ final class GlossaryController extends AdminController
     public function apiSearch(Request $r): Response
     {
         $this->apiGate($r);
-        $res = QuickTool::search($r->str('q'), QuickTool::lang($r->str('lang')), (int) ($r->query['limit'] ?? QuickTool::LIMIT));
-        return self::secure(Response::json(['ok' => true] + $res));
+        $lang = QuickTool::lang($r->str('lang'));
+        $res = QuickTool::search($r->str('q'), $lang, (int) ($r->query['limit'] ?? QuickTool::LIMIT));
+        // Doppelprüfung: steht der Text schon als Begriff oder Schreibweise im Glossar? (über alle Begriffe, nicht nur die Treffer)
+        $exact = trim($r->str('q')) !== '' ? QuickTool::exact($r->str('q'), $lang) : null;
+        return self::secure(Response::json(['ok' => true] + $res + ['exact' => $exact]));
     }
 
     /** POST /admin/api/glossar/begriff {term, short, long, variants, publish, lang} */
@@ -206,6 +209,16 @@ final class GlossaryController extends AdminController
         $this->apiGate($r);
         $res = QuickTool::create($r->post);
         return self::secure(Response::json($res, $res['ok'] ? 200 : (isset($res['exists']) ? 409 : 422)));
+    }
+
+    /** POST /admin/api/glossar/schreibweise {id, text, lang, view, match} – Text als weitere Schreibweise eines vorhandenen Begriffs */
+    public function apiVariant(Request $r): Response
+    {
+        $this->apiGate($r);
+        $res = QuickTool::addVariant($r->post);
+        $status = (int) ($res['status'] ?? ($res['ok'] ? 200 : 422));
+        unset($res['status']);
+        return self::secure(Response::json($res, $status));
     }
 
     /** POST /admin/api/glossar/seite {html, lang, path, self} */

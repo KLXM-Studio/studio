@@ -400,7 +400,7 @@ final class ExtensionsSelfTest
         if ($qg) {
             self::eq('Quick-Glossar: Kürzel ⌥G, Platz main', [$qg['shortcut']['label'] ?? null, $qg['placement']], ['⌥G', 'main']);
             self::eq('Quick-Glossar: ohne data.publish kein Veröffentlichen', $qg['data']['publish'] ?? null, false);
-            self::eq('Quick-Glossar: Endpunkte', array_keys($qg['endpoints']), ['search', 'create', 'page']);
+            self::eq('Quick-Glossar: Endpunkte', array_keys($qg['endpoints']), ['search', 'create', 'page', 'variant']);
             $qv = array_values(array_filter(FrontendTools::forBar(['editing' => false] + $bar), fn($t) => $t['id'] === 'glossary'))[0] ?? null;
             self::eq('Quick-Glossar: auch beim Ansehen, mit schwebendem Knopf', [$qv['when'] ?? null, ($qv['chip'] ?? '') !== ''], ['view', true]);
             self::eq('Quick-Glossar: Ansehen ohne Seitenrecht kein Wechsel-Link', $qv['data']['editUrl'] ?? null, '');
