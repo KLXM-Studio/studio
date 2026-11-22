@@ -13,7 +13,7 @@
       <code>network</code> (Netzwerk-Bezüge: key, handle, label, kind, owner, mode join, plan, local = <code>shared.{key}</code>, site_fields),
       <code>quick_config</code> {steps, placeholders}, <code>params</code>, <code>counts</code>, <code>changelog</code>, <code>files</code> (SHA-256 je Datei)</td></tr>
     <tr><td><code>structure/settings.json</code></td><td>Grundeinstellungen nach Whitelist <code>Export::SYS_SETTINGS</code>, Felder des Kits (ohne Typ secret/password, ohne geo/social;
-      Angaben der Organisation <code>Export::ORG_SETTINGS</code> als Platzhalter), <code>design.{kit}</code></td></tr>
+      Angaben der Organisation <code>Export::ORG_SETTINGS</code> als Platzhalter), <code>design.{kit}</code>, Regeln der Detailseiten-Vorlagen <code>data.detail_templates.{tabelle}</code></td></tr>
     <tr><td><code>structure/pages.json</code></td><td>Zeilen von <code>pages</code> mit ihren IDs (Seiten und Vorlagen), Inhalte als JSON – <code>page:ID</code>, Detailseiten
       (<code>detail_page_id</code>) und Rechtstexte bleiben dadurch gültig</td></tr>
     <tr><td><code>structure/tables.json</code></td><td>eigene Datentabellen (id, handle, name, singular, icon, description, sort, fields, settings) – ohne Einträge;

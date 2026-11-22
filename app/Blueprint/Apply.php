@@ -231,6 +231,7 @@ final class Apply
     {
         if (in_array($k, Export::SYS_SETTINGS, true)) return true;
         if (str_starts_with($k, 'design.') && preg_match('~^design\.[a-z0-9_-]+$~', $k)) return true;
+        if (preg_match('~^data\.detail_templates\.[a-z][a-z0-9_]{0,62}$~', $k)) return true;
         if (str_starts_with($k, 'sys.') || str_starts_with($k, 'ext.') || str_starts_with($k, 'shared.')) return false;
         $f = self::kitField($k);
         return $f !== null && !in_array($f['type'] ?? '', Export::SECRET_TYPES, true);
@@ -318,6 +319,13 @@ final class Apply
         }
         if (($c = \Core\Design::color($params['color'] ?? '')) !== null) QuickConfig::setAccent($c);
         if (!empty($params['logo']) && is_file((string) $params['logo'])) QuickConfig::setLogo((string) $params['logo']);
-        return Placeholders::applySite($values)['open'];
+        $open = Placeholders::applySite($values)['open'];
+        // Angaben der Organisation ohne Wert: leer statt „{{org.short}}“ im Kopf – das Kit zeigt dann seinen Rückfall (z. B. den Namen);
+        // die Schnelleinrichtung füllt sie später. Gemischte Texte („{{org.name}} – …“) bleiben bis dahin stehen.
+        foreach (array_keys(Export::ORG_SETTINGS) as $k) {
+            $v = $app->settings->get($k);
+            if (is_string($v) && preg_match('~^\s*\{\{[a-z0-9_.]+\}\}\s*$~', $v)) $app->settings->set($k, '');
+        }
+        return $open;
     }
 }

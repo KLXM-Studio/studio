@@ -123,6 +123,7 @@ final class SelfTest
         $eq('Einstellung: Erweiterung nie', Apply::allowedSetting('ext.newsletter.tables'), false);
         $eq('Einstellung: Symbolstil ja', Apply::allowedSetting('sys.symbol_style'), true);
         $eq('Einstellung: Design ja', Apply::allowedSetting('design.fluid'), true);
+        $eq('Einstellung: Detailseiten-Vorlagen ja', Apply::allowedSetting('data.detail_templates.termine'), true);
         $eq('Whitelist ohne Geheimnisse', array_values(array_filter(Export::SYS_SETTINGS, fn($k) => preg_match('~mail|form|ai_|token|key|pass|site_url|maintenance~', $k))), []);
         $s1 = Diff::build([['type' => 'page', 'slug' => 'a', 'path' => 'a', 'lang' => null]], [['handle' => 't', 'fields' => [['name' => 'x', 'type' => 'text']], 'settings' => []]], [], [], []);
         $s2 = Diff::build([['type' => 'page', 'slug' => 'a', 'path' => 'a', 'lang' => null], ['type' => 'page', 'slug' => 'b', 'path' => 'b', 'lang' => null]],

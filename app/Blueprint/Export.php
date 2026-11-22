@@ -100,6 +100,8 @@ final class Export
         }
         $kit = (string) app()->theme->name;
         if ($app->settings->has('design.' . $kit)) $settings['design.' . $kit] = $app->settings->get('design.' . $kit);
+        // Detailseiten-Vorlagen je Tabelle (Core\Data\DetailTemplates): Regeln auf Seiten- und Eintrags-IDs – die IDs bleiben beim Anlegen gleich
+        foreach ($app->db->fetchAll("SELECT skey FROM settings WHERE skey LIKE 'data.detail_templates.%'") as $dt) $settings[(string) $dt['skey']] = $app->settings->get((string) $dt['skey']);
         $skipped = count(array_diff(array_column($app->db->fetchAll('SELECT skey FROM settings'), 'skey'), array_keys($settings)));
         $report[] = 'Einstellungen: ' . count($settings) . ' übernommen (Whitelist), ' . $skipped . ' nicht (Geheimnisse, Konten, Zustände, Angaben der Quelle)';
 
