@@ -60,6 +60,12 @@ NOTE, CATEGORIES (Listen) und die Mehrfachfelder Telefon, E-Mail, Adresse, Web �
 App kommt die Beschriftung zurück; eine neue oder geänderte Angabe ist **nie von selbst öffentlich**, „Öffentlich“ bleibt nur bei
 unverändertem Wert. Eigene Zusatzfelder reisen wie bisher als `X-MYCMS-*`.
 
+**Funktionen und Gruppen** (Grundschema contacts ab Version 2, Core `Core\Data\Roles`): TITLE ist die Hauptfunktion (erste laufende
+Funktion). Je Liste gibt es eine Gruppen-Karte `liste-{schlüssel}.vcf` mit `X-ADDRESSBOOKSERVER-KIND:group` und den Mitgliedern als
+`X-ADDRESSBOOKSERVER-MEMBER:urn:uuid:{UID}` – Apple Kontakte zeigt die Listen so als Gruppen. Mitglieder hinzufügen oder entfernen in
+der App ordnet den Kontakt der Liste zu bzw. entfernt ihn (entfernen beendet seine Funktion in der Liste). Gruppen anlegen und löschen
+geht nur im CMS. Adressbücher ohne Funktionen bekommen keine Gruppen-Karten.
+
 Freigabe je Feld (Core `Exposure`): Felder, die bewusst nur anderen Zielen gehören (z. B. „Nur Website“: Vita), gehen nie an Apps und
 werden von Apps nie geschrieben; „Nie öffentlich“ und „Redaktion entscheidet“ sehen die Apps der Redaktion vollständig.
 
