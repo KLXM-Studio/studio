@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kit fluid: Pfeil im Menü („Link und Pfeil“) mit eigener Hover-Fläche
+- Bei „Link und Pfeil“ (nav_split = apart) bekommt der Pfeil beim Überfahren bzw. Fokus eine abgerundete Fläche aus der Schriftfarbe
+  (auf dunklem Kopf hell, auf hellem dunkel), auch beim Menüstil „Unterstrichen“; der Pfeil rückt leicht nach unten, offen bleibt die Fläche.
+- *EN:* fluid: the dropdown arrow in split menu items gets its own hover/focus area.
+
 ### Wissensbereich: Karten auch bei Suche und Filter; „Filter anwenden“ nur ohne JavaScript
 - Darstellung „Kapitel als Karten“: Mit aktiver Suche oder Filter erscheinen die Treffer weiter als Bildkarten (flach, ohne
   Unterkapitel, mit Nummern-Plakette; bei der Suche mit Trefferauszug) statt als Textliste (`Knowledge::flatCards`).

@@ -18,3 +18,12 @@
 .ns-apart .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:var(--f-a-soft);color:var(--f-ink)}
 .ns-apart.nl-underline .hnav .hnav__item--split>.hnav__link.hnav__link--top:is(:hover,:focus-visible),.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub>.hnav__link.hnav__toggle:is(:hover,:focus-visible),.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:none}
 .ns-apart .hdr--rail .hnav__item--split>.hnav__sub>.hnav__toggle::before{display:none}
+/* Pfeil als eigene Schaltfläche sichtbar machen (auch bei „Unterstrichen“, dort hat der Link seine Linie): Fläche aus der Schriftfarbe –
+   auf dunklem Kopf hell, auf hellem dunkel –, Pfeil rückt beim Überfahren leicht nach unten; offen bleibt die Fläche stehen */
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle{cursor:pointer;transition:background-color .15s}
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle .hnav__chev{transition:translate .2s cubic-bezier(.2,.7,.2,1),scale .2s cubic-bezier(.2,.7,.2,1)}
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__link.hnav__toggle:is(:hover,:focus-visible),
+.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub>.hnav__link.hnav__toggle:is(:hover,:focus-visible){background:color-mix(in srgb,currentColor 14%,transparent)}
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle:is(:hover,:focus-visible) .hnav__chev{translate:0 .12em}
+.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:color-mix(in srgb,currentColor 18%,transparent)}
+@media (prefers-reduced-motion:reduce){.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle .hnav__chev{transition:none}}
