@@ -10,6 +10,12 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kit fluid: aktive Einträge im Aufklappmenü des farbigen Kopfs mit ausreichendem Kontrast
+- Bei Kopfbereich „Akzentfarbe“, „Zweite Markenfarbe“ bzw. „Dunkel“ markieren Strich und fette Schrift die aktuelle Seite im
+  Aufklappmenü – ohne die helle Fläche, die den Kontrast der Schrift unter 4,5:1 drücken konnte (axe). Farbwerte unverändert,
+  geschlossene Menüs sehen gleich aus; Seitenblatt, Menübaum und NativeCSS waren nicht betroffen.
+- *EN:* fluid: current dropdown entries in coloured headers no longer use a light fill (contrast ≥ 4.5:1).
+
 ### Kit fluid und NativeCSS: Übersichtslink im Aufklappmenü
 - Neue Design-Option **„Übersichtslink im Aufklappmenü“** (`nav_overview`, Standard „Aus“): erster Eintrag im Aufklappmenü der Leiste und
   oben im Untermenü des Seitenblatts mit Link auf die Seite des Menüpunkts – „{Titel} – Übersicht“ oder „Alle {Titel}“ –, darunter eine
