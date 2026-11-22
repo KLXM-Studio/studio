@@ -3,5 +3,8 @@
 @import "../../vendor/ncss/components/pricing.css" layer(components);
 @layer native {
   .nv-plans .ncss-pricing-plans { margin: 0; padding: 0; }
+  /* Paket-Karte in Seitenfarbe: auch in farbigen Abschnitten die Schrift der Seite (--f0-*, wie die Karten von fluid) */
+  .nv-plans .ncss-pricing-plan { color: var(--f0-text);
+    --f-ink: var(--f0-ink); --f-text: var(--f0-text); --f-muted: var(--f0-muted); --f-link: var(--f0-link); --f-fg: var(--f0-ink); }
   .nv-plans .ncss-pricing-name { margin: 0; color: var(--f-ink); }
 }

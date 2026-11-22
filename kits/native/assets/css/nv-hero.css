@@ -60,6 +60,8 @@
   .nv-hero--bleed .ncss-hero-content--transparent .hl { color: color-mix(in oklab, var(--f-a) 30%, white); }
   .nv-hero--bleed .ncss-hero-content--transparent .btn--secondary { border-color: rgb(255 255 255 / 75%); background: transparent; color: #fff; }
   .nv-hero--bleed .ncss-hero-content--transparent .checks__ico { color: #fff; }
+  /* Karte in Seitenfarbe: auch in farbigen Abschnitten die Schrift der Seite (--f0-*, wie die Karten von fluid) */
+  .nv-hero--bleed .ncss-hero-content--filled { --f-ink: var(--f0-ink); --f-text: var(--f0-text); --f-muted: var(--f0-muted); --f-link: var(--f0-link); --f-fg: var(--f0-ink); }
   .nv-hero--bleed .ncss-hero-content--filled .nv-hero__title { color: var(--f-ink); }
   .nv-hero--medium .ncss-hero-media::after { background: linear-gradient(to top, rgb(0 0 0 / 45%), rgb(0 0 0 / 0%) 70%); }
 }

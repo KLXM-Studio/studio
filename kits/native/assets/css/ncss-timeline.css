@@ -14,4 +14,6 @@
   .nv-tl--m-dot .ncss-timeline-marker { --ncss-timeline-marker-color: var(--nv-tl-c); }
   .nv-timeline .ncss-timeline-marker .ico { inline-size: 1rem; block-size: 1rem; }
   .nv-timeline .ncss-timeline-title { margin: 0; color: var(--f-ink); }
+  /* Datum im Nebentext des Abschnitts (NativeCSS nimmt den Wert der Seite – in farbigen Abschnitten zu schwach) */
+  .nv-timeline .ncss-timeline-date { color: var(--f-muted); }
 }
