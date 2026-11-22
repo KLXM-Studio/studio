@@ -194,7 +194,7 @@ const Panel = (() => {
     if (dl && !dl.dataset.endpoint && linksUrl) dl.dataset.endpoint = linksUrl;
     if (!host) await build(res);
     if (res.appearance) host.dataset.theme = res.appearance; else delete host.dataset.theme;
-    for (const [k, v] of Object.entries({ accent: res.accent?.accent, side: res.accent?.side })) { if (v) host.dataset[k] = v; else delete host.dataset[k]; }   // Akzentfarbe (Core\Accent)
+    for (const [k, v] of Object.entries({ accent: res.accent?.accent, side: res.accent?.side, fs: res.fs })) { if (v) host.dataset[k] = v; else delete host.dataset[k]; }   // Akzentfarbe (Core\Accent)
     head(res);
     const form = mount(res);
     host.hidden = false; place();

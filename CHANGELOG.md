@@ -10,6 +10,27 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
+- **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:
+  90 %, 100 % (Standard), 112 %, 125 %, 140 %, mit kleinem/großem „A“, Prozentanzeige und **Zurücksetzen**. Wirkt sofort ohne
+  Neuladen und wird per fetch gespeichert (`users.ui_prefs`, Schlüssel `fs`; ohne JavaScript per Formular). Tastatur wie jeder
+  Schieber (Pfeile, Pos1, Ende), Screenreader hören die Stufe in Prozent (`aria-valuetext`).
+- **Technik ohne CSS-`zoom`:** Der Build rechnet die Verwaltungs-CSS in `rem` um (`tools/adm-scale.mjs`, Listen `ADM_REM`/`ADM_SCALED`
+  in `tools/build.mjs`), die Wurzel `<html class="adm-ui" data-fs="125">` setzt die Größe; Schatten-CSS auf der Website rechnet mit
+  `calc(…px*var(--adm-s,1))`. Koordinaten für Popover, Ziehen und Zeichenflächen bleiben echte Pixel, die Website-Vorschau und die
+  Website selbst bleiben unverändert, Browser-Zoom wirkt zusätzlich. Werkzeugleiste, Block-Leisten und Seitenleisten beim
+  Bearbeiten auf der Website wachsen mit; die Werkzeugleiste schaltet per Container-Abfrage früher in die kompakte Form.
+- **Telefon:** halbe Wirkung (140 % → 120 %), Seitenbaum mit Titel in eigener Zeile. `@container`-Stufen der Verwaltung schalten bei
+  großer Schrift früher um.
+- **Kopfleiste barriereärmer:** Suche mit eigenem Namen („Verwaltung durchsuchen“), Quellen-Wahl und Konto-Knopf mit sichtbarem
+  Text im zugänglichen Namen (axe `landmark-unique`, `label-content-name-mismatch`).
+- Selbsttest `uiscale:selftest`; Handbuch → Anmelden & Konto → Schriftgröße, Entwicklerhandbuch → Verwaltung → Schriftgröße
+  (auch: Maße in Erweiterungen mit `rem` oder `--adm-s`), Build.
+- *EN:* Per-account admin text size (90–140 %) via a slider in the account menu of the top bar and under Account › Appearance;
+  applies instantly and is saved without reload. Implemented without CSS `zoom`: the build converts admin CSS to `rem`
+  (shadow-DOM CSS to `calc(px * var(--adm-s))`), so coordinates, drag & drop and the website preview stay unaffected; the website
+  toolbar scales too. Halved effect on phones. Self-test `uiscale:selftest`.
+
 ### Veröffentlichte Assets bleiben auf dem Stand des Kerns (`Core\AssetSync`)
 - **Projekt-Installation mit verknüpftem Kern** (`KLXM_ROOT`, eigenes `public/`): `extensions:publish` verknüpft Kern-Assets
   (`public/assets/css`, `js`, `icons`, `img` …) und die gebauten Assets der mitgelieferten Erweiterungen

@@ -42,6 +42,7 @@ return function (Router $r): void {
     $r->get('/admin/account', [Admin\UserController::class, 'account']);
     $r->post('/admin/account', [Admin\UserController::class, 'saveAccount']);
     $r->post('/admin/account/accent', [Admin\UserController::class, 'saveAccent']);   // Akzentfarbe (Core\Accent)
+    $r->post('/admin/account/fontsize', [Admin\UserController::class, 'saveFontSize']);   // Schriftgröße der Verwaltung (Core\UiScale)
     // Anmeldedaten (Core\EmailChange): Name, E-Mail-Adresse mit Bestätigung (Links aus den E-Mails öffentlich, Token allein genügt)
     $r->post('/admin/account/profile', [Admin\AccountController::class, 'saveProfile']);
     $r->post('/admin/account/avatar', [Admin\AccountController::class, 'saveAvatar']);   // Profilbild (Core\Avatar)

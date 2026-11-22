@@ -14,6 +14,19 @@
 /* Werkzeugleiste: Host (Inhalt im Shadow DOM, Core\Theme::toolbarHost). Hintergrund schon vor dem Laden des Schatten-Stylesheets */
 .cms-bar-host.cms-bar-host{all:initial;display:block;position:sticky;top:0;z-index:2147483300;min-height:52px;background:#1E2840;color:#fff;font:500 14px/1.3 Lato,"Segoe UI",Tahoma,Geneva,Verdana,system-ui,sans-serif}
 @media (max-width:800px){.cms-bar-host.cms-bar-host{position:relative}}
+/* Schriftgröße der Verwaltung (Core\UiScale, data-fs am Host): Container für die Breiten-Stufen der Leiste (editor.shadow.css,
+   @container cms-bar … em) – die Schrift des Hosts wächst mit, damit die Stufen in em mitwandern. Telefon: halbe Wirkung. */
+.cms-bar-host.cms-bar-host{container:cms-bar/inline-size}
+.cms-bar-host.cms-bar-host[data-fs="90"]{font-size:12.6px}
+.cms-bar-host.cms-bar-host[data-fs="112"]{font-size:15.68px}
+.cms-bar-host.cms-bar-host[data-fs="125"]{font-size:17.5px}
+.cms-bar-host.cms-bar-host[data-fs="140"]{font-size:19.6px}
+@media (max-width:600px){
+  .cms-bar-host.cms-bar-host[data-fs="90"]{font-size:13.3px}
+  .cms-bar-host.cms-bar-host[data-fs="112"]{font-size:14.84px}
+  .cms-bar-host.cms-bar-host[data-fs="125"]{font-size:15.75px}
+  .cms-bar-host.cms-bar-host[data-fs="140"]{font-size:16.8px}
+}
 
 /* Editor-Hülle */
 .is-editing main{padding-bottom:120px}

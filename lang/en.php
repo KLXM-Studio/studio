@@ -9216,4 +9216,10 @@ return [
     'Konto und Hilfe: {name}' => 'Account and help: {name}',
     'bis {time}' => 'until {time}',
     '{n} ungelesen' => '{n} unread',
+    // Schriftgröße der Verwaltung (Core\UiScale)
+    'Schriftgröße' => 'Text size',
+    'Schriftgröße der Verwaltung' => 'Admin text size',
+    'Schriftgröße gespeichert.' => 'Text size saved.',
+    'Text und Bedienelemente der Verwaltung – nur für Sie, wirkt sofort.' => 'Text and controls of the admin area – just for you, takes effect immediately.',
+    'Verwaltung durchsuchen' => 'Search the admin area',
 ];

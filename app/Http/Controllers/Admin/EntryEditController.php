@@ -127,6 +127,7 @@ final class EntryEditController extends AdminController
             'uiCss' => ['admin' => asset('css/admin.shadow.css'), 'ui' => asset('css/editor.shadow.css')],
             'appearance' => in_array(app()->auth->user()['appearance'] ?? '', ['light', 'dark'], true) ? app()->auth->user()['appearance'] : '',
             'accent' => \Core\Accent::client(),   // persönliche Akzentfarbe am Schatten-Host (data-accent, data-side)
+            'fs' => \Core\UiScale::client(),   // Schriftgröße der Verwaltung am Schatten-Host (data-fs)
             'links' => url('/admin/api/links'),
             'csrf' => \Core\Csrf::token(), 'texts' => EntryEdit::texts(),
             'conditions' => \Core\Data\Rules::client($t['fields']) ?: null,

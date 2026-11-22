@@ -98,8 +98,8 @@ export function layer() {
   host.id = 'cms-layer-host';
   host.className = 'adm-ui';
   if (appearance()) host.dataset.theme = appearance();
-  // Persönliche Akzentfarbe (Core\Accent) wie an der Werkzeugleiste
-  for (const k of ['accent', 'side']) { const v = barHost()?.dataset[k]; if (v) host.dataset[k] = v; }
+  // Persönliche Akzentfarbe (Core\Accent) und Schriftgröße (Core\UiScale) wie an der Werkzeugleiste
+  for (const k of ['accent', 'side', 'fs']) { const v = barHost()?.dataset[k]; if (v) host.dataset[k] = v; }
   // Lage per CSSOM (CSP-konform): Nullpunkt der Seite, damit absolute Kinder Dokument-Koordinaten nutzen
   host.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;z-index:2147483200;display:block';   // Z-Skala: editor.css
   const root = host.attachShadow({ mode: 'open' });
@@ -141,6 +141,9 @@ export function openDialog() {
  */
 export function shadowFor(host, html = '') {
   const root = host.attachShadow({ mode: 'open' });
+  // Schriftgröße der Verwaltung (Core\UiScale) – in der Verwaltung erbt --adm-s von <html>, auf der Website vom Host
+  const fs = barHost()?.dataset.fs;
+  if (fs && !IN_ADMIN) host.dataset.fs = fs;
   const href = uiCss().ui;
   root.innerHTML = (href ? `<link rel="stylesheet" href="${href.replace(/"/g, '&quot;')}">` : '') + html;
   return root;

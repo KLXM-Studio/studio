@@ -486,7 +486,7 @@ final class Theme
         $user = app()->auth->user();
         $theme = in_array($user['appearance'] ?? '', ['light', 'dark'], true) ? $user['appearance'] : '';
         $css = ['admin' => asset('css/admin.shadow.css'), 'ui' => asset('css/editor.shadow.css')];
-        return '<div class="cms-bar-host adm-ui"' . ($theme !== '' ? ' data-theme="' . e($theme) . '"' : '') . Accent::attrs($user)
+        return '<div class="cms-bar-host adm-ui"' . ($theme !== '' ? ' data-theme="' . e($theme) . '"' : '') . Accent::attrs($user) . UiScale::attrs($user)
             . ' data-lang="' . e(I18n::locale()) . '"' . DatetimePicker::adminAttr()   // Sprache der Verwaltung + Datumsauswahl (resources/js/admin.js)
             . ' data-cms-css="' . json_attr($css) . '" data-icons="' . e(Icons::sprite()) . '"'
             . (($icoTopics = Icons::enabledTopics()) ? ' data-icons-topics="' . e(implode(' ', $icoTopics)) . '"' : '') . '><template shadowrootmode="open">'

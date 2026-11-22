@@ -24,8 +24,8 @@ $tbName = (string) ($user['name'] ?: $user['email']);
   <a class="adm-tb__site" href="<?= e(url('/admin')) ?>"><span class="adm-sw__eyebrow"><?= e(__('Website')) ?></span><span class="adm-sw__name"><?= e(site_name()) ?></span></a>
   <?php endif; ?>
 
-  <div class="adm-tb__search" role="search" data-qb data-search-endpoint="<?= e(url('/admin/api/search')) ?>" data-fav-endpoint="<?= e(url('/admin/api/favorites')) ?>">
-    <button type="button" class="adm-tb__scope" popovertarget="adm-qb-scope" aria-haspopup="menu" aria-label="<?= e(__('Suchen in')) ?>" data-pop-btn><span data-qb-scope-label><?= e(__('Alles')) ?></span><?= icon('caret-down') ?></button>
+  <div class="adm-tb__search" role="search" aria-label="<?= e(__('Verwaltung durchsuchen')) ?>" data-qb data-search-endpoint="<?= e(url('/admin/api/search')) ?>" data-fav-endpoint="<?= e(url('/admin/api/favorites')) ?>">
+    <button type="button" class="adm-tb__scope" popovertarget="adm-qb-scope" aria-haspopup="menu" data-pop-btn><span class="adm-sr"><?= e(__('Suchen in')) ?> </span><span data-qb-scope-label><?= e(__('Alles')) ?></span><?= icon('caret-down') ?></button>
     <div class="adm-pop adm-pop--menu" id="adm-qb-scope" popover data-pop>
       <div role="menu" aria-label="<?= e(__('Suchen in')) ?>">
         <?php foreach ($tbScopes as [$sk, $sl, $si]): ?>
@@ -88,9 +88,10 @@ $tbName = (string) ($user['name'] ?: $user['email']);
         <script type="application/json" id="adm-fav-data"><?= json_encode(array_map(fn($f) => $f + ['href' => url($f['url']), 'ico' => \Core\Icons::resolve($f['icon'] ?: 'fav')], $favs), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
       </section>
     </div>
-    <button type="button" class="adm-tb__me" popovertarget="adm-tb-me" aria-haspopup="menu" data-pop-btn aria-label="<?= e(__('Konto und Hilfe: {name}', ['name' => $tbName])) ?><?= $supportN ? ' – ' . e(__('{n} ungelesen', ['n' => $supportN])) : '' ?>"><?= \Core\Avatar::html($user, 'adm-ava adm-ava--m') ?><?php if ($supportN): ?><span class="adm-tb__dot" aria-hidden="true"><?= (int) $supportN ?></span><?php endif; ?></button>
+    <button type="button" class="adm-tb__me" popovertarget="adm-tb-me" aria-haspopup="menu" data-pop-btn><span class="adm-sr"><?= e(__('Konto und Hilfe: {name}', ['name' => $tbName])) ?><?= $supportN ? ' – ' . e(__('{n} ungelesen', ['n' => $supportN])) : '' ?></span><?= \Core\Avatar::html($user, 'adm-ava adm-ava--m') ?><?php if ($supportN): ?><span class="adm-tb__dot" aria-hidden="true"><?= (int) $supportN ?></span><?php endif; ?></button>
     <div class="adm-pop adm-pop--end" id="adm-tb-me" popover data-pop>
       <div class="adm-pop__me"><?= \Core\Avatar::html($user, 'adm-ava adm-ava--m') ?><span><strong><?= e($tbName) ?></strong><small><?= e(app()->auth->role()['name'] ?? $user['role']) ?> · <?= e($user['email']) ?></small></span></div>
+      <?php $usCtx = 'pop'; include __DIR__ . '/account/_uiscale.php'; // Schriftgröße der Verwaltung (Core\UiScale) – außerhalb des Menüs (kein Menüpunkt) ?>
       <div role="menu" aria-label="<?= e(__('Konto und Hilfe')) ?>">
         <a role="menuitem" class="adm-pop__item" href="<?= e(url('/admin/account')) ?>"<?= $section === 'account' ? ' aria-current="page"' : '' ?>><?= icon('user-circle') ?><span><?= e(__('Konto')) ?></span></a>
         <a role="menuitem" class="adm-pop__item" href="<?= e(url('/admin/account#darstellung')) ?>"><?= icon('paint-brush') ?><span><?= e(__('Erscheinungsbild')) ?></span></a>

@@ -5,6 +5,7 @@
 @import "./_review.css";   /* Prüf-Ebene „Eingereicht“ (Core\Review, resources/js/_review.js) */
 @import "./_drafts.css";   /* Entwürfe (Core\Review\Drafts, app/Admin/views/drafts/*) */
 @import "./_accent.css";   /* Persönliche Akzentfarbe (Core\Accent, Konto → Darstellung) */
+@import "./_uiscale.css";   /* Schriftgröße der Verwaltung (Core\UiScale): Wurzel-Schriftgröße + --adm-s */
 @import "./_fonts.css";   /* Grundeinstellungen → Schriften (Core\Fonts) + Hinweis im Style-Editor */
 @import "./_sources.css";
 @import "./image-fx.css";   /* Bild anpassen: Filter-Klassen wie auf der Website (Core\ImageFx) */

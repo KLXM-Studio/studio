@@ -1,0 +1,47 @@
+/* Schriftgröße der Verwaltung (Core\UiScale, Konto → Darstellung, Konto-Menü der Kopfleiste; resources/js/_uiscale.js).
+   Die Verwaltungs-CSS rechnet nach dem Bauen in rem (tools/adm-scale.mjs) – die Wurzel bestimmt die Größe. Angaben hier in pt
+   (12pt = 16px), damit der Umrechner sie nicht anfasst. --adm-s: Faktor für Schatten-Wurzeln (calc(…px*var(--adm-s,1)))
+   und eigene Maße von Erweiterungen. Browser-Zoom bleibt davon unberührt. */
+html.adm-ui{font-size:12pt}
+html.adm-ui[data-fs="90"]{font-size:10.8pt;--adm-s:.9}
+html.adm-ui[data-fs="112"]{font-size:13.44pt;--adm-s:1.12}
+html.adm-ui[data-fs="125"]{font-size:15pt;--adm-s:1.25}
+html.adm-ui[data-fs="140"]{font-size:16.8pt;--adm-s:1.4}
+/* Telefon: Bildschirmbreite bleibt in px (Bedingungen von @media rechnet der Umrechner nicht um) – dort wirkt die Stufe halb,
+   damit Tabellen und Seitenbaum nicht zu schmal werden (140 % → 120 %); die Schriftgröße des Telefons wirkt zusätzlich. */
+@media (max-width:600px){
+  html.adm-ui[data-fs="90"]{font-size:11.4pt;--adm-s:.95}
+  html.adm-ui[data-fs="112"]{font-size:12.72pt;--adm-s:1.06}
+  html.adm-ui[data-fs="125"]{font-size:13.5pt;--adm-s:1.125}
+  html.adm-ui[data-fs="140"]{font-size:14.4pt;--adm-s:1.2}
+}
+
+/* Schieber (app/Admin/views/account/_uiscale.php): kleines und großes „A“, Prozentanzeige, Zurücksetzen */
+.us-ctl{display:grid;gap:6px;margin:0}
+.us-ctl__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.us-ctl__label{font-weight:600;font-size:14px}
+.us-ctl__val{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;min-width:4.5ch;text-align:right}
+.us-ctl__row{display:flex;align-items:center;gap:10px}
+.us-ctl__row input[type=range]{flex:1 1 auto;min-width:0;height:28px;margin:0;accent-color:var(--adm-a);cursor:pointer}
+.us-ctl__a{flex:none;font-weight:700;line-height:1;color:var(--adm-t2)}
+.us-ctl__a--s{font-size:12px}
+.us-ctl__a--l{font-size:20px}
+.us-ctl__foot{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.us-ctl__help{flex:1 1 220px;margin:0;color:var(--adm-t3);font-size:13px}
+.us-ctl__help [role=status]:not(:empty){color:var(--adm-ok);font-weight:600}
+/* Konto-Menü der Kopfleiste: Farben des Popovers, kompakt unter Name und Rolle */
+.us-ctl--pop{padding:6px 10px 10px;margin-bottom:4px;border-bottom:1px solid var(--pop-line);color:var(--pop-ink)}
+.us-ctl--pop .us-ctl__label,.us-ctl--pop .us-ctl__val{font-size:13px}
+.us-ctl--pop .us-ctl__row input[type=range]{accent-color:var(--pop-acc)}
+.us-ctl--pop .us-ctl__a{color:var(--pop-t2)}
+.us-ctl--pop .us-ctl__help{color:var(--pop-t2);font-size:12px;flex-basis:160px}
+.us-ctl--pop .adm-btn--small{min-height:28px;padding:0 10px;font-size:12px}
+
+/* Seitenbaum am Telefon mit großer Schrift: Titel bekommt eine eigene Zeile, Status, Hinweise, Menü und „Mehr“ darunter –
+   sonst bliebe neben den festen Spalten kein Platz für den Titel. Spaltenköpfe entfallen (nur Beschriftung, aria-hidden). */
+@media (max-width:600px){
+  html.adm-ui:is([data-fs="112"],[data-fs="125"],[data-fs="140"]) .pt-head{display:none}
+  html.adm-ui:is([data-fs="112"],[data-fs="125"],[data-fs="140"]) .pt-row{grid-template-columns:84px 52px 44px minmax(0,1fr) 40px;row-gap:0;padding-top:4px;padding-bottom:4px}
+  html.adm-ui:is([data-fs="112"],[data-fs="125"],[data-fs="140"]) .pt-row > .pt-name{grid-column:1/-1}
+  html.adm-ui:is([data-fs="112"],[data-fs="125"],[data-fs="140"]) .pt-row > .pt-more{grid-column:-2}
+}

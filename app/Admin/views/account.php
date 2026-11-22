@@ -147,6 +147,10 @@ ob_start();
   </select></div>
   </div>
 </form>
+<section class="set-group acc-group" id="schriftgroesse" aria-labelledby="us-h">
+  <h2 class="set-group__title" id="us-h"><?= e(__('Schriftgröße')) ?></h2>
+  <div class="set-list acc-box"><?php $usCtx = 'page'; include __DIR__ . '/account/_uiscale.php'; // Schriftgröße der Verwaltung (Core\UiScale) ?></div>
+</section>
 <?php include __DIR__ . '/account/_accent.php'; // Akzentfarbe der Verwaltung (Core\Accent) ?>
 <?php $sw('mitteilungen'); ?>
 <?php include __DIR__ . '/account/_push.php'; // Push-Benachrichtigungen (Core\Push): Gerät, Ereignisse, Geräteliste ?>

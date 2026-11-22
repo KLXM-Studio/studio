@@ -200,6 +200,18 @@ final class UserController extends AdminController
         return $this->back('/admin/account#akzent', 'success', __('Akzentfarbe gespeichert.'));
     }
 
+    /** Schriftgröße der Verwaltung (Core\UiScale): Schieber speichert per fetch (JSON), ohne JavaScript per Formular */
+    public function saveFontSize(Request $r): Response
+    {
+        $user = $this->auth($r);
+        // fs = Prozent (fetch), step = Stufe des Schiebers (Formular ohne JavaScript)
+        $step = $r->input('step');
+        $fs = is_numeric($step) ? (\Core\UiScale::STEPS[(int) $step] ?? \Core\UiScale::DEFAULT) : $r->input('fs', \Core\UiScale::DEFAULT);
+        $fs = \Core\UiScale::save((int) $user['id'], $fs);
+        if ($r->wantsJson()) return Response::json(['ok' => true, 'fs' => $fs]);
+        return $this->back('/admin/account#schriftgroesse', 'success', __('Schriftgröße gespeichert.'));
+    }
+
     /**
      * Passwort ändern – oder als erstes Passwort festlegen (Konten nur mit Passkey, z. B. aus einer Einladung: statt des
      * aktuellen Passworts eine frische Anmeldung bzw. Passkey-Bestätigung). Andere Sitzungen enden, Hinweis-E-Mail an das Konto.
