@@ -3,6 +3,8 @@
    Tokens: --hl-lead-min (22rem) Mindestbreite je Spalte im großen Teaser, --hl-lead-title (clamp …) Titelgröße des großen Teasers. */
 :where(.dl--highlights) .hl-badge{min-height:0;padding:.2em .75em;font-size:.75rem;letter-spacing:.04em;text-transform:none}
 :where(.hl--teaser) .hl-lead{grid-column:1/-1}
+/* Ein Rest (1 + 1): Teaser und Karte 50/50 nebeneinander (Raster mit 2 Spalten, gesetzt über dl-cols-2) */
+:where(.hl--teaser.hl--rest-1) .hl-lead{grid-column:auto}
 :where(.hl--teaser) .hl-lead:has(.dl-img){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--hl-lead-min,22rem)),1fr));align-items:stretch}
 :where(.hl--teaser) .hl-lead .dl-img{aspect-ratio:4/3;min-height:100%}
 :where(.hl--teaser) .hl-lead .dl-body{align-content:center;padding:clamp(20px,3vw,40px)}

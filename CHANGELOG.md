@@ -121,6 +121,8 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Hintergrundvideo in Folien:** nur ein Knopf in der Leiste – „Bewegung anhalten/fortsetzen“ hält Auto-Wechsel und das Video der
   aktuellen Folie zusammen an; der Video-Schalter der Folie entfällt im Slider (`Hero::$inSlider`). Videos laufen nur auf der aktiven,
   sichtbaren Folie, nie von selbst bei „Bewegung reduzieren“ oder „Daten sparen“.
+- **Highlights mit vollen Reihen:** beim großen Teaser nehmen die kleinen Karten die Spaltenzahl aus der Restmenge (höchstens die
+  eingestellte, Klasse `hl--rest-N`), bei einem Rest stehen Teaser und Karte 50/50; Hinweis im Editor, wenn eine Lücke bleibt.
 - **Highlights ohne Doppelte:** Option „Einträge auslassen, die schon im Slider dieser Seite stehen“ (neu an, Bestand per
   `DefaultChanges` aus) mit Hinweis im Editor bei Überschneidungen (`HeroSlider::pageEntries`).
 - **Technik:** ohne JavaScript steht die erste Folie still; eigenes kleines Skript `js/hero-slider.js` und `css/hero-slider.css` nur auf
