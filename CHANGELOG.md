@@ -26,6 +26,23 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   gone from the source); stale copies no longer survive core updates. `health` reports outdated or missing asset copies
   (technical). Self-test `assets:selftest`.
 
+### Scrollytelling: lange Abschnitte, Bild je Abschnitt optional
+- **Text als Rich-Text** (Kits fluid, foto, native): Zwischenüberschriften, Fettdruck, Kursiv, Links und Listen je Abschnitt,
+  keine Bilder im Text. Das Feld war bisher mehrzeiliger Text: Gespeicherter Klartext wird unverändert wie bisher ausgegeben
+  (escapt, Zeilenumbrüche, `*Betonung*`) und erscheint im Editor als Absätze (Feldoption `'from_text' => true`,
+  Helfer `is_plain_text()`, `text_to_rich()`); bestehende Blöcke sehen gleich aus (Pixelvergleich 0). Grenze 6.000 Zeichen,
+  Hinweis „gut lesbar bis etwa 2.500 Zeichen“ – zu lange Texte meldet das Speichern, nichts wird gekürzt.
+  Zwischenüberschriften liegen immer unter dem Abschnittstitel (`rich_below()`: unter h3 → h4).
+- **Bild je Abschnitt optional:** Ohne eigenes Bild bleibt das vorige stehen (auch beim Zurückscrollen); fehlt das erste Bild,
+  bleibt die Bildspalte bis zum ersten vorhandenen leer. Auf dem Telefon steht ein Bild nur beim Abschnitt, der es bringt.
+- **Bildformat „Automatisch (je Bild, ohne Zuschnitt)“** (Standard für neue Blöcke): jedes Bild in seinem Seitenverhältnis,
+  Hochformate wie Buchcover werden nicht beschnitten; gespeicherte Formate bleiben. Alt-Text der Bühne aus der Mediathek
+  (bisher leer und versteckt), Fokus in einem Abschnitt (Tastatur, Links) aktiviert ihn; lange Abschnitte werden nicht
+  abgeblendet; „Bewegung reduzieren“ ohne Überblenden. Selbsttest `blocks:selftest`.
+- *EN:* Scrollytelling sections take rich text (subheadings, bold, links, lists); existing plain-text values render exactly as
+  before and open as paragraphs in the editor (field option `from_text`). Images per section are optional – a section without
+  one keeps the previous image. New image format “Automatic” shows every image uncropped; stage images carry the media alt text.
+
 ### Blöcke: Text + Bild „Bild ausrichten“, Galerie mit einem Bild
 - **Text + Bild – Bild ausrichten** (neues Feld `valign` in den Kits fluid, native, foto, galerie, modern, nature, essenz):
   „Mitlaufen“ (Standard für neue Blöcke; bestehende Blöcke ohne Wert bleiben „Mitte“ und damit unverändert), „Oben“, „Mitte“. „Mitlaufen“ stellt das Bild bei langem Text oben neben den

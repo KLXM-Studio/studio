@@ -51,10 +51,66 @@ final class SelfTest
             $t->listFilter();
             $t->defaultChanges();
             $t->templateComments();
+            $t->scrolly();
         } finally {
             app()->editing = $prev;
         }
         return ['ok' => $t->ok, 'fails' => $t->fails];
+    }
+
+    /**
+     * Scrollytelling (Kits fluid, foto): Text als Rich-Text mit altem Klartext (früher textarea, 'from_text'), Bild je Abschnitt
+     * optional (das vorige bleibt stehen, vor dem ersten Bild keins), Bildformat „auto“ ohne Zuschnitt, Überschriften-Ebenen.
+     * Bilder als Datensätze im Zwischenspeicher von Core\Media (keine Dateien nötig).
+     */
+    private function scrolly(): void
+    {
+        $this->assert(is_plain_text("a < b\nc & d") && is_plain_text('a &amp; b') && is_plain_text('x<y und <3') && !is_plain_text('<p>x</p>') && !is_plain_text('x<br>y') && !is_plain_text('<a href="/x">x</a>'), 'Klartext erkannt (is_plain_text)');
+        $this->assert(text_to_rich("Zeile 1 & <x>\nZeile 2\n\nAbsatz *b*") === '<p>Zeile 1 &amp; &lt;x&gt;<br>Zeile 2</p><p>Absatz *b*</p>'
+            && text_to_rich('a &amp; b') === '<p>a &amp; b</p>' && text_to_rich('  ') === '', 'Klartext → Absätze für den Editor (text_to_rich)');
+        $rte = \Core\Fields::renderField(['name' => 't', 'label' => 'T', 'type' => 'richtext', 'from_text' => true], "Alt\nZeile", [], 'f');
+        $this->assert(str_contains($rte, '>' . '<p>Alt<br>Zeile</p></div>') && str_contains($rte, "value=\"Alt\nZeile\"")
+            && !str_contains(\Core\Fields::renderField(['name' => 't', 'label' => 'T', 'type' => 'richtext'], "Alt\nZeile", [], 'f'), '<p>Alt'),
+            "Feld 'from_text': alter Klartext erscheint im Editor als Absatz, gespeichert bleibt er unverändert bis zur Bearbeitung (nur mit Option)");
+        $cache = new \ReflectionProperty(\Core\Media::class, 'cache');
+        $prev = $cache->getValue();
+        $img = fn(int $id, int $w, int $h) => ['id' => $id, 'mime' => 'image/jpeg', 'file' => "x$id.jpg", 'width' => $w, 'height' => $h, 'variants_json' => null,
+            'alt' => "Alt $id", 'decorative' => 0, 'focus_x' => 50, 'focus_y' => 50];
+        $cache->setValue(null, [990001 => $img(990001, 1200, 1500), 990002 => $img(990002, 1800, 1200)] + $prev);
+        $long = '<p>Text mit <b>fett</b> und <a href="https://example.org/verlag">Verlag</a>.</p><h3>Zwischen</h3><ul><li>Punkt</li></ul>';
+        try {
+            foreach (['fluid', 'foto'] as $kit) {
+                if (!is_dir(ROOT . '/kits/' . $kit)) continue;
+                $th = new \Core\Theme($kit);
+                $f = array_column($th->block('scrolly')['fields'], null, 'name');
+                $sub = array_column($f['items']['fields'], null, 'name');
+                $this->assert(($sub['text']['type'] ?? '') === 'richtext' && !empty($sub['text']['from_text']) && ($sub['text']['max'] ?? 0) >= 6000
+                    && isset($f['ratio']['options']['auto']) && isset($f['ratio']['options']['4:5']), "Scrolly ($kit): Rich-Text-Feld mit Altwerten, hohe Grenze, Format „auto“");
+                $html = $th->renderBlock($th->makeBlock(['id' => 'sc1', 'type' => 'scrolly', 'data' => ['title' => 'Kapitel', 'ratio' => 'auto', 'items' => [
+                    ['title' => 'Ohne Bild', 'text' => '<p>Vorweg</p>', 'image' => null],
+                    ['title' => 'Hoch', 'text' => $long, 'image' => 990001],
+                    ['title' => 'Weiter', 'text' => "Alter Text & mehr\nzweite Zeile *wichtig*", 'image' => null],
+                    ['title' => 'Quer', 'text' => '', 'image' => 990002],
+                ]]]));
+                preg_match_all('~data-step="(\d)" data-img="(\d?)"~', $html, $m);
+                $this->assert(implode(',', $m[2]) === ',1,1,3', "Scrolly ($kit): Abschnitt ohne Bild übernimmt das vorige, vor dem ersten keins");
+                $this->assert(substr_count($html, 'data-step-img=') === 2 && substr_count($html, 'class="scrolly__inline') === 2 && !str_contains($html, 'class="scrolly__img is-active"'),
+                    "Scrolly ($kit): Bühne nur mit vorhandenen Bildern, Bild am Text nur beim Abschnitt, der es bringt");
+                $this->assert(str_contains($html, 'alt="Alt 990001"') && str_contains($html, 'scrolly__frame--auto') && !str_contains($html, 'r-4-5'),
+                    "Scrolly ($kit): Format „auto“ ohne Zuschnitt, Alt-Text aus der Mediathek");
+                $this->assert(str_contains($html, '<div class="scrolly__text scrolly__rich prose">') && str_contains($html, '<b>fett</b>')
+                    && str_contains($html, 'href="https://example.org/verlag"') && str_contains($html, '<h4>Zwischen</h4>') && !str_contains($html, '<img src="x'),
+                    "Scrolly ($kit): Rich-Text mit Fettdruck, Link, Zwischenüberschrift unter dem Abschnittstitel (h3 → h4)");
+                $this->assert(str_contains($html, "<p class=\"scrolly__text\">Alter Text &amp; mehr<br>\nzweite Zeile <em class=\"hl\">wichtig</em></p>") && str_contains($html, 'scrolly--long'),
+                    "Scrolly ($kit): alter Klartext wie bisher (escapt, Zeilenumbruch, *Betonung*)");
+                $old = $th->renderBlock($th->makeBlock(['id' => 'sc2', 'type' => 'scrolly', 'data' => ['ratio' => '4:5', 'items' => [
+                    ['title' => 'A', 'text' => "Nur\nKlartext", 'image' => 990002], ['title' => 'B', 'text' => 'Mehr', 'image' => 990001]]]]));
+                $this->assert(str_contains($old, 'scrolly__img is-active" data-step-img="0"') && str_contains($old, 'r-4-5') && !str_contains($old, 'scrolly--long')
+                    && str_contains($old, '<h2 class="scrolly__title">A</h2>') && str_contains($old, "<p class=\"scrolly__text\">Nur<br>\nKlartext</p>"), "Scrolly ($kit): Altbestand (Format 4:5, nur Klartext) unverändert");
+            }
+        } finally {
+            $cache->setValue(null, $prev);
+        }
     }
 
     /** Erster Block (Bild mit Vorrang), Seitenüberschrift (Core\Headings), Leistungs-Hinweise von kit:check */
