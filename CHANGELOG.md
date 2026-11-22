@@ -21,7 +21,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   mehr wählt.
 - **Vorschläge je Tabelle:** beim ersten Öffnen legt Studio passende Vorlagen an – „Neueste als Karten“, „Kompakte Liste“, „Liste
   mit Bild“ (mit Bildfeld), „Verzeichnis A–Z mit Filter“ (mit Auswahlfeld), „Tabelle sortierbar“, „Team mit Foto“ (Bild + Funktion),
-  „Termine der Reihe nach“ (Kalender-Tabellen). Gelöschte Vorschläge kommen nicht wieder.
+  „Termine der Reihe nach“ (Kalender-Tabellen), „Kapitel mit Suche“ (Wissensbereiche: Darstellung „Kapitel“, Suchfeld,
+  Trefferauszug, Glossar). Gelöschte Vorschläge kommen nicht wieder. Die neuen Optionen der Datenliste (Kapitel, Mehrfachauswahl
+  je Filter, Trefferauszug, Glossarbegriffe) gehören zur Vorlage; „Ohne Lightbox öffnen“ am Button-Link bleibt beim Block.
 - **„Als Vorlage speichern …“** in der Seitenleiste macht aus der aktuellen Einstellung eines Blocks eine Vorlage der Tabelle und
   wählt sie aus – so werden bestehende Listen zu Vorlagen.
 - **Standard je Tabelle:** neue Datenlisten (Editor, „Einsetzen“) beginnen nach der Wahl der Tabelle mit der Standard-Vorlage;
