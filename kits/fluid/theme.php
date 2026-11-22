@@ -180,6 +180,7 @@ return [
         // Varianten mit eigenem Markup bzw. größeren Regelsätzen: eine Datei je Wert (nur, wenn es sie gibt)
         'css/opt-header-{value}.css' => 'header',
         'css/opt-footer-{value}.css' => 'footer',   // „Zentriert“ steht schon oben (Reihenfolge wie früher)
+        'css/opt-footer_density.css' => ['footer_density' => ['compact']],   // nach den Fuß-Varianten: „Kompakt“ gilt für alle
         'css/opt-pagebg-{value}.css' => 'pagebg',
         'css/opt-buttons-{value}.css' => 'buttons',
         'css/opt-eyebrow-{value}.css' => 'eyebrow',
@@ -240,6 +241,11 @@ return [
                 ['name' => 'footer_statement', 'label' => 'Satz im Fußbereich „Großer Schriftzug“ (optional)', 'type' => 'text', 'max' => 90,
                     'help' => 'Z. B. „Lassen Sie uns reden.“ – leer = Kurzname. Der Button im Kopfbereich erscheint daneben.'],
                 ['name' => 'footer_text', 'label' => 'Text im Fußbereich', 'type' => 'textarea', 'rows' => 2, 'max' => 240],
+                // Handlungsaufruf im Fußbereich (fluid_footer_cta): eigener Button, getrennt vom Kopf; leer = kein Button
+                ['name' => 'footer_cta_label', 'label' => 'Handlungsaufruf im Fußbereich – Beschriftung (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half',
+                    'help' => 'Z. B. „Mitglied werden“ oder „Termin anfragen“. Erscheint als Button im Fußbereich – bei „Großer Schriftzug“ statt des Buttons aus dem Kopfbereich. Leer = kein Button.'],
+                ['name' => 'footer_cta_link', 'label' => 'Handlungsaufruf im Fußbereich – Link', 'type' => 'link', 'width' => 'half', 'translate' => true,
+                    'help' => 'Seite der Website auswählen oder eine Adresse eingeben.'],
                 // Kopfbereich-Aktionen (Core\HeaderActions): Handlungsaufruf, zweite Aktion, Status-Bezeichnung, Anmelden
                 ...\Core\HeaderActions::settingsFields(),
             ]],

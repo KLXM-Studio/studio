@@ -2,6 +2,7 @@
 .ftr{padding-block:var(--f-s-3xl) var(--f-s-l);background:var(--f-surface);border-top:1px solid var(--f-line);color:var(--f-muted);font-size:var(--f-t-1);--f-card:var(--f-bg)}
 .ftr a:not(.btn){color:var(--f-text);text-decoration:none}
 .ftr a:not(.btn):hover,.ftr a[aria-current]{color:var(--f-ink);text-decoration:underline}
+@supports (animation-timeline:view()) and (timeline-scope:none){.ftr{view-timeline:--f-ftr block;view-timeline-inset:0}}   /* Kopf weicht dem Fuß (_header.css); Inset 0 statt scroll-padding */
 .ftr__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:var(--f-s-2xl) var(--f-s-xl)}
 .ftr__about{display:flex;flex-direction:column;gap:var(--f-s-s);grid-column:span 2;max-width:26rem}
 @container (max-width:26rem){.ftr__about{grid-column:auto}}
@@ -21,3 +22,7 @@
 .ftr__row .ftr__tagline{flex:1 1 min(16rem,100%)}
 .ftr__inline .cluster{--gap:.25rem 1.25rem}
 .ftr--simple .ftr__text{margin-top:var(--f-s-l);max-width:60rem}
+/* Handlungsaufruf im Fußbereich (Website → Darstellung): Spalten → unter Claim/Text, Schlicht/Zentriert → in der Zeile.
+   btn--primary nimmt auf farbigem Fuß (fbg-*, „Großer Schriftzug“) die Schriftfarbe der Fläche (--f-btn-bg der Zone). */
+.ftr__action{margin-top:var(--f-s-xs)}
+.ftr__row .ftr__btn{flex:none}

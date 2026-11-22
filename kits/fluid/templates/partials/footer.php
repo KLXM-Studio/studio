@@ -4,6 +4,10 @@
  *   columns    Name + Claim, Kontakt, Seiten, Social Media als Raster (auto-fit – so viele Spalten, wie Platz ist)
  *   simple     eine ruhige, umbrechende Zeile: Wortmarke, Seiten, Rechtliches, Social Media, Sprache
  *   statement  großer Schriftzug (Satz aus „Website“) mit Button, darunter die Spalten
+ * Handlungsaufruf im Fußbereich (Website → Darstellung, fluid_footer_cta): Spalten → Button unter Claim/Text, Schlicht/Zentriert →
+ * in der Zeile, Großer Schriftzug → statt des Kopf-Buttons. Leer = wie bisher.
+ * Dichte (Design → „Dichte des Fußbereichs“): „Kompakt“ gibt die Adresse einzeilig aus (Zeilen als <span> mit Leerzeichen, Trenner per CSS);
+ * Abstände, Listen als Zeilen und Unterzeile: css/opt-footer_density.css. „Normal“ = Markup wie bisher.
  */
 $address = fluid_address_lines();
 $phone = fluid_phone();
@@ -19,6 +23,12 @@ $variant = (string) design('footer');
 $cta = fluid_header_cta() ?? (trim((string) setting('header_cta_label')) !== '' && trim((string) setting('header_cta_link')) !== ''
     ? ['label' => trim((string) setting('header_cta_label')), 'link' => trim((string) setting('header_cta_link'))] : null);
 $statement = trim((string) setting('footer_statement')) ?: fluid_name(true);
+$ftrCta = fluid_footer_cta();
+$compact = design('footer_density') === 'compact';
+$ctaButton = function (array $c, string $class): string {
+    $href = fluid_link($c['link']);
+    return '<a class="btn btn--primary ' . $class . '" ' . fluid_link_attrs($c['link']) . '>' . e($c['label']) . fluid_ext_note($href) . icon('arrow-right') . '</a>';
+};
 $socialList = function () use ($social): string {
     $h = '';
     foreach ($social as $s) $h .= '<li><a href="' . e($s['url']) . '" target="_blank" rel="noopener me">' . e($s['label']) . '<span class="sr-only"> ' . e(lt('(öffnet in neuem Tab)')) . '</span></a></li>';
@@ -35,7 +45,8 @@ $pageList = function () use ($pages): string {
   <?php if ($variant === 'statement'): ?>
     <div class="ftr__statement">
       <p class="ftr__big"><?= fluid_title($statement) ?></p>
-      <?php if ($cta): ?><a class="btn btn--primary ftr__cta" <?= fluid_link_attrs($cta['link']) ?>><?= e($cta['label']) ?><?= icon('arrow-right') ?></a><?php endif; ?>
+      <?php if ($ftrCta): ?><?= $ctaButton($ftrCta, 'ftr__cta') ?>
+      <?php elseif ($cta): ?><a class="btn btn--primary ftr__cta" <?= fluid_link_attrs($cta['link']) ?>><?= e($cta['label']) ?><?= icon('arrow-right') ?></a><?php endif; ?>
     </div>
   <?php endif; ?>
   <?php if ($variant === 'simple' || $variant === 'centered'): ?>
@@ -43,6 +54,7 @@ $pageList = function () use ($pages): string {
       <?= app()->theme->partial('brand', ['href' => $home, 'class' => 'brand--footer']) ?>
       <?php if ($tagline !== ''): ?><p class="ftr__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>
       <?php if ($pages): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?= $pageList() ?></ul></nav><?php endif; ?>
+      <?php if ($ftrCta): ?><?= $ctaButton($ftrCta, 'ftr__btn') ?><?php endif; ?>
     </div>
     <?php if ($text !== ''): ?><p class="ftr__text"><?= nl2br(fluid_title($text), false) ?></p><?php endif; ?>
   <?php else: ?>
@@ -51,11 +63,13 @@ $pageList = function () use ($pages): string {
         <?= app()->theme->partial('brand', ['href' => $home, 'class' => 'brand--footer']) ?>
         <?php if ($tagline !== ''): ?><p class="ftr__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>
         <?php if ($text !== ''): ?><p class="ftr__text"><?= nl2br(fluid_title($text), false) ?></p><?php endif; ?>
+        <?php if ($ftrCta && $variant !== 'statement'): ?><p class="ftr__action"><?= $ctaButton($ftrCta, 'ftr__btn') ?></p><?php endif; ?>
       </div>
       <?php if ($address || filled($phone) || $email !== ''): ?>
       <div class="ftr__col">
         <h2 class="ftr__h"><?= e(lt('Kontakt')) ?></h2>
-        <?php if ($address): ?><address class="ftr__address"><?= implode('<br>', array_map('e', $address)) ?></address><?php endif; ?>
+        <?php if ($address && $compact): ?><address class="ftr__address ftr__address--line"><?= implode(' ', array_map(fn($l) => '<span>' . e($l) . '</span>', $address)) ?></address>
+        <?php elseif ($address): ?><address class="ftr__address"><?= implode('<br>', array_map('e', $address)) ?></address><?php endif; ?>
         <?= fluid_quick_contact('ftr__list') ?>
       </div>
       <?php endif; ?>

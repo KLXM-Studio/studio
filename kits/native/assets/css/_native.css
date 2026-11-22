@@ -103,6 +103,8 @@
   .nv-footer__grid { --min: 13rem; padding-inline: var(--f-gutter); }
   .nv-footer .ncss-footer-bottom { padding-inline: var(--f-gutter); }
   .nv-footer a { color: var(--f-text); }
+  /* Handlungsaufruf im Fußbereich: Button-Farben von fluid gegen die Linkfarbe des Fußes (auch NativeCSS .ncss-footer a) */
+  .nv-footer .nv-footer__action .btn--primary, .nv-footer .nv-footer__action .btn--primary:hover { color: var(--f-btn-ink); }
   .nv-footer__h { margin: 0 0 var(--f-s-xs); color: var(--f-ink); font: 650 var(--f-t-1)/1.3 var(--f-font-head); letter-spacing: .06em; text-transform: uppercase; }
   .nv-footer__about, .nv-footer__col { display: flex; flex-direction: column; gap: var(--f-s-s); }
   .nv-footer__about > *, .nv-footer__col > * { margin: 0; }
@@ -117,6 +119,32 @@
   .nv-footer__bottom p { margin: 0; }
   .nv-footer__legal { --gap: var(--f-s-m); }
   .nv-brand--footer .brand__mark { inline-size: 1.8rem; block-size: 1.8rem; font-size: .875rem; }
+  /* Haftende Kopfleiste am Seitenende: gleitet mit dem Anfang des Fußes weg, statt über Logo und Claim zu liegen (wie fluid,
+     _header.css f-hdr-yield). Browser ohne View-Timelines: wie bisher. */
+  @supports (animation-timeline: view()) and (timeline-scope: none) {
+    body { timeline-scope: --nv-ftr; }
+    .nv-footer { view-timeline: --nv-ftr block; view-timeline-inset: 0; }
+    .nv-topbar { animation: nv-topbar-yield linear both; animation-timeline: --nv-ftr; animation-range: exit-crossing -8rem exit-crossing 0%; }
+  }
+  @keyframes nv-topbar-yield { from { translate: none; } to { translate: 0 calc(-100% - 1rem); } }
+  /* Dichte des Fußbereichs „Kompakt“ (Design → Seite, Token footer_density wie fluid): weniger Abstand, Listen als Zeilen,
+     Adresse einzeilig (Markup .nv-footer__address--line), Copyright und Rechtliches in einer Zeile. „Normal“ = wie bisher. */
+  .fd-compact .nv-footer { padding-block: var(--f-s-xl) var(--f-s-m); container-type: inline-size; }
+  .fd-compact .nv-footer__grid { gap: var(--f-s-l); }
+  .fd-compact :is(.nv-footer__about, .nv-footer__col) { gap: var(--f-s-xs); }
+  .fd-compact .nv-footer__h { margin-block-end: 0; }
+  .fd-compact .nv-footer__list { gap: 0; }
+  .fd-compact :is(.nv-footer__list, .nv-footer__legal) a { min-block-size: 1.75rem; display: inline-flex; align-items: center; }
+  .nv-footer__address--line span { white-space: nowrap; }
+  .nv-footer__address--line span:not(:last-child)::after { content: "·" / ""; margin-inline-start: .3em; }
+  .fd-compact .nv-footer__bottom { margin-block-start: var(--f-s-l); padding-block-start: var(--f-s-s); gap: 0 var(--f-s-l); font-size: var(--f-t-2); }
+  .fd-compact .nv-footer__legal { --gap: 0 1rem; }
+  @container (max-width: 36rem) {
+    .fd-compact .nv-footer__list { flex-direction: row; flex-wrap: wrap; gap: 0 var(--f-s-m); }
+  }
+  @media (pointer: coarse) {
+    .fd-compact :is(.nv-footer__list, .nv-footer__legal) a { min-block-size: 2.75rem; }
+  }
 
   /* ------------------------------------------------------------------ Blöcke von fluid im Stil von NativeCSS */
   .feat.card, .card { border-radius: var(--ncss-radius-lg); }

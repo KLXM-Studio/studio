@@ -36,8 +36,8 @@ $darkDefaults = array_combine($colorKeys, $dark) + ['secondary' => '#9DB0D8', 'o
 
 $design = require \Core\Kit::dir('fluid') . '/design.php';
 // „Kopf & Fuß“ gehört zum Seitenrahmen von fluid – der Rahmen dieses Kits kommt aus NativeCSS. Es bleiben die Seiten-Optionen
-// (Seitenhintergrund, Abschnitte, Lesefortschritt, „Nach oben“, Seitenwechsel, Zurück-Link) als Gruppe „Seite“.
-$keep = ['pagebg', 'sections', 'progress', 'totop', 'transitions', 'back_nav'];
+// (Seitenhintergrund, Abschnitte, Lesefortschritt, „Nach oben“, Seitenwechsel, Zurück-Link, Dichte des Fußbereichs) als Gruppe „Seite“.
+$keep = ['pagebg', 'sections', 'progress', 'totop', 'transitions', 'back_nav', 'footer_density'];   // Dichte des Fußes: CSS in _native.css
 foreach ($design['groups'] as &$group) {
     if (($group['id'] ?? '') === 'navigation') {
         $group['label'] = 'Seite';

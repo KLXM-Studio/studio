@@ -229,6 +229,17 @@ function fluid_header_cta(): ?array
 }
 
 /**
+ * Handlungsaufruf des Fußbereichs [label, link] (Website → Darstellung → „Handlungsaufruf im Fußbereich“) oder null.
+ * Getrennt vom Kopf-Button; erscheint nur mit Beschriftung und Link. Link: Seite aus der Linkauswahl (page:ID) oder Adresse.
+ */
+function fluid_footer_cta(): ?array
+{
+    $label = trim((string) setting('footer_cta_label'));
+    $link = trim((string) setting('footer_cta_link'));
+    return $label !== '' && $link !== '' ? ['label' => $label, 'link' => $link] : null;
+}
+
+/**
  * Wie breit muss der Kopfbereich sein, damit das Menü in einer Zeile passt? (in rem, auf 6 rem gerundet)
  * Grundlage der Container-Query im Kopf (Klasse fit-NN): bis dahin zeigt die Leiste die Menü-Schaltfläche.
  * Die Schätzung ist bewusst großzügig; site.js korrigiert, falls das Menü trotzdem nicht passt (is-overflow).

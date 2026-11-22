@@ -60,6 +60,23 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   applies instantly and is saved without reload. Implemented without CSS `zoom`: the build converts admin CSS to `rem`
   (shadow-DOM CSS to `calc(px * var(--adm-s))`), so coordinates, drag & drop and the website preview stay unaffected; the website
   toolbar scales too. Halved effect on phones. Self-test `uiscale:selftest`.
+### Kit fluid: Handlungsaufruf und kompakte Darstellung im Fußbereich
+- **Handlungsaufruf im Fußbereich** (Website → Darstellung: Beschriftung + Link, Seite über die Linkauswahl `page:ID` oder Adresse),
+  getrennt vom Button im Kopf: „Spalten“ → Button unter Claim und Text, „Schlicht“/„Zentriert“ → in der Zeile, „Großer Schriftzug“ →
+  statt des Kopf-Buttons; auf farbigem Fuß in der Schriftfarbe der Fläche. Felder
+  `footer_cta_label`/`footer_cta_link` zählen zu den „Website-Angaben“ (`settings.info`, `Core\SiteSettings::INFO`). Leer = wie bisher.
+- **Dichte des Fußbereichs** (Design → Kopf & Fuß, Token `footer_density`, Klasse `fd-{normal,compact}`): „Kompakt“ mit weniger
+  Innenabstand, engeren Listen, auf dem Telefon Kontakt, Seiten und Social Media als umbrechende Zeilen, Adresse einzeilig mit
+  Trennern, Copyright und Rechtliches in einer Zeile – etwa halbe Höhe auf dem Telefon (Demo: 991 → 539 px); Touch-Ziele bleiben
+  ≥ 2,75 rem. CSS `opt-footer_density.css` lädt nur bei „Kompakt“. Standard „Normal“: Websites unverändert (Pixelvergleich 0).
+- **Kind-Kit native** zieht mit: Button unter dem Text, „Dichte des Fußbereichs“ unter Design → Seite (Telefon 756 → 598 px),
+  Kopfleiste weicht am Seitenende dem Fuß.
+- **Fehler behoben:** Auf dem Telefon lag der haftende Kopf beim Scrollen zum Fuß über Logo und Claim des Fußbereichs. Der Kopf
+  gleitet jetzt mit dem Anfang des Fußes nach oben weg (View-Timeline, ohne JavaScript; Browser ohne View-Timelines wie bisher).
+- *EN:* Kit fluid: a separate footer call to action (Website → Display: label + link; placed per footer variant, “website info”
+  permission), a “Footer density” design option (normal | compact – roughly half the footer height on phones, touch targets
+  ≥ 2.75 rem) and a fix for the sticky header covering the footer logo on phones (it now slides away as the footer reaches it).
+  Defaults leave existing websites unchanged.
 
 ### Veröffentlichte Assets bleiben auf dem Stand des Kerns (`Core\AssetSync`)
 - **Projekt-Installation mit verknüpftem Kern** (`KLXM_ROOT`, eigenes `public/`): `extensions:publish` verknüpft Kern-Assets

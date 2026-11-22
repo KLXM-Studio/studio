@@ -33,6 +33,16 @@
 /* Beim Scrollen leichter Schatten – Scroll-Timeline ohne JavaScript, wo unterstützt */
 @supports (animation-timeline:scroll()){.hdr-sticky .hdr:not(.hdr--floating,.hdr--rail){animation:f-hdr linear both;animation-timeline:scroll();animation-range:0 6rem}}
 @keyframes f-hdr{to{box-shadow:0 10px 30px -18px var(--f-sh2)}}
+/* Am Seitenende weicht der haftende Kopf dem Fußbereich: Ist der Fuß höher als der Bildschirm (Telefon), lag der Kopf sonst über
+   Logo und Claim des Fußes. Der Kopf gleitet mit dem Anfang des Fußes nach oben weg (View-Timeline --f-ftr des Fußes,
+   _footer.css) und kommt beim Zurückscrollen wieder. Kurzer Fuß (Desktop): erreicht den Kopf nie – keine Änderung.
+   Browser ohne View-Timelines: wie bisher. Seitenleisten (rail, sidebar) haften nicht oben. */
+@supports (animation-timeline:view()) and (timeline-scope:none){
+  body{timeline-scope:--f-ftr}
+  .hdr-sticky .hdr:not(.hdr--floating,.hdr--rail,.hdr--sidebar){animation:f-hdr linear both,f-hdr-yield linear both;animation-timeline:scroll(),--f-ftr;animation-range:0 6rem,exit-crossing -8rem exit-crossing 0%}
+  .hdr-sticky .hdr--floating{animation:f-hdr-yield linear both;animation-timeline:--f-ftr;animation-range:exit-crossing -8rem exit-crossing 0%}
+}
+@keyframes f-hdr-yield{from{translate:none}to{translate:0 calc(-100% - 1rem)}}
 
 /* Marke */
 .brand{display:inline-flex;align-items:center;gap:.7rem;min-height:2.75rem;color:var(--f-ink);text-decoration:none}
