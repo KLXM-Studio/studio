@@ -41,6 +41,25 @@
  *   site:list                                         Websites dieser Installation
  *   site:create <key> <domain,…> [kit] [--content=ask|full|empty]
  *                                                     Neue Website (eigene Datenbank, Medien, Benutzer)
+ *   site:create <key> <domain,…> --blueprint=<name|name@version|paket> [--name=… --short=… --color=#… --logo=datei --region=…]
+ *              [--params=datei.json] [--no-network] [--no-quick-config]
+ *                                                     Neue Website aus einer Website-Vorlage (Core\Blueprint): Struktur, Demoinhalte,
+ *                                                     Beitritt zu den Netzwerk-Tabellen, danach Schnelleinrichtung (Wartungsmodus bis dahin)
+ *   site:blueprint <key> --out=ordner|datei.zip [--demo=anonym|none|full] [--name=…] [--title=…] [--version=1.0.0] [--per-table=3]
+ *                                                     Website-Vorlage exportieren: Kit, Design, Einstellungen (Whitelist), Seitenbaum, Tabellen,
+ *                                                     Rollen, Hinweise, Netzwerk-Bezüge; Demo anonymisiert; prüft auf Geheimnisse/Personendaten
+ *   blueprint:list | blueprint:propose <name> | blueprint:update [--apply]
+ *                                                     Vorlagen der Installation (storage/blueprints) | neue Version als Vorschlag in diese
+ *                                                     Website legen | Vorschlag ansehen bzw. übernehmen (nur Struktur, nie Inhalte)
+ *   site:quick-config [--step=org|look|region|network|accounts|demo|mail|legal --…] [--finish]
+ *                                                     Schnelleinrichtung einer Website aus einer Vorlage (wie /admin/schnelleinrichtung)
+ *   site:demo-remove                                  Demoinhalte einer Website aus einer Vorlage entfernen
+ *   site:copy <quelle> <neu> <domain,…> [--content=full|structure|demo] [--media=copy|share|none] [--users=none|copy]
+ *              [--anonymize] [--revisions] [--environment=staging] [--quick-config]
+ *                                                     Website kopieren (Staging, neuer Verein, Archiv): neue Schlüssel, ohne Abonnenten,
+ *                                                     Anfragen, Formulareingänge, Verläufe, Statistik, Tokens; Netzwerk per Beitritt
+ *   blueprint:selftest [--sandbox]                    Selbsttest Vorlagen: Anonymisieren, Platzhalter, Paket; mit --sandbox Rundlauf
+ *                                                     Export → Anlegen → Vergleich mit Testdaten (zwei Wegwerf-Websites)
  *   site:hosts <key> [add|remove <domain>] [--landing]
  *                                                     Domains einer Website anzeigen/ändern (--landing: Domain für Landingpages)
  *   network:list                                      Netzwerk-Administration: Konten (Netzwerk-Website) und Websites
@@ -558,7 +577,22 @@ switch ($cmd) {
             printf("%-14s %-40s kit: %-12s daten: %s\n", $k, implode(', ', $s->hosts()) ?: '(alle übrigen Domains)',
                 $c['theme'] ?? '–', str_replace(ROOT . '/', '', $s->storage()));
         }
+        // Domains ohne eigene Website, die über fallback_site eine andere Website ausliefern (Core\Domains::fallbackHosts)
+        foreach (Core\Domains::fallbackHosts() as $fh) echo "  ! Domain ohne Website → Fallback: {$fh['host']} liefert „{$fh['site']}“ aus ({$fh['source']})\n";
         break;
+
+    case 'site:blueprint':
+    case 'blueprint:apply':
+    case 'blueprint:list':
+    case 'blueprint:propose':
+    case 'blueprint:update':
+    case 'site:quick-config':
+    case 'site:demo-remove':
+    case 'blueprint:selftest':
+    case 'site:copy':
+    case 'blueprint:copy-finish':
+        // Website-Vorlagen (Core\Blueprint): Export, Anlegen, Vorschläge, Schnelleinrichtung, Demoinhalte, Selbsttest
+        exit(Core\Blueprint\Console::run($cmd, $args));
 
     case 'site:create':
         $pos = array_values(array_filter($args, fn($a) => !str_starts_with($a, '--')));
@@ -569,6 +603,8 @@ switch ($cmd) {
             $content = '';
             $content = Core\Cli::opt($args, 'content') ?? $content;
             if ($content !== '' && !in_array($content, ['ask', 'full', 'empty'], true)) { fwrite(STDERR, "--content=ask|full|empty\n"); exit(1); }
+            // Aus einer Website-Vorlage (Core\Blueprint): Kit kommt aus der Vorlage, danach blueprint:apply im Kontext der neuen Website
+            if (($bpRef = Core\Cli::opt($args, 'blueprint')) !== null) exit(Core\Blueprint\Console::create($key, explode(',', $hosts), $bpRef, $args));
             $r = Core\Sites::create($key, explode(',', $hosts), $theme, $content !== '' ? ['seed' => $content] : []);
         } catch (InvalidArgumentException $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         Core\Network\Network::ensureKey();   // Installationsschlüssel für die Netzwerk-Anmeldung (config.local.php)

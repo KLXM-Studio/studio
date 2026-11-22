@@ -1,0 +1,297 @@
+<?php
+// SPDX-License-Identifier: MIT
+// KLXM Studio – Copyright (C) 2026 KLXM and contributors (see LICENSE, COPYRIGHT)
+declare(strict_types=1);
+
+namespace Core\Blueprint;
+
+use Core\Data\Kinds;
+use Core\Data\Tables;
+use Core\Sites;
+
+/**
+ * php bin/console blueprint:selftest [--sandbox] [--keep]
+ *
+ * Ohne --sandbox: Logik ohne Website-Daten – Platzhalter (Ersetzen, Füllen, HTML), Anonymisieren (E-Mail, Telefon, IBAN, Notizen,
+ * Kontakte, Organisationen, private Felder, relative Termine), Paket (Pfade, Prüfsummen, Manipulation), Whitelist der
+ * Einstellungen, Strukturvergleich, Kopie (Geheimnisse und Datenschutz-Tabellen).
+ *
+ * Mit --sandbox Rundlauf mit zwei Wegwerf-Websites (bpst-…): Quelle mit Testdaten (Kontakt mit Personendaten, Konto, SMTP-Passwort,
+ * Text mit E-Mail/Telefon/IBAN, Kalender) → Export (anonym) → keine Geheimnisse und Personendaten im Paket → neue Website aus dem
+ * Paket → gleiche Struktur, Demo-Einträge mit Platzhalter-Personen, Termine in der Zukunft, Wartungsmodus → Schnelleinrichtung →
+ * Health → Demoinhalte entfernen; dazu site:copy (full) mit neuen Geheimnissen und leeren Datenschutz-Tabellen. Am Ende werden
+ * beide Websites wieder entfernt (--keep lässt sie stehen). Nur in einer Kopie der Installation ausführen.
+ */
+final class SelfTest
+{
+    /** Erfundene Testdaten – dürfen nie im Paket landen */
+    private const SECRET = 'BpSelftest-Geheim-7731!';
+    private const PERSON = ['Hiltrud', 'Geheimrath'];
+    private const MAIL = 'hiltrud.geheimrath@verein-intern.example.net';
+    private const PHONE = '0211 7654321';
+    private const IBAN = 'DE89 3704 0044 0532 0130 00';
+
+    public static function run(bool $sandbox, bool $keep = false): int
+    {
+        $step = null;
+        foreach ($_SERVER['argv'] ?? [] as $a) if (str_starts_with((string) $a, '--step=')) $step = substr((string) $a, 7);
+        if ($step !== null) return self::step($step);
+        $r = self::logic();
+        foreach ($r['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$r['ok']} Prüfungen bestanden, " . count($r['fails']) . " fehlgeschlagen" . ($sandbox ? '' : ' (Rundlauf mit Testdaten: --sandbox in einer Kopie)') . "\n";
+        if (!$sandbox || $r['fails']) return $r['fails'] ? 1 : 0;
+        return self::sandbox($keep);
+    }
+
+    /** @return array{ok: int, fails: list<string>} */
+    public static function logic(): array
+    {
+        $ok = 0;
+        $fails = [];
+        $eq = \Core\Testing\Check::eq($ok, $fails, 'Vorlagen – ');
+
+        // Platzhalter
+        $src = ['org.name' => 'Turnverein Musterhausen 1890 e. V.', 'org.short' => 'TVM', 'org.city' => 'Musterhausen', 'org.zip' => '99999', 'org.domain' => 'tv-musterhausen.example'];
+        $t = Placeholders::tokenize('Willkommen beim Turnverein Musterhausen 1890 e. V. (TVM) in 99999 Musterhausen – www.tv-musterhausen.example', $src);
+        $eq('Platzhalter: Angaben der Quelle ersetzt', $t, 'Willkommen beim {{org.name}} ({{org.short}}) in {{org.zip}} {{org.city}} – {{org.domain}}');
+        $eq('Platzhalter: Wortgrenze (TVMX bleibt)', Placeholders::tokenize('TVMX', $src), 'TVMX');
+        $eq('Platzhalter füllen (Text)', Placeholders::fill('{{org.name}} in {{org.city}}', ['org.name' => 'A & B', 'org.city' => 'Köln']), 'A & B in Köln');
+        $eq('Platzhalter füllen (HTML escaped)', Placeholders::fill('<p>{{org.name}}</p>', ['org.name' => 'A & B <x>']), '<p>A &amp; B &lt;x&gt;</p>');
+        $eq('Platzhalter ohne Wert bleibt', Placeholders::fill('{{org.phone}}', ['org.phone' => '']), '{{org.phone}}');
+        $eq('Platzhalter finden', Placeholders::found('{{org.name}} {{x.y}} {{org.name}}'), ['org.name', 'x.y']);
+        $eq('Platzhalter in JSON bleibt gültig', json_decode(Placeholders::fillJson('{"a":"{{org.name}}"}', ['org.name' => 'Ein "Verein"']), true), ['a' => 'Ein "Verein"']);
+
+        // Anonymisieren
+        $a = new Anonymizer([], (int) strtotime('2026-01-01'));
+        $eq('Text: E-Mail', $a->text('Schreib an ' . self::MAIL . '!'), 'Schreib an ' . Anonymizer::EMAIL . '!');
+        $eq('Text: Beispiel-Adressen bleiben', $a->text('info@example.org, x@demo.test'), 'info@example.org, x@demo.test');
+        $eq('Text: Telefon', $a->text('Tel. ' . self::PHONE . ' oder +49 211 12345678'), 'Tel. +49 30 1234567 oder +49 30 1234567');
+        $eq('Text: Jahreszahl und Uhrzeit bleiben', $a->text('Seit 1890, Beginn 18:30, Raum 0815'), 'Seit 1890, Beginn 18:30, Raum 0815');
+        $eq('Text: IBAN', str_contains($a->text('IBAN ' . self::IBAN), '3704'), false);
+        $eq('Text: Redaktionsnotizen fallen weg', $a->text('Text [# intern: Frau X fragen #] Ende'), 'Text Ende');
+        $rel = $a->relDate('2026-01-15 18:30');
+        $eq('Datum relativ', $rel, ['@rel' => 14, 't' => '18:30', 'f' => ' ']);
+        $eq('Datum zurück (heute + Tage + Versatz)', Anonymizer::absDate($rel, (int) strtotime('2026-03-01'), 7), '2026-03-22 18:30');
+        $contacts = ['handle' => 'personen', 'settings' => ['kind' => Kinds::CONTACTS], 'fields' => [
+            ['name' => 'name', 'type' => 'text'], ['name' => 'vorname', 'type' => 'text'], ['name' => 'nachname', 'type' => 'text'],
+            ['name' => 'email', 'type' => 'emails'], ['name' => 'telefon', 'type' => 'phones'], ['name' => 'adresse', 'type' => 'addresses'],
+            ['name' => 'geburtstag', 'type' => 'date', 'private' => 1], ['name' => 'notiz', 'type' => 'textarea', 'private' => 1], ['name' => 'foto', 'type' => 'media']]];
+        $row = ['id' => 4, 'slug' => 'hiltrud-geheimrath', 'name' => implode(' ', self::PERSON), 'vorname' => self::PERSON[0], 'nachname' => self::PERSON[1],
+            'email' => json_encode([['label' => 'work', 'value' => self::MAIL, 'public' => '1']]), 'telefon' => json_encode([['label' => 'mobile', 'value' => self::PHONE, 'public' => '0']]),
+            'adresse' => json_encode([['label' => 'home', 'street' => 'Geheimweg 7', 'zip' => '40210', 'city' => 'Düsseldorf', 'public' => 'city']]),
+            'geburtstag' => '1970-05-04', 'notiz' => 'Schulden', 'foto' => 12];
+        $an = $a->entry($contacts, $row, 1);
+        $flat = json_encode($an, JSON_UNESCAPED_UNICODE);
+        $eq('Kontakt: Platzhalter-Person', [$an['vorname'], $an['nachname'], $an['name']], ['Max', 'Mustermann', 'Max Mustermann']);
+        $eq('Kontakt: keine echten Angaben mehr', [str_contains($flat, 'Geheim'), str_contains($flat, '7654321'), str_contains($flat, 'Düsseldorf'), str_contains($flat, 'verein-intern')], [false, false, false, false]);
+        $eq('Kontakt: private Felder leer', [$an['geburtstag'], $an['notiz']], [null, null]);
+        $eq('Kontakt: Freigaben bleiben', json_decode((string) $an['adresse'], true)[0]['public'], 'city');
+        $eq('Kontakt: Bild-ID bleibt bis zum Anlegen', $an['foto'], 12);
+        $org = ['handle' => 'vereine', 'settings' => ['schema_type' => 'Organization', 'title_field' => 'titel'], 'fields' => [['name' => 'titel', 'type' => 'text'], ['name' => 'text', 'type' => 'richtext']]];
+        $ao = $a->entry($org, ['id' => 1, 'slug' => 'tv', 'titel' => 'Turnverein Echtstadt', 'text' => '<p>Echte Beschreibung</p>'], 0);
+        $eq('Organisation: Beispiel-Name und -Text', [$ao['titel'], str_contains((string) $ao['text'], 'Echte'), $ao['slug']], ['Beispiel-Organisation 1', false, 'beispiel-organisation-1']);
+        $eq('Medien umschreiben (unbekannt → Platzhalter)', Anonymizer::remapMedia(['image' => 5, 'items' => [['media' => '7']], 'count' => 5], [5 => 50, 0 => 99]), ['image' => 50, 'items' => [['media' => '99']], 'count' => 5]);
+        $eq('Medien-IDs finden', Anonymizer::mediaIds(['image' => 5, 'items' => [['poster' => 8]], 'count' => 3]), [5, 8]);
+
+        // Paket
+        $eq('Pfad: kein ..', Package::cleanPath('../x.json'), null);
+        $eq('Pfad: keine PHP-Datei', Package::cleanPath('structure/x.php'), null);
+        $eq('Pfad: erlaubt', Package::cleanPath('/demo/media/3.jpg'), 'demo/media/3.jpg');
+        $eq('Version weiterzählen', Package::nextVersion('1.4.2'), '1.5.0');
+        $dir = Package::tempDir() . '/pkg';
+        try {
+            Package::write($dir, ['format' => Package::FORMAT, 'format_version' => 1, 'name' => 'selftest', 'version' => '1.0.0', 'kit' => 'basis'], ['structure/pages.json' => [['id' => 1]]]);
+            $p = Package::open($dir);
+            $eq('Paket: öffnen mit Prüfsumme', [$p['manifest']['name'], Package::read($p['dir'], 'structure/pages.json')], ['selftest', [['id' => 1]]]);
+            if (class_exists(\ZipArchive::class)) {
+                Package::zip($dir, dirname($dir) . '/pkg.zip');
+                $z = Package::open(dirname($dir) . '/pkg.zip');
+                $eq('Paket: ZIP', $z['manifest']['version'], '1.0.0');
+                if ($z['temp']) Package::remove($z['dir']);
+            }
+            file_put_contents($dir . '/structure/pages.json', '[{"id":2}]');
+            $err = '';
+            try { Package::open($dir); } catch (\RuntimeException $e) { $err = $e->getMessage(); }
+            $eq('Paket: Manipulation erkannt', str_starts_with($err, 'Prüfsumme'), true);
+        } finally {
+            Package::remove(dirname($dir));
+        }
+
+        // Whitelist, Vergleich
+        $eq('Einstellung: Mail-Passwort nie', Apply::allowedSetting('sys.mail_pass'), false);
+        $eq('Einstellung: Formular-Schlüssel nie', Apply::allowedSetting('sys.form_public_key'), false);
+        $eq('Einstellung: Erweiterung nie', Apply::allowedSetting('ext.newsletter.tables'), false);
+        $eq('Einstellung: Symbolstil ja', Apply::allowedSetting('sys.symbol_style'), true);
+        $eq('Einstellung: Design ja', Apply::allowedSetting('design.fluid'), true);
+        $eq('Whitelist ohne Geheimnisse', array_values(array_filter(Export::SYS_SETTINGS, fn($k) => preg_match('~mail|form|ai_|token|key|pass|site_url|maintenance~', $k))), []);
+        $s1 = Diff::build([['type' => 'page', 'slug' => 'a', 'path' => 'a', 'lang' => null]], [['handle' => 't', 'fields' => [['name' => 'x', 'type' => 'text']], 'settings' => []]], [], [], []);
+        $s2 = Diff::build([['type' => 'page', 'slug' => 'a', 'path' => 'a', 'lang' => null], ['type' => 'page', 'slug' => 'b', 'path' => 'b', 'lang' => null]],
+            [['handle' => 't', 'fields' => [['name' => 'x', 'type' => 'text'], ['name' => 'y', 'type' => 'date']], 'settings' => []]], [['rkey' => 'presse', 'permissions_json' => '["pages.edit"]']], [], []);
+        $d = Diff::compare($s1, $s2);
+        $eq('Vergleich: neue Seite, Feld, Rolle', [$d['added']['pages'], $d['added']['fields'], $d['added']['roles'], Diff::any(Diff::compare($s2, $s2))], [['-:/b'], ['t.y'], ['presse'], false]);
+        $c = Copy::selftest();
+        $ok += $c['ok'];
+        array_push($fails, ...$c['fails']);
+        return ['ok' => $ok, 'fails' => $fails];
+    }
+
+    // ================================================================= Rundlauf mit Testdaten (--sandbox)
+
+    private static function sandbox(bool $keep): int
+    {
+        $id = substr(bin2hex(random_bytes(3)), 0, 5);
+        $src = 'bpst-src-' . $id;
+        $dst = 'bpst-dst-' . $id;
+        $cpy = 'bpst-cpy-' . $id;
+        $pkg = ROOT . '/storage/tmp/bpst-' . $id;
+        $ok = 0;
+        $fails = [];
+        $eq = \Core\Testing\Check::eq($ok, $fails, 'Rundlauf – ', true);
+        $run = function (array $args) use (&$out): int { return Network::console($args, $out); };
+        $out = '';
+        try {
+            Sites::create($src, [$src . '.localhost'], 'fluid', ['seed' => 'empty', 'environment' => 'staging']);
+            $eq('Quelle anlegen und Testdaten einspielen', $run(['blueprint:selftest', '--step=seed', '--site=' . $src]), 0);
+            if ($fails) echo $out;
+            $eq('Export (anonym)', $run(['site:blueprint', $src, '--out=' . $pkg, '--demo=anonym', '--name=selftest-vorlage', '--per-table=2']), 0);
+            if ($fails) echo $out;
+            $raw = '';
+            $it = is_dir($pkg) ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pkg, \FilesystemIterator::SKIP_DOTS)) : [];
+            foreach ($it as $f) if ($f->isFile() && preg_match('~\.(json|md)$~', $f->getFilename())) $raw .= self::plain((string) file_get_contents($f->getPathname()));
+            $eq('Paket: kein Passwort, kein Name, keine E-Mail/Telefon/IBAN der Testdaten', [str_contains($raw, self::SECRET), str_contains($raw, self::PERSON[1]),
+                str_contains($raw, self::MAIL), str_contains($raw, '7654321'), str_contains($raw, '0532 0130'), str_contains($raw, 'konto.selftest@')], [false, false, false, false, false, false]);
+            $eq('Paket: keine Domain der Quelle, Platzhalter statt Name', [str_contains($raw, 'bpst-verein.example.com'), str_contains($raw, '{{org.name}}')], [false, true]);
+            $eq('Neue Website aus der Vorlage', $run(['site:create', $dst, $dst . '.localhost', '--blueprint=' . $pkg, '--name=Neuer Musterverein', '--short=NMV', '--region=Hessen', '--color=#B00020']), 0);
+            if ($fails) echo $out;
+            $eq('Ziel: Struktur, Demo, Wartung, Platzhalter', $run(['blueprint:selftest', '--step=check', '--pkg=' . $pkg, '--site=' . $dst]), 0);
+            echo $out;
+            $eq('Ziel: Schnelleinrichtung abschließen', $run(['site:quick-config', '--step=org', '--name=Neuer Musterverein', '--street=Beispielweg 1', '--zip=12345', '--city=Musterstadt', '--phone=+49 30 1234567', '--email=info@example.org', '--finish', '--site=' . $dst]), 0);
+            $eq('Ziel: health', $run(['health', '--site=' . $dst]), 0);
+            if ($fails) echo $out;
+            $eq('Ziel: data:selftest', $run(['data:selftest', '--site=' . $dst]), 0);
+            if ($fails) echo $out;
+            $eq('Ziel: Demoinhalte entfernen', $run(['site:demo-remove', '--site=' . $dst]) === 0 && str_contains($out, 'entfernt'), true);
+            // Kopie (site:copy, voller Inhalt)
+            $eq('Kopie (full)', $run(['site:copy', $src, $cpy, $cpy . '.localhost', '--content=full', '--media=copy']), 0);
+            if ($fails) echo $out;
+            $eq('Kopie: Struktur, Geheimnisse, Datenschutz', $run(['blueprint:selftest', '--step=copycheck', '--from=' . $src, '--site=' . $cpy]), 0);
+            echo $out;
+            $eq('Kopie: health', $run(['health', '--site=' . $cpy]), 0);
+            $eq('Kopie: data:selftest', $run(['data:selftest', '--site=' . $cpy]), 0);
+            $eq('Kopie: links:selftest', $run(['links:selftest', '--site=' . $cpy]), 0);
+            if ($fails) echo $out;
+        } catch (\Throwable $e) {
+            $fails[] = 'Ausnahme: ' . $e->getMessage();
+        } finally {
+            if (!$keep) {
+                foreach ([$src, $dst, $cpy] as $k) self::dropSite($k);
+                Package::remove($pkg);
+            } else {
+                echo "  Websites bleiben stehen (--keep): $src, $dst, $cpy · Paket: $pkg\n";
+            }
+        }
+        foreach ($fails as $f) echo "  FEHLER: $f\n";
+        echo "  Rundlauf: $ok Prüfungen bestanden, " . count($fails) . " fehlgeschlagen\n";
+        return $fails ? 1 : 0;
+    }
+
+    /** Text eines JSON-Pakets ohne Escapes (für die Suche nach Testdaten) */
+    private static function plain(string $raw): string
+    {
+        return (string) preg_replace_callback('~\\\\u([0-9a-fA-F]{4})~', fn($m) => mb_chr((int) hexdec($m[1])), str_replace('\/', '/', $raw));
+    }
+
+    /** Wegwerf-Website entfernen (Konfiguration, Daten, Medien) – nur Websites des Selbsttests (bpst-…) */
+    public static function dropSite(string $key): void
+    {
+        if (!preg_match('~^bpst-(src|dst|cpy)-[0-9a-f]{5}$~', $key)) return;
+        @unlink(Sites::dir() . '/' . $key . '.php');
+        @unlink(Sites::dir() . '/' . $key . '.php.bak');
+        Package::remove(ROOT . '/storage/sites/' . $key);
+        $pub = realpath(ROOT . '/public/sites/' . $key);
+        if ($pub !== false && str_starts_with($pub, (string) realpath(ROOT . '/public/sites') . '/')) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pub, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($it as $f) $f->isDir() && !$f->isLink() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+            @rmdir($pub);
+        }
+        Sites::flush();
+    }
+
+    /** Schritte im Kontext einer Website (eigener Prozess) */
+    private static function step(string $step): int
+    {
+        $ok = 0;
+        $fails = [];
+        $eq = \Core\Testing\Check::eq($ok, $fails, '', true);
+        $opt = function (string $n): string { foreach ($_SERVER['argv'] ?? [] as $a) if (str_starts_with((string) $a, "--$n=")) return substr((string) $a, strlen($n) + 3); return ''; };
+        if (!str_starts_with(site()->key, 'bpst-')) { fwrite(STDERR, "Nur für Websites des Selbsttests.\n"); return 1; }
+        switch ($step) {
+            case 'seed':
+                $app = app();
+                // Angaben der Organisation (werden Platzhalter), Geheimnisse und ein Konto
+                foreach (['org_name' => 'Bpst Verein Echtstadt e. V.', 'short_name' => 'BVE', 'street' => 'Echtweg 9', 'zip' => '47441', 'city' => 'Echtstadt',
+                    'phone' => self::PHONE, 'email' => 'vorstand@bpst-verein.example.com'] as $k => $v) $app->settings->set($k, $v);
+                \Core\Mail\Accounts::saveStandard(['transport' => 'smtp', 'host' => 'smtp.bpst-verein.example.com', 'port' => 587, 'user' => 'konto.selftest@bpst-verein.example.com',
+                    'pass' => self::SECRET, 'encryption' => 'tls', 'verify_peer' => true, 'from' => 'konto.selftest@bpst-verein.example.com', 'from_name' => 'Bpst']);
+                $app->db->insert('users', ['email' => 'konto.selftest@bpst-verein.example.com', 'name' => 'Konrad Kontoinhaber', 'password_hash' => password_hash(self::SECRET, PASSWORD_DEFAULT), 'role' => 'admin', 'created_at' => now()]);
+                $home = (int) $app->db->fetchValue('SELECT id FROM pages WHERE is_home = 1');
+                $blocks = [['id' => 'bpst000001', 'type' => 'richtext', 'data' => ['text' => '<p>Willkommen beim Bpst Verein Echtstadt e. V.! Fragen an ' . self::MAIL . ' oder ' . self::PHONE . '. Spenden: ' . self::IBAN . ' [# intern: ' . self::PERSON[1] . ' #]</p>'], 'tunes' => []]];
+                $app->db->update('pages', ['content_published' => json_encode(['blocks' => $blocks]), 'content_draft' => json_encode(['blocks' => $blocks]), 'status' => 'published'], 'id = :id', ['id' => $home]);
+                $log = fn(string $m) => fwrite(STDERR, $m . "\n");
+                $t = \Core\Kit\Demo::table(['handle' => 'personen', 'name' => 'Personen', 'settings' => ['kind' => Kinds::CONTACTS], 'fields' => Kinds::presetFields(Kinds::CONTACTS)], $log);
+                $c = \Core\Kit\Demo::table(['handle' => 'termine', 'name' => 'Termine', 'settings' => ['kind' => Kinds::CALENDAR], 'fields' => Kinds::presetFields(Kinds::CALENDAR)], $log);
+                if (!$t || !$c) return 1;
+                foreach ([[self::PERSON[0], self::PERSON[1]], ['Waltraud', 'Wahrnamig'], ['Kunibert', 'Klarname']] as $i => [$v, $n]) {
+                    Tables::db($t)->insert($t['table'], ['slug' => strtolower($v . '-' . $n), 'status' => 'published', 'sort' => $i, 'name' => "$v $n", 'vorname' => $v, 'nachname' => $n,
+                        'email' => json_encode([['label' => 'work', 'value' => strtolower("$v.$n@verein-intern.example.net"), 'public' => '1']]),
+                        'telefon' => json_encode([['label' => 'mobile', 'value' => self::PHONE, 'public' => '0']]), 'notiz' => 'privat: ' . $n, 'created_at' => now(), 'updated_at' => now()]);
+                }
+                foreach (['2025-03-01 19:00', '2025-04-12 10:00', '2025-06-20 18:00'] as $i => $d) {
+                    Tables::db($c)->insert($c['table'], ['slug' => 'termin-' . $i, 'status' => 'published', 'sort' => $i, 'titel' => 'Treffen ' . ($i + 1), 'beginn' => $d, 'ort' => 'Echtstadt, Echtweg 9', 'created_at' => now(), 'updated_at' => now()]);
+                }
+                \Core\Data\Occurrences::rebuildAll();
+                echo "Testdaten eingespielt\n";
+                return 0;
+            case 'check':
+                $pkg = Package::open($opt('pkg'));
+                $sig = Diff::signature($pkg['dir']);
+                $site = Diff::siteSignature();
+                if ($pkg['temp']) Package::remove($pkg['dir']);
+                $eq('Struktur gleich (Seiten, Tabellen, Rollen, Vorlagen)', Diff::any(Diff::compare($sig, $site)) ? Diff::summary(Diff::compare($sig, $site)) : [], []);
+                $t = Tables::find('personen');
+                $names = $t ? array_column(Tables::db($t)->fetchAll('SELECT name FROM ' . $t['table'] . ' ORDER BY id'), 'name') : [];
+                $eq('Demo-Personen sind Platzhalter', $names, ['Erika Musterfrau', 'Max Mustermann']);
+                $c = Tables::find('termine');
+                $first = $c ? (string) Tables::db($c)->fetchValue('SELECT MIN(beginn) FROM ' . $c['table']) : '';
+                $eq('Termine liegen in der Zukunft', $first > date('Y-m-d'), true);
+                $eq('Konten: keine', (int) app()->db->fetchValue('SELECT COUNT(*) FROM users'), 0);
+                $eq('Mail-Konto leer', [(string) app()->settings->get('sys.mail_pass', ''), (string) app()->settings->get('sys.mail_host', '')], ['', '']);
+                $eq('Wartungsmodus bis zur Schnelleinrichtung', (bool) app()->settings->get('sys.maintenance'), true);
+                $eq('Name der neuen Website eingesetzt', (string) app()->settings->get('org_name'), 'Neuer Musterverein');
+                $home = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1');
+                $eq('Startseite mit neuem Namen', str_contains($home, 'Neuer Musterverein'), true);
+                $eq('Akzentfarbe gesetzt und lesbar', \Core\Contrast::ratio((string) (\Core\Design::values()['accent'] ?? '#000000'), '#FFFFFF') >= 4.5, true);
+                $eq('Demo gekennzeichnet', array_sum(Demo::counts()) >= 4, true);
+                break;
+            case 'copycheck':
+                $from = $opt('from');
+                $srcDb = \Core\Network\Stats::db($from);
+                $eq('Kopie: Struktur-Prüfsumme gleich der Quelle', Copy::checksum(app()->db), Copy::checksum($srcDb));
+                $eq('Kopie: Einträge vollständig', (int) app()->db->fetchValue('SELECT COUNT(*) FROM data_personen'), (int) $srcDb->fetchValue('SELECT COUNT(*) FROM data_personen'));
+                $eq('Kopie: app_key neu', app()->config->get('app_key') !== \Core\Network\Network::config($from)->get('app_key'), true);
+                $eq('Kopie: Mail-Passwort geleert', (string) app()->settings->get('sys.mail_pass', ''), '');
+                $eq('Kopie: keine Konten (ohne --users=copy)', (int) app()->db->fetchValue('SELECT COUNT(*) FROM users'), 0);
+                foreach (Copy::PRIVATE_TABLES as $pt) {
+                    try { $n = (int) app()->db->fetchValue("SELECT COUNT(*) FROM $pt"); } catch (\Throwable) { continue; }
+                    if ($n) $eq("Kopie: $pt leer", $n, 0);
+                }
+                $eq('Kopie: Datenschutz-Tabellen leer', true, true);
+                break;
+            default:
+                fwrite(STDERR, "Unbekannter Schritt\n");
+                return 1;
+        }
+        foreach ($fails as $f) fwrite(STDERR, "  ✗ $f\n");
+        return $fails ? 1 : 0;
+    }
+}

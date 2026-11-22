@@ -100,4 +100,56 @@ final class Domains
         $uri = '/' . ltrim($uri, '/');
         return ($secure ? 'https' : 'http') . '://' . $hosts[0] . $uri;
     }
+
+    // ================================================================= Domains ohne Website (fallback_site)
+
+    /** Gemerkte Domains, die über fallback_site ausgeliefert wurden (storage/cache/fallback-hosts.json, höchstens MAX_FALLBACK) */
+    public const MAX_FALLBACK = 50;
+
+    private static function fallbackFile(): string
+    {
+        return ROOT . '/storage/cache/fallback-hosts.json';
+    }
+
+    /**
+     * Aufruf über eine Domain ohne eigenen Eintrag merken (app/bootstrap.php, nur wenn der Rückfall greift): Domain → Website,
+     * zuletzt gesehen. Schreibt höchstens einmal je Stunde und Domain; lokale Adressen, IPs und die Netzwerk-Domain nicht.
+     */
+    public static function noteFallback(string $host, string $site): void
+    {
+        $h = strtolower((string) preg_replace('~:\d+$~', '', trim($host)));
+        if ($h === '' || self::isLocal($h) || filter_var($h, FILTER_VALIDATE_IP) || Sites::normalizeHost($h) === null) return;
+        $file = self::fallbackFile();
+        $all = is_file($file) ? (array) json_decode((string) @file_get_contents($file), true) : [];
+        if (isset($all[$h]) && ($all[$h]['site'] ?? '') === $site && (int) ($all[$h]['seen'] ?? 0) > time() - 3600) return;
+        $all[$h] = ['site' => $site, 'seen' => time(), 'first' => (int) ($all[$h]['first'] ?? time())];
+        uasort($all, fn($a, $b) => (int) $b['seen'] <=> (int) $a['seen']);
+        @file_put_contents($file, (string) json_encode(array_slice($all, 0, self::MAX_FALLBACK, true)), LOCK_EX);
+    }
+
+    /**
+     * Domains, die (noch) keiner Website gehören und über fallback_site eine andere Website ausliefern – aufgerufen seit der
+     * letzten Woche; ohne die Netzwerk-Domain (Core\NetworkHost, gewollt). @return list<array{host: string, site: string, seen: int, source: string}>
+     */
+    public static function fallbackHosts(int $days = 7): array
+    {
+        $file = self::fallbackFile();
+        $all = is_file($file) ? (array) json_decode((string) @file_get_contents($file), true) : [];
+        $out = [];
+        foreach ($all as $h => $x) {
+            $h = (string) $h;
+            if ((int) ($x['seen'] ?? 0) < time() - $days * 86400 || Sites::resolve($h, null) !== null || NetworkHost::is($h)) continue;
+            $out[] = ['host' => $h, 'site' => (string) ($x['site'] ?? ''), 'seen' => (int) $x['seen'], 'source' => 'zuletzt aufgerufen ' . date('d.m.Y H:i', (int) $x['seen'])];
+        }
+        return $out;
+    }
+
+    /** Health (nur Hauptwebsite bzw. Netzwerk-Website): Hinweis je Domain ohne Website → Fallback */
+    public static function fallbackHealth(): array
+    {
+        if (!site()->isDefault() && !Network\Network::isNetworkSite()) return [];
+        $out = [];
+        foreach (self::fallbackHosts() as $f) $out['Domain ohne Website → Fallback: ' . $f['host'] . ' liefert „' . $f['site'] . '“ aus (site:hosts <key> add ' . $f['host'] . ' oder fallback_site => null)'] = null;
+        return $out;
+    }
 }

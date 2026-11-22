@@ -1,0 +1,219 @@
+<?php
+// SPDX-License-Identifier: MIT
+// KLXM Studio – Copyright (C) 2026 KLXM and contributors (see LICENSE, COPYRIGHT)
+declare(strict_types=1);
+
+namespace Core\Blueprint;
+
+use Core\Sites;
+
+/**
+ * Website-Vorlagen der Installation (Netzwerk-Verwaltung → Website-Vorlagen, Recht network.blueprints): storage/blueprints/{name}/
+ *
+ *   meta.json            Name, Bezeichnung, Beschreibung, Quell-Website, Umfang der Demoinhalte, kuratierte Demo-Einträge,
+ *                        Platzhalter und Schritte der Schnelleinrichtung, Versionen mit Änderungsprotokoll
+ *   preview.(png|jpg|webp)  Vorschaubild
+ *   {version}/           Paket je Version (Core\Blueprint\Package, Verzeichnisform)
+ *
+ * Export und Anlegen laufen als eigener Prozess der Kommandozeile (site:blueprint, site:create --blueprint) – so gelten für die
+ * Quell- bzw. Ziel-Website ihre eigene Datenbank, ihr Kit und ihre Erweiterungen.
+ */
+final class Library
+{
+    public static function dir(string $name = ''): string
+    {
+        return ROOT . '/storage/blueprints' . ($name !== '' ? '/' . $name : '');
+    }
+
+    /** Alle Vorlagen (meta.json) nach Bezeichnung @return list<array> */
+    public static function all(): array
+    {
+        $out = [];
+        foreach (glob(self::dir() . '/*/meta.json') ?: [] as $f) {
+            $m = json_decode((string) file_get_contents($f), true);
+            if (is_array($m) && Package::validName((string) ($m['name'] ?? ''))) $out[] = self::norm($m);
+        }
+        usort($out, fn($a, $b) => strcasecmp($a['title'], $b['title']));
+        return $out;
+    }
+
+    public static function get(string $name): ?array
+    {
+        if (!Package::validName($name) || !is_file(self::dir($name) . '/meta.json')) return null;
+        $m = json_decode((string) file_get_contents(self::dir($name) . '/meta.json'), true);
+        return is_array($m) ? self::norm($m) : null;
+    }
+
+    private static function norm(array $m): array
+    {
+        $m += ['title' => $m['name'], 'description' => '', 'source' => '', 'demo' => 'anonym', 'per_table' => Export::DEMO_PER_TABLE, 'pick' => [],
+            'placeholders' => [], 'steps' => QuickConfig::STEPS, 'versions' => [], 'preview' => '', 'created_at' => '', 'updated_at' => ''];
+        $m['versions'] = array_values(array_filter((array) $m['versions'], fn($v) => is_array($v) && Package::validVersion((string) ($v['version'] ?? ''))));
+        usort($m['versions'], fn($a, $b) => version_compare((string) $b['version'], (string) $a['version']));
+        $m['latest'] = $m['versions'][0]['version'] ?? null;
+        return $m;
+    }
+
+    public static function save(array $m): void
+    {
+        $dir = self::dir((string) $m['name']);
+        if (!is_dir($dir)) mkdir($dir, 0770, true);
+        unset($m['latest']);
+        $m['updated_at'] = date('c');
+        file_put_contents($dir . '/meta.json', Package::json($m), LOCK_EX);
+    }
+
+    /** Verzeichnis eines Pakets (neueste Version ohne Angabe) */
+    public static function packageDir(string $name, ?string $version = null): ?string
+    {
+        $m = self::get($name);
+        $version ??= $m['latest'] ?? null;
+        if (!$m || !$version || !Package::validVersion($version)) return null;
+        $d = self::dir($name) . '/' . $version;
+        return is_file($d . '/manifest.json') ? $d : null;
+    }
+
+    /** Vorlage oder Paketpfad auflösen (site:create --blueprint=name|pfad) */
+    public static function resolve(string $ref): ?string
+    {
+        if (Package::validName($ref) && ($d = self::packageDir($ref))) return $d;
+        if (preg_match('~^([a-z][a-z0-9-]{1,47})@(\d+\.\d+\.\d+)$~', $ref, $x) && ($d = self::packageDir($x[1], $x[2]))) return $d;
+        return file_exists($ref) ? $ref : null;
+    }
+
+    /**
+     * Neue Vorlage bzw. neue Version aus einer Website: Export als eigener Prozess in storage/blueprints/{name}/{version}.
+     * $in: name, title, description, source, demo, per_table, note, pick, placeholders, steps. @return array{version: string, report: list<string>}
+     */
+    public static function createVersion(array $in, string $by = ''): array
+    {
+        $name = (string) $in['name'];
+        if (!Package::validName($name)) throw new \InvalidArgumentException(__('Kurzname der Vorlage: a–z, 0–9 und Bindestrich, 2–48 Zeichen.'));
+        $source = (string) ($in['source'] ?? '');
+        if (!isset(Sites::all()[$source])) throw new \InvalidArgumentException(__('Bitte eine Website als Quelle wählen.'));
+        $m = self::get($name) ?? ['name' => $name, 'created_at' => date('c'), 'versions' => []];
+        foreach (['title', 'description', 'demo', 'per_table', 'pick', 'placeholders', 'steps'] as $k) if (array_key_exists($k, $in)) $m[$k] = $in[$k];
+        $m['source'] = $source;
+        $m = self::norm($m);
+        $version = (string) ($in['version'] ?? '') ?: ($m['latest'] ? Package::nextVersion((string) $m['latest']) : '1.0.0');
+        if (!Package::validVersion($version)) throw new \InvalidArgumentException(__('Version: z. B. 1.0.0'));
+        if (is_dir(self::dir($name) . '/' . $version)) throw new \InvalidArgumentException(__('Version {v} gibt es schon.', ['v' => $version]));
+        if (!is_dir(self::dir($name))) mkdir(self::dir($name), 0770, true);
+        $changelog = array_map(fn($v) => ['version' => $v['version'], 'date' => $v['date'] ?? '', 'note' => $v['note'] ?? ''], (array) $m['versions']);
+        $note = trim((string) ($in['note'] ?? '')) ?: ($changelog ? __('Neue Version aus der Website') : __('Erste Version'));
+        array_unshift($changelog, ['version' => $version, 'date' => date('Y-m-d'), 'note' => $note]);
+        $opts = ['name' => $name, 'title' => $m['title'], 'description' => $m['description'], 'version' => $version, 'note' => $note, 'per_table' => (int) $m['per_table'],
+            'pick' => (array) $m['pick'] ?: null, 'placeholders' => (array) $m['placeholders'], 'steps' => (array) $m['steps'], 'changelog' => $changelog];
+        if (!array_filter((array) $m['pick'])) unset($opts['pick']);
+        $prev = self::previewFile($name);
+        if ($prev) $opts['preview'] = $prev;
+        $optFile = Package::tempDir() . '/options.json';
+        file_put_contents($optFile, Package::json($opts));
+        $code = Network::console(['site:blueprint', $source, '--out=' . self::dir($name) . '/' . $version, '--demo=' . $m['demo'], '--options=' . $optFile], $out);
+        Package::remove(dirname($optFile));
+        if ($code !== 0) {
+            Package::remove(self::dir($name) . '/' . $version);
+            throw new \RuntimeException(trim((string) $out) ?: __('Export fehlgeschlagen.'));
+        }
+        $m['versions'][] = ['version' => $version, 'date' => date('Y-m-d'), 'note' => $note, 'demo' => $m['demo'], 'by' => $by, 'at' => date('c')];
+        self::save($m);
+        return ['version' => $version, 'report' => array_values(array_filter(array_map('trim', explode("\n", (string) $out))))];
+    }
+
+    /** Vorschaubild der Vorlage (Pfad) */
+    public static function previewFile(string $name): ?string
+    {
+        foreach (['png', 'jpg', 'webp'] as $e) if (is_file(self::dir($name) . '/preview.' . $e)) return self::dir($name) . '/preview.' . $e;
+        return null;
+    }
+
+    /** Vorschaubild speichern (nur PNG/JPEG/WebP, höchstens 4 MB) – Fehlertext oder null */
+    public static function setPreview(string $name, string $tmp): ?string
+    {
+        if (!is_file($tmp) || filesize($tmp) > 4 * 1024 * 1024) return __('Bild fehlt oder ist größer als 4 MB.');
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp) ?: '';
+        $ext = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'][$mime] ?? null;
+        if (!$ext) return __('Bitte ein PNG-, JPEG- oder WebP-Bild wählen.');
+        foreach (['png', 'jpg', 'webp'] as $e) @unlink(self::dir($name) . '/preview.' . $e);
+        copy($tmp, self::dir($name) . '/preview.' . $ext);
+        return null;
+    }
+
+    /** Manifest einer Version */
+    public static function manifest(string $name, ?string $version = null): ?array
+    {
+        $d = self::packageDir($name, $version);
+        $m = $d ? json_decode((string) file_get_contents($d . '/manifest.json'), true) : null;
+        return is_array($m) ? $m : null;
+    }
+
+    /** Demo-Einträge der Quelle zur Auswahl (kuratieren): Tabelle → [{id, title, status}] aus der Quell-Website */
+    public static function candidates(string $source, int $limit = 40): array
+    {
+        $out = [];
+        try {
+            $db = \Core\Network\Stats::db($source);
+            foreach ($db->fetchAll("SELECT handle, name, fields_json, settings_json FROM data_tables ORDER BY sort, name") as $t) {
+                $s = (array) json_decode((string) $t['settings_json'], true);
+                if (($s['kind'] ?? '') === 'inbox') continue;
+                $title = (string) ($s['title_field'] ?? '');
+                $fields = array_column((array) json_decode((string) $t['fields_json'], true), 'name');
+                if ($title === '' || !in_array($title, $fields, true)) $title = (string) ($fields[0] ?? 'id');
+                $col = preg_match('~^[a-z][a-z0-9_]*$~', $title) ? $title : 'id';
+                try {
+                    $rows = $db->fetchAll("SELECT id, status, $col AS t FROM data_{$t['handle']} ORDER BY sort, id LIMIT $limit");
+                } catch (\Throwable) {
+                    continue;
+                }
+                $out[(string) $t['handle']] = ['name' => (string) $t['name'], 'kind' => (string) ($s['kind'] ?? 'content'),
+                    'rows' => array_map(fn($r) => ['id' => (int) $r['id'], 'title' => mb_strimwidth(strip_tags((string) $r['t']), 0, 80, '…'), 'status' => (string) $r['status']], $rows)];
+            }
+        } catch (\Throwable) {
+        }
+        return $out;
+    }
+
+    /**
+     * Websites, die aus dieser Vorlage stammen (Einstellung sys.blueprint der jeweiligen Website), mit Version und Vorschlag.
+     * @return list<array{key: string, version: string, proposal: ?string, diff: ?array}>
+     */
+    public static function affected(string $name): array
+    {
+        $out = [];
+        $latest = self::packageDir($name);
+        $newSig = $latest ? Diff::signature($latest) : null;
+        foreach (array_keys(Sites::all()) as $key) {
+            try {
+                $db = \Core\Network\Stats::db((string) $key);
+                $bp = json_decode((string) $db->fetchValue('SELECT value_json FROM settings WHERE skey = ?', [Apply::KEY]), true);
+                if (!is_array($bp) || ($bp['name'] ?? '') !== $name) continue;
+                $prop = json_decode((string) $db->fetchValue('SELECT value_json FROM settings WHERE skey = ?', [Diff::PROPOSAL_KEY]), true);
+                $diff = $newSig && is_array($bp['structure'] ?? null) ? Diff::compare((array) $bp['structure'], $newSig) : null;
+                $out[] = ['key' => (string) $key, 'version' => (string) ($bp['version'] ?? ''), 'proposal' => is_array($prop) ? (string) ($prop['version'] ?? '') : null, 'diff' => $diff];
+            } catch (\Throwable) {
+            }
+        }
+        return $out;
+    }
+
+    /** Neue Version als Vorschlag in eine Website legen (Einstellung sys.blueprint_update, eigener Prozess je Website) */
+    public static function propose(string $name, string $site): string
+    {
+        $code = Network::console(['blueprint:propose', $name, '--site=' . $site], $out);
+        if ($code !== 0) throw new \RuntimeException(trim((string) $out) ?: __('Vorschlag fehlgeschlagen.'));
+        return trim((string) $out);
+    }
+
+    /**
+     * Neue Website aus einer Vorlage (gleicher Weg wie site:create --blueprint) als eigener Prozess.
+     * @return array{ok: bool, output: string}
+     */
+    public static function createSite(string $ref, string $key, string $hosts, array $params): array
+    {
+        $file = Package::tempDir() . '/params.json';
+        file_put_contents($file, Package::json($params));
+        $code = Network::console(['site:create', $key, $hosts, '--blueprint=' . $ref, '--params=' . $file], $out);
+        Package::remove(dirname($file));
+        return ['ok' => $code === 0, 'output' => (string) $out];
+    }
+}
