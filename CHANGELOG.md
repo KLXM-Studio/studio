@@ -89,6 +89,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Steuerung und Barrierefreiheit:** automatischer Wechsel mit einstellbarer Dauer, Pause bei Maus und Fokus, Pause/Play mit dem
   gemeinsamen Video-Schalter (`Hero::playToggle`), Punkte oder Nummern, Pfeile, Tastatur, Wischen. `aria-roledescription` Karussell/Folie
   mit „x von n“, Live-Region nur nach Bedienung, bei „Bewegung reduzieren“ kein Auto-Wechsel und harte Schnitte, genau eine H1.
+- **Hintergrundvideo in Folien:** nur ein Knopf in der Leiste – „Bewegung anhalten/fortsetzen“ hält Auto-Wechsel und das Video der
+  aktuellen Folie zusammen an; der Video-Schalter der Folie entfällt im Slider (`Hero::$inSlider`). Videos laufen nur auf der aktiven,
+  sichtbaren Folie, nie von selbst bei „Bewegung reduzieren“ oder „Daten sparen“.
+- **Highlights ohne Doppelte:** Option „Einträge auslassen, die schon im Slider dieser Seite stehen“ (neu an, Bestand per
+  `DefaultChanges` aus) mit Hinweis im Editor bei Überschneidungen (`HeroSlider::pageEntries`).
 - **Technik:** ohne JavaScript steht die erste Folie still; eigenes kleines Skript `js/hero-slider.js` und `css/hero-slider.css` nur auf
   Seiten mit Slider (CSP-konform, kein Fremdskript); weitere Folien laden ihre Bilder verzögert. Bestand byte-gleich. Selbsttest
   `slider:selftest`.

@@ -104,7 +104,8 @@ final class Featured
     /**
      * Hervorgehobene Einträge aus mehreren Tabellen gemischt.
      * $sources: [['table' => handle, 'limit' => n, 'badge' => 'Beschriftung' (leer = Name der Tabelle)], …] – jede Tabelle höchstens einmal.
-     * $o: sort ('date' | 'order'), limit (gesamt, 0 = ohne), exclude (['handle' => id] – z. B. der aufgerufene Eintrag)
+     * $o: sort ('date' | 'order'), limit (gesamt, 0 = ohne), exclude (['handle' => id oder [ids]] – z. B. der aufgerufene Eintrag bzw.
+     *     Einträge, die schon im Slider der Seite stehen; die Anzahl je Tabelle gilt nach dem Auslassen)
      * @return list<array{table: array, entry: array, badge: string, href: ?string, date: string, order: ?int}>
      */
     public static function items(array $sources, array $o = []): array
@@ -119,7 +120,7 @@ final class Featured
             $seen[$t['handle']] = true;
             $limit = max(1, min(12, (int) ($s['limit'] ?? 3) ?: 3));
             $q = ['status' => 'published', 'featured' => $sort, 'limit' => $limit];
-            if (isset($o['exclude'][$t['handle']])) $q['exclude'] = (int) $o['exclude'][$t['handle']];
+            if (isset($o['exclude'][$t['handle']])) $q['exclude_ids'] = array_map('intval', (array) $o['exclude'][$t['handle']]);
             try {
                 $rows = Exposure::publicRows($t, Entries::query($t, $q));
             } catch (\Throwable) {

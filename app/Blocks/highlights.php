@@ -16,10 +16,22 @@ use Core\Data\Tables;
 $wrap = app()->theme->def['container_class'] ?? 'wrap';
 $btn = app()->theme->def['button_class'] ?? 'btn btn--primary';
 $sources = array_values(array_filter((array) ($d['sources'] ?? []), fn($s) => is_array($s) && trim((string) ($s['table'] ?? '')) !== ''));
-// Aufgerufener Eintrag (Detailseite): nicht noch einmal als Highlight
+// Aufgerufener Eintrag (Detailseite): nicht noch einmal als Highlight; Option „exclude_slider“: auch nicht die Einträge, die schon als
+// Folien eines Einstiegs als Slider auf dieser Seite stehen (Core\Blocks\HeroSlider::pageEntries, unabhängig von der Reihenfolge)
 $ctx = app()->entry;
-$items = Featured::items($sources, ['sort' => (string) ($d['sort'] ?? 'date'), 'limit' => (int) ($d['limit'] ?? 6),
-    'exclude' => $ctx ? [$ctx['table']['handle'] => (int) $ctx['entry']['id']] : []]);
+$exclude = $ctx ? [$ctx['table']['handle'] => [(int) $ctx['entry']['id']]] : [];
+$inSlider = $sources ? \Core\Blocks\HeroSlider::pageEntries() : [];
+$q = ['sort' => (string) ($d['sort'] ?? 'date'), 'limit' => (int) ($d['limit'] ?? 6)];
+$skip = $exclude;
+if (!empty($d['exclude_slider'])) foreach ($inSlider as $h => $ids) $skip[$h] = [...($skip[$h] ?? []), ...$ids];
+$items = Featured::items($sources, $q + ['exclude' => $skip]);
+// Hinweis im Editor: Überschneidung mit dem Slider dieser Seite (ausgelassen bzw. doppelt)
+$overlap = 0;
+if (is_editing() && $inSlider) {
+    foreach (Featured::items($sources, $q + ['exclude' => $exclude, 'limit' => 0]) as $it) {
+        if (in_array((int) $it['entry']['id'], $inSlider[$it['table']['handle']] ?? [], true)) $overlap++;
+    }
+}
 if (!$items && !empty($d['hide_empty']) && !is_editing()) return;
 $layout = ($d['layout'] ?? '') === 'teaser' ? 'teaser' : 'cards';
 $cols = in_array((string) ($d['columns'] ?? ''), ['2', '3', '4'], true) ? (string) $d['columns'] : '3';
@@ -37,6 +49,11 @@ foreach ($sources as $s) $tones[(string) $s['table']] ??= 'dl-tone-' . (count($t
     <?php if (!empty($d['title'])): ?><h2 id="<?= e($b->titleId()) ?>" class="h2 h2--m dl-title"><span<?= $b->edit('title') ?>><?= emphasis((string) $d['title']) ?></span></h2><?php endif; ?>
     <?php if (!empty($d['intro'])): ?><p class="muted dl-intro"<?= $b->edit('intro') ?>><?= emphasis((string) $d['intro']) ?></p><?php endif; ?>
   </header>
+  <?php endif; ?>
+  <?php if ($overlap): ?>
+  <p class="dl-empty hl-note"><small><?= e(!empty($d['exclude_slider'])
+      ? __('{n} hervorgehobene Einträge stehen schon im Slider dieser Seite und werden hier ausgelassen.', ['n' => $overlap])
+      : __('{n} Einträge stehen auch im Slider dieser Seite. Mit „Einträge auslassen, die schon im Slider dieser Seite stehen“ erscheint jeder nur einmal.', ['n' => $overlap])) ?></small></p>
   <?php endif; ?>
   <?php if (!$items): ?>
   <p class="dl-empty"><?= e((string) ($d['empty_text'] ?? '') ?: lt('Zurzeit ist nichts hervorgehoben.')) ?><?php if (is_editing()): ?> <small><?= e(!Featured::tables()

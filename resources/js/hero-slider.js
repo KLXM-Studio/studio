@@ -3,10 +3,11 @@
  * Ohne Skript steht die erste Folie still. Mit Skript: Folien übereinander (.is-ready), Wechsel mit Übergang (.is-moving, nur ohne
  * „Bewegung reduzieren“ – sonst harte Schnitte und kein Auto-Wechsel), Pause/Play (gemeinsamer Schalter, data-hs-toggle), Pause bei
  * Maus und Fokus, Punkte/Nummern und Pfeile, Pfeiltasten/Pos1/Ende in der Steuerung, Wischen auf Touch. Inaktive Folien sind inert.
+ * Hintergrundvideos der Folien steuert derselbe Knopf (keine eigenen Video-Schalter im Slider; hero.mjs lässt sie aus).
  * Live-Region (aria-live="polite") nur nach Bedienung; beim automatischen Wechsel „off“. Keine Inline-Stile: Werte per CSSOM.
  */
 (() => {
-  const d = document, calm = matchMedia('(prefers-reduced-motion: reduce)');
+  const d = document, calm = matchMedia('(prefers-reduced-motion: reduce)'), lean = matchMedia('(prefers-reduced-data: reduce)');
   // „Bewegung reduzieren“: Wahl im Darstellungs-Knopf der Website (<html data-motion>) vor der Systemeinstellung (wie hero.mjs)
   const still = () => { const m = d.documentElement.getAttribute('data-motion'); return m === 'reduce' || (m !== 'full' && calm.matches); };
   const label = (btn, playing) => {
@@ -50,8 +51,20 @@
     const btn = root.querySelector('[data-hs-toggle]');
     const ms = Number(root.dataset.interval) || 0;
     const tv = getComputedStyle(root).getPropertyValue('--hs-t').trim(), t = (parseFloat(tv) || 900) / (/ms$/.test(tv) || !tv ? 1000 : 1);
-    let cur = 0, timer = 0, hold = 0, choice = null, leave = 0;
-    const playing = () => ms > 0 && (choice ?? !still());
+    let cur = 0, timer = 0, hold = 0, choice = null, leave = 0, seen = false;
+    // Ein Knopf für alle Bewegung: run() = Wahl der Besucherin, sonst „läuft, außer bei Bewegung reduzieren“
+    const run = () => choice ?? !still();
+    const playing = () => ms > 0 && run();   // Auto-Wechsel
+    // Hintergrundvideos der Folien (ohne eigenen Schalter, Hero::$inSlider): nur das der aktiven Folie, nur sichtbar und wenn die
+    // Bewegung läuft – von selbst nie bei „Daten sparen“; inaktive Folien pausieren
+    const vids = slides.map(s => [...s.querySelectorAll('video[data-hero-video]')]);
+    const sync = () => vids.forEach((list, i) => list.forEach(v => {
+      const box = v.closest('[data-hero-video-box]') || v.parentElement;
+      if (i === cur && seen && run() && (choice !== null || (!lean.matches && !navigator.connection?.saveData))) {
+        v.preload = 'auto';
+        v.play().then(() => { if (!v.paused) box.classList.add('is-playing'); }).catch(() => {});
+      } else if (!v.paused) v.pause();
+    }));
 
     slides.forEach((s, i) => {
       s.hidden = false;
@@ -84,7 +97,6 @@
       prev.classList.remove('is-active');
       prev.classList.add('is-leaving');
       prev.inert = true;
-      prev.querySelectorAll('video').forEach(v => v.pause());
       next.inert = false;
       next.classList.add('is-active');
       leave = setTimeout(() => prev.classList.remove('is-leaving'), still() ? 0 : t * 1000 + 50);
@@ -92,16 +104,18 @@
       track.setAttribute('aria-live', manual ? 'polite' : 'off');
       dots.forEach((b, i) => i === n ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current'));
       cur = n;
+      sync();
       schedule();
     };
 
     if (btn) {
-      label(btn, playing());
+      label(btn, run());
       btn.hidden = false;
       btn.addEventListener('click', () => {
-        choice = !playing();
-        label(btn, playing());
+        choice = !run();
+        label(btn, run());
         if (playing()) track.setAttribute('aria-live', 'off');
+        sync();
         schedule();
       });
     }
@@ -142,7 +156,8 @@
 
     // Seite im Hintergrund: kein Wechsel; „Bewegung reduzieren“ zur Laufzeit: harte Schnitte, ohne eigene Wahl kein Auto-Wechsel
     d.addEventListener('visibilitychange', () => d.hidden ? clearTimeout(timer) : schedule());
-    const recheck = () => { motion(); label(btn, playing()); schedule(); };
+    const recheck = () => { motion(); label(btn, run()); sync(); schedule(); };
+    new IntersectionObserver(([e]) => { seen = e.isIntersecting; sync(); }).observe(root);
     calm.addEventListener('change', recheck);
     new MutationObserver(recheck).observe(d.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
     schedule();

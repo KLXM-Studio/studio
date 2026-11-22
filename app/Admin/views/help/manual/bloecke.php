@@ -31,7 +31,7 @@
   <ul>
     <li><b>Folien:</b> die erste ist der Inhalt des Einstiegs (oder – „Erste Folie: Nur die Folien unten“ – gleich die erste weitere Folie). Dazu <b>eigene Folien</b> mit Bild oder Video, Dachzeile, Titel, Text und Buttons und/oder <b>Folien aus Einträgen</b>: Einträge mit „Auf der Startseite hervorheben“ aus einer oder mehreren Tabellen (<a href="<?= e(url('/admin/hilfe#startseite-hervorheben')) ?>">Einträge hervorheben</a>). Bild, Titel, Dachzeile und Text kommen dann wie beim Einstieg mit „Felder des Eintrags“ aus dem Eintrag, der Button führt zur Detailseite.</li>
     <li><b>Übergang:</b> Morphing (Bilder blenden weich ineinander, der Titel wird aufgedeckt – oder Wort für Wort), Aufdecken von unten oder seitlich, Überblenden; dazu optional <b>Kenburns</b> (Bilder zoomen langsam zum Fokuspunkt aus der Mediathek).</li>
-    <li><b>Steuerung:</b> wechselt automatisch nach der eingestellten Zeit, hält an, solange die Maus darüber steht oder ein Element darin den Tastatur-Fokus hat, und hat einen Pause-Knopf wie das Hintergrundvideo. Punkte oder Nummern und Pfeile wählen eine Folie, auf dem Telefon geht es auch per Wischen; in der Steuerung wechseln die Pfeiltasten, Pos1 und Ende.</li>
+    <li><b>Steuerung:</b> wechselt automatisch nach der eingestellten Zeit, hält an, solange die Maus darüber steht oder ein Element darin den Tastatur-Fokus hat, und hat einen Pause-Knopf wie das Hintergrundvideo. Hat eine Folie ein Hintergrundvideo, gibt es trotzdem nur diesen einen Knopf: „Bewegung anhalten“ hält Wechsel und Video zusammen an; Videos laufen nur auf der sichtbaren Folie. Punkte oder Nummern und Pfeile wählen eine Folie, auf dem Telefon geht es auch per Wischen; in der Steuerung wechseln die Pfeiltasten, Pos1 und Ende.</li>
     <li><b>Barrierefrei:</b> Screenreader hören „Folie 2 von 4“ – Ansagen nur, wenn jemand selbst wechselt. Bei „Bewegung reduzieren“ wechselt nichts von selbst und ohne Übergang. Nur die erste Folie trägt die Hauptüberschrift (H1). Ohne JavaScript steht die erste Folie still.</li>
     <li>Im Editor zeigt die Vorschau die erste Folie mit einem Hinweis; Übergänge sehen Sie in der Vorschau der Seite.</li>
   </ul>
@@ -79,6 +79,7 @@
     <li><b>Sortierung:</b> „Neueste zuerst“ oder „Reihenfolge“ – dann zählt die Zahl, die Sie im Eintrag unter „Hervorheben“ eintragen; Einträge ohne Zahl folgen.</li>
     <li><b>Darstellung:</b> Karten wie in der Datenliste (das Kit gestaltet sie gleich) oder <b>Großer Teaser</b> – der erste Eintrag groß über die ganze Breite, die übrigen als Karten darunter.</li>
     <li>Ist nichts hervorgehoben, entfällt der Abschnitt (abschaltbar, dann mit Hinweistext). Auf einer Detailseite erscheint der aufgerufene Eintrag nicht noch einmal.</li>
+    <li><b>Einträge auslassen, die schon im Slider dieser Seite stehen</b> (bei neuen Blöcken an): Zeigt der Einstieg derselben Seite hervorgehobene Einträge als Folien, erscheinen sie hier nicht noch einmal. Im Editor weist ein Hinweis auf Überschneidungen hin.</li>
   </ul>
   <?php endif; ?>
   <?php if (isset($blocks['gallery'])): ?>

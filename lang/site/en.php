@@ -92,6 +92,8 @@ return [
     'Folie wählen' => 'Choose slide',
     'Folie {n}: {title}' => 'Slide {n}: {title}',
     'Wechselnde Folien' => 'Rotating slides',
+    'Bewegung anhalten' => 'Pause motion',
+    'Bewegung fortsetzen' => 'Resume motion',
     'Automatisches Weiterblättern anhalten' => 'Pause automatic slide rotation',
     'Automatisches Weiterblättern starten' => 'Start automatic slide rotation',
     // Kalender

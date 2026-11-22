@@ -125,6 +125,41 @@ final class HeroSliderSelfTest
             app()->entry = null;
             $ck(!str_contains($self, 'data-hero-slider'), 'Detailseite: der aufgerufene Eintrag wird keine Folie');
             unset($e2);
+
+            // 6. Ein Knopf für alle Bewegung: ohne Video „Automatischen Wechsel …“, mit Video-Folie „Bewegung …“ und kein Video-Schalter der Folie
+            $ck(str_contains($html, e(lt('Automatischen Wechsel anhalten'))) && !str_contains($html, e(lt('Bewegung anhalten'))), 'Ohne Video: Knopf für den Auto-Wechsel');
+            $vid = (int) (app()->db->fetchValue("SELECT id FROM media WHERE mime LIKE 'video/%' AND deleted_at IS NULL ORDER BY id LIMIT 1") ?: 0);
+            if ($vid && isset($names['video']) && in_array('fullbleed', $variants, true)) {
+                Hero::resetOnce();
+                $vh = $theme->renderBlock($mk(['variant' => 'fullbleed', 'video' => $vid, 'slides_interval' => '0'] + $data));
+                $ck(str_contains($vh, 'data-hero-video') && !str_contains($vh, 'data-hero-video-toggle') && substr_count($vh, 'data-hs-toggle') === 1
+                    && str_contains($vh, e(lt('Bewegung fortsetzen'))), 'Video-Folie: ein Knopf „Bewegung …“ (auch ohne Auto-Wechsel), kein Video-Schalter der Folie');
+                $ck(!str_contains($vh, 'hero.mjs'), 'Video-Folie: hero.mjs nicht nötig (Slider-Skript steuert das Video)');
+                Hero::resetOnce();
+                $ck(!Hero::$inSlider && str_contains(Hero::videoToggle('x'), 'data-hero-video-toggle'), 'Außerhalb des Sliders: Video-Schalter wie bisher');
+            }
+
+            // 7. Einträge im Slider der Seite (HeroSlider::pageEntries) und Block „Highlights“ mit „exclude_slider“
+            $prevPage = app()->currentPage;
+            $json = json_encode(['blocks' => [['id' => 'qahsp', 'type' => 'hero', 'data' => $base + ['slider' => true, 'slides_sources' => [['table' => $h]]]]]]);
+            app()->currentPage = ['id' => -987, 'content_published' => $json, 'content_draft' => $json];
+            HeroSlider::reset();
+            try {
+                $ck((HeroSlider::pageEntries()[$h] ?? []) === [(int) $e1], 'Einträge im Slider der Seite');
+                $hl = fn(bool $ex) => $theme->renderBlock($theme->makeBlock(['id' => 'qahshl', 'type' => 'highlights', 'data' => ['sources' => [['table' => $h]], 'exclude_slider' => $ex, 'hide_empty' => true]]));
+                $ck($hl(true) === '', 'Highlights lassen Einträge aus dem Slider aus (nichts übrig: Abschnitt entfällt)');
+                $ck(str_contains($hl(false), 'Sommerfest'), 'Highlights ohne Option zeigen sie');
+                app()->editing = true;
+                HeroSlider::reset();
+                $ck(str_contains($hl(false), 'hl-note') && str_contains($hl(true), 'hl-note'), 'Editor: Hinweis auf die Überschneidung');
+                app()->editing = false;
+                $hd = $theme->block('highlights');
+                $ck((array_column((array) ($hd['fields'] ?? []), 'default', 'name')['exclude_slider'] ?? null) === true
+                    && (DefaultChanges::CHANGES['2026-11-highlights-exclude-slider']['highlights']['exclude_slider'] ?? null) === false, 'Neu: Standard an, Bestand per DefaultChanges aus');
+            } finally {
+                app()->currentPage = $prevPage;
+                HeroSlider::reset();
+            }
         } finally {
             app()->editing = $prevEditing;
             app()->entry = $prevEntry;

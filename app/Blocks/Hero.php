@@ -40,6 +40,8 @@ use Core\Search\Search;
 final class Hero
 {
     private static bool $script = false;
+    /** Folie eines Einstiegs als Slider (Core\Blocks\HeroSlider): kein eigener Video-Schalter – der Knopf der Leiste steuert das Video */
+    public static bool $inSlider = false;
     private static bool $toggleCss = false;
 
     /** Darstellung des Video-Schalters: nur Symbol (Standard) oder Symbol mit sichtbarem Text */
@@ -247,6 +249,7 @@ final class Hero
      */
     public static function videoToggle(string $class = '', string $mode = 'icon'): string
     {
+        if (self::$inSlider) return '';
         return self::playToggle($class, $mode, lt('Hintergrundvideo anhalten'), lt('Hintergrundvideo abspielen'), 'data-hero-video-toggle') . self::script();
     }
 

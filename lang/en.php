@@ -1624,6 +1624,8 @@ return [
     'Hervorheben' => 'Feature',
     'Slider mit {n} Folien – die Vorschau zeigt die erste. Übergänge und Steuerung sehen Besucher.' => 'Slider with {n} slides – the preview shows the first. Visitors see transitions and controls.',
     // „Auf der Startseite hervorheben“, Block „Highlights“ (Core\Data\Featured)
+    '{n} hervorgehobene Einträge stehen schon im Slider dieser Seite und werden hier ausgelassen.' => '{n} featured entries are already in the slider on this page and are left out here.',
+    '{n} Einträge stehen auch im Slider dieser Seite. Mit „Einträge auslassen, die schon im Slider dieser Seite stehen“ erscheint jeder nur einmal.' => '{n} entries also appear in the slider on this page. With “Leave out entries already in the slider on this page” each appears only once.',
     'Auf der Startseite hervorheben' => 'Feature on the home page',
     'Bitte ein Datum angeben.' => 'Please enter a date.',
     'Bitte eine ganze Zahl angeben.' => 'Please enter a whole number.',
