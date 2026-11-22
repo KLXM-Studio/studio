@@ -780,6 +780,12 @@ final class DataController extends AdminController
             $in['online_from'] = $r->str('online_from');
             $in['online_until'] = $r->str('online_until');
         }
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): Schalter, Reihenfolge, „bis“ – nur mit Veröffentlichungsrecht
+        if (\Core\Data\Featured::enabled($t) && can('data.publish', $handle) && array_key_exists('_featured_form', $r->post)) {
+            $in[\Core\Data\Featured::COL] = $r->str(\Core\Data\Featured::COL);
+            $in[\Core\Data\Featured::ORDER] = $r->str(\Core\Data\Featured::ORDER);
+            $in[\Core\Data\Featured::UNTIL] = $r->str(\Core\Data\Featured::UNTIL);
+        }
         // Serie: Vorkommen bearbeitet → Bereich „nur dieser / dieser und folgende / alle“ (Core\Data\Series)
         $occ = $id !== null ? \Core\Data\Series::ridFromKey($r->str('vorkommen')) : null;
         $head = $occ !== null ? Entries::find($t, (int) $id) : null;

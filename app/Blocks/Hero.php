@@ -247,14 +247,21 @@ final class Hero
      */
     public static function videoToggle(string $class = '', string $mode = 'icon'): string
     {
+        return self::playToggle($class, $mode, lt('Hintergrundvideo anhalten'), lt('Hintergrundvideo abspielen'), 'data-hero-video-toggle') . self::script();
+    }
+
+    /**
+     * Der gemeinsame Play/Pause-Knopf (Muster des Video-Schalters, Stile css/video-toggle.css) mit eigenen Beschriftungen und eigenem
+     * Daten-Attribut – z. B. „Automatischen Wechsel anhalten/starten“ des Einstiegs als Slider (Core\Blocks\HeroSlider, data-hs-toggle).
+     * Ausgangszustand „angehalten“ und verborgen (hidden): das jeweilige Skript zeigt ihn und setzt Zustand, Text und title.
+     */
+    public static function playToggle(string $class, string $mode, string $pause, string $play, string $attr): string
+    {
         $mode = self::toggleMode($mode);
-        $pause = lt('Hintergrundvideo anhalten');
-        $play = lt('Hintergrundvideo abspielen');
-        // Ausgangszustand „angehalten“: das Video läuft erst, wenn das Skript es startet
-        return '<button type="button" class="' . e(trim($class . ' hx-toggle hx-vt hx-vt--' . $mode)) . ' is-paused" data-hero-video-toggle hidden title="' . e($play) . '">'
+        return '<button type="button" class="' . e(trim($class . ' hx-toggle hx-vt hx-vt--' . $mode)) . ' is-paused" ' . e($attr) . ' hidden title="' . e($play) . '">'
             . icon('pause', ['class' => 'hx-ico hx-ico--pause']) . icon('play', ['class' => 'hx-ico hx-ico--play'])
             . '<span class="hx-vt__label" data-l-pause="' . e($pause) . '" data-l-play="' . e($play) . '">' . e($play) . '</span></button>'
-            . self::toggleCss() . self::script();
+            . self::toggleCss();
     }
 
     /** Einmal je Seite: Stylesheet des Video-Schalters (Kit-Datei css/video-toggle.css ersetzt die des Kerns; nicht im Bearbeitungsmodus) */

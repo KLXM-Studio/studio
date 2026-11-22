@@ -565,6 +565,12 @@ final class Tables
             'form' => DataForms::validateSettings((array) ($s['form'] ?? []), $all, $errors, $existing['settings']['form'] ?? null, $formUploads, $formKnown),
         ];
         $settings['kind'] = $kind;
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): nur gespeichert, wenn gesetzt oder schon da (Bestand bleibt byte-gleich)
+        if (array_key_exists('featured', $s)) {
+            if (!empty($s['featured']) || !empty($existing['settings']['featured'])) $settings['featured'] = !empty($s['featured']);
+        } elseif (!empty($existing['settings']['featured'])) {
+            $settings['featured'] = true;
+        }
         // Kalender (Art calendar): Zuordnung fest aufs Grundschema (Core\Data\Kinds::CALENDAR_MAP), Fehler der freien Zuordnung entfallen
         if ($kind === Kinds::CALENDAR) {
             $settings['calendar'] = Kinds::calendarSettings($settings['calendar']);
@@ -882,6 +888,12 @@ final class Tables
             $t->addColumn(Network::COL_SITES, 'text', ['notnull' => false]);
         }
         if (in_array(Network::EXTERNAL, $cols, true)) $t->addColumn(Network::EXTERNAL, 'text', ['notnull' => false]);
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): Schalter, Reihenfolge, „bis“ – bleiben, wenn einmal da
+        if (!empty($table['settings']['featured']) || Featured::hasColumns($cols)) {
+            $t->addColumn(Featured::COL, 'integer', ['default' => 0]);
+            $t->addColumn(Featured::ORDER, 'integer', ['notnull' => false]);
+            $t->addColumn(Featured::UNTIL, 'string', ['length' => 10, 'notnull' => false]);
+        }
         // Adressbücher (Art contacts, Core\Data\VCards): UID aus Apps/Import und unbekannte vCard-Eigenschaften – bleiben, wenn einmal da
         if (Kinds::isContacts($table) || in_array(VCards::EXTRA, $cols, true)) {
             if (!Kinds::isCalendar($table) && !in_array(Series::SERIES, $cols, true)) $t->addColumn(VCards::UID, 'string', ['length' => 255, 'notnull' => false]);
