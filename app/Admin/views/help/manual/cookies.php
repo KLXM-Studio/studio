@@ -12,7 +12,7 @@ $ckOn = \Core\Extensions::isActive('consent_kit') && \Core\Features::on('consent
   <ul>
     <li><b>Gleichwertig:</b> „Alle ablehnen“ und „Alle akzeptieren“ sehen immer gleich aus – das verlangen die Aufsichtsbehörden.</li>
     <li><b>Widerruf:</b> Besucher ändern ihre Auswahl jederzeit über „Datenschutz-Einstellungen“ im Fußbereich.</li>
-    <li><b>Videos:</b> Ist YouTube als Dienst angelegt, gilt die Einwilligung auch für das Video („künftig direkt laden“) – und umgekehrt.</li>
+    <li><b>Videos:</b> Ist YouTube als Dienst angelegt, gilt die Einwilligung auch für das Video („künftig direkt laden“) – und umgekehrt. Mit <a href="#video-lightbox">Video-Links in der Lightbox</a> öffnen Links auf YouTube- und Vimeo-Videos nach dieser Einwilligung den Player in der Lightbox.</li>
     <li><b>Karten, Beiträge, Podcasts:</b> Block „Externer Inhalt (mit Einwilligung)“ zeigt erst einen Platzhalter mit „Inhalt einmal laden“ und „immer erlauben“. Die eigenen Karten der Website brauchen keine Einwilligung.</li>
     <li><b>Protokoll:</b> Jede Entscheidung wird als Nachweis gespeichert – ohne IP-Adresse und ohne Browserkennung – und nach der eingestellten Frist gelöscht. Export als CSV.</li>
   </ul>

@@ -25,4 +25,12 @@
     <li>Jede Gruppe beginnt mit einem Satz, wofür sie gilt und was passiert, wenn Felder leer bleiben; leere Felder zeigen den Wert, der dann gilt (z. B. „leer: Name der Website“).</li>
     <li><b>Letzte Änderungen:</b> Unter dem Formular stehen die letzten Änderungen mit Zeit, Person und Weg (Verwaltung, REST-API, MCP, KI), jeweils vorher → nachher. <b>Zurücknehmen</b> stellt die Werte vor dieser Änderung wieder her – solange niemand die Felder seitdem erneut geändert hat; sonst sagt ein Hinweis, welches Feld, und nichts wird überschrieben.</li>
   </ul>
+  <h3 id="video-lightbox">Video-Links in der Lightbox</h3>
+  <p>Unter <b>Darstellung → Video-Links</b> schalten Sie <b>Video-Links in Lightbox öffnen</b> ein (Standard: aus). Dann öffnen Buttons und Links auf ein YouTube- oder Vimeo-Video (Adressen wie <code>youtube.com/watch?v=…</code>, <code>youtu.be/…</code>, <code>youtube.com/shorts/…</code>, <code>vimeo.com/123456789</code>) den Player in einer großen Ansicht über der Seite – im Format 16:9, auf dem Telefon in voller Breite. Schließen mit Esc oder dem Kreuz; danach steht man wieder am Link.</p>
+  <ul>
+    <li><b>Nur mit Einwilligung:</b> Die Lightbox öffnet sich nur, wenn Besucher in den Dienst eingewilligt haben – über die Cookie-Einwilligung (Dienst YouTube bzw. Vimeo) oder, ohne Cookie-Einwilligung, mit „YouTube-Videos künftig direkt laden“ am Video-Block. Wer nicht eingewilligt hat, folgt einem ganz normalen Link wie bisher; bis dahin lädt die Seite nichts vom Anbieter. Ändert sich die Einwilligung, gilt das ab dem nächsten Klick.</li>
+    <li><b>Zwei-Klick-Hinweis</b> (optional, Standard: aus): Mit <b>Ohne Einwilligung Zwei-Klick-Hinweis in der Lightbox zeigen</b> erklärt die Lightbox zuerst, dass der Anbieter Daten erhält, und lädt das Video erst nach „YouTube-Video laden“. Ein Vorschaubild erscheint nur, wenn es auf Ihrem Server zwischengespeichert ist.</li>
+    <li><b>Einzelne Buttons ausnehmen:</b> Steht im Link-Feld eines Buttons eine Video-Adresse, erscheint darunter <b>Video ohne Lightbox öffnen (normaler Link)</b>. Im Fließtext finden Sie dieselbe Option in der Linkauswahl (Reiter „Web-Adresse“).</li>
+    <li>Ohne JavaScript bleibt jeder Video-Link ein normaler Link. Der Link „Auf YouTube ansehen“ im Video-Block öffnet weiter die Seite des Anbieters.</li>
+  </ul>
   <?php include __DIR__ . '/_design.php'; ?>
