@@ -118,6 +118,7 @@
  * Betrieb & Deploy
  *   migrate [--all]                                   Datenbank auf den Stand des Codes bringen (nach jedem Deploy)
  *   blocks:list | blocks:selftest                     Eigene Blöcke (Block-Designer) auflisten | Sicherheits-Selbsttest der Vorlagensprache
+ *   listtemplates:selftest                            Selbsttest Listen-Vorlagen (Anwenden, aus Block übernehmen, Standard, Rechte, ohne Vorlage unverändert)
  *   blocks:demos [--install=name|--all]               Beispiel-Blöcke (app/Blocks/demos) auflisten bzw. als Entwurf übernehmen
  *                                                     (wiederholbar: vorhandene Kopien werden nicht noch einmal angelegt)
  *   guide:list | guide:selftest                       Hinweise zu diesem Projekt (Kit + Website) auflisten | Selbsttest des Einlesens
@@ -1666,6 +1667,13 @@ switch ($cmd) {
     case 'blocks:selftest':
         // Block-Designer (Core\Blocks): Escaping/XSS, Ablehnung unsicherer Vorlagen und CSS, Gleichheit mit dem Theme-Export
         $res = Core\Blocks\SelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'listtemplates:selftest':
+        // Listen-Vorlagen (Core\Blocks\ListTemplates): Anwenden, Übernehmen, Standard je Tabelle, Kit-Vorlagen, Rechte, unverändert ohne Vorlage
+        $res = Core\Blocks\ListTemplates::selfTest();
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

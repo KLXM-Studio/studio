@@ -221,6 +221,11 @@ final class Database
             'graphic_sources' => "ref VARCHAR(40) NOT NULL PRIMARY KEY, svg $long, hash VARCHAR(40) NOT NULL, updated_at VARCHAR(25)",
             // Bildkompositionen (Grafik-Editor, Persona Bild; gelesen von Core\Graphics\Store): Ausgaben je Format (role out, board = Zeichenfläche) und
             // verwendete Fotos der Mediathek (role src) – für „Bearbeiten“ aus der Mediathek und „Verwendet auf“ der Quellfotos
+            // Listen-Vorlagen (Core\Blocks\ListTemplates): gespeicherte Darstellung für Listenblöcke (data_list) je Tabelle; options_json = Optionen
+            // ohne Tabellen-Präfix, elements_json für den späteren visuellen Designer (Grundform custom), locked/shared für Sperre und Netzwerk
+            'list_templates' => "id $pk, table_handle VARCHAR(64) NOT NULL, block VARCHAR(40) NOT NULL DEFAULT 'data_list', tkey VARCHAR(64) NOT NULL,
+                name $str NOT NULL, base VARCHAR(20) NOT NULL DEFAULT 'cards', options_json TEXT, elements_json TEXT NULL, locked INT NOT NULL DEFAULT 0,
+                is_default INT NOT NULL DEFAULT 0, shared INT NOT NULL DEFAULT 0, preview TEXT NULL, created_by INT NULL, created_at VARCHAR(25), updated_at VARCHAR(25)",
             'graphic_media' => "graphic_id INT NOT NULL, media_id INT NOT NULL, role VARCHAR(8) NOT NULL, board VARCHAR(40) NULL, hash VARCHAR(40) NULL",
         ];
 
@@ -330,6 +335,7 @@ final class Database
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS inbox_log_time ON inbox_log (created_at)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS change_log_status ON change_log (status, id)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS activity_time ON activity_log (created_at)');
+            $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS list_tpl_key ON list_templates (table_handle, block, tkey)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS settings_rev_area ON settings_revisions (area, id)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS activity_entity ON activity_log (type, tbl, entity_id)');
             $this->pdo->exec('CREATE INDEX IF NOT EXISTS media_tracks_media ON media_tracks (media_id, status)');

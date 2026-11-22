@@ -24,7 +24,7 @@ namespace Core;
 final class Fields
 {
     public const TYPES = ['text', 'textarea', 'richtext', 'inline', 'email', 'tel', 'url', 'link', 'number',
-        'bool', 'select', 'multiselect', 'iban', 'datatable', 'datafield', 'datafields', 'date', 'datetime', 'time', 'recurrence', 'color', 'icon', 'geo', 'page', 'pages', 'media', 'file', 'collection', 'mediatext', 'blocks', 'repeater', 'group', 'secret', 'heading'];
+        'bool', 'select', 'multiselect', 'iban', 'datatable', 'datafield', 'datafields', 'listtemplate', 'date', 'datetime', 'time', 'recurrence', 'color', 'icon', 'geo', 'page', 'pages', 'media', 'file', 'collection', 'mediatext', 'blocks', 'repeater', 'group', 'secret', 'heading'];
 
     /** Standardwerte eines Schemas als flaches Array */
     public static function defaults(array $fields): array
@@ -289,6 +289,9 @@ final class Fields
                 // Eingangs-Tabellen (verschlüsselte Anfragen) nur, wo das Feld sie ausdrücklich zulässt (Block „Formular“)
                 $dt = $s === '' ? null : \Core\Data\Tables::find($s);
                 return [$dt && (!\Core\Data\Tables::isInbox($dt) || !empty($f['inbox'])) ? $s : '', null];
+            case 'listtemplate':
+                // Listen-Vorlage (Core\Blocks\ListTemplates): Schlüssel der Website oder kit:…/ext:… (Kit, Erweiterung); leer = eigene Einstellungen
+                return [preg_match('~^(?:(?:kit|ext):)?[a-z0-9][a-z0-9_-]{0,63}$~', $s) ? $s : '', null];
             case 'datafield':
                 return [preg_match('~^[a-z][a-z0-9_]*(\.[a-z_][a-z0-9_]*)?$~', $s) ? $s : '', null];
             case 'datafields':
@@ -452,16 +455,30 @@ final class Fields
             . '<fieldset class="f-exp__pop"><legend>' . e(__('Sichtbarkeit dieser Angabe')) . '</legend>' . $radios . '</fieldset></details></div>';
     }
 
+    /** Attribut data-show-if (' data-show-if="…"') aus 'show_if' eines Feldes oder Abschnitts; leer ohne Bedingung */
+    private static function showIfAttr(array $f, string $prefix): string
+    {
+        if (empty($f['show_if']) || !is_array($f['show_if'])) return '';
+        $cond = [];
+        $root = strstr($prefix, '[', true) ?: $prefix;   // '/variant' = Feld des Blocks (z. B. Variante) aus einer Wiederholgruppe heraus
+        foreach (array_is_list($f['show_if']) ? $f['show_if'] : [$f['show_if']] as $alt) {   // Liste = Alternativen (eine genügt)
+            $c = [];
+            foreach ((array) $alt as $n => $vals) $c[(str_starts_with((string) $n, '/') ? $root . '[' . substr((string) $n, 1) . ']' : $prefix . '[' . $n . ']')] = array_map('strval', (array) $vals);
+            $cond[] = $c;
+        }
+        return ' data-show-if="' . e(json_encode($cond, JSON_UNESCAPED_UNICODE)) . '"';
+    }
+
     public static function renderForm(array $fields, array $values, array $errors = [], string $prefix = 'f', string $path = ''): string
     {
         $html = '';
-        $open = null;   // aufklappbarer Abschnitt: [Kopf, Inhalt, offen?, zählen?, Felder, ausgefüllt, Varianten]
+        $open = null;   // aufklappbarer Abschnitt: [Kopf, Inhalt, offen?, zählen?, Felder, ausgefüllt, Varianten, show_if-Attribut]
         $close = function () use (&$open, &$html): void {
             if ($open === null) return;
             // 'count' => true: „3 von 7 ausgefüllt“ im Kopf (resources/js/_fsec.js aktualisiert beim Tippen, ohne ausgeblendete Felder)
             $count = $open[3] && $open[4] > 0 ? '<span class="f-sec__hint f-sec__count" data-sec-count>' . e(__('{n} von {total} ausgefüllt', ['n' => $open[5], 'total' => $open[4]])) . '</span>' : '';
             $html .= '<details class="f-sec"' . ($open[2] ? ' open' : '') . ($count !== '' ? ' data-count="' . e(__('{n} von {total} ausgefüllt')) . '"' : '')
-                . ($open[6] !== '' ? ' data-variants="' . e($open[6]) . '"' : '') . '>'
+                . ($open[6] !== '' ? ' data-variants="' . e($open[6]) . '"' : '') . $open[7] . '>'
                 . str_replace('</summary>', $count . '</summary>', $open[0]) . '<div class="f-sec__body">' . $open[1] . '</div></details>';
             $open = null;
         };
@@ -474,12 +491,14 @@ final class Fields
                         . (!empty($f['links']) ? '<p class="f-help">' . implode(' · ', array_map(fn($l) => '<a href="' . e(url((string) $l['url'])) . '">' . e((string) $l['label']) . '</a>', (array) $f['links'])) . '</p>' : '');
                     $open = ['<summary class="f-sec__sum"><span class="f-sec__title">' . e($f['label']) . '</span>'
                         . (!empty($f['summary']) ? '<span class="f-sec__hint">' . e((string) $f['summary']) . '</span>' : '') . '</summary>', $help, $f['collapse'] === 'open', !empty($f['count']), 0, 0,
-                        implode(' ', array_map('strval', (array) ($f['variants'] ?? [])))];   // 'variants': ganzer Abschnitt nur bei diesen Varianten
+                        implode(' ', array_map('strval', (array) ($f['variants'] ?? []))),   // 'variants': ganzer Abschnitt nur bei diesen Varianten
+                        self::showIfAttr($f, $prefix)];   // 'show_if': ganzer Abschnitt nur unter dieser Bedingung (z. B. ohne Listen-Vorlage)
                     continue;
                 }
             }
             $v = $values[$f['name'] ?? ''] ?? ($f['default'] ?? self::emptyValue($f));
-            if (!empty($f['date_only_if'])) $f['_date_only'] = !empty($values[$f['date_only_if']]);   // Datum/Uhrzeit: „ganztägig“ gesetzt
+            if (!empty($f['date_only_if'])) $f['_date_only'] = !empty($values[$f['date_only_if']]);
+            if (($f['type'] ?? '') === 'listtemplate') $f['_table'] = (string) ($values['table'] ?? '');   // Vorlagen der gewählten Tabelle   // Datum/Uhrzeit: „ganztägig“ gesetzt
             $one = self::renderField($f, $v, $errors, $prefix, $path);
             // Freigabe je Eintrag (Core\Data\Exposure, Feld im Modus „Redaktion entscheidet“): Schalter direkt am Feld
             if (!empty($f['expose']) && isset($f['name']) && $path === '') $one = self::renderExpose($f, $values, $prefix, $one);
@@ -589,15 +608,9 @@ final class Fields
         // '*' = ausgefüllt, '' = leer) – auch in Wiederholgruppen (Felder derselben Zeile). Nur Anzeige (resources/js/admin.js
         // initShowIf): der Wert bleibt beim Umschalten erhalten und wird gespeichert. Datentabellen nutzen 'visible_if' (Core\Data\Rules).
         if (!empty($f['show_if']) && is_array($f['show_if'])) {
-            $cond = [];
-            $root = strstr($prefix, '[', true) ?: $prefix;   // '/variant' = Feld des Blocks (z. B. Variante) aus einer Wiederholgruppe heraus
-            foreach (array_is_list($f['show_if']) ? $f['show_if'] : [$f['show_if']] as $alt) {   // Liste = Alternativen (eine genügt)
-                $c = [];
-                foreach ((array) $alt as $n => $vals) $c[(str_starts_with((string) $n, '/') ? $root . '[' . substr((string) $n, 1) . ']' : $prefix . '[' . $n . ']')] = array_map('strval', (array) $vals);
-                $cond[] = $c;
-            }
+            $attr = self::showIfAttr($f, $prefix);
             unset($f['show_if']);
-            return '<div class="f-vis" data-show-if="' . e(json_encode($cond, JSON_UNESCAPED_UNICODE)) . '">' . self::renderField($f, $value, $errors, $prefix, $path) . '</div>';
+            return '<div class="f-vis"' . $attr . '>' . self::renderField($f, $value, $errors, $prefix, $path) . '</div>';
         }
         if (self::$binding && $path === '' && isset($f['name']) && ($opts = \Core\Data\Entries::bindable(self::$binding['table'], $f['type'] ?? 'text'))) {
             $b = self::$binding;
@@ -658,6 +671,10 @@ final class Fields
             // Gruppe mit altem Einzelwert (Feld war früher Text): als erste Zeile übernehmen
             $items = is_array($value) ? $value : ($type === 'group' && is_scalar($value) && trim((string) $value) !== '' ? [[($f['fields'][0]['name'] ?? '') => (string) $value]] : []);
             return self::renderRepeater($f, $items, $errors, $inputName, $p, $label, $errHtml);
+        }
+
+        if ($type === 'listtemplate') {
+            return \Core\Blocks\ListTemplates::renderInput($f, $inputName, is_scalar($value) ? (string) $value : '', $label, $help, isset($f['_table']) ? (string) $f['_table'] : null);
         }
 
         if ($type === 'datafields') {

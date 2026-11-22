@@ -50,8 +50,9 @@ final class Placement
     {
         return match ($type) {
             'data_form' => ['title' => $title, 'table' => $t['handle'], 'form_width' => 'text', 'form_align' => 'left'],
+            // Standard-Vorlage der Tabelle (Core\Blocks\ListTemplates), falls festgelegt – sonst eigene Einstellungen wie bisher
             default => ['title' => $title, 'table' => $t['handle'], 'fields' => [], 'layout' => 'cards', 'columns' => '3', 'ratio' => '16:10', 'limit' => 0,
-                'link_detail' => ($t['settings']['route'] ?? '') !== ''],
+                'link_detail' => ($t['settings']['route'] ?? '') !== '', 'template' => (string) \Core\Blocks\ListTemplates::defaultKey($t)],
         };
     }
 
