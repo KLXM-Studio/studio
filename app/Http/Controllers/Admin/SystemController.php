@@ -226,6 +226,10 @@ final class SystemController extends AdminController
         try {
             if ($r->str('mode') === 'local') {
                 $handle = $r->str('local');
+                // Netzwerk: Verknüpfungen auf lokale Tabellen als Zusatzfelder dieser Website (Core\Data\Network::sharePlan)
+                if ($r->str('local_fields_all') === '1' && ($lrow = app()->db->fetch('SELECT id FROM data_tables WHERE handle = ?', [$handle])) && ($lt = \Core\Data\Tables::find((int) $lrow['id']))) {
+                    $flags['local_fields'] = array_column(\Core\Data\Network::sharePlan($lt)['local'], 'name');
+                }
                 \Core\Data\Shared::shareLocal($handle, $members, false, $flags);
             } else {
                 $def = DataController::presetDef($r->str('preset'));

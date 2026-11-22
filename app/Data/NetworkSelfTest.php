@@ -71,7 +71,7 @@ final class NetworkSelfTest
             self::$ok += (int) $res['ok'];
             foreach ((array) $res['fails'] as $f) self::$fail[] = "$step ($site): $f";
         };
-        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB']] as [$s, $st]) {
+        foreach ([[$bund, 'setup'], [$la, 'landA'], [$lb, 'landB'], [$bund, 'bund'], [$la, 'landA2'], [$bund, 'bund2'], [$lb, 'join'], [$bund, 'cleanup'], [$lb, 'cleanupB'], [$bund, 'localPrep'], [$la, 'localMember'], [$bund, 'localBack']] as [$s, $st]) {
             $call($s, $st);
         }
         @unlink($file);
@@ -92,6 +92,7 @@ final class NetworkSelfTest
             $st = match ($step) {
                 'setup' => self::setup($st, $eq), 'landA' => self::landA($st, $eq), 'landB' => self::landB($st, $eq), 'bund' => self::bund($st, $eq),
                 'landA2' => self::landA2($st, $eq), 'bund2' => self::bund2($st, $eq), 'join' => self::join($st, $eq), 'cleanup' => self::cleanup($st, $eq), 'cleanupB' => self::cleanupB($st, $eq),
+                'localPrep' => self::localPrep($st, $eq), 'localMember' => self::localMember($st, $eq), 'localBack' => self::localBack($st, $eq),
                 default => throw new \InvalidArgumentException('Unbekannter Schritt'),
             };
         } catch (\Throwable $e) {
@@ -356,6 +357,103 @@ final class NetworkSelfTest
         $k = self::keys($st);
         if ($lt = Tables::find($k['k'])) Tables::delete($lt);
         $eq('Land B aufgeräumt', Tables::find($k['k']), null);
+        return $st;
+    }
+
+    // ================================================================= Teilen mit Verknüpfungen auf lokale Tabellen (Fall oejv: Termine/Personen)
+
+    /** Lokale Tabelle anlegen (Website, nicht geteilt) */
+    private static function local(string $handle, array $in): array
+    {
+        [$def, $err] = Tables::validate($in + ['handle' => $handle]);
+        if ($err) throw new \RuntimeException("Tabelle $handle: " . json_encode($err, JSON_UNESCAPED_UNICODE));
+        return Tables::find(Tables::create($def)) ?? throw new \RuntimeException("Tabelle $handle fehlt");
+    }
+
+    private static function localPrep(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        [, $la] = $st['sites'];
+        $rg = self::local('ntr_' . $s, ['name' => 'Regionalgruppen', 'settings' => ['route' => 'ntr-' . $s], 'fields' => [['label' => 'Name', 'name' => 'name', 'type' => 'text', 'required' => 1]]]);
+        $ws = self::local('ntw_' . $s, ['name' => 'Workshops', 'fields' => [['label' => 'Titel', 'name' => 'titel', 'type' => 'text', 'required' => 1]]]);
+        $cal = self::local('ntc_' . $s, ['name' => 'Termine', 'settings' => ['kind' => Kinds::CALENDAR], 'fields' => [
+            ['label' => 'Regionalgruppe', 'name' => 'regionalgruppe', 'type' => 'relation', 'target' => $rg['handle']],
+            ['label' => 'Workshop', 'name' => 'workshop', 'type' => 'relation', 'target' => $ws['handle']]]]);
+        $ppl = self::local('ntp_' . $s, ['name' => 'Personen', 'settings' => ['kind' => Kinds::CONTACTS], 'fields' => [
+            ['label' => 'Regionalgruppe', 'name' => 'regionalgruppe', 'type' => 'relation', 'target' => $rg['handle']]]]);
+        $eq('Kalender: „Ort aus der Liste“ ohne Ziel', (string) (Tables::field($cal, 'ort_ref')['target'] ?? 'x'), '');
+        $st['R1'] = self::save($rg, ['name' => 'Niederrhein']);
+        $st['R2'] = self::save($rg, ['name' => 'Ruhr']);
+        $st['W1'] = self::save($ws, ['titel' => 'Kartieren']);
+        $st['C1'] = self::save($cal, ['titel' => 'Gruppenabend', 'beginn' => '2027-05-03 19:00', 'regionalgruppe' => $st['R1'], 'workshop' => $st['W1']]);
+        $st['C2'] = self::save($cal, ['titel' => 'Stammtisch', 'beginn' => '2027-05-04 19:00', 'regionalgruppe' => $st['R2']]);
+        $st['C3'] = self::save($cal, ['titel' => 'Ohne Gruppe', 'beginn' => '2027-05-05 19:00']);
+        $st['P1'] = self::save($ppl, ['vorname' => 'Rita', 'nachname' => 'Regional', 'regionalgruppe' => $st['R1'], 'oeffentlich' => 1]);
+        $titles = fn(array $t, array $o) => array_map(fn($e) => Entries::title($t, $e), Entries::query($t, $o + ['status' => 'all', 'lang' => 'all']));
+        // Probelauf ohne Wahl: Vorschlag, keine leeren Namen
+        $plan = Network::sharePlan($cal);
+        $eq('Plan: Verknüpfung ohne Ziel „nicht eingerichtet“', array_column($plan['unset'], 'name'), ['ort_ref']);
+        $eq('Plan: lokale Verknüpfungen mit Anzahl', array_map(fn($r) => $r['name'] . ':' . $r['filled'], $plan['local']), ['regionalgruppe:2', 'workshop:1']);
+        $eq('Plan: Vorschlag --local-fields', str_contains((string) $plan['error'], '--local-fields=regionalgruppe,workshop'), true);
+        try {
+            Shared::shareLocal($cal['handle'], [$la]);
+            $eq('Teilen ohne Wahl bricht ab', 'geteilt', 'Fehler');
+        } catch (\InvalidArgumentException $e) {
+            $eq('Teilen ohne Wahl bricht ab, Meldung ohne leere Namen', [str_contains($e->getMessage(), '„“'), str_contains($e->getMessage(), 'Regionalgruppe')], [false, true]);
+        }
+        // Teilen mit Zusatzfeldern
+        $log = Shared::shareLocal($cal['handle'], [$la], false, ['local_fields' => ['regionalgruppe', 'workshop']]);
+        $eq('Teilen: Protokoll nennt nicht eingerichtetes Feld und Zusatzfelder', [(bool) array_filter($log, fn($l) => str_contains($l, 'Ort aus der Liste')), (bool) array_filter($log, fn($l) => str_contains($l, 'Zusatzfeld'))], [true, true]);
+        $t = self::table($cal['handle']);
+        $eq('Geteilt: Zusatzfelder dieser Website', array_column((array) ($t['site_fields'] ?? []), 'name'), ['regionalgruppe', 'workshop']);
+        $eq('Geteilt: Feld nicht mehr im gemeinsamen Schema', Tables::field($t, 'regionalgruppe'), null);
+        $c1 = Entries::find($t, (int) $st['C1']) ?? [];
+        $eq('Werte bleiben für die Eigentümer-Website', [$c1['regionalgruppe'] ?? null, $c1['workshop'] ?? null], [(int) $st['R1'], (int) $st['W1']]);
+        $eq('Filter auf Zusatzfeld (Entries::query)', $titles($t, ['where' => [['regionalgruppe', '=', (string) $st['R1']]]]), ['Gruppenabend']);
+        $eq('Filter „ist nicht“ auf Zusatzfeld', $titles($t, ['where' => [['regionalgruppe', '!=', (string) $st['R1']]], 'sort' => 'titel']), ['Ohne Gruppe', 'Stammtisch']);
+        // Datenliste/Kalender auf der Detailseite der Regionalgruppe: „verknüpft mit dem aufgerufenen Eintrag“
+        $prev = app()->entry;
+        app()->entry = ['table' => $rg, 'entry' => Entries::find($rg, (int) $st['R2']) ?? []];
+        [$w] = Calendar::blockWhere($t, ['filter_field' => $t['handle'] . '.regionalgruppe', 'filter_op' => 'current']);
+        $eq('Detailseite der Regionalgruppe: Termine (current)', $titles($t, ['where' => $w, 'status' => 'published']), ['Stammtisch']);
+        app()->entry = ['table' => $t, 'entry' => $c1];
+        [$w] = Calendar::blockWhere($t, ['filter_field' => $t['handle'] . '.regionalgruppe', 'filter_op' => 'same']);
+        $eq('„gleich wie beim aufgerufenen Eintrag“ (same)', $titles($t, ['where' => $w]), ['Gruppenabend']);
+        app()->entry = $prev;
+        $eq('In deiner Nähe über die Regionalgruppe (Zusatzfeld)', Nearby::inRegion($t, $c1, [$rg['handle'] . ':' . $st['R1']]), true);
+        $eq('Zusatzangabe ändern', Network::saveExtras($t, (int) $st['C3'], ['regionalgruppe' => (string) $st['R2']]), []);
+        $eq('Geänderte Zuordnung wirkt im Filter', $titles(self::table($cal['handle']), ['where' => [['regionalgruppe', '=', (string) $st['R2']]], 'sort' => 'titel']), ['Ohne Gruppe', 'Stammtisch']);
+        // Personen mit Regionalgruppe
+        Shared::shareLocal($ppl['handle'], [$la], false, ['local_fields' => ['regionalgruppe']]);
+        $pt = self::table($ppl['handle']);
+        $eq('Personen: Regionalgruppe bleibt (Zusatzfeld)', (Entries::find($pt, (int) $st['P1']) ?? [])['regionalgruppe'] ?? null, (int) $st['R1']);
+        return $st;
+    }
+
+    private static function localMember(array $st, \Closure $eq): array
+    {
+        $t = self::table('ntc_' . $st['sfx']);
+        $c1 = Entries::find($t, (int) $st['C1']) ?? [];
+        $eq('Andere Website: Termin sichtbar, Zuordnung der Eigentümer-Website nicht', [Entries::title($t, $c1), array_key_exists('regionalgruppe', $c1), (array) ($t['site_fields'] ?? [])], ['Gruppenabend', false, []]);
+        return $st;
+    }
+
+    private static function localBack(array $st, \Closure $eq): array
+    {
+        $s = (string) $st['sfx'];
+        foreach (['ntc_' . $s, 'ntp_' . $s] as $h) {
+            Shared::update($h, ['members' => []]);
+            Shared::unshare($h, true);
+        }
+        Tables::flush();
+        $t = Tables::find('ntc_' . $s) ?? throw new \RuntimeException('Termine nicht zurück');
+        $c = Entries::find($t, (int) $st['C1']) ?? [];
+        $eq('Rückweg: Felder wieder Spalten, Werte zurück', [!Tables::isShared($t), Tables::field($t, 'regionalgruppe')['target'] ?? null, $c['regionalgruppe'] ?? null, $c['workshop'] ?? null],
+            [true, 'ntr_' . $s, (int) $st['R1'], (int) $st['W1']]);
+        $eq('Rückweg: geänderte Zuordnung übernommen', (Entries::find($t, (int) $st['C3']) ?? [])['regionalgruppe'] ?? null, (int) $st['R2']);
+        $pt = Tables::find('ntp_' . $s);
+        $eq('Rückweg Personen', $pt ? ((Entries::find($pt, (int) $st['P1']) ?? [])['regionalgruppe'] ?? null) : null, (int) $st['R1']);
+        foreach (['ntc_', 'ntp_', 'ntw_', 'ntr_'] as $p) if ($lt = Tables::find($p . $s)) Tables::delete($lt);
         return $st;
     }
 }

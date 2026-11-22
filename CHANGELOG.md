@@ -25,6 +25,10 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Grundschema im Netzwerk:** `data:kind-upgrade` hebt geteilte Tabellen (nur Eigentümer, für alle Websites); Beitritt mit älterem eigenen
   Adressbuch füllt die Funktionen, neuere Version wird abgelehnt. **Beitritt mit Plan** (`data:network-join`): Doppel existing/mine/both,
   Rückweg über Verlassen.
+- **Teilen mit Verknüpfungen auf lokale Tabellen:** Felder ohne Zieltabelle (z. B. „Ort aus der Liste“) brechen das Teilen nicht mehr ab;
+  Verknüpfungen auf Tabellen, die lokal bleiben (Regionalgruppen, Workshops), werden auf Wunsch (`data:share --local-fields=…`, Probelauf
+  `--dry-run`, Häkchen in der Verwaltung) Zusatzfelder der teilenden Website – Werte bleiben, Filter „verknüpft mit dem aufgerufenen
+  Eintrag“ und „In deiner Nähe“ wirken weiter, beim Aufheben kehren sie in die Spalte zurück.
 - **Feldtypen** „Kontakt“/„Kontakte“ (Verknüpfung auf ein Adressbuch) und „Termin“ (Serie oder einzelnes Vorkommen).
 - **Für Entwickler:** Spalten `_share`, `_share_sites`, `_external`, Tabelle `share_extra` (additiv, nur mit Schalter bzw. Abo), Filter
   `data.nearby`, Einstellung `sys.nearby_geocode`, Befehle `data:network`, `data:network-join`, Selbsttest `shared:selftest`

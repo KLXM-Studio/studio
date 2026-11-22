@@ -801,13 +801,13 @@ final class Shared
         if (!$local || Tables::isInbox($local)) throw new \InvalidArgumentException(__('Eingangs-Tabellen (verschlüsselte Anfragen) lassen sich nicht teilen.'));
         foreach ($local['fields'] as $f) {
             if (in_array($f['name'], self::COLUMNS, true)) throw new \InvalidArgumentException(__('Das Feld „{name}“ ist in geteilten Tabellen reserviert – bitte zuerst umbenennen.', ['name' => $f['name']]));
-            if (in_array($f['type'], ['relation', 'relations'], true) && ($f['target'] ?? '') !== $handle) {
-                $target = self::meta((string) ($f['target'] ?? ''));
-                if (!$target || $target['owner'] !== site()->key) {
-                    throw new \InvalidArgumentException(__('Feld „{label}“ verknüpft die lokale Tabelle „{target}“. Verknüpfungen sind nur zu geteilten Tabellen derselben Website möglich – bitte zuerst „{target}“ teilen.', ['label' => $f['label'], 'target' => (string) ($f['target'] ?? '')]));
-                }
-            }
         }
+        // Verknüpfungen (Core\Data\Network::sharePlan): ohne Ziel = „nicht eingerichtet“ (bleibt), auf geteilte Tabellen dieser Website = bleibt,
+        // auf lokale Tabellen nur mit $flags['local_fields'] – dann als Zusatzfelder dieser Website (Werte nach share_extra, Rückweg beim Aufheben)
+        $plan = Network::sharePlan($local, (array) ($flags['local_fields'] ?? []));
+        if ($plan['error'] !== null) throw new \InvalidArgumentException($plan['error']);
+        $convert = $plan['convert'];
+        array_push($log, ...Network::sharePlanReport(['unset' => $plan['unset'], 'convert' => [], 'local' => []]));
         $localCfgDetail = $local['settings']['detail_page_id'] ?? null;
         if ($merge) {
             $meta = self::meta($handle) ?? throw new \InvalidArgumentException(__('Zum Zusammenführen gibt es keine geteilte Tabelle „{key}“.', ['key' => $handle]));
@@ -832,7 +832,8 @@ final class Shared
             $settings['detail_page_id'] = null;
             self::db($handle)->insert('data_tables', [
                 'handle' => $handle, 'name' => $local['name'], 'singular' => $local['singular'], 'icon' => $local['icon'], 'description' => $local['description'],
-                'fields_json' => json_encode(Tables::allFields($local), JSON_UNESCAPED_UNICODE), 'settings_json' => json_encode($settings, JSON_UNESCAPED_UNICODE),
+                'fields_json' => json_encode(array_values(array_filter(Tables::allFields($local), fn($f) => !in_array($f['name'] ?? '', $convert, true))), JSON_UNESCAPED_UNICODE),
+                'settings_json' => json_encode($settings, JSON_UNESCAPED_UNICODE),
                 'sort' => 0, 'created_at' => now(), 'updated_at' => now(),
             ]);
             $shared = self::hydrateRaw($handle);
@@ -848,7 +849,7 @@ final class Shared
         $media = array_column(array_filter($local['fields'], fn($f) => in_array($f['type'], ['media', 'file'], true)), 'name');
         $moved = 0;
         $renamed = [];
-        $sdb->transaction(function () use ($local, $shared, $sdb, $have, $merge, $media, $skip, &$map, &$moved, &$renamed) {
+        $sdb->transaction(function () use ($local, $shared, $sdb, $have, $merge, $media, $skip, &$map, &$moved, &$renamed): void {
             $fix = [];
             foreach (app()->db->fetchAll("SELECT * FROM {$local['table']} ORDER BY id") as $r) {
                 if (isset($skip[(int) $r['id']])) continue;
@@ -883,8 +884,9 @@ final class Shared
                     if ($upd) $sdb->update($shared['table'], $upd, 'id = :id', ['id' => $newId]);
                 }
             }
+            $pivots = array_column($sdb->fetchAll("SELECT name FROM sqlite_master WHERE type = 'table'"), 'name');
             foreach ($local['fields'] as $f) {
-                if ($f['type'] !== 'relations') continue;
+                if ($f['type'] !== 'relations' || !in_array(Tables::pivot($shared, $f['name']), $pivots, true)) continue;   // umgewandelt bzw. nicht im Schema
                 $pv = Tables::pivot($local, $f['name']);
                 $self = ($f['target'] ?? '') === $local['handle'];
                 foreach (app()->db->fetchAll("SELECT * FROM $pv") as $p) {
@@ -897,6 +899,8 @@ final class Shared
             }
         });
         $log[] = __('{n} Einträge übernommen.', ['n' => $moved]);
+        // Verknüpfungen auf lokale Tabellen: Zusatzfelder dieser Website mit den bisherigen Werten
+        if ($convert) array_push($log, ...Network::convertLocalFields($handle, $local, $convert, $map));
         // Netzwerk: übernommene Einträge mit Weitergabe-Stufe bekommen den Standard der Art (Adressbuch: nur diese Website)
         if ($merge && Network::levelsOn($shared)) {
             $sdb->query("UPDATE {$shared['table']} SET " . Network::COL . ' = ? WHERE origin_site = ? AND ' . Network::COL . ' IS NULL', [Network::defaultLevel($shared), site()->key]);
@@ -1069,6 +1073,8 @@ final class Shared
         $media = array_column(array_filter($t['fields'], fn($f) => in_array($f['type'], ['media', 'file'], true)), 'name');
         $pivots = [];
         foreach ($t['fields'] as $f) if ($f['type'] === 'relations') $pivots[$f['name']] = self::db($key)->fetchAll('SELECT * FROM ' . Tables::pivot($t, $f['name']));
+        // Netzwerk: beim Teilen umgewandelte Verknüpfungen (Zusatzfelder dieser Website) werden wieder Felder mit ihren Werten
+        if ($back = Network::restoreLocalFields($t, $rows, $pivots)) $def['fields'] = [...$def['fields'], ...$back];
         // Reste früherer Sicherungen (gleichnamige Indizes) dürfen das Anlegen nicht blockieren
         foreach (app()->db->driver === 'sqlite' ? app()->db->fetchAll("SELECT name, tbl_name FROM sqlite_master WHERE type = 'index' AND name LIKE ? AND tbl_name != ?", ['data_' . $key . '_%', 'data_' . $key]) : [] as $ix) {
             if (str_starts_with((string) $ix['tbl_name'], 'zz_unshared_')) app()->db->pdo->exec('DROP INDEX IF EXISTS "' . str_replace('"', '', (string) $ix['name']) . '"');

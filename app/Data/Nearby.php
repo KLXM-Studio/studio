@@ -123,7 +123,7 @@ final class Nearby
         if (!$regions) return false;
         $set = array_flip($regions);
         if (isset($set[$t['handle'] . ':' . (int) $e['id']])) return true;
-        foreach ($t['fields'] as $f) {
+        foreach ([...$t['fields'], ...(array) ($t['site_fields'] ?? [])] as $f) {   // auch Zusatzfelder dieser Website (Netzwerk)
             if ($f['type'] === 'relation' && (int) ($e[$f['name']] ?? 0) > 0 && isset($set[($f['target'] ?? '') . ':' . (int) $e[$f['name']]])) return true;
             if ($f['type'] === 'relations') foreach ((array) ($e[$f['name']] ?? []) as $id) if (isset($set[($f['target'] ?? '') . ':' . (int) $id])) return true;
             if ($f['type'] === Roles::TYPE) {

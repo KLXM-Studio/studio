@@ -182,7 +182,8 @@
  *   pool:create <key> "Name"                          Geteilten Medien-Pool anlegen (Websites: 'media_pools' => [...])
  *   pool:list                                         Pools und nutzende Websites
  *   data:share <handle> --members=a,b [--see-members] [--merge]
- *                                                     Tabelle dieser Website teilen (diese Website = Eigentümer, --site=…)
+ *                                                     Tabelle dieser Website teilen (diese Website = Eigentümer, --site=…); Verknüpfungen
+ *                                                     auf lokale Tabellen mit --local-fields=a,b als Zusatzfelder dieser Website, --dry-run = Plan
  *   data:unshare <handle> [--all-entries]             Freigabe beenden: wieder eigene Tabelle des Eigentümers
  *   data:selftest [--roundtrip]                       Selbsttest Tabellen-Definition: Rundlauf aller Tabellen, „Felder bearbeiten“ im Editor,
  *                                                     Zweck (Ableitung) und Assistent „Neue Tabelle“ je Zweck (vorübergehende Tabellen);
@@ -1495,9 +1496,21 @@ switch ($cmd) {
                 fwrite(STDERR, "Der Eigentümer ist die Website, auf der das Kommando läuft – bitte mit --site=" . substr($a, 8) . " aufrufen.\n"); exit(1);
             }
         }
-        if ($handle === '') { fwrite(STDERR, "Aufruf: data:share <handle> --members=a,b [--see-members] [--merge] [--site=eigentuemer]\n"); exit(1); }
+        if ($handle === '') { fwrite(STDERR, "Aufruf: data:share <handle> --members=a,b [--see-members] [--merge] [--local-fields=feld,feld] [--dry-run] [--site=eigentuemer]\n"); exit(1); }
+        // Verknüpfungen auf lokale Tabellen (Core\Data\Network::sharePlan): --local-fields übernimmt sie als Zusatzfelder dieser Website
+        $localFields = array_values(array_filter(array_map('trim', explode(',', (string) Core\Cli::opt($args, 'local-fields')))));
+        if (in_array('--dry-run', $args, true)) {
+            $lrow = app()->db->fetch('SELECT id FROM data_tables WHERE handle = ?', [$handle]);
+            $lt = $lrow ? Core\Data\Tables::find((int) $lrow['id']) : null;
+            if (!$lt) { fwrite(STDERR, "Lokale Tabelle „{$handle}“ gibt es nicht.\n"); exit(1); }
+            $plan = Core\Data\Network::sharePlan($lt, $localFields);
+            foreach (Core\Data\Network::sharePlanReport($plan) as $l) echo "  $l\n";
+            if ($plan['error'] !== null) { echo "\n  ! {$plan['error']}\n"; exit(1); }
+            echo "\nProbelauf – nichts geändert. Ohne --dry-run teilen.\n";
+            break;
+        }
         try {
-            foreach (Core\Data\Shared::shareLocal($handle, $members, in_array('--merge', $args, true), ['members_see_members' => in_array('--see-members', $args, true)]) as $line) echo "  $line\n";
+            foreach (Core\Data\Shared::shareLocal($handle, $members, in_array('--merge', $args, true), ['members_see_members' => in_array('--see-members', $args, true), 'local_fields' => $localFields]) as $line) echo "  $line\n";
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         echo "Geteilt: {$handle} (Eigentümer " . (Core\Data\Shared::meta($handle)['owner'] ?? site()->key) . ", Mitglieder: " . (implode(', ', Core\Data\Shared::meta($handle)['members'] ?? []) ?: '–') . ").\n";
         break;

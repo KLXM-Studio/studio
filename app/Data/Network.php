@@ -37,6 +37,8 @@ final class Network
     public const FLAGS = ['levels' => false, 'site_fields' => false];
     /** Feldtypen für Zusatzfelder je Website (keine Medien/Verknüpfungen: deren Werte gehören einer Website bzw. dem Pool) */
     public const SITE_TYPES = ['text', 'textarea', 'richtext', 'url', 'email', 'tel', 'date', 'bool', 'number', 'select', 'multiselect', Roles::TYPE];
+    /** Verknüpfungen als Zusatzfeld: nur auf eigene, nicht geteilte Tabellen dieser Website (z. B. Regionalgruppen beim Teilen der Termine) */
+    public const SITE_REL = ['relation', 'relations'];
 
     // ================================================================= Schalter
 
@@ -236,12 +238,31 @@ final class Network
         $out = [];
         $base = array_merge(Tables::SYSTEM, Shared::COLUMNS, [self::COL, self::COL_SITES, self::EXTERNAL], array_column($t['fields'], 'name'));
         $seen = [];
+        $prev = array_column(self::siteFields($key), null, 'name');
         foreach (array_values($rows) as $i => $f) {
             if (!is_array($f)) continue;
             $label = trim(strip_tags((string) ($f['label'] ?? '')));
             if ($label === '') continue;
-            $type = in_array($f['type'] ?? '', self::SITE_TYPES, true) ? (string) $f['type'] : 'text';
             $name = Tables::normName((string) (($f['name'] ?? '') ?: $label));
+            // Verknüpfungen auf lokale Tabellen dieser Website (beim Teilen übernommen bzw. ausdrücklich mit Ziel): Ziel und Herkunft bleiben
+            $p = $prev[$name] ?? null;
+            if ($p && in_array($p['type'], self::SITE_REL, true)) {
+                $seen[$name] = true;
+                $out[] = ['label' => mb_substr($label, 0, 80)] + $p;
+                continue;
+            }
+            if (in_array($f['type'] ?? '', self::SITE_REL, true)) {
+                $tt = Tables::findContent((string) ($f['target'] ?? ''));
+                if (!$tt || Tables::isShared($tt) || isset($seen[$name]) || in_array($name, $base, true)) {
+                    $errors["site_fields.$i"] = __('Zusatzfeld „{label}“: Verknüpfungen nur auf eigene, nicht geteilte Tabellen dieser Website.', ['label' => $label]);
+                    continue;
+                }
+                $seen[$name] = true;
+                $out[] = ['name' => $name, 'label' => mb_substr($label, 0, 80), 'type' => (string) $f['type'], 'target' => (string) $tt['handle'], 'required' => false,
+                    'in_list' => false, 'searchable' => false, 'help' => '', 'width' => '', 'site_extra' => true];
+                continue;
+            }
+            $type = in_array($f['type'] ?? '', self::SITE_TYPES, true) ? (string) $f['type'] : 'text';
             if ($name === '' || isset($seen[$name]) || (in_array($name, $base, true) && !($name === Roles::FIELD && $type === Roles::TYPE))) {
                 $errors["site_fields.$i"] = __('Zusatzfeld „{label}“: Der Name „{name}“ ist schon vergeben.', ['label' => $label, 'name' => $name]);
                 continue;
@@ -301,6 +322,8 @@ final class Network
                     'multiselect' => array_values(array_map('strval', (array) ($val ?? []))),
                     'bool' => !empty($val),
                     Roles::TYPE => Roles::items($val),
+                    'relation' => $val !== null && (int) $val > 0 ? (int) $val : null,
+                    'relations' => array_values(array_filter(array_map('intval', (array) ($val ?? [])))),
                     default => $val,
                 };
                 $site[$n] = $val;
@@ -333,7 +356,16 @@ final class Network
         [$values, $errors] = \Core\Fields::sanitize(Entries::schema(['fields' => [...$defs, ...array_values(array_filter($t['fields'], fn($f) => $f['name'] === 'listen'))], 'settings' => []] + $t), array_intersect_key($in, array_flip(array_column($defs, 'name'))), $cur);
         if ($errors) return $errors;
         $values = array_intersect_key($values, array_flip(array_column($defs, 'name')));
-        foreach ($defs as $f) if ($f['type'] === Roles::TYPE && isset($values[$f['name']])) $values[$f['name']] = Roles::items($values[$f['name']]);
+        foreach ($defs as $f) {
+            if (!array_key_exists($f['name'], $values)) continue;
+            $v = $values[$f['name']];
+            $values[$f['name']] = match ($f['type']) {
+                Roles::TYPE => Roles::items($v),
+                'relation' => $v !== null && (int) $v > 0 ? (int) $v : null,
+                'relations' => array_values(array_filter(array_map('intval', (array) ($v ?? [])))),
+                default => $v,
+            };
+        }
         $db->query('DELETE FROM share_extra WHERE extra_site = ? AND extra_entry = ?', [site()->key, $id]);
         $db->insert('share_extra', ['extra_site' => site()->key, 'extra_entry' => $id, 'extra_data' => json_encode(array_replace($cur, $values), JSON_UNESCAPED_UNICODE), 'extra_at' => now()]);
         PageCache::clear();
@@ -350,6 +382,161 @@ final class Network
             return '';
         }
         return (string) ($r['u'] ?? '') . '/' . (string) ($r['n'] ?? 0);
+    }
+
+    // ================================================================= Teilen: Verknüpfungen auf lokale Tabellen
+
+    /**
+     * Plan für das Teilen einer lokalen Tabelle (Shared::shareLocal): Verknüpfungen ohne Ziel (z. B. „Ort aus der Liste“ ohne Tabelle
+     * Orte) bleiben „nicht eingerichtet“; Verknüpfungen auf lokale Tabellen dieser Website, die lokal bleiben sollen (Regionalgruppen,
+     * Workshops), werden mit $localFields zu Zusatzfeldern dieser Website (Werte nach share_extra, Rückweg beim Aufheben).
+     * @return array{error: ?string, unset: list<array{name: string, label: string, filled: int}>, local: list<array{name: string, label: string, target: string, filled: int}>, convert: list<string>}
+     */
+    public static function sharePlan(array $local, array $localFields = []): array
+    {
+        $out = ['error' => null, 'unset' => [], 'local' => [], 'convert' => []];
+        $localFields = array_values(array_filter(array_map('strval', $localFields)));
+        foreach ($local['fields'] as $f) {
+            if (!in_array($f['type'], ['relation', 'relations'], true)) continue;
+            $target = (string) ($f['target'] ?? '');
+            if ($target === $local['handle']) continue;
+            $filled = self::filled($local, $f);
+            $tt = $target !== '' ? Tables::findContent($target) : null;
+            if (!$tt) { $out['unset'][] = ['name' => (string) $f['name'], 'label' => (string) $f['label'], 'filled' => $filled]; continue; }
+            if (Tables::isShared($tt) && ($tt['shared']['owner'] ?? '') === site()->key) continue;   // geteilte Tabelle derselben Website: bleibt Verknüpfung
+            $row = ['name' => (string) $f['name'], 'label' => (string) $f['label'], 'target' => $target, 'filled' => $filled];
+            if (in_array($f['name'], $localFields, true) && !Tables::isShared($tt)) $out['convert'][] = (string) $f['name'];
+            else $out['local'][] = $row;
+        }
+        if ($unknown = array_diff($localFields, $out['convert'])) {
+            $out['error'] = __('Diese Felder sind keine Verknüpfungen auf lokale Tabellen: {list}', ['list' => implode(', ', $unknown)]);
+        } elseif ($out['local']) {
+            $names = array_map(fn($r) => '„' . $r['label'] . '“ → „' . $r['target'] . '“', $out['local']);
+            $out['error'] = __('Verknüpfungen auf lokale Tabellen: {list}. Entweder die Zieltabellen zuerst teilen oder die Felder als Zusatzfelder dieser Website übernehmen (Werte bleiben erhalten): --local-fields={names}',
+                ['list' => implode(', ', $names), 'names' => implode(',', array_column($out['local'], 'name'))]);
+        }
+        return $out;
+    }
+
+    /** Wie viele Einträge haben in diesem Verknüpfungsfeld einen Wert? */
+    private static function filled(array $t, array $f): int
+    {
+        try {
+            return $f['type'] === 'relations'
+                ? (int) Tables::db($t)->fetchValue('SELECT COUNT(DISTINCT entry_id) FROM ' . Tables::pivot($t, (string) $f['name']))
+                : (int) Tables::db($t)->fetchValue("SELECT COUNT(*) FROM {$t['table']} WHERE {$f['name']} IS NOT NULL AND {$f['name']} != 0");
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    /** Bericht des Plans (Kommandozeile, Verwaltung) */
+    public static function sharePlanReport(array $plan): array
+    {
+        $l = [];
+        foreach ($plan['unset'] as $u) $l[] = __('Nicht eingerichtet (ohne Zieltabelle, bleibt leer): „{label}“', ['label' => $u['label']]) . ($u['filled'] ? ' – ' . __('{n} Werte ohne Ziel', ['n' => $u['filled']]) : '');
+        foreach ($plan['convert'] as $n) $l[] = __('Wird Zusatzfeld dieser Website (Werte bleiben, andere Websites sehen es nicht): {name}', ['name' => $n]);
+        foreach ($plan['local'] as $r) $l[] = __('Verknüpfung auf lokale Tabelle: „{label}“ → „{target}“ ({n} belegt) – Vorschlag: als Zusatzfeld übernehmen', ['label' => $r['label'], 'target' => $r['target'], 'n' => $r['filled']]);
+        return $l;
+    }
+
+    /**
+     * Beim Teilen bzw. Beitreten: umgewandelte Verknüpfungen als Zusatzfelder dieser Website anlegen und ihre Werte nach share_extra
+     * schreiben ($map: lokale ID → ID in der geteilten Tabelle). Die ursprüngliche Felddefinition bleibt am Zusatzfeld (orig) für den Rückweg.
+     * @return list<string> Protokoll
+     */
+    public static function convertLocalFields(string $key, array $local, array $names, array $map): array
+    {
+        if (!$names) return [];
+        $meta = Shared::meta($key) ?? throw new \InvalidArgumentException(__('Unbekannte geteilte Tabelle.'));
+        if (empty($meta['network']['site_fields'])) {
+            if ($meta['owner'] !== site()->key) throw new \InvalidArgumentException(__('Zusatzfelder je Website sind für diese geteilte Tabelle nicht eingeschaltet – das stellt die Website ein, der sie gehört.'));
+            $meta['network'] = ['levels' => !empty($meta['network']['levels']), 'site_fields' => true];
+        }
+        $defs = array_values(array_filter((array) ($meta['site_fields'][site()->key] ?? []), fn($d) => !in_array($d['name'] ?? '', $names, true)));
+        $values = [];
+        foreach ($local['fields'] as $f) {
+            if (!in_array($f['name'], $names, true)) continue;
+            $defs[] = ['name' => (string) $f['name'], 'label' => (string) $f['label'], 'type' => (string) $f['type'], 'target' => (string) $f['target'], 'required' => false,
+                'in_list' => false, 'searchable' => false, 'help' => (string) ($f['help'] ?? ''), 'width' => '', 'site_extra' => true, 'orig' => $f];
+            if ($f['type'] === 'relation') {
+                foreach (app()->db->fetchAll("SELECT id, {$f['name']} AS v FROM {$local['table']} WHERE {$f['name']} IS NOT NULL AND {$f['name']} != 0") as $r) {
+                    if (isset($map[(int) $r['id']])) $values[$map[(int) $r['id']]][$f['name']] = (int) $r['v'];
+                }
+            } else {
+                foreach (app()->db->fetchAll('SELECT entry_id, target_id FROM ' . Tables::pivot($local, (string) $f['name']) . ' ORDER BY sort, target_id') as $p) {
+                    if (isset($map[(int) $p['entry_id']])) $values[$map[(int) $p['entry_id']]][$f['name']][] = (int) $p['target_id'];
+                }
+            }
+        }
+        $meta['site_fields'] = (array) ($meta['site_fields'] ?? []);
+        $meta['site_fields'][site()->key] = $defs;
+        Shared::writeMeta($key, $meta);
+        self::extraTable($key);
+        $db = Shared::db($key);
+        foreach ($values as $id => $v) {
+            $cur = json_decode((string) ($db->fetchValue('SELECT extra_data FROM share_extra WHERE extra_site = ? AND extra_entry = ?', [site()->key, $id]) ?? ''), true) ?: [];
+            $db->query('DELETE FROM share_extra WHERE extra_site = ? AND extra_entry = ?', [site()->key, $id]);
+            $db->insert('share_extra', ['extra_site' => site()->key, 'extra_entry' => (int) $id, 'extra_data' => json_encode(array_replace($cur, $v), JSON_UNESCAPED_UNICODE), 'extra_at' => now()]);
+        }
+        return [__('Als Zusatzfelder dieser Website übernommen: {list} ({n} Einträge mit Werten).', ['list' => implode(', ', $names), 'n' => count($values)])];
+    }
+
+    /**
+     * Rückweg (Shared::toLocal beim Aufheben bzw. Verlassen): Zusatzfelder, die beim Teilen aus Verknüpfungen entstanden sind, werden
+     * wieder normale Felder; $rows bekommen ihre Werte, $pivots die mehrfachen. @return list<array> zusätzliche Felddefinitionen
+     */
+    public static function restoreLocalFields(array $t, array &$rows, array &$pivots): array
+    {
+        $defs = array_values(array_filter((array) ($t['site_fields'] ?? []), fn($d) => is_array($d['orig'] ?? null)));
+        if (!$defs || !$rows) return array_map(fn($d) => $d['orig'], $defs);
+        $have = array_column($t['fields'], 'name');
+        $defs = array_values(array_filter($defs, fn($d) => !in_array($d['name'], $have, true)));
+        $ids = array_map(fn($r) => (int) $r['id'], $rows);
+        $data = [];
+        foreach (array_chunk($ids, 500) as $chunk) {
+            foreach (Shared::db((string) $t['shared']['key'])->fetchAll('SELECT extra_entry, extra_data FROM share_extra WHERE extra_site = ? AND extra_entry IN (' . implode(',', $chunk) . ')', [site()->key]) as $x) {
+                $data[(int) $x['extra_entry']] = json_decode((string) $x['extra_data'], true) ?: [];
+            }
+        }
+        foreach ($rows as &$r) {
+            foreach ($defs as $d) {
+                $v = $data[(int) $r['id']][$d['name']] ?? null;
+                if ($d['type'] === 'relation') $r[$d['name']] = $v !== null && (int) $v > 0 ? (int) $v : null;
+                else foreach (array_values((array) $v) as $i => $tid) $pivots[$d['name']][] = ['entry_id' => (int) $r['id'], 'target_id' => (int) $tid, 'sort' => $i];
+            }
+        }
+        unset($r);
+        foreach ($defs as $d) if ($d['type'] === 'relations') $pivots[$d['name']] ??= [];
+        return array_map(fn($d) => $d['orig'], $defs);
+    }
+
+    /**
+     * Bedingung auf ein Zusatzfeld dieser Website (Entries::conditions): Werte in share_extra. Verknüpfungen per ID (bzw. Slug der
+     * Zieltabelle), sonst Text/Auswahl. null = kein Zusatzfeld.
+     */
+    public static function extraCondition(array $t, string $name, string $op, mixed $v, array &$params): ?string
+    {
+        $def = null;
+        foreach ((array) ($t['site_fields'] ?? []) as $d) if (($d['name'] ?? '') === $name) { $def = $d; break; }
+        if (!$def || !preg_match('~^[a-z][a-z0-9_]{0,63}$~', $name)) return null;
+        $path = '$.' . $name;
+        $neg = $op === '!=';
+        if (in_array($def['type'], ['relation', 'relations'], true)) {
+            $tid = ctype_digit((string) $v) ? (int) $v : 0;
+            if (!$tid && ($tt = Tables::findContent((string) ($def['target'] ?? '')))) $tid = (int) (Tables::db($tt)->fetchValue("SELECT id FROM {$tt['table']} WHERE slug = ?", [\Core\Pages::slugify((string) $v)]) ?: 0);
+            $sub = $def['type'] === 'relation'
+                ? "SELECT extra_entry FROM share_extra WHERE extra_site = ? AND CAST(json_extract(extra_data, ?) AS INTEGER) = ?"
+                : "SELECT extra_entry FROM share_extra, json_each(share_extra.extra_data, ?) je WHERE extra_site = ? AND CAST(je.value AS INTEGER) = ?";
+            array_push($params, ...($def['type'] === 'relation' ? [site()->key, $path, $tid] : [$path, site()->key, $tid]));
+            return 'id ' . ($neg ? 'NOT ' : '') . "IN ($sub)";
+        }
+        if ($op === 'contains' || $def['type'] === 'multiselect' || $def['type'] === Roles::TYPE) {
+            array_push($params, site()->key, $path, '%' . ($op === 'contains' ? (string) $v : json_encode((string) $v, JSON_UNESCAPED_UNICODE)) . '%');
+            return 'id ' . ($neg ? 'NOT ' : '') . 'IN (SELECT extra_entry FROM share_extra WHERE extra_site = ? AND json_extract(extra_data, ?) LIKE ?)';
+        }
+        array_push($params, site()->key, $path, (string) $v);
+        return 'id ' . ($neg ? 'NOT ' : '') . 'IN (SELECT extra_entry FROM share_extra WHERE extra_site = ? AND CAST(json_extract(extra_data, ?) AS TEXT) = ?)';
     }
 
     // ================================================================= Herkunft aus Kalender-Abos (Kooperationen)

@@ -272,6 +272,12 @@ final class Entries
                 $where[] = $op === 'empty' ? $isEmpty : 'NOT ' . $isEmpty;
                 continue;
             }
+            // Netzwerk: Zusatzfelder dieser Website (Core\Data\Network, Werte in share_extra) – z. B. „Termine der Regionalgruppe“
+            if (!in_array($f, $names, true) && !empty($table['site_fields']) && $v !== '' && $v !== null && is_string($f)
+                && ($sql = Network::extraCondition($table, $f, (string) $op, is_array($v) ? ($v[0] ?? '') : $v, $params)) !== null) {
+                $where[] = $sql;
+                continue;
+            }
             if (!in_array($f, $names, true) || $v === '' || $v === null) continue;
             $field = Tables::field($table, (string) $f);
             // „eine von“ (Besucher-Filter mit Mehrfachauswahl, Datenliste): Auswahl = eine der Optionen, Mehrfachauswahl = enthält eine davon

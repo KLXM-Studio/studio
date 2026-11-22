@@ -91,7 +91,7 @@ $own = Entries::count($t, ['status' => 'published', 'lang' => 'all', 'source' =>
 <?php // Netzwerk (Core\Data\Network): Schalter der Eigentümer-Website, Zusatzfelder je Website
 $flags = \Core\Data\Network::flags($key);
 $siteFields = \Core\Data\Network::siteFields($key);
-$types = array_combine(\Core\Data\Network::SITE_TYPES, array_map(fn($ty) => __(\Core\Data\Tables::TYPES[$ty][0]), \Core\Data\Network::SITE_TYPES)); ?>
+$types = array_combine($tl = [...\Core\Data\Network::SITE_TYPES, ...\Core\Data\Network::SITE_REL], array_map(fn($ty) => __(\Core\Data\Tables::TYPES[$ty][0]), $tl)); ?>
 <section class="adm-card sh-display net-admin" aria-labelledby="net-h">
   <h2 class="sh-h" id="net-h"><?= e(__('Netzwerk')) ?></h2>
   <?php if (Shared::canAdmin($key)): ?>
@@ -118,6 +118,8 @@ $types = array_combine(\Core\Data\Network::SITE_TYPES, array_map(fn($ty) => __(\
       <input type="hidden" name="sf[<?= $i ?>][name]" value="<?= e((string) ($sf['name'] ?? '')) ?>">
       <select name="sf[<?= $i ?>][type]" aria-label="<?= e(__('Feldtyp')) ?>"><?php foreach ($types as $k => $l): ?><option value="<?= e($k) ?>"<?= ($sf['type'] ?? 'text') === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select>
       <input name="sf[<?= $i ?>][options]" value="<?= e(implode(', ', (array) ($sf['options'] ?? []))) ?>" aria-label="<?= e(__('Optionen (Auswahl)')) ?>" placeholder="<?= e(__('Optionen, durch Komma getrennt')) ?>">
+      <select name="sf[<?= $i ?>][target]" aria-label="<?= e(__('Verknüpfte Tabelle (nur bei Verknüpfung)')) ?>"><option value=""><?= e(__('– Verknüpfte Tabelle –')) ?></option>
+        <?php foreach (\Core\Data\Tables::content() as $ct): if (\Core\Data\Tables::isShared($ct)) continue; ?><option value="<?= e($ct['handle']) ?>"<?= ($sf['target'] ?? '') === $ct['handle'] ? ' selected' : '' ?>><?= e($ct['name']) ?></option><?php endforeach; ?></select>
     </div>
     <?php endforeach; ?>
     <div class="adm-row"><button class="adm-btn" type="submit"><?= e(__('Zusatzfelder speichern')) ?></button></div>
