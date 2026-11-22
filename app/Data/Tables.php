@@ -575,7 +575,9 @@ final class Tables
         // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
         // Einträge im Menü unter der Übersichtsseite (Core\Data\MenuEntries) – nur gespeichert, wenn gesetzt (Bestand bleibt unverändert)
         if (isset($s['menu_entries']) || isset($existing['settings']['menu_entries'])) $settings['menu_entries'] = MenuEntries::validate((array) ($s['menu_entries'] ?? $existing['settings']['menu_entries']));
-        if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? [])));
+        // Stil der mitgelieferten Vorlagen (style) bleibt, auch wenn das Formular ihn nicht mitschickt
+        if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? []))
+            + array_intersect_key((array) ($existing['settings']['knowledge'] ?? []), ['style' => 1]));
         $conv = $in['_convert'] ?? ($s['convert'] ?? ($existing['settings']['convert'] ?? null));
         if (is_array($conv) && $conv) $settings['convert'] = $conv;
         // Website-Suche je Tabelle (Core\Search\TableSearch) – ohne Formularabschnitt bleibt die bisherige Einstellung
@@ -805,6 +807,9 @@ final class Tables
         if (!empty($table['settings']['detail_page_id'])) {
             app()->db->query("DELETE FROM pages WHERE id = ? AND type = 'template'", [(int) $table['settings']['detail_page_id']]);
         }
+        // weitere Detailseiten-Vorlagen und ihre Zuordnung (Core\Data\DetailTemplates) – nicht bei geteilten Tabellen (Vorlagen gehören der Website)
+        if (!isset($table['shared'])) app()->db->query("DELETE FROM pages WHERE type = 'template' AND template_for = ?", [$table['handle']]);
+        app()->settings->delete(DetailTemplates::SETTING . $table['handle']);
         self::$cache = [];
         Occurrences::drop($table);
         PageCache::clear();

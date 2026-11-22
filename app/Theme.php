@@ -770,7 +770,9 @@ final class Theme
         ImageFx::enter($block->data);
         ImageFit::enter($block->data, $block->def['fields'] ?? []);   // Bild im Rahmen je Einbindung (data._fit je Feldpfad, Core\ImageFit)
         try {
-            return $custom ? Blocks\Custom::render($block) : self::capture($file, ['b' => $block, 'd' => $block->data]);
+            $html = $custom ? Blocks\Custom::render($block) : self::capture($file, ['b' => $block, 'd' => $block->data]);
+            // Einstieg mit Quelle „Eintrag“ im Wissensbereich: Kapitelnummer als Plakette vor dem Titel (Core\Blocks\EntryHero::badge)
+            return !empty($block->data['_kn_badge']) ? Blocks\EntryHero::badge($html, (string) $block->data['_kn_badge']) : $html;
         } finally {
             ImageFit::leave();
             ImageFx::leave();

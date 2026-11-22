@@ -96,6 +96,14 @@ final class EntryHero
                 'help' => 'Ist das Feld im Eintrag leer, entfällt der Button.'],
             ['name' => 'src_link_label', 'label' => 'Beschriftung des Buttons', 'type' => 'text', 'max' => 32, 'width' => 'half',
                 'placeholder' => 'Mehr erfahren', 'show_if' => ['source' => [self::SOURCE], 'src_link' => ['*']]],
+            // Wissensbereich: Kapitelnummer im Einstieg (nur in Vorlagen von Wissens-Tabellen sichtbar, Core\Fields 'entry_only' => 'knowledge')
+            ['name' => 'kn_number', 'label' => 'Kapitelnummer', 'type' => 'select', 'default' => 'auto', 'width' => 'half', 'entry_only' => 'knowledge',
+                'options' => ['auto' => 'Automatisch: Dachzeile, sonst Plakette', 'badge' => 'Als Plakette vor dem Titel', 'none' => 'Keine Nummer'],
+                'show_if' => $entry,
+                'help' => 'Automatisch: Ist die Dachzeile „Kapitelnummer“ (oder automatisch), steht die Nummer dort – zeigt sie ein anderes Feld, erscheint die Nummer als kleine Plakette vor dem Titel.'],
+            ['name' => 'kn_format', 'label' => 'Dachzeile mit Kapitelnummer', 'type' => 'text', 'max' => 40, 'width' => 'half', 'entry_only' => 'knowledge',
+                'placeholder' => 'Kapitel {nummer}', 'show_if' => $entry,
+                'help' => '{nummer} wird durch die Nummer ersetzt, z. B. „{nummer}“ allein oder „Abschnitt {nummer}“.'],
         ];
     }
 
@@ -157,10 +165,13 @@ final class EntryHero
         $e = Exposure::publicEntry($t, $ctx['entry']);
         $types = array_column((array) $def['fields'], 'type', 'name');
         $bind = is_array($data['_bind'] ?? null) ? $data['_bind'] : [];
-        foreach (self::mapping($t, $data) as $target => $src) {
+        $map = self::mapping($t, $data);
+        $numMode = in_array($data['kn_number'] ?? '', ['badge', 'none'], true) ? (string) $data['kn_number'] : 'auto';
+        foreach ($map as $target => $src) {
             unset($bind[$target]);
             $type = (string) ($types[$target] ?? 'text');
-            $data[$target] = $src === '' ? ($type === 'media' ? null : '') : self::value($t, $e, $src, $type);
+            $data[$target] = $src === '' ? ($type === 'media' ? null : '')
+                : ($src === '_chapter' ? ($numMode === 'auto' ? self::chapter($t, $e, (string) ($data['kn_format'] ?? '')) : '') : self::value($t, $e, $src, $type));
             if ($src !== '') $bind[$target] = $src;   // Editor: „Aus dem Eintrag“, Detailseite: inline bearbeitbar (EntryEdit::blockAttr)
         }
         if (trim((string) $data['title']) === '') {
@@ -181,6 +192,12 @@ final class EntryHero
             $data['button_link'] = $href;
             $data['button_label'] = $href === '' ? '' : (trim((string) ($data['src_link_label'] ?? '')) ?: lt('Mehr erfahren'));
         }
+        // Wissensbereich: Nummer als Plakette vor dem Titel – erzwungen oder weil die Dachzeile etwas anderes zeigt (Theme::renderInner → badge())
+        unset($data['_kn_badge']);
+        if ($numMode === 'badge' || ($numMode === 'auto' && $map['eyebrow'] !== '_chapter')) {
+            $n = self::number($t, $e);
+            if ($n !== '') $data['_kn_badge'] = $n;
+        }
         $data['_bind'] = $bind;
         if ($visible && !app()->editing) self::$titled = true;
         return $data;
@@ -189,14 +206,34 @@ final class EntryHero
     /** Wert einer Quelle passend zum Blockfeld (Sonderquellen _chapter, _when als Klartext) */
     public static function value(array $t, array $e, string $src, string $type): mixed
     {
-        if ($src === '_chapter') {
-            if (!Knowledge::is($t) || !Knowledge::config($t)['numbers']) return '';
-            $n = (string) (Knowledge::tree($t)['nodes'][(int) $e['id']]['number'] ?? '');
-            return $n !== '' ? lt('Kapitel {n}', ['n' => $n]) : '';
-        }
+        if ($src === '_chapter') return self::chapter($t, $e);
         if ($src === '_when') return Entries::text($t, $e, '_when');
         $v = Entries::bindValue($t, $e, $src, $type);
         return $type === 'media' ? ((int) $v ?: null) : (is_scalar($v) ? trim((string) $v) : '');
+    }
+
+    /** Kapitelnummer des Eintrags ('' ohne Wissen, mit ausgeschalteten Nummern oder ohne Platz im Baum) */
+    public static function number(array $t, array $e): string
+    {
+        if (!Knowledge::is($t) || !Knowledge::config($t)['numbers']) return '';
+        return (string) (Knowledge::tree($t)['nodes'][(int) ($e['id'] ?? 0)]['number'] ?? '');
+    }
+
+    /** Dachzeile mit Kapitelnummer: $format mit {nummer} (auch {n}), leer = „Kapitel {n}“ der Website-Sprache */
+    public static function chapter(array $t, array $e, string $format = ''): string
+    {
+        $n = self::number($t, $e);
+        if ($n === '') return '';
+        $format = trim($format);
+        if ($format === '') return lt('Kapitel {n}', ['n' => $n]);
+        return str_contains($format, '{nummer}') || str_contains($format, '{n}') ? str_replace(['{nummer}', '{n}'], $n, $format) : $format . ' ' . $n;
+    }
+
+    /** Plakette mit der Kapitelnummer an den Anfang der ersten H1 des gerenderten Einstiegs setzen (Name „Kapitel“ für Screenreader) */
+    public static function badge(string $html, string $number): string
+    {
+        $badge = '<span class="kn-num kn-num--badge"><span class="kn-sr">' . e(lt('Kapitel')) . ' </span>' . e($number) . '</span> ';
+        return (string) preg_replace_callback('~<h1\b[^>]*>~i', fn($m) => $m[0] . $badge, $html, 1);
     }
 
     /**

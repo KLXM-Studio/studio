@@ -17,7 +17,24 @@
     <li><b>Felder &amp; Einstellungen → Auf der Website → Wissensbereich:</b> Layout wählen, Kapitelnummern, Vor/Zurück und verwandte Kapitel ein- oder ausschalten.</li>
     <li>Optional: Glossar einschalten (Kapitel „Glossar“) – dann lassen sich Begriffe mit Kapiteln verknüpfen.</li>
   </ol>
-  <p>Per Kommandozeile geht es auch: <code>php bin/console data:template knowledge --with-detail-page --with-list-page</code>.</p>
+  <p>Per Kommandozeile geht es auch: <code>php bin/console data:template knowledge --with-detail-page --with-list-page [--style=sachlich]</code>.</p>
+
+  <h3 id="wissen-stile">Zwei Stile: Magazin und Sachlich</h3>
+  <p>Beim Anlegen wählen Sie den <b>Stil der Kapitelseiten</b>. Beide sind normale Detailseiten-Vorlagen, die Sie wie jede Seite weiter gestalten können:</p>
+  <ul>
+    <li><b>Magazin</b> (Standard): großes Kapitelbild über die volle Breite mit Titel, Anreißer und der Nummer als Dachzeile („Kapitel 2.1“), darunter die Kapitelnavigation neben dem Text. Die Übersicht zeigt die Kapitel als Karten mit Bild.</li>
+    <li><b>Sachlich / Handbuch:</b> ohne großes Bild, Seitenleiste mit Kapitelbaum und Abschnitten von Anfang an, große Nummer vor dem Titel, ruhigere, kompakte Schrift, „Zuletzt geprüft“ im Fuß. Die Übersicht ist ein Inhaltsverzeichnis. Gedacht für Satzungen, Ordnungen und Prüfungsordnungen.</li>
+  </ul>
+  <p>Später umschalten oder beide nutzen: <b>Daten → Tabelle → Detailseiten-Vorlagen</b> → „Neue Vorlage“ mit Ausgangspunkt „Mitgeliefert: …“, dann „Als Standard“ – oder nur für einen Bereich bzw. ein Kapitel samt Unterkapiteln zuordnen (siehe <a href="<?= e(url('/admin/hilfe#detailvorlagen')) ?>">Mehrere Detailseiten-Vorlagen</a>). Mehrere Wissensbereiche einer Website können so jeweils ihren eigenen Stil haben.</p>
+
+  <h3 id="kapitelnavigation">Block „Kapitelnavigation“</h3>
+  <p>In Vorlagen der Stile Magazin und Sachlich steckt die Navigation im Block <b>Kapitelnavigation</b>. Blöcke <b>darüber</b> stehen über die volle Breite (z. B. der Einstieg), Blöcke <b>darunter</b> neben bzw. unter der Navigation. Verschieben Sie den Block, ändert sich also, was über die volle Breite läuft. Einstellungen:</p>
+  <ul>
+    <li><b>Position:</b> Seitenleiste links, Seitenleiste rechts oder oben als aufklappbares Menü.</li>
+    <li><b>Kapitelbaum, Abschnitte, Suche, Brotkrumen, Fuß</b> (Schlagworte, Begriffe, Verwandte, Zurück/Weiter) jeweils an oder aus; <b>Kompakt</b> für eine schmale, dichte Leiste und ruhigere Schrift.</li>
+    <li>Block <b>ausblenden</b> (Auge) = keine Navigation, nur der Text. Fehlt der Block ganz (alle bisherigen Vorlagen), legt die Website den Rahmen wie bisher nach dem Layout aus den Einstellungen der Tabelle um die Vorlage.</li>
+  </ul>
+  <p><b>Kapitelnummer:</b> Im Einstieg wählen Sie unter „Kapitelnummer“ <i>Automatisch</i> (als Dachzeile, zeigt die Dachzeile ein anderes Feld: als kleine Plakette vor dem Titel), <i>Als Plakette</i> oder <i>Keine Nummer</i>; der Text der Dachzeile lässt sich anpassen („Kapitel {nummer}“, „Abschnitt {nummer}“ …). Im schlichten Kopf (Block „Datensatz-Felder“, Darstellung „Kopf“) schaltet „Kapitelnummer groß vor dem Titel“ die Nummer an oder aus. In Seitenleiste und Karten bleiben die Nummern, solange sie in den Einstellungen der Tabelle eingeschaltet sind.</p>
 
   <h3>Layouts</h3>
   <table class="doc-table">
@@ -59,7 +76,7 @@
     <li><b>Übersicht:</b> Suchfeld mit Treffern und Textauszug (Suchwort markiert), passende Glossarbegriffe als eigene Gruppe, Filter-Chips nach Bereich und Schlagworten (kombinierbar: innerhalb einer Reihe genügt eine der gewählten Optionen, beide Reihen gelten zusammen), ohne Suche das Inhaltsverzeichnis mit Nummern. Die Auswahl steht in der Adresse – teilbar, die Zurück-Taste führt zur vorigen Auswahl. Ohne JavaScript funktioniert alles als normales Formular.</li>
     <li><b>Menü:</b> Mit „Einträge im Menü zeigen“ (Felder &amp; Einstellungen → Auf der Website) stehen die Kapitel unter der Übersichtsseite im Kopfmenü – oberste Ebene oder zwei Ebenen, auf Wunsch mit Nummer. Der Umstieg übernimmt den Menüstand der alten Seiten.</li>
     <li><b>Kapitel:</b> Brotkrumen, Nummer vor dem Titel, Seitenleiste mit Suche, „In diesem Kapitel“, Schlagworte, Begriffe, verwandte Kapitel und <b>Zurück / Weiter</b> in Lesereihenfolge.</li>
-    <li><b>Kopf wie auf Seiten</b> (Handbuch → Daten → <a href="<?= e(url('/admin/hilfe#kopf-wie-seiten')) ?>">Kopf wie auf Seiten</a>): Beginnt die Detailseiten-Vorlage mit dem Block „Einstieg (Hero)“ und der Quelle „Felder des Eintrags“, steht oben das Kapitelbild über die volle Breite mit Titel und Anreißer; die Kapitelnummer erscheint dezent als Dachzeile („Kapitel 2.1“) – ist die Dachzeile mit einem anderen Feld belegt (z. B. Bereich), als kleine Plakette vor dem Titel; ohne Nummern gar nicht. In Seitenleiste und Karten bleiben die Nummern wie gewohnt. Seitenleiste, Brotkrumen und Kapiteltext beginnen darunter. Für neue Wissensbereiche: „Detailseiten mit Kopf wie Seiten“ im Assistenten.</li>
+    <li><b>Kopf wie auf Seiten</b> (Handbuch → Daten → <a href="<?= e(url('/admin/hilfe#kopf-wie-seiten')) ?>">Kopf wie auf Seiten</a>): Beginnt die Detailseiten-Vorlage mit dem Block „Einstieg (Hero)“ und der Quelle „Felder des Eintrags“, steht oben das Kapitelbild über die volle Breite mit Titel und Anreißer; die Kapitelnummer erscheint dezent als Dachzeile („Kapitel 2.1“) – ist die Dachzeile mit einem anderen Feld belegt (z. B. Bereich), als kleine Plakette vor dem Titel; ohne Nummern gar nicht. In Seitenleiste und Karten bleiben die Nummern wie gewohnt. Seitenleiste, Brotkrumen und Kapiteltext beginnen darunter. Neue Wissensbereiche im Stil „Magazin“ beginnen so (siehe <a href="#wissen-stile">Zwei Stile</a>).</li>
     <li>Farben und Schrift kommen aus dem Kit – Sie müssen nichts gestalten.</li>
     <li>Für Suchmaschinen beschreibt die Website den Wissensbereich als Sammlung von Artikeln mit Kapitelnummer, Bereich, Schlagworten, Begriffen und „Zuletzt geprüft“ – automatisch, ohne Pflege.</li>
   </ul>

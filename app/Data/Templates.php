@@ -21,7 +21,7 @@ final class Templates
 
     /**
      * Tabelle aus einer Vorlage anlegen bzw. ergänzen. $o: handle, name, slug (Adresse der Detailseiten, '' = keine), hero (neue
-     * Detailseiten-Vorlage mit Kopf wie Seiten, Core\Blocks\EntryHero),
+     * Detailseiten-Vorlage mit Kopf wie Seiten, Core\Blocks\EntryHero), style (Wissen: magazin | sachlich | klassisch),
      * form (Stellen: Kurzname des Bewerbungs-Eingangs, 'new' = „bewerbungen“ anlegen/nutzen, 'none' = keiner), detail (bool),
      * list (bool). $log erhält eine Zeile je Schritt. Rückgabe: ['ok' => bool, 'table' => ?array]
      */
@@ -47,6 +47,8 @@ final class Templates
             $def['handle'] = $handle;
             if (($o['name'] ?? '') !== '') $def['name'] = (string) $o['name'];
             if (array_key_exists('slug', $o) && $o['slug'] !== null) $def['settings']['route'] = (string) $o['slug'];
+            // Wissen: Stil (magazin Standard, sachlich) für Detailvorlage und Übersicht
+            if (Kinds::isKnowledge($def)) $def['settings']['knowledge'] = ['style' => isset(Knowledge::STYLES[(string) ($o['style'] ?? '')]) ? (string) $o['style'] : 'magazin'] + (array) ($def['settings']['knowledge'] ?? []);
             if (Jobs::TYPE === ($def['settings']['schema_type'] ?? '')) {
                 $def['settings']['jobs']['form'] = '';   // Eingang wird unten angelegt bzw. verknüpft
             }
@@ -103,7 +105,7 @@ final class Templates
             elseif ($has) $log('= Detailseiten-Vorlage gibt es schon (Seite ' . $t['settings']['detail_page_id'] . ').');
             else {
                 $log($pfx . '+ Detailseiten-Vorlage' . ($isJobs ? ' (Kopf, Eckdaten, Beschreibung, Bewerbung #bewerben)' : ''));
-                if (!$dry && $t) DataController::makeTemplate(Tables::find($handle), !empty($o['hero']));
+                if (!$dry && $t) DataController::makeTemplate(Tables::find($handle), !empty($o['hero']), (string) ($o['style'] ?? ''));
             }
         }
         if (!$dry) PageCache::clear();

@@ -10,6 +10,19 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Wissensbereich über die Vorlage gestalten, mehrere Detailseiten-Vorlagen (`Core\Data\DetailTemplates`)
+- **Mehrere Detailseiten-Vorlagen je Tabelle** (alle Tabellen mit Detailseiten): Daten → Tabelle → Detailseiten-Vorlagen – anlegen
+  (Kopie, „Kopf wie Seiten“, mitgeliefert, leer), umbenennen, Standard, löschen; Zuordnung je Eintrag, Oberkapitel (vererbt an
+  Unterkapitel) oder Feldwert (Kategorie, Bereich). Tabellen mit einer Vorlage bleiben unverändert.
+- **Block „Kapitelnavigation“** in Wissens-Vorlagen: Position (links, rechts, oben als Menü), Kapitelbaum, Abschnitte, Suche,
+  Brotkrumen, Fuß, kompakt; Blöcke darüber laufen über die volle Breite, ausgeblendet = keine Navigation. Ohne den Block gilt der
+  bisherige Rahmen nach dem Layout der Tabelle (Bestand unverändert, Pixelvergleich 0).
+- **Zwei mitgelieferte Stile für Wissen:** „Magazin“ (Standard für neue Wissensbereiche: Einstieg mit Bild und Nummer als Dachzeile,
+  Navigation darunter, Übersicht als Karten) und „Sachlich / Handbuch“ (Seitenleiste von Anfang an, große Nummer, kompakte Schrift,
+  „Zuletzt geprüft“, Inhaltsverzeichnis) – beim Anlegen wählbar, später umschaltbar; `data:template knowledge --style=…`.
+- **Kapitelnummer steuerbar:** im Einstieg automatisch (Dachzeile bzw. Plakette), als Plakette oder keine, Text der Dachzeile mit
+  `{nummer}`; im Kopf „Datensatz-Felder“ große Nummer an/aus. Selbsttest `detailtemplates:selftest`.
+
 ### Detailseiten mit Kopf wie Seiten: Einstieg mit Quelle „Felder des Eintrags“ (`Core\Blocks\EntryHero`)
 - **Einstieg (Hero) in Detailseiten-Vorlagen:** neue Option „Quelle: Eigene Inhalte | Felder des Eintrags“ am Hero jedes Kits (mit Titel
   und Bild; praxis unverändert). Bild, Titel (H1), Dachzeile und Text kommen aus wählbaren Feldern – Standard: Bildfeld der Tabelle, Titel,

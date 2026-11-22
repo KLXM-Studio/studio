@@ -49,12 +49,14 @@ final class SiteController
         }
         // Detailseite: /{URL-Basis der Tabelle}/{slug}
         if (preg_match('~^(.+)/([^/]+)$~', $path, $m) && ($t = Tables::byRoute($m[1])) && !empty($t['settings']['detail_page_id'])) {
-            $tpl = Pages::find((int) $t['settings']['detail_page_id']);
+            // Geteilte Tabellen: nur Einträge, die diese Website zeigt (eigene + gewählte Quellen)
+            $entry = Entries::bySlug($t, $m[2], !app()->auth->check(), Lang::current(), 'site');
+            // Vorlage: je Eintrag, Oberkapitel oder Feldwert, sonst Standard (Core\Data\DetailTemplates); Redaktion: ?vorlage={id}
+            $pick = app()->auth->check() && can('pages.edit') && ctype_digit((string) ($r->query['vorlage'] ?? '')) ? \Core\Data\DetailTemplates::belongs($t, (int) $r->query['vorlage']) : null;
+            $tpl = $pick ?? ($entry ? \Core\Data\DetailTemplates::resolve($t, $entry) : Pages::find((int) $t['settings']['detail_page_id']));
             if ($tpl && Lang::multi()) {
                 $tpl = Pages::translations($tpl)[Lang::current()] ?? $tpl;   // übersetzte Vorlage, sonst Standard
             }
-            // Geteilte Tabellen: nur Einträge, die diese Website zeigt (eigene + gewählte Quellen)
-            $entry = Entries::bySlug($t, $m[2], !app()->auth->check(), Lang::current(), 'site');
             // Wissen: Kapitel vom Typ „Verweis“ leiten auf ihre Seite weiter (Core\Data\Knowledge::refUrl)
             if ($entry && \Core\Data\Knowledge::is($t) && ($to = \Core\Data\Knowledge::refUrl($t, $entry)) !== null) return Response::redirect($to, 301);
             if ($tpl && $entry) {

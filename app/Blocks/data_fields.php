@@ -56,7 +56,10 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
     } ?>
     <?php if ($meta): ?><p class="df-meta"><?= implode('<span class="df-sep" aria-hidden="true"> · </span>', $meta) ?></p><?php endif; ?>
     <?php // Genau eine H1: steht schon ein Einstieg mit Quelle „Eintrag“ darüber (Core\Blocks\EntryHero), wird der Titel hier h2
-    if (in_array('_title', $fields, true)): $ea = entry_edit_attr($t, $e, '_title'); $hx = \Core\Blocks\EntryHero::$titled ? 'h2' : 'h1'; ?><<?= $hx ?> class="h2 df-title"><?= $ea !== '' ? '<span' . $ea . '>' . e(Entries::title($t, $e)) . '</span>' : e(Entries::title($t, $e)) ?><span class="dot">.</span></<?= $hx ?>><?php endif; ?>
+    // Wissensbereich: Kapitelnummer groß vor dem Titel (Option kn_number; aus = data-kn-nonum, der Rahmen setzt dann auch keine)
+    if (in_array('_title', $fields, true)): $ea = entry_edit_attr($t, $e, '_title'); $hx = \Core\Blocks\EntryHero::$titled ? 'h2' : 'h1';
+        $knNum = $hx === 'h1' && \Core\Data\Knowledge::is($t) ? \Core\Blocks\EntryHero::number($t, $e) : '';
+        $knOff = $knNum !== '' && ($d['kn_number'] ?? true) === false; ?><<?= $hx ?> class="h2 df-title"<?= $knOff ? ' data-kn-nonum' : '' ?>><?= $knNum !== '' && !$knOff ? '<span class="kn-num kn-num--h1">' . e($knNum) . '</span> ' : '' ?><?= $ea !== '' ? '<span' . $ea . '>' . e(Entries::title($t, $e)) . '</span>' : e(Entries::title($t, $e)) ?><span class="dot">.</span></<?= $hx ?>><?php endif; ?>
     <?php // Termin-Aktionen bei Kalender-Tabellen (Core\Data\EventActions): „In den Kalender“, „Abonnieren“ – abschaltbar im Block
     if (($d['event_actions'] ?? true) !== false && \Core\Data\Calendar::enabled($t)) echo fragment('event-actions', ['table' => $t, 'entry' => $e,
         'options' => ['external' => (string) ($d['event_links'] ?? ''), 'class' => 'df-eva', 'when' => in_array('_when', $fields, true) ? 'unkeyed' : 'auto']]);   // _when im Kopf zeigt schon das Datum des Vorkommens ?>

@@ -46,8 +46,9 @@ final class Knowledge
     public static function validateSettings(array $in): array
     {
         $bool = fn(string $k) => array_key_exists($k, $in) ? !empty($in[$k]) : self::DEFAULTS[$k];   // '0' gilt in PHP als leer
+        $style = isset($in['style']) && isset(self::STYLES[(string) $in['style']]) ? ['style' => (string) $in['style']] : [];   // nur gesetzt (Bestand ohne)
         return ['layout' => isset(self::LAYOUTS[(string) ($in['layout'] ?? '')]) ? (string) $in['layout'] : self::DEFAULTS['layout'],
-            'numbers' => $bool('numbers'), 'pager' => $bool('pager'), 'related' => $bool('related')];
+            'numbers' => $bool('numbers'), 'pager' => $bool('pager'), 'related' => $bool('related')] + $style;
     }
 
     /** @return array{layout: string, numbers: bool, pager: bool, related: bool} */
@@ -107,33 +108,66 @@ final class Knowledge
     }
 
     /**
-     * Detailseiten-Vorlage: Kopf (Bereich, Titel), Anreißer, Inhaltsblöcke – Seitenleiste & Co. legt frame() darum.
-     * $hero („Kopf wie Seiten“): Einstieg mit Quelle „Eintrag“ (Bild, Titel, Kapitelnummer als Dachzeile, Anreißer) über die volle Breite.
+     * Mitgelieferte Detailseiten-Vorlagen (gleichberechtigt, beim Anlegen wählbar, später über Daten → Detailseiten-Vorlagen umschaltbar):
+     *  - magazin:   Einstieg mit Bild und Kapitelnummer als Dachzeile über die volle Breite, Kapitelnavigation darunter, Inhaltsblöcke;
+     *               Übersicht als Karten mit Bildern
+     *  - sachlich:  Kapitelnavigation von Anfang an (kompakt), Kopf mit großer Nummer vor dem Titel, Anreißer, Inhaltsblöcke, Fuß mit
+     *               „Zuletzt geprüft“; Übersicht als Inhaltsverzeichnis – für Satzungen, Ordnungen, Prüfungsordnungen
+     *  - klassisch: bisherige Vorlage ohne Block „Kapitelnavigation“ (Rahmen nach den Einstellungen der Tabelle)
      */
-    public static function makeTemplate(array $t, bool $hero = false): int
+    public const STYLES = ['magazin' => 'Magazin', 'sachlich' => 'Sachlich / Handbuch', 'klassisch' => 'Klassisch'];
+
+    /** Gewählter Stil der Tabelle (settings.knowledge.style; '' = nicht gewählt, z. B. bestehende Tabellen) */
+    public static function style(array $t): string
+    {
+        $s = (string) ($t['settings']['knowledge']['style'] ?? '');
+        return isset(self::STYLES[$s]) ? $s : '';
+    }
+
+    /** Blöcke einer mitgelieferten Vorlage */
+    public static function templateBlocks(array $t, string $style): array
     {
         $id = fn() => bin2hex(random_bytes(5));
-        $hb = $hero ? \Core\Blocks\EntryHero::templateBlock($t) : null;
-        $blocks = $hb ? [$hb, ['id' => $id(), 'type' => 'entry_blocks', 'data' => ['table' => $t['handle'], 'field' => $t['handle'] . '.inhalt']]] : [
-            ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'head', 'fields' => [$t['handle'] . '._title', $t['handle'] . '.bereich', $t['handle'] . '.bild']],
-                'tunes' => ['section' => ['spaceBottom' => 'small']]],
-            ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => [$t['handle'] . '.anreisser']],
-                'tunes' => ['section' => ['spaceTop' => 'none', 'spaceBottom' => 'small']]],
-            ['id' => $id(), 'type' => 'entry_blocks', 'data' => ['table' => $t['handle'], 'field' => $t['handle'] . '.inhalt']],
-        ];
-        $pid = Pages::create(['slug' => '_vorlage-' . $t['handle'], 'title' => $t['name'] . ' – Detailseite', 'type' => 'template',
-            'template_for' => $t['handle'], 'status' => 'published', 'noindex' => 0], Pages::sanitizeBlocks($blocks));
-        Tables::setDetailPage($t, $pid);
-        return $pid;
+        $h = $t['handle'];
+        $content = ['id' => $id(), 'type' => 'entry_blocks', 'data' => ['table' => $h, 'field' => $h . '.inhalt']];
+        $classicHead = ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $h, 'layout' => 'head', 'fields' => [$h . '._title', $h . '.bereich', $h . '.bild']],
+            'tunes' => ['section' => ['spaceBottom' => 'small']]];
+        $lead = ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $h, 'layout' => 'prose', 'fields' => [$h . '.anreisser']],
+            'tunes' => ['section' => ['spaceTop' => 'none', 'spaceBottom' => 'small']]];
+        $nav = fn(bool $compact) => ['id' => $id(), 'type' => self::NAV, 'data' => self::navData($t, $compact)];
+        if ($style === 'sachlich') {
+            return [$nav(true),
+                ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $h, 'layout' => 'head', 'fields' => [$h . '._title', $h . '.bereich'], 'kn_number' => true],
+                    'tunes' => ['section' => ['spaceBottom' => 'small']]],
+                $lead, $content];
+        }
+        if ($style === 'magazin') {
+            $hb = \Core\Blocks\EntryHero::templateBlock($t);
+            return $hb ? [$hb, $nav(false), $content] : [$nav(false), $classicHead, $lead, $content];   // Kit ohne passenden Einstieg: Kopf im Rahmen
+        }
+        return [$classicHead, $lead, $content];
+    }
+
+    /**
+     * Detailseiten-Vorlage anlegen ($style: magazin (Standard für neue Wissensbereiche), sachlich, klassisch; true = magazin).
+     * Die erste Vorlage der Tabelle wird Standard (Core\Data\DetailTemplates::create).
+     */
+    public static function makeTemplate(array $t, bool|string $style = 'magazin'): int
+    {
+        $style = is_bool($style) || !isset(self::STYLES[$style]) ? 'magazin' : $style;
+        return DetailTemplates::create($t, $t['name'] . ' – ' . __(self::STYLES[$style]), self::templateBlocks($t, $style));
     }
 
     /** Daten der Datenliste für Übersicht/Inhaltsverzeichnis: Suche mit Auszug, Glossar, Filter Bereich + Schlagworte (mehrfach), Kapitel */
-    public static function listBlock(array $t): array
+    public static function listBlock(array $t, ?string $style = null): array
     {
         $h = $t['handle'];
-        return ['title' => '', 'table' => $h, 'fields' => [$h . '._title', $h . '.anreisser'], 'layout' => 'chapters', 'limit' => 0, 'link_detail' => true,
+        $d = ['title' => '', 'table' => $h, 'fields' => [$h . '._title', $h . '.anreisser'], 'layout' => 'chapters', 'limit' => 0, 'link_detail' => true,
             'visitor_search' => true, 'visitor_filter' => $h . '.bereich', 'visitor_filter2' => $h . '.schlagworte', 'visitor_multi' => true,
             'search_excerpt' => true, 'search_glossary' => true, 'filter_min' => 0];
+        // Stil „Magazin“: Kapitel als Karten mit Bild (Nummern bleiben); sonst Inhaltsverzeichnis
+        if (($style ?? self::style($t)) === 'magazin') $d = ['fields' => [$h . '._title', $h . '.anreisser', $h . '.bild'], 'chapters_style' => 'cards', 'columns' => '3', 'ratio' => '4:3'] + $d;
+        return $d;
     }
 
     /** Übersichtsseite /{route}: Datenliste „Kapitel“ und „Neu im Wissensbereich“ (zuletzt geändert) */
@@ -301,35 +335,67 @@ final class Knowledge
         return $ctx && self::is($ctx['table']) && !app()->editing && !app()->contentEdit && !empty($ctx['table']['settings']['detail_page_id']);
     }
 
+    /** Blocktyp „Kapitelnavigation“ (app/Blocks/kn_nav.php) */
+    public const NAV = 'kn_nav';
+    /** Optionen des Blocks „Kapitelnavigation“ (Standard: Seitenleiste links mit allem) */
+    public const NAV_DEFAULTS = ['position' => 'left', 'search' => true, 'sections' => true, 'tree' => true, 'crumbs' => true, 'compact' => false, 'footer' => true];
+
     /**
-     * Blöcke der Detailseiten-Vorlage rendern und rahmen (SiteController::render). Beginnt die Vorlage mit einem Einstieg mit Quelle
-     * „Felder des Eintrags“ (Core\Blocks\EntryHero::leadIndex), steht er über die volle Breite vor dem Rahmen – Seitenleiste,
-     * Brotkrumen und Kapiteltext beginnen darunter.
+     * Blöcke der Detailseiten-Vorlage rendern und rahmen (SiteController::render).
+     *  - Mit Block „Kapitelnavigation“ (kn_nav, oberste Ebene): Blöcke davor stehen über die volle Breite, die danach im Rahmen; der
+     *    Block bestimmt Position, Suche, Abschnitte, Kapitelbaum, Brotkrumen, Fuß und Kompaktheit. Ausgeblendet = keine Navigation.
+     *  - Ohne den Block (alle bestehenden Vorlagen): Rahmen wie bisher aus den Einstellungen der Tabelle (layout); beginnt die Vorlage mit
+     *    einem Einstieg mit Quelle „Felder des Eintrags“ (Core\Blocks\EntryHero::leadIndex), steht er über die volle Breite davor.
      */
     public static function render(\Core\Theme $theme, array $blocks, array $t, array $e, bool $editing = false): string
     {
         $blocks = array_values($blocks);
+        $n = self::navIndex($blocks);
+        if ($n !== null) {
+            $head = $n > 0 ? $theme->renderBlocks(array_slice($blocks, 0, $n)) : '';
+            $rest = $theme->renderBlocks(array_slice($blocks, $n + 1));
+            $opt = self::navOptions($blocks[$n]);
+            return $opt === null ? $head . $rest : self::frame($rest, $t, $e, $editing, $head, $opt);
+        }
         $i = \Core\Blocks\EntryHero::leadIndex($blocks);
         if ($i === null) return self::frame($theme->renderBlocks($blocks), $t, $e, $editing);
         $head = $theme->renderBlocks(array_slice($blocks, 0, $i + 1));
-        // Kapitelnummer: steht sie nicht schon als Dachzeile im Einstieg (Dachzeile mit einem Feld belegt oder „nichts“), als dezente
-        // Plakette vor dem Titel (.kn-num--badge) – nie groß wie ohne Einstieg
-        $num = self::config($t)['numbers'] ? (string) (self::tree($t)['nodes'][(int) $e['id']]['number'] ?? '') : '';
-        $src = \Core\Blocks\EntryHero::mapping($t, (array) ($blocks[$i]['data'] ?? []))['eyebrow'];
-        if ($num !== '' && $src !== '_chapter') {
-            $badge = '<span class="kn-num kn-num--badge"><span class="kn-sr">' . e(lt('Kapitel')) . ' </span>' . e($num) . '</span> ';
-            $head = (string) preg_replace('~(<h1\b[^>]*>)~i', '$1' . self::protect($badge), $head, 1);
-            $head = self::unprotect($head);
-        }
         return self::frame($theme->renderBlocks(array_slice($blocks, $i + 1)), $t, $e, $editing, $head);
+    }
+
+    /** Stelle des Blocks „Kapitelnavigation“ in der Vorlage (oberste Ebene, auch ausgeblendet) – null ohne */
+    public static function navIndex(array $blocks): ?int
+    {
+        foreach (array_values($blocks) as $i => $b) if (is_array($b) && ($b['type'] ?? '') === self::NAV) return $i;
+        return null;
+    }
+
+    /** Optionen des Blocks (gespeicherte Blockdaten) – null, wenn ausgeblendet */
+    public static function navOptions(array $b): ?array
+    {
+        if (($b['tunes']['section']['visible'] ?? true) === false) return null;
+        $d = (array) ($b['data'] ?? []);
+        $o = self::NAV_DEFAULTS;
+        $o['position'] = in_array($d['position'] ?? '', ['left', 'right', 'top'], true) ? (string) $d['position'] : 'left';
+        foreach (['search', 'sections', 'tree', 'crumbs', 'compact', 'footer'] as $k) if (array_key_exists($k, $d)) $o[$k] = !empty($d[$k]);
+        return $o;
+    }
+
+    /** Blockdaten „Kapitelnavigation“ für neue Vorlagen: Standard aus dem Layout der Tabelle ($compact erzwingt kompakt) */
+    public static function navData(array $t, ?bool $compact = null): array
+    {
+        $layout = self::config($t)['layout'];
+        return ['position' => $layout === 'focus' ? 'top' : 'left', 'search' => true, 'sections' => true, 'tree' => true, 'crumbs' => true,
+            'compact' => $compact ?? ($layout === 'compact'), 'footer' => true];
     }
 
     /**
      * Rahmen um den Inhalt der Detailseite: Seitenleiste (Suche, Kapitel), Brotkrumen, „In diesem Kapitel“, Fuß mit Schlagworten,
      * Begriffen, verwandten Kapiteln und Vor/Zurück. $head: Einstieg über die volle Breite davor (Kapitelnummer steht dann in
-     * seiner Dachzeile, nicht vor der H1; Klasse kn--headed).
+     * seiner Dachzeile, nicht vor der H1; Klasse kn--headed). $opt: Optionen des Blocks „Kapitelnavigation“ (navOptions) statt des
+     * Layouts der Tabelle – Position (links, rechts, oben als Menü), Suche, Abschnitte, Kapitelbaum, Brotkrumen, Fuß, kompakt.
      */
-    public static function frame(string $content, array $t, array $e, bool $editing = false, string $head = ''): string
+    public static function frame(string $content, array $t, array $e, bool $editing = false, string $head = '', ?array $opt = null): string
     {
         self::$framed = true;
         $cfg = self::config($t);
@@ -339,8 +405,10 @@ final class Knowledge
         $num = $cfg['numbers'] && $node ? $node['number'] : '';
         [$content, $sections] = self::sections($content);
         self::$sections = $sections;
-        if ($head === '') $content = self::numberHeading($content, $num);
-        $layout = $cfg['layout'];
+        // Nummer vor der H1 nur im Rahmen alter Art; der Block „Datensatz-Felder“ (Kopf) setzt sie selbst bzw. schaltet sie ab
+        if ($head === '' && $opt === null && !str_contains($content, 'kn-num--h1') && !str_contains($content, 'data-kn-nonum')) $content = self::numberHeading($content, $num);
+        $layout = $opt === null ? $cfg['layout'] : ($opt['compact'] ? 'compact' : 'classic');
+        $o = $opt ?? self::NAV_DEFAULTS;
         $handbook = in_array($layout, ['handbook', 'handbook_menu'], true);
         $overview = self::overviewUrl($t);
         $wrap = app()->theme->def['container_class'] ?? 'wrap';
@@ -363,12 +431,12 @@ final class Knowledge
 
         // Seitenleiste: Kopf mit Suche, Kapitel je Bereich (Unterkapitel nur auf dem Weg zum aufgerufenen Kapitel)
         $path = $node ? array_merge(array_column(self::ancestors($tree, $id), 'id'), [$id]) : [];
-        $item = function (array $n) use (&$item, $tree, $id, $path, $cfg, $sections, $handbook, $secList): string {
+        $item = function (array $n) use (&$item, $tree, $id, $path, $cfg, $sections, $handbook, $secList, $o): string {
             $cur = $n['id'] === $id;
             $h = '<li class="kn-nav__item' . ($cur ? ' is-current' : '') . (in_array($n['id'], $path, true) ? ' is-open' : '') . '">';
             $label = ($cfg['numbers'] ? '<span class="kn-num">' . e($n['number']) . '</span> ' : '') . '<span class="kn-nav__t">' . e($n['title']) . '</span>';
             $h .= $n['href'] ? '<a class="kn-nav__link" href="' . e($n['href']) . '"' . ($cur ? ' aria-current="page"' : '') . '>' . $label . '</a>' : '<span class="kn-nav__link">' . $label . '</span>';
-            if ($cur && !$handbook && count($sections) > 1) $h .= $secList('kn-secs--nav');
+            if ($cur && !$handbook && $o['sections'] && count($sections) > 1) $h .= $secList('kn-secs--nav');
             if ($n['children'] && in_array($n['id'], $path, true)) {
                 $h .= '<ul class="kn-nav__sub" role="list">';
                 foreach ($n['children'] as $c) $h .= $item($tree['nodes'][$c]);
@@ -386,28 +454,37 @@ final class Knowledge
         }
         // Modus „Bearbeiten“ (?edit=inhalt): gleiches Layout, Seitenleiste ohne Suche und inaktiv (inert) – der Zusammenhang bleibt sichtbar,
         // ein Klick führt nicht aus dem Editor
-        $search = $overview === null || $editing ? '' : '<form class="kn-search" role="search" aria-label="' . e(lt('Wissensbereich')) . '" method="get" action="' . e($overview) . '">'
+        $search = $overview === null || $editing || !$o['search'] ? '' : '<form class="kn-search" role="search" aria-label="' . e(lt('Wissensbereich')) . '" method="get" action="' . e($overview) . '">'
             . '<label class="kn-search__label" for="' . e($uid) . '-q">' . e(lt('Im Wissensbereich suchen')) . '</label>'
             . '<span class="kn-search__row"><input id="' . e($uid) . '-q" class="kn-search__input" type="search" name="q" maxlength="80" autocomplete="off" enterkeyhint="search">'
             . '<button class="kn-search__btn" type="submit">' . icon('magnifying-glass', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Suchen')) . '</span></button></span></form>';
-        $side = '<div class="kn-side" id="' . e($uid) . '-side"' . ($editing ? ' inert' : ' data-kn-drawer') . '>'
-            . '<div class="kn-side__head"><p class="kn-side__title">' . ($overview ? '<a href="' . e($overview) . '">' . e($name) . '</a>' : e($name)) . '</p>'
-            . '<button class="kn-close" type="button" data-kn-close hidden>' . icon('x', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Kapitelmenü schließen')) . '</span></button></div>'
-            . $search
-            . '<nav class="kn-nav" aria-label="' . e(lt('Kapitel')) . '">' . $nav . '</nav>'
-            . ($overview ? '<p class="kn-side__all"><a href="' . e($overview) . '">' . e(lt('Inhaltsverzeichnis')) . '</a></p>' : '')
-            . '</div>';
+        $top = $opt !== null && $o['position'] === 'top';
+        // Ohne Kapitelbaum (Block „Kapitelnavigation“): nur die Abschnitte dieses Kapitels in der Seitenleiste
+        $navHtml = $o['tree'] ? '<nav class="kn-nav" aria-label="' . e(lt('Kapitel')) . '">' . $nav . '</nav>'
+            : ($o['sections'] && count($sections) > 1 ? '<nav class="kn-nav" aria-label="' . e(lt('In diesem Kapitel')) . '">' . $secList('kn-secs--nav') . '</nav>' : '');
+        $side = '';
+        if ($opt === null || $search !== '' || $navHtml !== '') {
+            $side = '<div class="kn-side" id="' . e($uid) . '-side"' . ($editing ? ' inert' : ($top ? '' : ' data-kn-drawer')) . '>'
+                . '<div class="kn-side__head"><p class="kn-side__title">' . ($overview ? '<a href="' . e($overview) . '">' . e($name) . '</a>' : e($name)) . '</p>'
+                . ($top ? '' : '<button class="kn-close" type="button" data-kn-close hidden>' . icon('x', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Kapitelmenü schließen')) . '</span></button>') . '</div>'
+                . $search
+                . $navHtml
+                . ($overview && $o['tree'] ? '<p class="kn-side__all"><a href="' . e($overview) . '">' . e(lt('Inhaltsverzeichnis')) . '</a></p>' : '')
+                . '</div>';
+            // Oben als Menü: aufklappbar über dem Text (ohne Skript, ohne Schublade)
+            if ($top) $side = '<details class="kn-menu"' . ($editing ? ' inert' : '') . '><summary class="kn-menu__sum">' . icon('list', ['class' => 'kn-ico']) . '<span>' . e(lt('Kapitel')) . '</span></summary>' . $side . '</details>';
+        }
 
         // Brotkrumen (sichtbar; JSON-LD über StructuredData::breadcrumb)
         $crumbs = '';
-        if ($overview || $node) {
+        if (($overview || $node) && $o['crumbs']) {
             $parts = $overview ? ['<a href="' . e($overview) . '">' . e($name) . '</a>'] : [];
             foreach ($node ? self::ancestors($tree, $id) : [] as $a) if ($a['href']) $parts[] = '<a href="' . e($a['href']) . '">' . e($a['title']) . '</a>';
             $parts[] = '<span aria-current="page">' . e(Entries::title($t, $e)) . '</span>';
             $crumbs = '<nav class="kn-crumbs" aria-label="' . e(lt('Brotkrumen')) . '"><ol role="list"><li>' . implode('</li><li>', $parts) . '</li></ol></nav>';
         }
 
-        $foot = self::footer($t, $e, $tree, $cfg);
+        $foot = $o['footer'] ? self::footer($t, $e, $tree, $cfg) : '';
         if ($editing) {
             if ($foot !== '') $foot = '<div class="kn-foot-wrap" inert>' . $foot . '</div>';
             if ($crumbs !== '') $crumbs = '<div inert>' . $crumbs . '</div>';
@@ -418,8 +495,11 @@ final class Knowledge
             : '';
         $toggle = '<button class="kn-toggle" type="button" data-kn-toggle aria-expanded="false" aria-controls="' . e($uid) . '-side" hidden>'
             . icon('list', ['class' => 'kn-ico']) . '<span>' . e(lt('Kapitel')) . '</span></button>';
-        return $head . '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . ($editing ? ' kn--editing' : '') . ($head !== '' ? ' kn--headed' : '') . '"' . ($editing ? '' : ' data-kn') . '>'
-            . ($editing ? '' : '<a class="kn-skip" href="#' . e($uid) . '-text">' . e(lt('Zum Kapiteltext springen')) . '</a>' . $toggle)
+        // Block „Kapitelnavigation“: Position (kn--right, kn--top), ohne Seitenleiste (kn--noside); Knopf „Kapitel“ nur mit Schublade
+        $mods = $opt === null ? '' : ' kn--block' . ($o['position'] === 'right' ? ' kn--right' : '') . ($top ? ' kn--top' : '') . ($side === '' ? ' kn--noside' : '');
+        if ($top || $side === '') $toggle = '';
+        return $head . '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . ($editing ? ' kn--editing' : '') . ($head !== '' ? ' kn--headed' : '') . $mods . '"' . ($editing ? '' : ' data-kn') . '>'
+            . ($editing ? '' : ($side !== '' && !$top ? '<a class="kn-skip" href="#' . e($uid) . '-text">' . e(lt('Zum Kapiteltext springen')) . '</a>' : '') . $toggle)
             . $side
             . '<div class="kn-main" id="' . e($uid) . '-text" tabindex="-1">' . $crumbs . '<div class="kn-content">' . $content . '</div>' . $foot . '</div>'
             . $aside

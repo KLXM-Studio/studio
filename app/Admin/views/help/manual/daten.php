@@ -127,6 +127,14 @@
 
   <div class="doc-note doc-note--info"><strong>Suchmaschinen</strong><p>Detailseiten erhalten automatisch Titel, Beschreibung (aus dem gewählten Beschreibungs-Feld), Vorschaubild und stehen in der Sitemap. Einträge im Entwurf sind nur für Angemeldete sichtbar.</p></div>
 
+  <h4 id="detailvorlagen">Mehrere Detailseiten-Vorlagen</h4>
+  <p>Eine Tabelle kann mehrere Vorlagen haben – etwa „Bericht“ mit großem Bild und „Kurzmeldung“ ohne, oder im Wissensbereich „Satzung“ im sachlichen Stil neben dem Magazin. <b>Daten → Tabelle → Detailseiten-Vorlagen</b>:</p>
+  <ul>
+    <li><b>Neue Vorlage:</b> Name und Ausgangspunkt wählen – Kopie einer vorhandenen, „Kopf wie Seiten“, im Wissensbereich die mitgelieferten Stile, oder leer. „Gestalten“ öffnet sie im Editor mit einem passenden Eintrag.</li>
+    <li><b>Standard:</b> gilt für alle Einträge ohne eigene Zuordnung. Die Standard-Vorlage lässt sich nicht löschen.</li>
+    <li><b>Welche Vorlage gilt?</b> Je Zeile ein Eintrag oder ein Wert eines Auswahlfeldes (z. B. Kategorie, Bereich) und die Vorlage. Es gilt zuerst der Eintrag selbst, im Wissensbereich dann sein nächstes Oberkapitel (also für alle Unterkapitel), dann der Feldwert, sonst der Standard.</li>
+  </ul>
+
   <p><b>Nur bestimmte Einträge:</b> Unter „Filter &amp; Sortierung“ einer Datenliste gibt es neben „ist gleich“, „enthält“ usw. auch <b>„ist leer“</b> und <b>„ist nicht leer“</b> – zum Beispiel nur Einträge mit Bild oder nur Kapitel ohne Oberkapitel. Ein Wert ist dafür nicht nötig.</p>
 
   <h3 id="menue">Einträge im Menü</h3>

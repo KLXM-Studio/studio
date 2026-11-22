@@ -170,7 +170,15 @@ $heads = [
       <div class="set-list">
         <?= $sw('list', !empty($st['list']), __('Übersicht als Liste auf einer Seite'), __('Im nächsten Schritt legen Sie dafür eine Seite mit dem Block „Datenliste“ an – oder fügen ihn in eine bestehende Seite ein.')) ?>
         <?= $sw('detail', !empty($st['detail']), __('Eigene Detailseite je Eintrag'), __('Sinnvoll bei längeren Texten (Beiträge, Termine, Personen). Kurze Einträge wie Fragen & Antworten brauchen keine.')) ?>
+        <?php if (($st['preset'] ?? '') === 'knowledge'): // Wissen: Stil statt „Kopf wie Seiten“ (Core\Data\Knowledge::STYLES) ?>
+        <div class="f f--inline"><label for="wz-style"><?= e(__('Stil der Kapitelseiten')) ?></label>
+          <p class="f-help"><?= e(__('Magazin: großes Bild mit Titel und Kapitelnummer, Navigation darunter, Übersicht als Karten. Sachlich / Handbuch: Seitenleiste mit Kapiteln von Anfang an, große Nummer vor dem Titel, Übersicht als Inhaltsverzeichnis – für Satzungen und Ordnungen. Später unter „Detailseiten-Vorlagen“ umschaltbar.')) ?></p>
+          <select id="wz-style" name="style">
+            <?php foreach (['magazin', 'sachlich'] as $sk): ?><option value="<?= e($sk) ?>"<?= ($st['style'] ?? 'magazin') === $sk ? ' selected' : '' ?>><?= e(__(\Core\Data\Knowledge::STYLES[$sk])) ?></option><?php endforeach; ?>
+          </select></div>
+        <?php else: ?>
         <?= $sw('hero', !empty($st['hero']), __('Detailseiten mit Kopf wie Seiten'), __('Großer Einstieg des Kits mit Bild, Titel und Text aus dem Eintrag (Varianten wie bei Seiten). Nur mit Detailseiten; jederzeit im Block änderbar.')) ?>
+        <?php endif; ?>
         <div class="f f--inline"><label for="wz-route"><?= e(__('Adresse der Detailseiten')) ?></label>
           <p class="f-help"><?= e(__('Leer = aus dem Namen. Nur mit Detailseiten.')) ?></p>
           <div class="adm-prefix"><span>/</span><input id="wz-route" name="route" value="<?= e((string) $st['route']) ?>" placeholder="<?= e(Tables::normName($st['name']) !== '' ? str_replace('_', '-', Tables::normName($st['name'])) : 'aktuelles') ?>" maxlength="60"></div></div>

@@ -214,7 +214,8 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
         <?php elseif ($s['route'] ?? ''): ?>
         <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= e(__('Detailseiten-Vorlage')) ?></span>
           <span class="set-row__sub"><?= $tplPage ? 'Die Vorlage gilt für alle Einträge. Gestaltet wird sie wie jede Seite – mit echten Inhalten eines Eintrags.' : 'Noch keine Vorlage vorhanden.' ?></span></div>
-          <div class="set-row__ctl"><button class="adm-btn adm-btn--small" form="tplform"><?= $tplPage ? 'Detailseite gestalten ↗' : 'Vorlage anlegen' ?></button></div></div>
+          <div class="set-row__ctl"><button class="adm-btn adm-btn--small" form="tplform"><?= $tplPage ? 'Detailseite gestalten ↗' : 'Vorlage anlegen' ?></button>
+            <?php if ($tplPage): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $table['handle'] . '/detailvorlagen')) ?>"><?= e(__('Mehrere Vorlagen …')) ?></a><?php endif; ?></div></div>
         <?php endif; ?>
         <?php if (!$isNew && !$inbox): // RSS-Feed (Core\Data\Feed): Adresse zum Weitergeben bzw. warum es keinen gibt ?>
         <div class="set-row"><div class="set-row__main"><span class="set-row__label"><?= icon('rss') ?> <?= e(__('RSS-Feed')) ?></span>

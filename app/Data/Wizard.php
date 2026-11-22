@@ -79,7 +79,7 @@ final class Wizard
             'route' => (string) ($p['route'] ?? ''), 'detail' => $purpose === 'content' && (string) ($p['route'] ?? '') !== '',
             'list' => in_array($purpose, ['content', 'source'], true), 'notify' => '', 'to' => (string) ($p['delivery']['to'] ?? ''),
             'mode' => (string) ($p['delivery']['mode'] ?? 'system'), 'retention' => (int) ($p['inbox']['retention_days'] ?? Inbox::DEFAULTS['retention_days']),
-            'max' => 0, 'push' => false, 'hero' => false];
+            'max' => 0, 'push' => false, 'hero' => false, 'style' => 'magazin'];
         if ($purpose === 'content' && $preset === '') $st['detail'] = true;
         // „Nur E-Mail“: Empfänger aus den Grundeinstellungen vorschlagen (E-Mail-Versand → Empfänger)
         if ($purpose === 'mail' && $st['to'] === '') $st['to'] = (string) setting('sys.mail_to', '');
@@ -151,6 +151,8 @@ final class Wizard
         }
         foreach (['detail', 'list', 'receipt', 'push', 'hero'] as $k) if (array_key_exists($k, $in)) $st[$k] = !empty($in[$k]);
         if (isset($in['mode']) && in_array($in['mode'], self::modes($st), true)) $st['mode'] = (string) $in['mode'];
+        // Wissen: Stil der mitgelieferten Detailseiten-Vorlage (Core\Data\Knowledge::STYLES)
+        if (isset($in['style']) && isset(Knowledge::STYLES[(string) $in['style']])) $st['style'] = (string) $in['style'];
         if (isset($in['notify'])) $st['notify'] = $clip($in['notify'], 400);
         if (isset($in['to'])) $st['to'] = $clip($in['to'], 600);
         if (isset($in['retention'])) $st['retention'] = max(0, min(3650, (int) $in['retention']));
@@ -291,7 +293,10 @@ final class Wizard
     {
         $errors = self::check($st);
         if ($errors) return ['table' => null, 'errors' => $errors];
-        [$def, $errors] = Tables::validate(self::def($st));
+        $d = self::def($st);
+        // Wissen: gewählter Stil (Magazin, Sachlich) – bestimmt Detailvorlage und Übersicht
+        if (Kinds::isKnowledge($d)) $d['settings']['knowledge'] = ['style' => (string) ($st['style'] ?? 'magazin')] + (array) ($d['settings']['knowledge'] ?? []);
+        [$def, $errors] = Tables::validate($d);
         if ($errors) return ['table' => null, 'errors' => $errors];
         Tables::create($def);
         $t = Tables::find($def['handle']);
@@ -300,7 +305,7 @@ final class Wizard
             $t = Tables::find($def['handle']);
         }
         if (!Tables::isInbox($t) && $t['settings']['route'] !== '' && !empty($st['detail'])) {
-            DataController::makeTemplate($t, !empty($st['hero']));   // „Kopf wie Seiten“: Einstieg aus dem Eintrag (Core\Blocks\EntryHero)
+            DataController::makeTemplate($t, !empty($st['hero']), (string) ($st['style'] ?? ''));   // „Kopf wie Seiten“ bzw. Stil (Wissen)
             $t = Tables::find($def['handle']);
         }
         return ['table' => $t, 'errors' => []];

@@ -63,6 +63,7 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
         <?php endforeach; ?>
         <?php if ($tpl): ?>
         <li><form method="post" action="<?= e(url($base . '/template')) ?>"><?= csrf_field() ?><button type="submit"><?= e(__('Detailseite gestalten')) ?></button></form></li>
+        <li><a href="<?= e(url($base . '/detailvorlagen')) ?>"<?= $ac($cur === 'detail-templates') ?>><?= e(__('Detailseiten-Vorlagen')) ?></a></li>
         <?php endif; ?>
       </ul>
       <?php endif; ?>
