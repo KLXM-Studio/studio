@@ -16,6 +16,29 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   zeigt er auf `/#anker` – wie bisher. Selbsttest `links:selftest`.
 - Kit fluid, Inhaltsverzeichnis („Artikel“): Texte mit `<h2>` (importiert oder eingefügt) nehmen `<h2>` als oberste Ebene;
   Texte nur mit `<h3>`/`<h4>` bleiben unverändert.
+- *EN:* Links: a plain `#anchor` stays on the current page; fluid table of contents also uses `<h2>` in imported texts.
+
+### Quick-Glossar: markierten Text als Schreibweise eines vorhandenen Begriffs
+- **Ein Klick statt neuem Begriff:** In der Doppelprüfung „Gibt es schon?“ (Reiter „Neuer Begriff“) steht bei jedem ähnlichen
+  Begriff **Als Schreibweise zu „…“ hinzufügen**; ohne ähnlichen Treffer sucht **Als Schreibweise zu einem anderen Begriff …** nach
+  einem beliebigen. Der Text wird Variante des Eintrags – mit Version („Schreibweise … ergänzt“), Recht wie beim Bearbeiten des
+  Eintrags (`data.edit` auf die Tabelle, veröffentlichte Begriffe zusätzlich `data.publish`), CSRF. Vorbild: „Ins Glossar“ des
+  REDAXO-AddOns knowledgebase.
+- **Sofort erkannt:** beim Ansehen wird die markierte Stelle live markiert (Annotator-Markup vom Server, Stylesheet/Skript bei Bedarf
+  nachgeladen; nur außerhalb von Links, Knöpfen, Überschriften, je Seite das erste Vorkommen), beim Bearbeiten kurz hervorgehoben
+  und „Auf dieser Seite“ neu geprüft.
+- **Gibt es schon?** prüft jetzt über alle Begriffe auf dem Server (`exact`: Begriff oder Schreibweise, ohne Groß-/Kleinschreibung
+  und Leerraum – `QuickTool::variantKey()`) und verlinkt den vorhandenen Eintrag. „Ähnlich“ findet auch Schreibweisen mit ß/ss,
+  Akzenten oder Bindestrich („Anmeldeschluß“ → „Anmeldeschluss“, „E-Mail-Adresse“ → „E-Mail“) – genau die lassen sich ergänzen,
+  weil die Markierung sie sonst nicht fände. Keine doppelte Schreibweise, auch nicht bei einem anderen Begriff; Komma/Semikolon,
+  leere, zu kurze und zu lange Schreibweisen werden abgelehnt.
+- **Geteiltes Glossar:** nur eigene Begriffe; bei Begriffen einer anderen Website der Hinweis „gehört der Website X – dort ergänzen“.
+- Endpunkt `POST /admin/api/glossar/schreibweise` (`QuickTool::addVariant()`), Tastatur (Enter sucht, ↓ in die Knöpfe), ARIA;
+  Geprüft auch im Kit native (Desktop/Telefon, axe). Selbsttests `glossary:selftest` (20 neue Prüfungen) und `glossary:sharetest` (fremder Begriff); Handbuch → Glossar → Quick-Glossar.
+- *EN:* Quick glossary: add the selected text as a further spelling (variant) of an existing term with one click – from the
+  duplicate check (“Already there?”) or a search for any term. Saved with a revision, permission as for editing the entry, no
+  duplicate spellings (case and spaces ignored; ß/ss, accent and hyphen variants can be added); recognised immediately (live highlight when viewing, “On this page” when
+  editing). Shared glossary: own terms only, a hint names the owning website for others.
 
 ### Schriftgröße der Verwaltung je Konto (`Core\UiScale`)
 - **Schieber „Schriftgröße der Verwaltung“** im Konto-Menü der Kopfleiste (Profilbild) und unter **Konto › Darstellung**:

@@ -10,6 +10,12 @@
  * im Text – „Einfügen“ verlinkt ihn dann). Tastatur: ↓ aus dem Suchfeld in die Treffer, ↑/↓ zwischen den Treffern, Esc schließt,
  * ⌥G springt zwischen Text und Seitenleiste. Texte kommen übersetzt vom Server (ctx.t).
  *
+ * Doppelprüfung „Gibt es schon?“ unter „Neuer Begriff“: steht der Text schon als Begriff oder Schreibweise im Glossar, ein Hinweis mit
+ * Link zum Eintrag; sonst je ähnlichem Begriff (und über die Suche „Als Schreibweise zu einem anderen Begriff …“) der Knopf „Als
+ * Schreibweise zu „X“ hinzufügen“ – der Text wird Variante des Eintrags (Endpunkt variant). Danach ist er sofort erkannt: beim
+ * Ansehen wird die Stelle live markiert (Markup vom Server), beim Bearbeiten kurz hervorgehoben und „Auf dieser Seite“ neu geprüft.
+ * Fremde Begriffe im geteilten Glossar: nur Hinweis „gehört Website X – dort ergänzen“.
+ *
  * Beim Ansehen (ctx.mode 'view', Werkzeug mit 'view' => true): jeder Text der Seite ist markierbar. Markierung + ⌥G (oder der
  * schwebende Knopf „Als Glossar-Begriff“) öffnet „Neuer Begriff“ vorbelegt und prüft „Gibt es schon?“. Nach dem Anlegen: Hinweis
  * auf die automatische Markierung und „Seite neu laden“. „Einfügen“ gibt es nur beim Bearbeiten – beim Ansehen „Öffnen“ (Verwaltung).
@@ -35,7 +41,10 @@ function view(ctx) {
   </div>
   <div class="qg-panel" role="tabpanel" id="qg-p-new" aria-labelledby="qg-tab-new" hidden>
     <form class="qg-form" data-qg-form novalidate>
-      <div class="f"><label for="qg-term">${esc(T('term'))}</label><input id="qg-term" name="term" required maxlength="120" autocomplete="off" aria-describedby="qg-term-e"><p class="f-error" id="qg-term-e" data-qg-err="term" hidden></p><p class="qg-dupe" data-qg-dupe aria-live="polite"></p></div>
+      <div class="f"><label for="qg-term">${esc(T('term'))}</label><input id="qg-term" name="term" required maxlength="120" autocomplete="off" aria-describedby="qg-term-e"><p class="f-error" id="qg-term-e" data-qg-err="term" hidden></p><div class="qg-dupe" data-qg-dupe aria-live="polite"></div>
+        <details class="qg-addto" data-qg-addto hidden><summary>${esc(T('addTo'))}</summary>
+          <div class="qg-search">${ico('magnifying-glass')}<input type="search" id="qg-vq" data-qg-vq aria-label="${esc(T('addToSearch'))}" placeholder="${esc(T('addToPh'))}" autocomplete="off" spellcheck="false"></div>
+          <p class="qg-status" data-qg-vstatus role="status"></p><ul class="qg-sim" data-qg-vlist aria-label="${esc(T('addToSearch'))}"></ul></details></div>
       <div class="f"><label for="qg-short">${esc(T('short'))}</label><textarea id="qg-short" name="short" rows="3" required maxlength="${(D.shortMax || 240) + 40}" aria-describedby="qg-short-h qg-short-c qg-short-e"></textarea>
         <p class="f-help" id="qg-short-h">${esc(T('shortHelp', { n: D.shortMax || 240 }))}</p><p class="f-help qg-count" id="qg-short-c" data-qg-count aria-live="polite"></p><p class="f-error" id="qg-short-e" data-qg-err="short" hidden></p></div>
       <div class="f"><label for="qg-var">${esc(T('variants'))}</label><input id="qg-var" name="variants" maxlength="400" autocomplete="off" aria-describedby="qg-var-h"><p class="f-help" id="qg-var-h">${esc(T('variantsHelp'))}</p></div>
@@ -192,24 +201,144 @@ export default {
       counter();
       dupe(0);
     };
-    // „Gibt es schon?“ – Suche nach dem eingegebenen Begriff (gleich, Variante, ähnlich)
+    // „Gibt es schon?“ – Suche nach dem eingegebenen Begriff (gleich, Variante, ähnlich). Gleich (Server, ohne Groß/Klein, Akzente,
+    // Leerzeichen): Hinweis mit Link zum Eintrag; sonst je ähnlichem Begriff „Als Schreibweise hinzufügen“ + Suche nach beliebigem Begriff
+    const showBtn = it => `<button type="button" class="qg-linkbtn" data-qg-show="${esc(it.term)}">${esc(it.term)}</button>`;
+    const origin = it => it.foreign && it.origin ? ` <span class="qg-badge" title="${esc(T('foreignHint'))}">${esc(T('from', { site: it.origin }))}</span>` : '';
+    const varAction = (it, i, list) => it.foreign
+      ? `<span class="qg-sim__note">${esc(T('foreignVariant', { term: it.term, site: it.origin || '?' }))}</span>`
+      : it.canVariant
+      ? `<button type="button" class="adm-btn adm-btn--small" data-qg-addvar="${list}:${i}">${ico('plus')}<span>${esc(T('addVariant', { term: it.term }))}</span></button>`
+      : `<span class="qg-sim__note">${esc(T('noVariantRight', { term: it.term }))}</span>`;
+    const simHtml = (items, list) => items.map((it, i) => `<li class="qg-sim__i"><span class="qg-sim__t">${showBtn(it)}${origin(it)}${it.variants?.length ? ` <span class="qg-var">${esc(it.variants.join(', '))}</span>` : ''}</span>${varAction(it, i, list)}</li>`).join('');
+    const addTo = $('[data-qg-addto]');
     const dupe = (wait = 220) => {
       clearTimeout(st.dt);
       st.dt = setTimeout(async () => {
         const v = $('#qg-term').value.trim(), box = $('[data-qg-dupe]');
-        if (!v) { box.textContent = ''; return; }
+        if (!v) { box.textContent = ''; addTo.hidden = true; return; }
         const seq = st.dseq = (st.dseq || 0) + 1;
         try {
           const res = await ctx.fetch(ctx.tool.endpoints.search, { query: { q: v, lang: D.lang || ctx.lang, limit: 4 } });
           if (seq !== st.dseq) return;
-          const items = res.items || [], lv = v.toLowerCase();
-          const exact = items.find(it => it.term.toLowerCase() === lv || (it.variants || []).some(x => x.toLowerCase() === lv));
-          const show = it => `<button type="button" class="qg-linkbtn" data-qg-show="${esc(it.term)}">${esc(it.term)}</button>`;
-          box.innerHTML = `<b>${esc(T('dupeQ'))}</b> ` + (exact ? `${esc(T('exists', { term: exact.term }))} ${show(exact)}`
-            : items.length ? `${esc(T('dupeSome'))} ${items.slice(0, 3).map(show).join(', ')}` : esc(T('dupeNone')));
+          const exact = res.exact || null, items = (res.items || []).filter(it => !exact || it.id !== exact.id).slice(0, 3);
+          st.sim = items;
+          if (exact) {
+            const msg = exact.matched === 'term' ? T('existsTerm', { text: v }) : T('existsVariant', { text: v, term: exact.term });
+            box.innerHTML = `<p><b>${esc(T('dupeQ'))}</b> ${esc(msg)}${origin(exact)} <a class="qg-linkbtn" href="${esc(exact.edit)}" target="_blank" rel="noopener" aria-label="${esc(T('openEntryAria', { term: exact.term }))}">${esc(T('openEntry'))}</a> · ${showBtn(exact)}</p>`;
+            addTo.hidden = true;
+            return;
+          }
+          box.innerHTML = `<p><b>${esc(T('dupeQ'))}</b> ${esc(items.length ? T('dupeSome') : T('dupeNone'))}</p>`
+            + (items.length ? `<ul class="qg-sim">${simHtml(items, 'sim')}</ul>` : '');
+          addTo.hidden = false;
+          if (!items.length && !st.addToTouched) addTo.open = true;
         } catch { box.textContent = ''; }
       }, wait);
     };
+    // Suche nach beliebigem Begriff für „Als Schreibweise hinzufügen“
+    const vq = $('[data-qg-vq]');
+    const vsearch = async () => {
+      const seq = st.vseq = (st.vseq || 0) + 1, qs = vq.value.trim(), vl = $('[data-qg-vlist]'), vs = $('[data-qg-vstatus]');
+      if (!qs) { vl.innerHTML = ''; vs.textContent = ''; st.vitems = []; return; }
+      try {
+        const res = await ctx.fetch(ctx.tool.endpoints.search, { query: { q: qs, lang: D.lang || ctx.lang, limit: 5 } });
+        if (seq !== st.vseq) return;
+        st.vitems = res.items || [];
+        vl.innerHTML = simHtml(st.vitems, 'addto');
+        vs.textContent = st.vitems.length ? (res.total === 1 ? T('result1') : T('results', { n: res.total })) : T('addToNone');
+      } catch (e) { if (seq === st.vseq) vs.textContent = e.message; }
+    };
+    vq.addEventListener('input', () => { clearTimeout(st.vt); st.vt = setTimeout(vsearch, 180); });
+    // Enter im Suchfeld: nicht das Formular „Neuer Begriff“ absenden, sondern suchen; ↓ in die Knöpfe
+    vq.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); clearTimeout(st.vt); vsearch(); }
+      else if (e.key === 'ArrowDown') { const b = $('[data-qg-vlist] [data-qg-addvar]'); if (b) { e.preventDefault(); b.focus(); } }
+    });
+    addTo.addEventListener('toggle', () => { if (addTo.open) st.addToTouched = true; });
+
+    // Live erkannt: beim Ansehen die markierte Stelle wie die automatische Markierung (Annotator-Markup vom Server) einpacken –
+    // nur in einem Textknoten, nicht in Links/Knöpfen/Überschriften usw.; je Seite nur das erste Vorkommen (Modus „page“)
+    const LIVE_SKIP = 'a,button,code,pre,kbd,samp,nav,label,summary,textarea,input,select,option,[data-glossary=off],[aria-hidden=true],[contenteditable],.gl,.cms-bar-host,h1,h2,h3';
+    const liveMark = (res, sel) => {
+      const r = sel?.range;
+      if (!res.markup || !r || D.mode === 'off' || r.startContainer !== r.endContainer || r.startContainer.nodeType !== 3 || !r.startContainer.isConnected) return false;
+      if (r.startContainer.parentElement?.closest(LIVE_SKIP)) return false;
+      // Nur den gespeicherten Text einpacken (der Server entfernt z. B. einen Doppelpunkt am Ende) – Satzzeichen bleiben stehen
+      const n = r.startContainer, part = n.data.slice(r.startOffset, r.endOffset), at = part.toLowerCase().indexOf(String(res.text || '').toLowerCase());
+      if (!res.text || at < 0) return false;
+      const tpl = document.createElement('template');
+      tpl.innerHTML = res.markup;
+      const node = tpl.content.firstElementChild;
+      if (!node) return false;
+      if (D.mode !== 'section' && document.querySelector(`.gl[data-gl="${CSS.escape(node.dataset.gl || '')}"]`)) return false;
+      const hit = document.createRange();
+      hit.setStart(n, r.startOffset + at); hit.setEnd(n, r.startOffset + at + res.text.length);
+      const btn = node.querySelector('.gl-term');
+      if (btn) btn.textContent = hit.toString();   // Text wie auf der Seite
+      hit.deleteContents();
+      hit.insertNode(node);
+      getSelection()?.removeAllRanges();
+      // Stylesheet und Skript der Markierung nachladen, falls die Seite bisher keinen Begriff hatte
+      for (const href of res.assets?.css || []) {
+        const path = href.split('?')[0];
+        if (![...document.querySelectorAll('link[rel=stylesheet]')].some(l => l.href.includes(path))) document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href }));
+      }
+      if (res.assets?.js && !document.querySelector('script[src*="js/glossary.js"]')) document.body.append(Object.assign(document.createElement('script'), { src: res.assets.js, defer: true }));
+      return true;
+    };
+    // Beim Bearbeiten: kurz hervorheben (die Website markiert im Bearbeiten-Modus nichts)
+    const flash = sel => {
+      if (!sel?.range || !window.Highlight || !CSS.highlights) return;
+      CSS.highlights.set('cms-gl-hit', new Highlight(sel.range));
+      clearTimeout(st.hl); st.hl = setTimeout(() => CSS.highlights.delete('cms-gl-hit'), 4000);
+    };
+    const addVariant = async (it, btn) => {
+      const text = $('#qg-term').value.trim();
+      if (!it || !text) return err('term', T('requiredTerm'));
+      err('', '');
+      const sel = ctx.selection();
+      const match = sel?.text.trim().replace(/\s+/g, ' ') || '';
+      btn?.setAttribute('aria-busy', 'true');
+      try {
+        const res = await ctx.fetch(ctx.tool.endpoints.variant, { json: { id: it.id, text, lang: D.lang || ctx.lang, view: ctx.mode === 'view', match } });
+        const msg = T('variantAdded', { text: res.text, term: res.item.term });
+        ctx.toast(msg); ctx.announce(msg);
+        st.created = res.item;
+        let note = '', actions = '';
+        if (ctx.mode === 'view') {
+          const live = liveMark(res, sel);
+          note = live ? T('variantLive') : D.mode === 'off' ? T('autoOff') : T('variantLater');
+          if (!live && D.mode !== 'off') actions = `<button type="button" class="adm-btn adm-btn--small" data-qg-reload>${ico('arrows-clockwise')} ${esc(T('reload'))}</button>`;
+        } else {
+          flash(sel);
+          checkPage();
+          note = D.mode === 'off' ? T('autoOff') : T('variantEdit');
+          actions = `<button type="button" class="adm-btn adm-btn--small" data-qg-topage>${esc(T('showOnPage'))}</button>`
+            + `<button type="button" class="adm-btn adm-btn--small adm-btn--primary" data-qg-insnew>${ico('link')} ${esc(T('insertNew'))}</button>`;
+        }
+        form.reset(); counter();
+        st.prefilled = ''; st.picked = '';
+        $('[data-qg-dupe]').textContent = '';
+        addTo.hidden = true; addTo.open = false; vq.value = ''; $('[data-qg-vlist]').innerHTML = ''; $('[data-qg-vstatus]').textContent = '';
+        const done = $('[data-qg-done]');
+        done.hidden = false;
+        done.innerHTML = `<p role="status" tabindex="-1">${ico('check-circle')} ${esc(msg)}</p><p class="qg-note">${esc(note)}</p>${actions ? `<p class="qg-actions">${actions}</p>` : ''}`;
+        done.querySelector('[role=status]').focus();
+        search();
+      } catch (e2) {
+        err('term', e2.message);
+        const d = e2.data || {};
+        if (d.exists) $('[data-qg-err="term"]').insertAdjacentHTML('beforeend', ` <button type="button" class="qg-linkbtn" data-qg-show="${esc(d.exists.term)}">${esc(T('showExisting'))}</button>`);
+      } finally {
+        btn?.removeAttribute('aria-busy');
+      }
+    };
+    P.addEventListener('click', e => {
+      const b = e.target.closest('[data-qg-addvar]');
+      if (b) { const [list, i] = b.dataset.qgAddvar.split(':'); addVariant((list === 'sim' ? st.sim : st.vitems)?.[+i], b); return; }
+      if (e.target.closest('[data-qg-topage]')) tab('page', true);
+    });
     $('#qg-term').addEventListener('input', () => dupe());
     // Ansehen mit neuer Markierung: gleich „Neuer Begriff“ (vorbelegt) – Suchfeld mit, „Gibt es schon?“ prüft der Reiter
     st.viewPick = () => {
