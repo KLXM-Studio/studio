@@ -18,6 +18,7 @@ use Core\Block;
  * (Besucher und Bearbeiten-Modus, gleich wie Kit-Export), keine Inline-Styles/Skripte.
  * Besucher-Filter in Listen (Core\Blocks\ListFilter, Entries::facets): ab … Einträgen, nur Optionen mit Treffern, ab zwei Knöpfen,
  * Auswahl aus der Adresse, Kit-Vorgabe, Ausgabe der Datenliste.
+ * Interaktives Bild (Core\HotspotsSelfTest::render): Popover, Reihenfolge, Liste, SVG-Flächen, CSP, Block in fluid/native/praxis.
  * Geänderte Standardwerte (Core\Blocks\DefaultChanges): bisheriger Zustand für gespeicherte Blöcke, verschachtelt, idempotent,
  * Objekte bleiben Objekte, neue Blöcke bekommen den neuen Standard.
  */
@@ -52,6 +53,7 @@ final class SelfTest
             $t->defaultChanges();
             $t->templateComments();
             $t->scrolly();
+            $t->hotspots();
         } finally {
             app()->editing = $prev;
         }
@@ -111,6 +113,14 @@ final class SelfTest
         } finally {
             $cache->setValue(null, $prev);
         }
+    }
+
+    /** Interaktives Bild (Core\Hotspots): Ausgabe, CSP, Block in den Kits – Core\HotspotsSelfTest::render */
+    private function hotspots(): void
+    {
+        $r = \Core\HotspotsSelfTest::render();
+        $this->ok += $r['ok'];
+        array_push($this->fails, ...$r['fails']);
     }
 
     /** Erster Block (Bild mit Vorrang), Seitenüberschrift (Core\Headings), Leistungs-Hinweise von kit:check */
