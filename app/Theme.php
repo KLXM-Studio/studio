@@ -889,6 +889,9 @@ final class Theme
         if ($types !== null && in_array('job_apply', $types, true)) $types[] = 'data_form';
         // Live-Galerie nutzt das Markup der Bildergalerie (cms-gallery) – gleiche Stile (Kern und Kit)
         if ($types !== null && in_array('live_gallery', $types, true)) $types[] = 'gallery';
+        // Highlights (Core\Data\Featured) nutzen die Karten der Datenliste – gleiche Stile (Kern und Kit), dazu css/highlights.css
+        $highlights = $types === null || in_array('highlights', $types, true);
+        if ($types !== null && $highlights) $types[] = 'data_list';
         if ($types !== null && $this->embedCss) $types[] = 'video';
         $out = [];
         // Kern-Blöcke: Theme-Stylesheet css/data.css bevorzugt, sonst das neutrale aus dem Kern
@@ -902,6 +905,7 @@ final class Theme
             $out[] = $this->coreCss('media.css');
         }
         if ($mediaText) $out[] = $this->coreCss('mediatext.css');
+        if ($highlights) $out[] = $this->coreCss('highlights.css');
         // Kombifelder (Core\Combo: Ansprechperson, Fragen & Antworten, Adresse, Downloads) – Kit kann css/combo.css mitbringen
         if (($types === null || array_intersect(['data_list', 'data_fields'], $types)) && array_filter(\Core\Combo::TYPES, fn($c) => \Core\Data\Tables::usesType($c))) $out[] = $this->coreCss('combo.css');
         // Vor / Zurück auf Detailseiten (Kern-Block entry_nav) – Kit kann css/entry-nav.css mitbringen

@@ -216,6 +216,8 @@
  *                                                     --keep: Seiten bleiben, Kapitel vom Typ „Verweis“; --blocks: erlaubte Blöcke beim Anlegen
  *   hero:selftest                                     Selbsttest Einstieg mit Quelle „Felder des Eintrags“: Werte, fehlendes Bild/Felder, eine H1,
  *                                                     Bestand, Vorlage „Kopf wie Seiten“, Wissensbereich mit Kopf über der Seitenleiste
+ *   highlights:selftest                               Selbsttest „Auf der Startseite hervorheben“ + Block „Highlights“: Schalter (Standard aus),
+ *                                                     Reihenfolge, „bis“-Datum, Mischung mehrerer Tabellen, Sortierung, Karten/Teaser, Bestand
  *   knowledge:selftest                                Selbsttest Wissensbereich: Kapitelbaum, Nummern, Abschnitte, Ansicht (Layout-Modi), Suche mit
  *                                                     Auszug, Glossar-Treffer, Mehrfach-Filter, Schlagworte, data:import-pages mit Zurückdrehen
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page [--hero]]
@@ -1698,6 +1700,13 @@ switch ($cmd) {
     case 'hero:selftest':
         // Einstieg mit Quelle „Felder des Eintrags“ (Core\Blocks\EntryHero) – vorübergehende Tabellen und Seiten
         $res = Core\Blocks\EntryHeroSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'highlights:selftest':
+        // „Auf der Startseite hervorheben“ + Block „Highlights“ (Core\Data\Featured) – vorübergehende Tabellen
+        $res = Core\Data\FeaturedSelfTest::run();
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

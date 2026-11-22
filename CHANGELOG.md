@@ -25,6 +25,16 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - **Neue Tabellen:** „Detailseiten mit Kopf wie Seiten“ im Assistenten und beim Anlegen, `data:template … --with-detail-page --hero`.
   Bestehende Vorlagen und Blöcke bleiben unverändert (Standard „Eigene Inhalte“). Selbsttest `hero:selftest`.
 
+### Auf der Startseite hervorheben und Block „Highlights“ (`Core\Data\Featured`)
+- **Grundfeld „Auf der Startseite hervorheben“** für jede Tabelle mit Detailseiten (Tabelle → Auf der Website → Detailseiten, Standard
+  aus): je Eintrag Schalter, optional Reihenfolge und „bis“-Datum (einschließlich, ohne Cron). Spalten `_featured`, `_featured_order`,
+  `_featured_until` (additiv); Abfrage-Option `Entries::query($t, ['featured' => 'date'|'order'])`. Bestehende Tabellen bleiben byte-gleich.
+- **Neuer Block „Highlights“:** mischt hervorgehobene Einträge mehrerer Tabellen (Anzahl je Tabelle, Anzahl gesamt), sortiert nach Datum
+  oder Reihenfolge, Etikett je Bereich (Name der Tabelle oder eigene Beschriftung), Karten oder großer Teaser (erster groß). Markup und
+  Stile der Datenliste (auto-fill-Raster), damit jedes Kit ihn gestaltet; Zusatz `css/highlights.css` nur mit dem Block.
+- **Sichtbarkeit:** nur veröffentlichte Einträge, die Besucher sehen dürfen (Zeitplan, geschützte Bereiche, Freigaben); geteilte Tabellen
+  im Netzwerk nur mit den Einträgen, die die Website auch sonst zeigt. Selbsttest `highlights:selftest`.
+
 ### Netzwerk: Verband und Vereine teilen Kontakte und Termine (`Core\Data\Network`, `Core\Data\Nearby`)
 - **Weitergabe je Eintrag** (Schalter der geteilten Tabelle, Standard aus): nur diese Website, ausgewählte Websites (erscheinen dort von
   selbst) oder ganzes Netzwerk. Neue Kontakte zuerst „nur diese Website“, Termine „ganzes Netzwerk“; Einträge von vor dem Schalter gelten

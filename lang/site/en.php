@@ -51,6 +51,7 @@ return [
     'Vollbild' => 'Full screen',
     'Vollbild beenden' => 'Exit full screen',
     'Zurzeit gibt es hier keine Einträge.' => 'There are no entries here at the moment.',
+    'Zurzeit ist nichts hervorgehoben.' => 'Nothing is featured at the moment.',
     'zu {title}' => 'about {title}',
     'Vielen Dank.' => 'Thank you.',
     'Vielen Dank – Ihre Anfrage ist eingegangen.' => 'Thank you – your request has been received.',

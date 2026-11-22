@@ -60,6 +60,16 @@
   <p>Blöcke, die es vor dieser Einstellung schon gab, stehen auf „Mitte“ und sehen damit aus wie bisher – wählen Sie „Mitlaufen“, wenn Sie es dort möchten.</p>
   <p>Auf schmalen Bildschirmen (Telefon) stehen Bild und Text untereinander; die Einstellung wirkt dann nicht. Es bewegt sich nichts von selbst, daher gilt sie auch bei „Bewegung reduzieren“.</p>
   <?php endif; ?>
+  <?php if (isset($blocks['highlights'])): ?>
+  <h3 id="highlights"><?= e($blocks['highlights']['label']) ?></h3>
+  <p>Zeigt hervorgehobene Einträge aus mehreren Tabellen gemischt – z. B. eine Neuigkeit, den nächsten großen Termin und ein Projekt auf der Startseite. Voraussetzung: In den Tabellen ist „Einträge auf der Startseite hervorheben können“ eingeschaltet und die Einträge sind hervorgehoben (<a href="<?= e(url('/admin/hilfe#startseite-hervorheben')) ?>">Einträge hervorheben</a>).</p>
+  <ul>
+    <li><b>Tabellen:</b> je Zeile eine Tabelle, wie viele Einträge höchstens kommen und optional ein eigenes <b>Etikett</b> (sonst der Name der Tabelle, z. B. „Aktuelles“).</li>
+    <li><b>Sortierung:</b> „Neueste zuerst“ oder „Reihenfolge“ – dann zählt die Zahl, die Sie im Eintrag unter „Hervorheben“ eintragen; Einträge ohne Zahl folgen.</li>
+    <li><b>Darstellung:</b> Karten wie in der Datenliste (das Kit gestaltet sie gleich) oder <b>Großer Teaser</b> – der erste Eintrag groß über die ganze Breite, die übrigen als Karten darunter.</li>
+    <li>Ist nichts hervorgehoben, entfällt der Abschnitt (abschaltbar, dann mit Hinweistext). Auf einer Detailseite erscheint der aufgerufene Eintrag nicht noch einmal.</li>
+  </ul>
+  <?php endif; ?>
   <?php if (isset($blocks['gallery'])): ?>
   <h3 id="galerie-einzelbild"><?= e($blocks['gallery']['label']) ?> mit einem Bild</h3>
   <p>Enthält eine Galerie genau ein Bild und ist <b>Einzelnes Bild groß zeigen</b> an (Standard für neue Galerien; bei älteren Galerien aus, damit sie unverändert bleiben), erscheint es als <b>Einzelbild in voller Inhaltsbreite</b> im Originalformat – mit Bildunterschrift darunter und, wenn eingeschaltet, per Klick groß (Lightbox). Anordnung, Spalten und Bildformat gelten erst ab zwei Bildern. Sehr hohe Bilder werden höchstens etwa so hoch wie das Browserfenster und stehen dann mittig. Kommt ein zweites Bild hinzu, zeigt der Block wieder die gewählte Anordnung.</p>
