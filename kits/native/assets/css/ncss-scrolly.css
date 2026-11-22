@@ -6,5 +6,7 @@
   .nv-scrolly ncss-scrolly { --ncss-scrolly-top: 4.5rem; margin-block-start: var(--f-s-l); }
   .nv-scrolly .ncss-scrolly-steps { margin: 0; padding-inline: 0; list-style: none; }
   .nv-scrolly .ncss-scrolly-step > * { background: var(--f-bg); }
+  /* Bildformat „auto“: jedes Bild ganz (Hochformat nicht höher als die Bühne) */
+  .nv-scrolly--auto .ncss-scrolly-figure img { inline-size: auto; max-inline-size: 100%; max-block-size: calc(100svh - 6rem); margin-inline: auto; }
   .nv-scrolly__title { margin: 0 0 var(--f-s-xs); color: var(--f-ink); font-size: var(--f-t1); }
 }

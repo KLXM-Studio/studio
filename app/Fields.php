@@ -10,6 +10,8 @@ namespace Core;
  *  - öffentliche Formulare des Themes.
  *
  * Feld: ['name','label','type','required','help','default','options','fields','width','max','placeholder']
+ * Rich-Text mit 'from_text' => true: Das Feld war früher textarea – Werte ohne HTML (is_plain_text()) zeigt der Editor als
+ * Absätze (text_to_rich()), die Ausgabe des Kits entscheidet selbst (alter Klartext wie bisher, sonst rich()).
  * Typen: text textarea richtext inline email tel url link number bool select date time
  *        page pages (mehrere Seiten, Core\PagePicker) media file repeater secret heading icon (Symbolauswahl, Wert = Symbolname, Ausgabe: icon($wert))
  * Überschrift mit 'collapse' => true|'open': aufklappbarer Abschnitt bis zur nächsten Überschrift (geöffnet bei Fehlern darin
@@ -721,10 +723,13 @@ final class Fields
         }
 
         $v = is_scalar($value) ? (string) $value : '';
+        // Rich-Text-Feld, das früher mehrzeiliger Text war ('from_text' => true): alter Klartext erscheint im Editor als Absätze;
+        // gespeichert bleibt er unverändert, bis jemand den Text bearbeitet (das versteckte Feld behält den alten Wert)
+        $shown = $type === 'richtext' && !empty($f['from_text']) && trim($v) !== '' && \is_plain_text($v) ? \text_to_rich($v) : $v;
         $control = match ($type) {
             'textarea' => '<textarea id="' . $id . '" name="' . $inputName . '" rows="' . ($f['rows'] ?? 4) . '"' . $aria . $ph . '>' . e($v) . '</textarea>',
             'richtext', 'inline' => '<div class="rte" data-mode="' . $type . '"><div class="rte-bar" role="toolbar" aria-label="Formatierung">'
-                . '</div><div class="rte-area" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="' . $id . '-l">' . $v . '</div>'
+                . '</div><div class="rte-area" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="' . $id . '-l">' . $shown . '</div>'
                 . '<input type="hidden" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '"></div>',
             'select' => !empty($f['relation'])
                 ? '<span class="f-relselect" data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '">' . self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req) . '</span>'
