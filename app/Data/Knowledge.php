@@ -59,6 +59,12 @@ final class Knowledge
 
     // ================================================================= Vorlage, Detailseite, Übersicht
 
+    /** Erlaubte Blöcke im Feld „Inhalt“ neuer Wissenstabellen: Standard (Inhalt, Medien) und die Datenliste */
+    public static function contentBlocks(): array
+    {
+        return array_values(array_unique([...EntryBlocks::defaults(), ...array_intersect(EntryBlocks::DATA_OK, array_keys(EntryBlocks::choices()))]));
+    }
+
     /** Vorlage „Wissen“ für Assistent und data:template knowledge (DataController::presets) */
     public static function preset(): array
     {

@@ -27,6 +27,7 @@ final class KnowledgeSelfTest
         $prevReq = app()->request;
         $prevEntry = app()->entry;
         $pages = [];
+        $tables = [];
         try {
             // 1. Tabelle aus der Vorlage „Wissen“
             $def = DataController::presetDef('knowledge');
@@ -129,6 +130,50 @@ final class KnowledgeSelfTest
                 && ($t2['settings']['image_field'] ?? '') === '' && array_diff_key($after, ['bild' => 1, 'verweis' => 1, 'updated_at' => 1]) == array_diff_key($before, ['updated_at' => 1])
                 && empty($after['bild']) && empty($after['verweis']), 'Version 1 → 2: neue Felder leer, Einträge und Einstellungen unverändert');
             $t = $t2;
+            // 6c. Datenliste in Einträgen: wählbar, für Wissen vorbelegt; höchstens eine Ebene (Zyklus, Kette über andere Tabelle),
+            // eigener Eintrag ausgeschlossen, „aufgerufener Eintrag“ = Eintrag der Blöcke – auch wenn eine andere Detailseite offen ist
+            $ck(isset(EntryBlocks::choices()['data_list']) && !in_array('data_list', EntryBlocks::defaults(), true) && in_array('data_list', Knowledge::contentBlocks(), true)
+                && in_array('data_list', (array) (Tables::field($t, 'inhalt')['blocks'] ?? []), true), 'Datenliste in Einträgen wählbar, in neuen Wissenstabellen vorbelegt');
+            $th = app()->theme;
+            if ($th->block('data_list') && !$th->files('blocks/data_list.php')) {
+                $hb = $h . 'b';
+                [$defB, $errB] = Tables::validate(['name' => 'QA B', 'singular' => 'QA B', 'handle' => $hb, 'fields' => [
+                    ['label' => 'Name', 'name' => 'name', 'type' => 'text', 'required' => 1],
+                    ['label' => 'Ref', 'name' => 'ref', 'type' => 'relation', 'target' => $h],
+                    ['label' => 'Inhalt', 'name' => 'inhalt', 'type' => 'blocks', 'blocks' => ['richtext', 'data_list']]]]);
+                $ck($errB === [], 'Datenliste per Feldeinstellung in anderen Tabellen wählbar');
+                Tables::create($defB);
+                Tables::flush();
+                $tb = Tables::find($hb);
+                $tables[] = $hb;
+                $dl = fn(string $table, array $x = []) => ['id' => bin2hex(random_bytes(4)), 'type' => 'data_list', 'data' => ['table' => $table, 'layout' => 'list', 'limit' => 0,
+                    'fields' => [$table . '._title', $table . '.inhalt'], 'link_detail' => false] + $x];
+                Entries::save($tb, null, ['name' => 'B-eins', 'ref' => $a, 'inhalt' => [$dl($h)], 'status' => 'published']);
+                Entries::save($tb, null, ['name' => 'B-zwei', 'ref' => $b, 'inhalt' => [], 'status' => 'published']);
+                // Eintrag „Anfang“: Liste der eigenen Tabelle (mit Inhalt = Zyklus) und Liste von B, gefiltert auf „aufgerufener Eintrag“ (Kette B → Wissen)
+                Entries::save($t, $a, ['inhalt' => [$dl($h), $dl($hb, ['filter_field' => $hb . '.ref', 'filter_op' => 'current'])]]);
+                $other = Entries::find($t, $d);
+                app()->entry = ['table' => $t, 'entry' => $other];   // es ist gerade eine andere Detailseite offen
+                $t0 = microtime(true);
+                $html = Entries::html($t, Entries::find($t, $a), 'inhalt');
+                $ms = (microtime(true) - $t0) * 1000;
+                $names = fn(string $x) => array_map(fn($m) => (string) preg_replace('~^[0-9.]+\s+~u', '', trim(strip_tags($m))), preg_match_all('~<h[23] class="dl-name[^"]*">(.*?)</h[23]>~s', $x, $mm) ? $mm[1] : []);
+                $listed = $names($html);
+                $ck(substr_count($html, ' dl dl--') === 2, 'Zyklus und Kette: nur die zwei Listen des Eintrags, keine Liste in den gelisteten Einträgen (' . substr_count($html, ' dl dl--') . ')');
+                $ck(!in_array('Anfang', $listed, true) && in_array('Bestand', $listed, true), 'Liste der eigenen Tabelle ohne den Eintrag selbst: ' . implode('|', $listed));
+                $ck(in_array('B-eins', $listed, true) && !in_array('B-zwei', $listed, true), 'Filter „verknüpft mit dem aufgerufenen Eintrag“ bezieht sich auf den Eintrag der Blöcke');
+                $ck((int) (app()->entry['entry']['id'] ?? 0) === $d, 'Kontext danach wie vorher');
+                $ck($ms < 3000, 'Leistung: Eintrag mit zwei Listen in ' . (int) $ms . ' ms');
+                $g = EntryBlocks::enterList();
+                $ck($g !== null && EntryBlocks::enterList() === null, 'Wächter frei nach der Ausgabe, zweite Liste darin gesperrt');
+                unset($g);
+                $ck(EntryBlocks::enterList() !== null, 'Wächter gibt beim Verlassen frei');
+                // Detailseite des Eintrags: Inhaltsblöcke über entry_blocks – gleiche Regeln
+                app()->entry = ['table' => $t, 'entry' => Entries::find($t, $a)];
+                $page = $th->renderBlocks([['id' => 'qaeb', 'type' => 'entry_blocks', 'data' => ['table' => $h, 'field' => $h . '.inhalt']]]);
+                $ck(substr_count($page, ' dl dl--') === 2 && in_array('B-eins', $names($page), true) && !in_array('Anfang', $names($page), true), 'Auf der Detailseite dieselben Regeln');
+                Entries::save($t, $a, ['inhalt' => $blocks('Einleitung')]);
+            }
             // 7. Seitenzweig umstellen und zurückdrehen
             $slug = 'qa-knroot-' . bin2hex(random_bytes(2));
             $root = Pages::create(['slug' => $slug, 'title' => 'QA Zweig', 'status' => 'published']);
@@ -162,7 +207,7 @@ final class KnowledgeSelfTest
             $slug2 = 'qa-knref-' . bin2hex(random_bytes(2));
             $r2 = Pages::create(['slug' => $slug2, 'title' => 'QA Verweise', 'status' => 'published']);
             $pl = Pages::create(['slug' => 'liste', 'title' => 'Liste', 'status' => 'published', 'parent_id' => $r2, 'sort' => 1],
-                [['id' => 'qa3', 'type' => 'richtext', 'data' => ['text' => '<p>Vor der Liste</p>']], ['id' => 'qa4', 'type' => 'data_list', 'data' => ['table' => $h]]]);
+                [['id' => 'qa3', 'type' => 'richtext', 'data' => ['text' => '<p>Vor der Liste</p>']], ['id' => 'qa4', 'type' => 'data_list', 'data' => ['table' => $h]], ['id' => 'qa8', 'type' => 'data_form', 'data' => ['table' => $h]]]);
             $pt = Pages::create(['slug' => 'tief', 'title' => 'Tief', 'status' => 'published', 'parent_id' => $pl, 'sort' => 1],
                 [['id' => 'qa5', 'type' => 'richtext', 'data' => ['text' => '<p>Tief</p>']]]);
             $px = Pages::create(['slug' => 'extra', 'title' => 'Extra', 'status' => 'published', 'parent_id' => $r2, 'sort' => 2],
@@ -171,10 +216,10 @@ final class KnowledgeSelfTest
             array_push($pages, $r2, $pl, $pt, $px);
             $h2 = $h . 'ref';
             $plain = KnowledgeImport::plan(Pages::find($r2), $h2);
-            $ck($plain['ok'] && $plain['suggest'] === ['liste'] && in_array('data_list', $plain['items'][0]['dropped'], true) && !in_array('data_list', $plain['allowed'], true)
-                && !in_array('hero', $plain['allowed'], true), 'Plan: data_list nicht übertragbar, Vorschlag --keep=liste, Daten-Blöcke und Seitenkopf nie erlaubt');
+            $ck($plain['ok'] && $plain['suggest'] === ['liste'] && $plain['items'][0]['dropped'] === ['data_form'] && in_array('data_list', $plain['allowed'], true)
+                && !in_array('data_form', $plain['allowed'], true) && !in_array('hero', $plain['allowed'], true), 'Plan: Datenliste wird übernommen, data_form nicht übertragbar (Vorschlag --keep=liste), Seitenkopf nie');
             $ck($extra === null || ($plain['unlock'] === [$extra] && in_array($extra, $plain['allowed'], true)), 'Plan: wählbare Blöcke der Seiten werden im Feld „Inhalt“ freigeschaltet');
-            $bad = KnowledgeImport::plan(Pages::find($r2), $h2, ['keep' => ['gibtsnicht'], 'blocks' => ['data_list']]);
+            $bad = KnowledgeImport::plan(Pages::find($r2), $h2, ['keep' => ['gibtsnicht'], 'blocks' => ['data_form']]);
             $ck(!$bad['ok'] && count($bad['errors']) === 2, 'Plan: unbekanntes --keep und nicht wählbares --blocks werden abgewiesen');
             $plan2 = KnowledgeImport::plan(Pages::find($r2), $h2, ['keep' => ['liste', (string) $pt], 'blocks' => ['richtext']]);
             $ck($plan2['ok'] && $plan2['suggest'] === [] && $plan2['allowed'] === array_values(array_filter(['richtext', $extra])), 'Plan: --keep übernimmt den Vorschlag, --blocks legt die Auswahl beim Anlegen fest');
@@ -203,7 +248,7 @@ final class KnowledgeSelfTest
         } finally {
             app()->request = $prevReq;
             app()->entry = $prevEntry;
-            foreach ([$h . 'imp', $h] as $x) if ($tt = Tables::find($x)) Tables::delete($tt);
+            foreach ([...$tables, $h . 'imp', $h . 'ref', $h] as $x) if ($tt = Tables::find($x)) Tables::delete($tt);
             foreach (array_reverse($pages) as $pid) Pages::db()->query('DELETE FROM pages WHERE id = ?', [$pid]);
             $st = KnowledgeImport::state();
             foreach ($pages as $pid) unset($st[(string) $pid]);

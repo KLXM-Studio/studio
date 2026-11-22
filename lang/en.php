@@ -9364,4 +9364,5 @@ return [
     'Vorschlag: Seiten mit Blöcken, die in Kapiteln nicht gehen, als Verweis behalten – --keep={list}' => 'Suggestion: keep pages with blocks that cannot go into chapters as links – --keep={list}',
     'bleibt Seite, Kapitel-Adresse leitet dorthin' => 'stays a page, the chapter address redirects there',
     'nicht übertragbar: {list}' => 'not transferable: {list}',
+    'Datenliste in einer Datenliste: wird nicht ausgegeben (höchstens eine Ebene).' => 'Data list inside a data list: not shown (one level at most).',
 ];

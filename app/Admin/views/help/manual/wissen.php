@@ -39,7 +39,7 @@
     <li><b>Kapitelnummer</b> leer lassen – sie entsteht automatisch. Nur für feste Nummern (z. B. „A.1“ im Anhang) selbst eintragen.</li>
     <li><b>Anreißer:</b> ein, zwei Sätze, worum es geht. Er steht unter der Überschrift, im Inhaltsverzeichnis und in der Suche.</li>
     <li><b>Bild</b> (optional): erscheint im Kopf des Kapitels, in Karten und beim Teilen.</li>
-    <li><b>Inhalt:</b> Blöcke wie auf einer Seite – Fließtext, Bilder, Interaktives Bild, Downloads … Gliedern Sie mit <b>Zwischenüberschriften (H2)</b>; sie werden zu den Abschnitten.</li>
+    <li><b>Inhalt:</b> Blöcke wie auf einer Seite – Fließtext, Bilder, Interaktives Bild, Downloads, auch eine <b>Datenliste</b> (z. B. die Termine zum Thema) … Gliedern Sie mit <b>Zwischenüberschriften (H2)</b>; sie werden zu den Abschnitten.</li>
     <li><b>Zuordnung</b> (aufklappen): <b>Schlagworte</b> ankreuzen oder unter „Neue Schlagworte“ ergänzen (durch Komma getrennt), <b>Verwandte Kapitel</b> und <b>Glossarbegriffe</b> verknüpfen, <b>Autor/in</b> und <b>„Zuletzt geprüft“</b> eintragen.</li>
     <li>Speichern, auf der Website prüfen, veröffentlichen.</li>
   </ol>
@@ -65,7 +65,8 @@
   <p>Gibt es schon einen Seitenzweig „Wissen“ mit Unterseiten, stellt die Administration ihn per Kommandozeile um: <code>php bin/console data:import-pages wissen</code> zeigt zuerst einen <b>Probelauf</b> (welche Seite welches Kapitel wird, welche Adressen sich ändern, welche Blöcke zusätzlich erlaubt werden und welche nicht übertragbar sind), <code>--apply</code> führt ihn aus. Kapitel der ersten Ebene behalten ihre Adresse, tiefere bekommen eine Weiterleitung; die alten Seiten liegen offline unter „… – vor der Umstellung“. <code>--revert</code> dreht alles zurück.</p>
   <ul>
     <li><b>Blöcke:</b> Was in Kapiteln wählbar ist (Text, Bilder, Interaktives Bild, Blöcke von Erweiterungen …), wird übernommen und im Feld „Inhalt“ freigeschaltet. Der Seitenkopf wird nicht übernommen – sein Text wird zum Anreißer, sein Bild zum Bild des Kapitels.</li>
-    <li><b>Nicht übertragbar</b> sind Daten-Blöcke wie die Datenliste. Für solche Seiten schlägt der Probelauf <code>--keep=seite,…</code> vor: Diese Seiten bleiben Seiten und werden als Kapitel vom Typ „Verweis“ eingehängt.</li>
+    <li><b>Datenlisten</b> werden mit übernommen – Seiten mit einer Liste werden ganz normale Kapitel.</li>
+    <li><b>Nicht übertragbar</b> sind andere Daten-Blöcke (z. B. Formulare). Für solche Seiten schlägt der Probelauf <code>--keep=seite,…</code> vor: Diese Seiten bleiben Seiten und werden als Kapitel vom Typ „Verweis“ eingehängt.</li>
     <li><code>--blocks=richtext,gallery,…</code> legt beim Anlegen der Tabelle fest, welche Blöcke im Feld „Inhalt“ erlaubt sind (Blöcke der Seiten kommen dazu).</li>
   </ul>
 
