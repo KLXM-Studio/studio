@@ -54,6 +54,10 @@ a.kn-nav__link:hover{background:var(--kn-soft)}
 .kn-main:focus{outline:none}
 .kn .kn-content > section{padding-block:0 clamp(1rem,2.5vw,1.75rem)}
 .kn .kn-content .wrap{max-width:none;margin-inline:0;padding-inline:0}
+/* Abschnitte mit Hintergrund (bg-muted, bg-tint, bg-accent …; bg-white = ohne) in der Kapitelspalte als Karte: Innenabstand und Radius
+   wie die Karten des Kits, keine Ausdehnung über die Spalte – sonst klebt der Text an der Kante der Fläche */
+.kn .kn-content > section[class*="bg-"]:not(.bg-white){padding:clamp(1.25rem,3vw,2rem);border-radius:var(--kit-radius,var(--f-radius,12px));margin-block-end:clamp(1rem,2.5vw,1.75rem)}
+.kn .kn-content > section[class*="bg-"]:not(.bg-white) .wrap{padding-inline:0}
 .kn-crumbs ol{display:flex;flex-wrap:wrap;gap:.25rem .5rem;margin:0 0 1rem;padding:0;list-style:none;font-size:.88rem;color:var(--kn-muted)}
 .kn-crumbs li+li::before{content:"›";margin-right:.5rem;opacity:.7}
 .kn-crumbs a{color:inherit}

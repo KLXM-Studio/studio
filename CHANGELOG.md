@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Wissensbereich: Abschnitte mit Hintergrund in der Kapitelspalte als Karte
+- Blöcke mit Abschnitts-Hintergrund (grau, getönt, Akzent …) bekommen in der Kapitelspalte Innenabstand und Kartenradius – vorher klebten
+  Dachzeile, Überschrift und Text an der Kante der Fläche. Ohne Hintergrund bleibt alles wie bisher.
+- *EN:* Knowledge base: blocks with a section background are shown as padded cards inside the chapter column.
+
 ### Datenliste: Kapitelnummern nur im Zusammenhang; Push-Glocke auf farbigen Abschnitten
 - Neue Option „Kapitelnummern zeigen“ (Automatisch · An · Aus) bei Wissensbereichen. „Automatisch“ zeigt die Nummer nur in der Darstellung
   „Kapitel“ und auf der Übersichtsseite des Wissensbereichs – Listen wie „Im Fokus“ auf der Startseite zeigen keine Zahl ohne Zusammenhang.
