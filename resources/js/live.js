@@ -181,6 +181,8 @@ function cmsLiveRegions(me) {
     clearTimeout(timer);
     load(region, formUrl(f), 'push', false);
   });
+  // Mit Skript filtern Kontrollkästchen sofort – „Filter anwenden“ (nur für Besucher ohne JavaScript) ausblenden (CSS: .cms-live-js)
+  document.documentElement.classList.add('cms-live-js');
   addEventListener('popstate', () => {
     if (location.search === lastSearch) return;   // nur Sprungmarke geändert
     document.querySelectorAll('[data-live-region]').forEach((region) => load(region, location.href, 'none', false));

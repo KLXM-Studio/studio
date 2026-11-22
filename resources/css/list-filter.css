@@ -15,6 +15,7 @@
 .dl-mcheck:focus-visible+.dl-fchip{outline:2px solid var(--kit-link,var(--kit-accent,currentColor));outline-offset:2px}
 .dl-fchip__n{font-weight:400;opacity:.75;font-variant-numeric:tabular-nums}
 .dl-mfilter__apply{margin:0}
+.cms-live-js form[data-live-nav] .dl-mfilter__apply{display:none}   /* mit live.js filtern die Chips sofort */
 .dl-excerpt{margin:.35rem 0 0;color:var(--kit-text,currentColor);font-size:.93em;line-height:1.5}
 .dl-excerpt mark,.dl-gloss mark{padding:0 .1em;border-radius:3px;background:color-mix(in srgb,var(--kit-accent,#fd0) 28%,transparent);color:inherit}
 .dl-gloss{margin:0 0 1.5rem;padding:1rem 1.15rem;border:1px solid var(--kit-line,color-mix(in srgb,currentColor 16%,transparent));border-radius:var(--kit-radius,10px)}

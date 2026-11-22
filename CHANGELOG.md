@@ -10,6 +10,12 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Wissensbereich: Karten auch bei Suche und Filter; „Filter anwenden“ nur ohne JavaScript
+- Darstellung „Kapitel als Karten“: Mit aktiver Suche oder Filter erscheinen die Treffer weiter als Bildkarten (flach, ohne
+  Unterkapitel, mit Nummern-Plakette; bei der Suche mit Trefferauszug) statt als Textliste (`Knowledge::flatCards`).
+- Datenliste mit Mehrfach-Filtern: Der Knopf „Filter anwenden“ ist nur noch ohne JavaScript sichtbar – mit Skript filtern die Chips sofort.
+- *EN:* Knowledge cards stay cards when searching/filtering; the “Apply filters” button only shows without JavaScript.
+
 ### Wissensbereich: Abschnitte mit Hintergrund in der Kapitelspalte als Karte
 - Blöcke mit Abschnitts-Hintergrund (grau, getönt, Akzent …) bekommen in der Kapitelspalte Innenabstand und Kartenradius – vorher klebten
   Dachzeile, Überschrift und Text an der Kante der Fläche. Ohne Hintergrund bleibt alles wie bisher.

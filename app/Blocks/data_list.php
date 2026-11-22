@@ -152,6 +152,8 @@ $excerpt = fn(array $e) => $vq !== '' && !empty($d['search_excerpt']) ? \Core\Da
 $glossHits = $vq !== '' && !empty($d['search_glossary']) ? \Core\Data\Knowledge::glossaryHits($vq) : [];
 // Darstellung „Kapitel“: ohne Suche/Filter das Inhaltsverzeichnis, sonst die Treffer als Liste
 $tocMode = $layout === 'chapters' && !$filtering;
+// „Kapitel als Karten“ mit Suche/Filter: flache Karten statt Textliste
+$flatCards = $layout === 'chapters' && $filtering && ($d['chapters_style'] ?? 'list') === 'cards' && $ktree;
 if ($layout === 'chapters' && $filtering) $layout = 'list';
 // „Abschnitt ausblenden, wenn nichts da ist“: für Besucher keine Ausgabe – die Hülle (partials/section) entfällt dann
 if (!$rows && !empty($d['hide_empty']) && !is_editing() && !$filtering) return;
@@ -271,6 +273,8 @@ $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($
   <?php endif; ?>
   <?php if ($tocMode && $rows): ?>
   <?= ($d['chapters_style'] ?? 'list') === 'cards' ? \Core\Data\Knowledge::tocCards($t, $ktree, $d) : \Core\Data\Knowledge::tocHtml($t, $ktree, 'h2') ?>
+  <?php elseif ($flatCards && $rows): ?>
+  <?= \Core\Data\Knowledge::flatCards($t, $ktree, $rows, $d, $vq !== '' && !empty($d['search_excerpt']) ? $excerpt : null) ?>
   <?php elseif (!$rows && $filtering): ?>
   <p class="dl-empty"><?= e(lt('Keine Einträge für diese Auswahl.')) ?> <a href="<?= e($here . '#' . $b->domId()) ?>"><?= e(lt('Alle anzeigen')) ?></a></p>
   <?php elseif (!$rows): ?>
