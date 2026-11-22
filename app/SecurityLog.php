@@ -23,7 +23,7 @@ namespace Core;
  */
 final class SecurityLog
 {
-    public const EVENTS = ['auth-failed', 'auth-limited', '2fa-failed', 'passkey-failed', 'reset-limited', 'api-key-invalid', 'oidc-failed', 'monitor-denied', 'abo-token-invalid', 'probe'];
+    public const EVENTS = ['auth-failed', 'auth-limited', '2fa-failed', 'passkey-failed', 'reset-limited', 'api-key-invalid', 'oidc-failed', 'monitor-denied', 'enroll-failed', 'abo-token-invalid', 'probe'];
     /** Ereignisse ohne Sperre (die Filter in deploy/fail2ban kennen sie nicht) */
     public const INFO = ['oidc-account', 'abo-access'];
     private const MAX_BYTES = 5_000_000;

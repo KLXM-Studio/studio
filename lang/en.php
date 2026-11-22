@@ -10015,4 +10015,17 @@ return [
     'Seite der Website auswählen oder eine Adresse eingeben.' => 'Choose a page of the website or enter an address.',
     'Im Fußbereich zeigen' => 'Show in footer',
     'Zusätzlich unter „Seiten“ im Fußbereich – z. B. für „News abonnieren“ oder „Presse“, auch ohne Hauptmenü. Sofern das Kit es vorsieht (z. B. fluid).' => 'Also listed under “Pages” in the footer – e.g. for “Subscribe to news” or “Press”, even without the main menu. If the Kit supports it (e.g. fluid).',
+    // Mit einem Agentur-Hub verbinden (Core\InstanceEnroll)
+    'Code verwerfen' => 'Discard code',
+    'Code verworfen.' => 'Code discarded.',
+    'Die Verbindung mit einem Hub richten Sie auf der Netzwerk-Website ein.' => 'Connect to a hub on the network website.',
+    'Ein Code ist offen bis {time}.' => 'A code is open until {time}.',
+    'Einmal-Code' => 'One-time code',
+    'Einmal-Code erzeugen' => 'Create one-time code',
+    'Einmal-Code erzeugt – gültig für 15 Minuten.' => 'One-time code created – valid for 15 minutes.',
+    'Erzeugen Sie einen Einmal-Code und fügen Sie ihn im Hub unter „Instanz per Code verbinden“ ein. Der Hub richtet damit die Anmeldung über den Anbieter und die Überwachung aller Websites ein – ohne dass jemand Schlüssel abtippt. Der Code gilt 15 Minuten und nur einmal.' => 'Create a one-time code and paste it in the hub under “Connect instance by code”. The hub then sets up sign-in via the provider and monitoring of all websites – nobody has to copy keys. The code is valid for 15 minutes and can be used once.',
+    'Jetzt kopieren – der Code wird nur einmal angezeigt.' => 'Copy it now – the code is shown only once.',
+    'Mit einem Agentur-Hub verbinden' => 'Connect to an agency hub',
+    'Neuen Code erzeugen' => 'Create new code',
+    'Zuletzt verbunden mit {issuer} am {date} ({n} Websites überwacht).' => 'Last connected to {issuer} on {date} ({n} websites monitored).',
 ];

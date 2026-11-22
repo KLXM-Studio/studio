@@ -10,6 +10,15 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Mit einem Agentur-Hub verbinden per Einmal-Code
+- Benutzer & Rollen → Sicherheit (im Netzwerk: Netzwerk → Anmeldung & Domain) → „Mit einem Agentur-Hub verbinden“ erzeugt einen Code,
+  15 Minuten gültig und einmal verwendbar. Im Hub eingefügt, richtet er Anmeldung über den Hub und Überwachung aller Websites ein –
+  ohne Adressen oder Schlüssel abzutippen (`Core\InstanceEnroll`, `POST /.well-known/klxm-studio/enroll`, Entwicklerhandbuch → Sicherheit).
+- Fehlversuche begrenzt und im Sicherheitsprotokoll (`enroll-failed`); ohne offenen Code bleibt alles wie bisher.
+
+### Wissensbereich: Abschnitte mit Hintergrund im Bearbeiten-Modus
+- Innenabstand und Radius bleiben auch angemeldet erhalten (der Editor legt jeden Abschnitt in eine Hülle `.eb-entry`).
+
 ### Installation: nginx-Anweisungen für Plesk
 - Die nginx-Vorlage im Entwicklerhandbuch (Installation) nutzt `if (!-e $request_filename) { rewrite ^ /index.php last; }` statt
   `location /` – Plesk legt `location /` selbst an und lehnte die Vorlage mit „duplicate location "/"“ ab. Die bisherige Variante steht als

@@ -11,6 +11,7 @@ $ocLocked = !empty($oc['from_config']);
 $ocNet = \Core\Network\Network::isNetworkSite() && \Core\Sites::multi();
 $ocRole = (string) ($ocRaw['role'] ?? 'auto');
 $ocDis = $ocLocked ? ' disabled' : ''; ?>
+<?php if (!$ocLocked && \Core\InstanceEnroll::available()) include __DIR__ . '/_hub_connect.php'; ?>
 <form class="set-group us-oidc" id="oidc" method="post" action="<?= e(url('/admin/users/oidc')) ?>" autocomplete="off">
   <?= csrf_field() ?>
   <h2 class="set-group__title"><?= e(__('Anmeldung über einen Identitätsanbieter (OpenID Connect)')) ?></h2>

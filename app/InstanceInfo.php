@@ -118,7 +118,7 @@ final class InstanceInfo
     }
 
     /** Name: eigener Name der Website (config 'label'), sonst „Name der Website“ aus den Einstellungen, sonst Hauptadresse */
-    private static function name(string $key): string
+    public static function name(string $key): string
     {
         $label = trim((string) (Sites::all()[$key]['label'] ?? ''));
         if ($label !== '') return $label;

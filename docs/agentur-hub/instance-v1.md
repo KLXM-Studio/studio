@@ -88,6 +88,25 @@ Entwicklungsumgebung); Adressen mit `#` werden ignoriert.
 
 ---
 
+## Verbinden per Einmal-Code („enroll“)
+
+Optional, aber empfohlen: Die Instanz erzeugt in ihrer Verwaltung einen Code, den jemand im Hub einfügt. Der Hub richtet damit
+Anmeldung und Überwachung ein, ohne dass Adressen oder Schlüssel abgetippt werden.
+
+- **Code:** `KLXM1.` + base64url(JSON) mit `u` (Adresse der Website, https), `t` (Geheimnis, ≥ 16 Byte Zufall) und optional `e`
+  (eigener Endpunkt auf demselben Host, z. B. REDAXO `…/index.php?rex-api-call=klxm_hub_enroll`). Standard-Endpunkt: `{u}/.well-known/klxm-studio/enroll`.
+- **Gültigkeit:** 15 Minuten, einmal verwendbar; die Instanz speichert nur einen Hash. Ein neuer Code ersetzt den alten.
+- **Anfragen** (POST, JSON, keine Weiterleitungen):
+  1. `{"token": t, "step": "hello"}` → `200` mit dem Inhalt der Selbstauskunft (`spec`, `system`, `name`, `login`, `monitoring.sites` –
+     hier alle Websites, auch ohne eingeschaltete Überwachung). Der Code bleibt gültig.
+  2. `{"token": t, "step": "complete", "issuer", "client_id", "client_secret", "monitoring_keys": ["ed25519:…"], "name"}` → die Instanz
+     prüft den Issuer per Discovery, speichert und schaltet die Anmeldung ein, ergänzt die Überwachungsschlüssel und schaltet die
+     Überwachung ein; `200` mit `{"ok": true, …}`. Danach ist der Code verbraucht.
+- **Fehler:** `401 invalid_code` (falsch, abgelaufen, verbraucht), `429` (Rate-Limit, mindestens 10 Versuche je IP in 15 Minuten),
+  `400` mit `error_description`. Ohne offenen Code darf der Endpunkt nichts ändern.
+- **Hub:** legt die Instanz erst nach `hello` an und entfernt sie wieder, wenn `complete` scheitert; das Client-Geheimnis verlässt den
+  Hub nur in dieser Anfrage. Bei Netzwerken entsteht je weitere Website eine Instanz nur zur Überwachung.
+
 ## English summary
 
 `GET /.well-known/klxm-studio` returns public, non-sensitive JSON (`spec: "klxm-instance-v1"`) so that a hub can discover an
@@ -98,3 +117,8 @@ URL is required. 404 while nothing is set up. No versions, personal data, conten
 every host of the installation with `Access-Control-Allow-Origin: *` and `Cache-Control: public, max-age=300`. The hub only
 shows discovered addresses; a person confirms and saves them, after which the `redirect_uri` must match exactly. Ignore unknown
 fields.
+
+**One-time code (“enroll”):** the instance creates `KLXM1.` + base64url(JSON `{u, t, e?}`), valid 15 minutes, single use (stored as a hash).
+The hub POSTs `{token, step: "hello"}` to `{u}/.well-known/klxm-studio/enroll` (or `e` on the same host) and receives the self-description,
+then `{token, step: "complete", issuer, client_id, client_secret, monitoring_keys, name}`; the instance verifies the issuer via discovery,
+enables sign-in and monitoring and consumes the code. Errors: 401 `invalid_code`, 429, 400.

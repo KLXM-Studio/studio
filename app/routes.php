@@ -25,6 +25,7 @@ return function (Router $r): void {
     $r->get('/admin/login/oidc', [Admin\OidcController::class, 'start']);
     $r->get('/admin/login/oidc/callback', [Admin\OidcController::class, 'callback']);
     $r->post('/admin/users/oidc', [Admin\OidcController::class, 'save']);
+    $r->post('/admin/users/hub-code', [Admin\OidcController::class, 'hubCode']);
     // Überwachung (Core\Monitoring, Standard aus): Status nur lesend, nur mit signierter Anfrage
     $r->get('/api/monitoring/status', [Admin\MonitoringController::class, 'status']);
     $r->get('/admin/system/ueberwachung', [Admin\MonitoringController::class, 'index']);
@@ -796,6 +797,11 @@ return function (Router $r): void {
     $r->get('/kalender/{handle}/{slug}.ics', [\Core\Http\Controllers\CalendarController::class, 'event']);
     // Visitenkarten (Core\VCard, vCard 3.0): Organisation der Website und Personen aus Tabellen mit Schema-Typ „Person“
     // Selbstauskunft für einen Agentur-Hub (Core\InstanceInfo, klxm-instance-v1): Adressen für OIDC und Überwachung; sonst 404
+    // Verbindung per Einmal-Code (Core\InstanceEnroll): der Hub löst den Code ein; ohne offenen Code 401
+    $r->post(\Core\InstanceEnroll::PATH, function (\Core\Http\Request $req) {
+        [$status, $body] = \Core\InstanceEnroll::handle($req);
+        return \Core\Http\Response::json($body, $status)->header('Cache-Control', 'no-store')->header('X-Robots-Tag', 'noindex');
+    });
     $r->get(\Core\InstanceInfo::PATH, function () {
         $info = \Core\InstanceInfo::get() ?? throw new \Core\Http\HttpException(404);
         return \Core\Http\Response::json($info)->header('Cache-Control', 'public, max-age=300')->header('X-Robots-Tag', 'noindex')

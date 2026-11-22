@@ -157,4 +157,21 @@ final class OidcController extends AdminController
         }
         return $this->back('/admin/users/sicherheit#oidc', 'success', __('Anmeldung über einen Anbieter gespeichert.'));
     }
+
+    /** Einmal-Code für die Verbindung mit einem Agentur-Hub erzeugen bzw. verwerfen (Core\InstanceEnroll) */
+    public function hubCode(Request $r): Response
+    {
+        $this->auth($r, 'users.manage');
+        $back = \Core\Network\Area::active() ? '/admin/network/anmeldung#hub-verbinden' : '/admin/users/sicherheit#hub-verbinden';
+        if (!Csrf::valid($r)) return $this->back($back, 'error', __('Sitzung abgelaufen – bitte erneut versuchen.'));
+        if (!\Core\InstanceEnroll::available()) return $this->back($back, 'error', __('Die Verbindung mit einem Hub richten Sie auf der Netzwerk-Website ein.'));
+        if (!empty($r->post['cancel'])) {
+            \Core\InstanceEnroll::cancel();
+            return $this->back($back, 'success', __('Code verworfen.'));
+        }
+        $u = app()->auth->user();
+        $code = \Core\InstanceEnroll::create((string) ($u['email'] ?? ''));
+        app()->session->set('enroll_code', ['code' => $code, 'at' => time()]);
+        return $this->back($back, 'success', __('Einmal-Code erzeugt – gültig für 15 Minuten.'));
+    }
 }
