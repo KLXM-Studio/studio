@@ -19,7 +19,7 @@
   </table></div>
   <ul>
     <li><b>Such-Einstieg:</b> braucht die eingeschaltete Website-Suche (Grundeinstellungen → Funktionen). Vorschläge unter dem Feld: ein Suchbegriff pro Zeile, oder „Beschriftung | Link“ für einen direkten Link.</li>
-    <li><b>Video:</b> nur eigene, kurze Dateien ohne Ton aus der Mediathek (keine Einwilligung nötig). Das Video läuft stumm in Schleife, hat immer eine Pause-Schaltfläche und bleibt bei „Bewegung reduzieren“ ein Standbild – das Bild des Einstiegs.</li>
+    <li><b>Video:</b> nur eigene, kurze Dateien ohne Ton aus der Mediathek (keine Einwilligung nötig). Das Video läuft stumm in Schleife und hat unten rechts immer einen runden Knopf zum Anhalten und Abspielen (Pause- bzw. Play-Symbol). Bei „Bewegung reduzieren“ startet es nicht von selbst – es bleibt das Bild des Einstiegs, der Knopf bietet „abspielen“ an. Unter <b>Video-Schalter</b> wählen Sie „Symbol“ (Standard) oder „Symbol mit Text“ – dann steht „Hintergrundvideo anhalten“ bzw. „abspielen“ daneben.</li>
     <li><b>Kennzahlen, Termine, Formular, Karte:</b> nutzen dieselben Bausteine wie die gleichnamigen Blöcke (Kennzahlen mit Skala, Nächste Termine, Formular aus einer Datentabelle, Karte mit dem Standort aus den <?= e($settingsTitle) ?>). Nur belegbare Zahlen verwenden; das Formular kurz halten (2–4 Felder).</li>
     <li><b>Vorher/Nachher:</b> zwei Bilder mit gleichem Ausschnitt und Format; der Regler lässt sich mit Maus, Finger und Pfeiltasten bedienen.</li>
     <li><b>Laufzeile, Bewegung:</b> bewegt sich langsam, hält per Schaltfläche, Maus oder Tastatur und steht bei „Bewegung reduzieren“ still.</li>

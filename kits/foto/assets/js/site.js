@@ -1,12 +1,11 @@
 /*
  * Frontend-JS „foto“ (Grundlage „fluid“; Vanilla, ohne Abhängigkeiten). Alles funktioniert auch ohne JavaScript:
  * Menü per Container-Query + popover, Aufklappmenüs per <details>, Seitenblatt schließt per Escape/Klick daneben.
- * Hier nur Verfeinerungen:
+ * Hier nur Verfeinerungen (Hintergrundvideo im Einstieg: Kern-Skript hero.mjs, Core\Blocks\Hero::videoToggle):
  *  - Einblenden beim Scrollen (einmalig, IntersectionObserver)
  *  - Kopf: prüft, ob das Menü wirklich in die Leiste passt (sonst .is-overflow → Menü-Schaltfläche) – ResizeObserver
  *  - Seitenblatt: Fokus auf das erste Element, Fokusfalle (Tab), Rest der Seite inert, schließt bei Klick auf einen Link
  *  - Aufklappmenüs: nur eins offen, Klick daneben/Fokus verlassen schließt, Pfeiltasten, Pos1/Ende, Escape
- *  - Hintergrundvideo (Einstieg vollflächig): startet nur ohne „Bewegung reduzieren“, mit Pause-Schaltfläche
  *  - Website-Suche: Vorschläge (Kern-Skript search.js) erst beim ersten Fokus eines Suchfelds laden
  */
 const d = document;
@@ -144,21 +143,6 @@ d.querySelectorAll('.mnav__toggle').forEach(t => {
   const set = o => { t.setAttribute('aria-expanded', String(o)); box.hidden = !o; };
   set(t.getAttribute('aria-expanded') === 'true');
   t.addEventListener('click', () => set(t.getAttribute('aria-expanded') !== 'true'));
-});
-
-// ------------------------------------------------------------ Hintergrundvideo (nur ohne „Bewegung reduzieren“)
-d.querySelectorAll('[data-bg-video]').forEach(v => {
-  const box = v.closest('.hero-bleed');
-  const t = box?.querySelector('[data-bg-video-toggle]');
-  const label = t?.querySelector('span');
-  const set = playing => {
-    if (!t) return;
-    t.setAttribute('aria-pressed', String(!playing));
-    label.textContent = playing ? label.dataset.labelPause : label.dataset.labelPlay;
-  };
-  if (reduce.matches) return;
-  v.play().then(() => { if (t) t.hidden = false; set(true); }).catch(() => {});
-  t?.addEventListener('click', () => { if (v.paused) { v.play(); set(true); } else { v.pause(); set(false); } });
 });
 
 // ------------------------------------------------------------ Website-Suche: Vorschläge beim ersten Fokus laden (≈ 2 KB)

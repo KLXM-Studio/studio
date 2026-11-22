@@ -66,7 +66,7 @@ kits/fluid/
 │                    am Ende von <body>, nicht renderblockierend) · opt-{token}.css / opt-{token}-{wert}.css (nur gewählte Design-Optionen, Liste theme.php → design → option_css) ·
 │                    b-*.css / hero-x.css / prose.css / reel.css (je Block bzw. Variante) · data, media, calendar, dataform,
 │                    sections, search (ersetzen die Kern-Stylesheets – intrinsisch, ohne Breiten-Queries) · pages.css · editing.css · preview.css
-├── assets/js/       site.js (≈ 5,9 KB; lädt bgvideo.js, toc.js, nav-hover.js nur bei Bedarf) · tabs.js, reel.js, scrolly.js (je Block, < 1,2 KB; Video-Skript kommt aus dem Kern)
+├── assets/js/       site.js (≈ 5,9 KB; lädt toc.js, nav-hover.js nur bei Bedarf; Hintergrundvideo über das Kern-Skript hero.mjs) · tabs.js, reel.js, scrolly.js (je Block, < 1,2 KB; Video-Skript kommt aus dem Kern)
 ├── tools/           contrast.php (WCAG-Prüfung aller Vorlagen) · demo.php + demo-content.php (Showcase)
 ├── lang/            en.php (Verwaltung) · site/en.php (feste Website-Texte lt())
 ├── docs/manual.php  Handbuch (Kapitel: Breakpointlos, Design/Kopf/Fuß, Seiten-Tipps, Beschreibung aller Blöcke)

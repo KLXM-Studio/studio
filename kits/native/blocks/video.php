@@ -5,14 +5,15 @@
  *                     Vollbild); YouTube/Vimeo bleiben bei der Zwei-Klick-Lösung des Kerns. Markup, Untertitel und Transkript
  *                     kommen aus dem Kern-Fragment „video-embed“ (Core\MediaTracks) – hier nur der Player darum.
  *   morph             „Video mit Morphing beim Scrollen“ (nur dieses Kit, theme.php → block_extend): eigene Datei stumm in
- *                     Schleife in .ncss-morph, Pause-Schalter und Laden wie beim Hintergrundvideo (js/video-bg.js: nie bei
- *                     „Bewegung reduzieren“/„Daten sparen“). Beim Bearbeiten und ohne eigene Datei wie „Mit Text daneben“.
+ *                     Schleife in .ncss-morph, Play/Pause-Schalter wie beim Hintergrundvideo (Core\Blocks\Hero::videoToggle +
+ *                     hero.mjs: spielt nie von selbst bei „Bewegung reduzieren“/„Daten sparen“). Beim Bearbeiten und ohne eigene
+ *                     Datei wie „Mit Text daneben“.
  *   audio             <ncss-audio-player layout="card"> mit Cover („Vorschaubild“ poster), Kapiteln und Playlist (ab zwei
  *                     Dateien). Felder wie in fluid: Wiederholgruppe audio (file, title, artist). Kapitel und Transkript je Datei
  *                     aus der Mediathek (Core\MediaTracks): Kapitelspur der Seitensprache (sonst die erste), „Transkript anzeigen“
  *                     je Datei unter dem Player.
  * Beide Player erweitern nur ein natives <video controls>/<audio controls>: ohne JavaScript (und beim Bearbeiten) bleibt der
- * Player des Browsers. CSS/JS nur auf Seiten damit (Merkmale 'video:@player', 'video:@audio', '@morph', '@videobg').
+ * Player des Browsers. CSS/JS nur auf Seiten damit (Merkmale 'video:@player', 'video:@audio', '@morph').
  * @var \Core\Block $b  @var array $d
  */
 use Core\Media;
@@ -70,11 +71,12 @@ if ($b->variant() === 'audio'):
 if ($b->variant() === 'morph' && !is_editing()) {
     $mv = !empty($d['video_file']) ? media((int) $d['video_file']) : null;
     if ($mv && str_starts_with((string) $mv['mime'], 'video/')) {
-        native_mark('@morph', 'video:@morph', '@videobg');
+        native_mark('@morph', 'video:@morph');
         $poster = !empty($d['poster']) ? media((int) $d['poster']) : Media::posterFor($mv);
         echo '<div class="wrap nv-morph"><div class="ncss-morph ncss-morph--card"><div class="ncss-morph-stage">'
-            . '<div class="ncss-morph-media" data-ncss-video-bg><video muted loop playsinline preload="none" aria-hidden="true"' . ($poster ? ' poster="' . e(Media::url($poster, 1200)) . '"' : '') . '>'
-            . '<source data-src="' . e(Media::url($mv)) . '" type="' . e((string) $mv['mime']) . '"></video></div>'
+            . '<div class="ncss-morph-media" data-hero-video-box><video data-hero-video muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"' . ($poster ? ' poster="' . e(Media::url($poster, 1200)) . '"' : '') . '>'
+            . '<source src="' . e(Media::url($mv)) . '" type="' . e((string) $mv['mime']) . '"></video>'
+            . \Core\Blocks\Hero::videoToggle('nv-morph__toggle', (string) ($d['video_toggle'] ?? 'icon')) . '</div>'
             . '<div class="ncss-morph-content">' . fluid_head($b)
             . (trim(strip_tags((string) $d['text'])) !== '' ? '<div class="prose">' . rich((string) $d['text']) . '</div>' : '')
             . (trim((string) $d['caption']) !== '' ? '<p class="video__cap">' . fluid_title((string) $d['caption']) . '</p>' : '')

@@ -474,7 +474,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--dff-sec-radius` | `var(--f-radius)` | `.dff-wrap` | – |
 | `--f-danger` | `color-mix(in srgb,#E5484D 66%,var(--f-ink))` | `.dff-wrap` | – |
 
-**css/hero-x.css** (13)
+**css/hero-x.css** (15)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -491,6 +491,8 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-sec-bg` | `var(--f-dark)` | `.hero-bleed` | – |
 | `--f-surface` | `color-mix(in srgb,var(--f-fg) 12%,transparent)` | `.hero-bleed` | – |
 | `--f-text` | `var(--f-fg)` | `.hero-bleed` | – |
+| `--hx-vt-x` | `0` | `.hero-bleed` | – |
+| `--hx-vt-y` | `var(--f-s-l)` | `.hero-bleed` | – |
 
 **css/hx-compare.css** (1)
 
@@ -630,7 +632,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `css/b-logos.css` | f-marquee | ja | ja | – | – |
 | `css/b-moments.css` | mo-drift | ja | ja | – | ja |
 | `css/b-photo-hero.css` | f-hint | ja | ja | ja | ja |
-| `css/b-scrolly.css` | – | ja | – | – | – |
+| `css/b-scrolly.css` | – | ja | ja | – | – |
 | `css/b-series.css` | – | ja | ja | – | ja |
 | `css/calendar.css` | – | – | – | ja | ja |
 | `css/data.css` | – | ja | – | – | ja |
@@ -654,7 +656,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `js/reel.js` | ja | – | ja | – | 1,3 KB (Quelle) |
 | `js/scrolly.js` | – | ja | – | – | 1,1 KB (Quelle) |
 | `js/series.js` | ja | – | ja | – | 2,3 KB (Quelle) |
-| `js/site.js` | ja | ja | ja | – | 13,1 KB (Quelle) |
+| `js/site.js` | ja | ja | ja | – | 12,4 KB (Quelle) |
 | `js/vt.js` | ja | – | – | – | 1,9 KB (Quelle) |
 
 ⚠ = Keyframes/Scroll-Animation bzw. requestAnimationFrame ohne eigene `prefers-reduced-motion`-Abfrage in derselben Datei (kann trotzdem korrekt sein, wenn eine andere Datei die Regel setzt – prüfen).
@@ -675,8 +677,6 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `data-alt` | assets/js/lightbox.js, functions.php |
 | `data-as-col` | assets/js/editor-photos.js |
 | `data-autoplay` | blocks/photo_hero.php, assets/js/photo-hero.js |
-| `data-bg-video` | blocks/hero.php, assets/js/site.js |
-| `data-bg-video-toggle` | blocks/hero.php, assets/js/site.js |
 | `data-caption` | assets/js/lightbox.js, functions.php |
 | `data-close` | assets/js/editor-photos.js |
 | `data-col-name` | assets/js/editor-photos.js |
@@ -692,9 +692,11 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `data-foto-item` | assets/js/editor-photos.js, functions.php |
 | `data-h` | assets/js/lightbox.js |
 | `data-header` | templates/partials/header.php, assets/js/site.js |
+| `data-hero-video` | blocks/hero.php |
+| `data-hero-video-box` | blocks/hero.php |
 | `data-img` | blocks/scrolly.php, assets/js/scrolly.js |
-| `data-label-pause` | blocks/hero.php, blocks/photo_hero.php, assets/js/photo-hero.js, assets/js/site.js |
-| `data-label-play` | blocks/hero.php, blocks/photo_hero.php, assets/js/photo-hero.js, assets/js/site.js |
+| `data-label-pause` | blocks/photo_hero.php, assets/js/photo-hero.js |
+| `data-label-play` | blocks/photo_hero.php, assets/js/photo-hero.js |
 | `data-lb` | assets/js/lightbox.js, assets/js/site.js, functions.php |
 | `data-lb-group` | blocks/moments.php, blocks/photo_grid.php, blocks/photo_text.php, assets/js/lightbox.js |
 | `data-lb-video` | assets/js/lightbox.js, functions.php |

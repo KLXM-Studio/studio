@@ -52,6 +52,7 @@ final class SelfTest
             $t->defaultChanges();
             $t->templateComments();
             $t->scrolly();
+            $t->videoToggle();
         } finally {
             app()->editing = $prev;
         }
@@ -668,6 +669,54 @@ final class SelfTest
             $b = app()->theme->makeBlock(['id' => 'n', 'type' => 'media_text', 'data' => []]);
             $this->assert(($b?->data['valign'] ?? null) === 'follow', 'Standardwerte: neuer Text + Bild-Block bekommt „Mitlaufen“');
         }
+    }
+
+    /**
+     * Play/Pause-Schalter für Hintergrundvideos (Core\Blocks\Hero::videoToggle – fluid-Einstieg, Core-Hero, MediaTracks):
+     * zugänglicher Name im Text (kein aria-pressed), beide Symbole aus dem Symbolsatz, Option Symbol/Symbol mit Text, Stylesheet und
+     * Skript einmal je Seite; Symbol je Zustand über CSS (.is-paused → Play) und hero.mjs (läuft → nicht .is-paused, „anhalten“).
+     */
+    private function videoToggle(): void
+    {
+        Hero::resetOnce();
+        $h = Hero::videoToggle('x__toggle');
+        $this->assert(str_contains($h, 'class="x__toggle hx-toggle hx-vt hx-vt--icon is-paused" data-hero-video-toggle hidden'), 'Video-Schalter: Klassen, verborgen ohne Skript, Ausgangszustand angehalten');
+        $this->assert(!str_contains($h, 'aria-pressed') && !str_contains($h, 'aria-label'), 'Video-Schalter: kein aria-pressed, Name aus dem Text');
+        $this->assert(str_contains($h, 'title="Hintergrundvideo abspielen"')
+            && str_contains($h, '<span class="hx-vt__label" data-l-pause="Hintergrundvideo anhalten" data-l-play="Hintergrundvideo abspielen">Hintergrundvideo abspielen</span>'),
+            'Video-Schalter: Text „abspielen“ (angehalten) mit beiden Beschriftungen für hero.mjs');
+        $this->assert((bool) preg_match('~<svg class="ico hx-ico hx-ico--pause"[^>]*aria-hidden="true"[^>]*><use href="[^"]*#i-pause"/></svg>~', $h)
+            && (bool) preg_match('~<svg class="ico hx-ico hx-ico--play"[^>]*aria-hidden="true"[^>]*><use href="[^"]*#i-play"/></svg>~', $h),
+            'Video-Schalter: Symbole „pause“ und „play“ aus dem Symbolsatz, dekorativ');
+        $this->assert(substr_count($h, 'video-toggle.css') === 1 && substr_count($h, 'hero.mjs') === 1, 'Video-Schalter: Stylesheet und Skript beim ersten Schalter');
+        $t = Hero::videoToggle('y', 'text');
+        $this->assert(str_contains($t, 'hx-vt--text') && !str_contains($t, 'video-toggle.css') && !str_contains($t, 'hero.mjs'), 'Video-Schalter: „Symbol mit Text“, Stylesheet/Skript nur einmal je Seite');
+        $this->assert(str_contains(Hero::videoToggle('z', 'unsinn'), 'hx-vt--icon') && Hero::toggleMode(null) === 'icon', 'Video-Schalter: unbekannter Stil → Symbol');
+        // Symbol je Zustand: CSS zeigt bei .is-paused das Play-, sonst das Pause-Symbol; hero.mjs setzt .is-paused = !läuft und „anhalten“ beim Laufen
+        $css = (string) @file_get_contents(ROOT . '/resources/css/video-toggle.css');
+        $js = (string) @file_get_contents(ROOT . '/resources/js/hero.mjs');
+        $this->assert(str_contains($css, '.hx-vt .hx-ico--play,.hx-vt.is-paused .hx-ico--pause{display:none}') && str_contains($css, '.hx-vt.is-paused .hx-ico--play{display:block}'),
+            'Video-Schalter: läuft → Pause-Symbol, angehalten → Play-Symbol (CSS)');
+        $this->assert(str_contains($js, "playing ? l.dataset.lPause : l.dataset.lPlay") && str_contains($js, "btn.classList.toggle('is-paused', !playing)"),
+            'Video-Schalter: hero.mjs wechselt Text und Zustand passend');
+        $this->assert(str_contains($css, 'min-width:var(--hx-vt-size,2.75rem)') && str_contains($css, ':focus-visible'), 'Video-Schalter: mind. 44 px, Fokusring');
+        // Feld „Video-Schalter“ bei den Video-Feldern des Core-Hero und einzeln für Kits mit eigenem Videofeld
+        $f = array_column(Hero::fields('video', ['video']), null, 'name')['video_toggle'] ?? null;
+        $g = Hero::fields('video_toggle', ['fullbleed'])[0] ?? null;
+        $this->assert($f && $f['default'] === 'icon' && array_keys($f['options']) === ['icon', 'text'] && $g && $g['variants'] === ['fullbleed'],
+            'Video-Schalter: Feld mit Symbol (Standard) | Symbol mit Text');
+        // Dekoratives Video (MediaTracks) nutzt denselben Schalter
+        $m = ['id' => 0, 'file' => 'selbsttest/schleife.mp4', 'mime' => 'video/mp4', 'decorative' => 1, 'variants_json' => null];
+        $d = \Core\MediaTracks::decorativeVideo($m);
+        $this->assert(str_contains($d, 'data-hero-video-box') && str_contains($d, 'media-player__toggle hx-toggle hx-vt hx-vt--icon') && !str_contains($d, 'aria-pressed'),
+            'Video-Schalter: dekoratives Video (MediaTracks) mit gemeinsamem Schalter');
+        // Bearbeitungsmodus: weder Stylesheet noch Skript (Schalter bleibt verborgen)
+        Hero::resetOnce();
+        app()->editing = true;
+        $e = Hero::videoToggle('x');
+        app()->editing = false;
+        $this->assert(!str_contains($e, 'video-toggle.css') && !str_contains($e, 'hero.mjs'), 'Video-Schalter: im Bearbeitungsmodus ohne Stylesheet/Skript');
+        Hero::resetOnce();
     }
 
     private function assert(bool $cond, string $label): void

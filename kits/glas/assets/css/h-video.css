@@ -25,14 +25,9 @@ main>.sec--hero:first-child:has(>.gvid){margin-top:calc(-1 * var(--g-hdr-h,4.75r
 .gvid__panel .hero__title{max-width:16ch;font-size:max(var(--g-t4),min(var(--g-t6),9cqi))}
 .gvid__empty{padding:var(--g-s-s);border-radius:var(--g-r-s);background:var(--g-surface-2);color:var(--g-muted);font-size:var(--g-t-1)}
 
-/* Pause-Schaltfläche (Core: .gvid__toggle.hx-toggle, .is-paused) – auf dunklem Glas, sichtbarer Fokus auf jedem Untergrund */
-.gvid__toggle{position:absolute;right:var(--g-gutter);bottom:var(--g-s-m);z-index:2;display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:.4rem 1rem .4rem .8rem;border:1px solid rgb(255 255 255/.4);border-radius:999px;background:rgb(12 10 34/.72);color:#fff;font:600 var(--g-t-1)/1.2 var(--g-font);cursor:pointer;pointer-events:auto;box-shadow:inset 0 1px 0 rgb(255 255 255/.18);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-.gvid__toggle[hidden]{display:none}
-.gvid__toggle:hover{background:rgb(12 10 34/.88)}
-.gvid__toggle:focus-visible{outline:2px solid #fff;outline-offset:3px;box-shadow:0 0 0 6px rgb(12 10 34/.9)}
-.hx-toggle .hx-ico{flex:none}
-.hx-toggle .hx-ico--play{display:none}
-.hx-toggle.is-paused .hx-ico--pause{display:none}
-.hx-toggle.is-paused .hx-ico--play{display:block}
-@media (prefers-reduced-motion:reduce){.gvid__el{display:none}}
-@media (forced-colors:active){.gvid__toggle{border:1px solid ButtonText;background:ButtonFace;color:ButtonText}}
+/* Video-Schalter (Kern: Core\Blocks\Hero::videoToggle, css/video-toggle.css): runder Play/Pause-Knopf auf dunklem Glas –
+   nur Tokens --hx-vt-*; sichtbarer Fokus auf jedem Untergrund */
+.gvid{--hx-vt-x:var(--g-gutter);--hx-vt-y:var(--g-s-m);--hx-vt-bg:rgb(12 10 34/.72);--hx-vt-bg-hover:rgb(12 10 34/.88);--hx-vt-border:rgb(255 255 255/.55);--hx-vt-focus-halo:rgb(12 10 34/.9);--hx-vt-font-size:var(--g-t-1)}
+.gvid__toggle{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+/* „Bewegung reduzieren“: Video bleibt aus, bis die Besucherin es per Schalter selbst startet */
+@media (prefers-reduced-motion:reduce){.gvid:not(.is-playing) .gvid__el{display:none}}
