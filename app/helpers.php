@@ -349,6 +349,38 @@ function paragraphs(?string $text, string $attrs = ''): string
     return $out;
 }
 
+/**
+ * Klartext statt Rich-Text? Für Felder, die früher mehrzeiliger Text (textarea) waren und heute Rich-Text sind
+ * (Feldoption 'from_text' => true): Werte ohne ein einziges HTML-Tag sind alter Klartext und werden wie bisher ausgegeben.
+ */
+function is_plain_text(?string $value): bool
+{
+    // Nur Tags, die Rich-Text enthalten kann (Core\Sanitizer) – „x<y“ oder „<3“ in altem Klartext bleiben Klartext
+    return !preg_match('~</?(?:p|br|ul|ol|li|h[1-6]|blockquote|b|strong|i|em|a|mark|sup|sub|span|div)(?:\s[^>]*)?/?>~i', (string) $value);
+}
+
+/** Klartext → Rich-Text für den Editor: Leerzeile = neuer Absatz, Zeilenumbruch = <br> (Inhalt escapt, *Wort* bleibt) */
+function text_to_rich(?string $text): string
+{
+    $out = '';
+    $text = html_entity_decode(str_replace("\r\n", "\n", trim((string) $text)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    foreach (preg_split('~\n\s*\n~', $text) ?: [] as $p) {
+        if (trim($p) !== '') $out .= '<p>' . preg_replace('~\n~', '<br>', e(trim($p))) . '</p>';
+    }
+    return $out;
+}
+
+/**
+ * Überschriften in ausgegebenem Rich-Text unter eine Ebene schieben: rich_below($html, 3) macht aus h2/h3 ein h4 (Text unter
+ * einem h3-Titel), h4 bleibt. Nicht im Bearbeiten-Modus – dort speichert der Editor das HTML so, wie es dasteht.
+ */
+function rich_below(string $html, int $level): string
+{
+    if (is_editing()) return $html;
+    $min = min(max($level + 1, 2), 4);
+    return (string) preg_replace_callback('~<(/?)h([2-4])(?=[\s>])~', fn($m) => '<' . $m[1] . 'h' . max((int) $m[2], $min), $html);
+}
+
 /** Responsives Bild (<picture> mit AVIF/WebP, srcset, width/height) */
 function img(?int $mediaId, string $sizes = '100vw', array $opt = []): string
 {

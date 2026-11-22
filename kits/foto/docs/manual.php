@@ -40,7 +40,7 @@ return [
         'pricing' => 'Pakete und Preise als Karten oder Vergleichstabelle. Nur verbindliche, aktuelle Preise angeben.',
         'faq' => 'Häufige Fragen zum Aufklappen (mit strukturierten Daten für Suchmaschinen).',
         'cta' => 'Handlungsaufruf – z. B. „Ein Auftrag, eine Idee?“ mit Button zur Kontaktseite.',
-        'scrolly' => 'Scrollytelling: Ein Bild bleibt stehen, Texte ziehen vorbei, das Bild wechselt mit – für Bildessays.',
+        'scrolly' => 'Scrollytelling: Ein Bild bleibt stehen, Texte ziehen vorbei, das Bild wechselt mit – für Bildessays. Texte dürfen lang sein (Zwischenüberschriften, Fettdruck, Links, Listen); ohne eigenes Bild bleibt das vorige stehen, Bildformat „Automatisch“ zeigt jedes Bild ganz.',
         'video' => 'YouTube, Vimeo (erst nach Klick) oder eigenes MP4 mit Untertiteln – breit, mit Text oder im Kino-Stil.',
         'contact' => 'Kontaktangaben aus den ' . $settingsTitle . ', optional Formular, Öffnungszeiten und Karte.',
         'downloads' => 'Dateien zum Herunterladen, z. B. Pressemappe oder Preisliste.',

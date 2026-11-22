@@ -23,15 +23,33 @@ use Core\Data\Tables;
  *   ]);
  *   <tr data-rowmenu="pg-12"> … </tr>          Rechtsklick/Umschalt+F10 in der Zeile öffnet dasselbe Menü (RowMenu::host())
  *
- * Punkt: key (ORDER), label, icon (sonst ICONS[key]), danger, title, und genau eine Art:
+ * Gruppen nach Art (GROUPS, kleine Überschrift): Bearbeiten · Anlegen & Ordnen · Sichtbarkeit · Teilen & Verlauf · Erweiterungen;
+ * Löschen getrennt unten über die volle Breite. Mehr als COLS Punkte: Überschriften sichtbar und zweispaltig (Telefon: einspaltig).
+ *
+ * Punkt: key (ORDER), label, icon (sonst ICONS[key]), group (statt GROUPS[key]), danger, title, und genau eine Art:
  *   href (+ target, download)  ·  post (+ fields, confirm)  ·  attrs (Knopf mit eigenen Attributen, z. B. Versionen, formaction)
  *   copy => Adresse (Link kopieren; ohne JavaScript ein Link auf die Adresse).
- * Erweiterungen: Slot tableActions['row'] (Datenlisten) bzw. Filter „rowmenu.actions“ ([label, href, icon] je Art/Ziel).
+ * Erweiterungen: Slot tableActions['row'] (Datenlisten) bzw. Filter „rowmenu.actions“ ([label, href, icon, group] je Art/Ziel).
  */
 final class RowMenu
 {
     /** Feste Reihenfolge aller Zeilenmenüs (unbekannte Schlüssel = Erweiterungen, stehen vor „Löschen“) */
     public const ORDER = ['open', 'settings', 'view', 'preview', 'child', 'duplicate', 'move', 'menu', 'publish', 'versions', 'copy', 'export', 'task', 'ext', 'delete'];
+
+    /** Gruppe je Aktion (kleine Überschrift im Menü); Erweiterungen und unbekannte Schlüssel → „ext“, Löschen/gefährlich → „danger“ */
+    public const GROUPS = [
+        'open' => 'edit', 'settings' => 'edit', 'view' => 'edit', 'preview' => 'edit',
+        'child' => 'create', 'duplicate' => 'create', 'move' => 'create',
+        'menu' => 'visibility', 'publish' => 'visibility', 'unpublish' => 'visibility',
+        'versions' => 'share', 'copy' => 'share', 'export' => 'share', 'task' => 'share',
+        'ext' => 'ext', 'delete' => 'danger',
+    ];
+
+    /** Reihenfolge der Gruppen; „danger“ steht getrennt unten über die volle Breite */
+    public const GROUP_ORDER = ['edit', 'create', 'visibility', 'share', 'ext', 'danger'];
+
+    /** Ab mehr als so vielen Punkten: Überschriften sichtbar und zweispaltig (Telefon: Blatt, immer einspaltig) */
+    public const COLS = 8;
 
     /** Symbol je Aktion (Icon-Satz, Core\Icons) */
     public const ICONS = [
@@ -73,17 +91,74 @@ final class RowMenu
     /** Nur das Menü (z. B. Termin im Kalender: Rechtsklick/Umschalt+F10 am Termin, ohne eigenen Knopf) */
     public static function pop(string $id, string $title, array $items): string
     {
+        $sorted = self::sort($items);
+        if (!$sorted) return '';
+        $labels = self::groupLabels();
+        $grouped = count($sorted) > self::COLS;
+        $grp = function (array $g) use ($id, $labels): string {
+            $hid = $id . '-g-' . $g['group'];
+            $h = '';
+            foreach ($g['items'] as $it) $h .= self::item($it, false);
+            return '<div class="rm-grp" role="group" aria-labelledby="' . e($hid) . '"><p class="rm-grp__h" id="' . e($hid) . '">' . e($labels[$g['group']] ?? $labels['ext']) . '</p>' . $h . '</div>';
+        };
+        $groups = self::groups($sorted);
+        $danger = $groups && end($groups)['group'] === 'danger' ? array_pop($groups) : null;
+        $cols = $grouped ? self::split($groups) : [$groups];
         $h = '';
-        $prevDanger = null;
-        foreach (self::sort($items) as $it) {
-            $danger = !empty($it['danger']) || ($it['key'] ?? '') === 'delete';
-            if ($danger && $prevDanger === false) $h .= '<hr role="separator">';
-            $prevDanger = $danger;
-            $h .= self::item($it, $danger);
+        foreach ($cols as $col) {
+            if (!$col) continue;
+            $h .= '<div class="rm-col" role="none">' . implode('<hr role="separator">', array_map($grp, $col)) . '</div>';
         }
-        if ($h === '') return '';
-        return '<div class="rm-pop" id="' . e($id) . '" popover role="menu" aria-label="' . e($title) . '">'
-            . '<p class="rm-pop__title" aria-hidden="true">' . e($title) . '</p>' . $h . '</div>';
+        if ($danger) {
+            $h .= ($groups ? '<hr role="separator" class="rm-sep-danger">' : '');
+            foreach ($danger['items'] as $it) $h .= self::item($it, true);
+        }
+        return '<div class="rm-pop' . ($grouped ? ' rm-pop--grouped' : '') . (count($cols) > 1 ? ' rm-pop--cols' : '') . '" id="' . e($id) . '" popover role="menu" aria-label="' . e($title) . '">'
+            . '<p class="rm-pop__title" aria-hidden="true">' . e($title) . '</p><div class="rm-cols" role="none">' . $h . '</div></div>';
+    }
+
+    /** Gruppe eines Punkts: eigene Angabe „group“, sonst nach Schlüssel (GROUPS); gefährliche Punkte immer „danger“ */
+    public static function groupOf(array $it): string
+    {
+        if (!empty($it['danger']) || ($it['key'] ?? '') === 'delete') return 'danger';
+        $g = (string) ($it['group'] ?? '');
+        if ($g !== '' && in_array($g, self::GROUP_ORDER, true) && $g !== 'danger') return $g;
+        return self::GROUPS[$it['key'] ?? 'ext'] ?? 'ext';
+    }
+
+    /** Überschriften der Gruppen (Verwaltung, übersetzt) */
+    public static function groupLabels(): array
+    {
+        return ['edit' => __('Bearbeiten'), 'create' => __('Anlegen & Ordnen'), 'visibility' => __('Sichtbarkeit'), 'share' => __('Teilen & Verlauf'), 'ext' => __('Erweiterungen'), 'danger' => __('Löschen')];
+    }
+
+    /** Sortierte Punkte in Gruppen (Reihenfolge GROUP_ORDER, innerhalb der Gruppe wie sortiert): [['group' => …, 'items' => […]], …] */
+    public static function groups(array $sorted): array
+    {
+        $by = [];
+        foreach ($sorted as $it) $by[self::groupOf($it)][] = $it;
+        $out = [];
+        foreach (self::GROUP_ORDER as $g) if (!empty($by[$g])) $out[] = ['group' => $g, 'items' => $by[$g]];
+        return $out;
+    }
+
+    /**
+     * Gruppen auf zwei Spalten verteilen, ohne eine Gruppe zu teilen und ohne die Reihenfolge zu ändern (vordere Gruppen links):
+     * Spaltenhöhe = Punkte + Überschrift je Gruppe; links darf höher sein. Eine Gruppe allein bleibt einspaltig.
+     */
+    public static function split(array $groups): array
+    {
+        $n = count($groups);
+        if ($n < 2) return [$groups];
+        $w = array_map(fn($g) => count($g['items']) + 1, $groups);
+        $total = array_sum($w);
+        $best = 1; $diff = PHP_INT_MAX; $left = 0;
+        for ($k = 1; $k < $n; $k++) {
+            $left += $w[$k - 1];
+            $d = abs($total - 2 * $left) + ($left < $total - $left ? 1 : 0);   // bei Gleichstand links höher
+            if ($d < $diff) { $diff = $d; $best = $k; }
+        }
+        return [array_slice($groups, 0, $best), array_slice($groups, $best)];
     }
 
     private static function item(array $it, bool $danger): string
@@ -122,11 +197,11 @@ final class RowMenu
         return $h;
     }
 
-    /** Aktionen von Erweiterungen (Filter „rowmenu.actions“: Liste [label, href, icon]; nur Pfade dieser Installation) */
+    /** Aktionen von Erweiterungen (Filter „rowmenu.actions“: Liste [label, href, icon, group]; nur Pfade dieser Installation) */
     public static function extActions(string $kind, array $ctx): array
     {
         $list = Extensions::filter('rowmenu.actions', [], ['kind' => $kind] + $ctx);
-        return array_map(fn($a) => ['key' => 'ext', 'label' => $a['label'], 'href' => url($a['href']), 'icon' => $a['icon'] ?: 'puzzle-piece'], Slots::actions(is_array($list) ? $list : []));
+        return array_map(fn($a) => ['key' => 'ext', 'label' => $a['label'], 'href' => url($a['href']), 'icon' => $a['icon'] ?: 'puzzle-piece', 'group' => $a['group']], Slots::actions(is_array($list) ? $list : []));
     }
 
     /**
@@ -165,7 +240,7 @@ final class RowMenu
         if (($u = app()->auth->user()) && Tasks\Tasks::canCreate($u)) {
             $items[] = ['key' => 'task', 'label' => __('Aufgabe anlegen'), 'href' => url('/admin/aufgaben/neu') . '?' . http_build_query(['link' => 'entry:' . $h . ':' . $id, 'back' => (string) ($o['back'] ?? $base)])];
         }
-        if (!$ro && !empty($o['row'])) foreach (Extensions::rowActions($o['row'], $id) as $xa) $items[] = ['key' => 'ext', 'label' => $xa['label'], 'href' => url($xa['href']), 'icon' => $xa['icon'] ?: 'puzzle-piece'];
+        if (!$ro && !empty($o['row'])) foreach (Extensions::rowActions($o['row'], $id) as $xa) $items[] = ['key' => 'ext', 'label' => $xa['label'], 'href' => url($xa['href']), 'icon' => $xa['icon'] ?: 'puzzle-piece', 'group' => $xa['group']];
         array_push($items, ...self::extActions('entry', ['table' => $h, 'id' => $id]));
         if (!$ro && can('data.delete', $h)) {
             $items[] = ['key' => 'delete', 'label' => __('Löschen'), 'post' => url($base . '/' . $id . '/delete'), 'confirm' => __('„{title}“ endgültig löschen?', ['title' => $title])];
@@ -205,7 +280,23 @@ final class RowMenu
         $h = self::pop('m1', 'T', [['key' => 'delete', 'label' => 'Weg', 'post' => '/x/delete', 'confirm' => 'Sicher?'], ['key' => 'open', 'label' => 'Auf', 'href' => '/x']]);
         $eq('Menü: role=menu, Punkte role=menuitem', substr_count($h, 'role="menuitem"') === 2 && str_contains($h, 'role="menu"'), true);
         $eq('Löschen: eigenes Formular mit CSRF und Rückfrage', str_contains($h, 'name="_csrf"') && str_contains($h, 'data-confirm="Sicher?"'), true);
-        $eq('Trennlinie vor Löschen', str_contains($h, '<hr role="separator">'), true);
+        $eq('Trennlinie vor Löschen', str_contains($h, '<hr role="separator" class="rm-sep-danger">'), true);
+        // Gruppen nach Art, ab COLS Punkten zweispaltig
+        $eq('Gruppe je Schlüssel', array_map(fn($k) => self::groupOf(['key' => $k]), ['open', 'child', 'publish', 'copy', 'zzz', 'delete']), ['edit', 'create', 'visibility', 'share', 'ext', 'danger']);
+        $eq('Gefährlich immer unten, eigene Gruppe erlaubt', [self::groupOf(['key' => 'ext', 'danger' => true]), self::groupOf(['key' => 'ext', 'group' => 'share']), self::groupOf(['key' => 'ext', 'group' => 'quatsch'])], ['danger', 'share', 'ext']);
+        $g = fn(string $name, int $n) => ['group' => $name, 'items' => array_fill(0, $n, [])];
+        $eq('Spalten ausgewogen, Gruppen ganz', array_map(fn($c) => array_column($c, 'group'), self::split([$g('edit', 4), $g('create', 5), $g('visibility', 3), $g('share', 4)])), [['edit', 'create'], ['visibility', 'share']]);
+        $eq('Eine Gruppe bleibt einspaltig', count(self::split([$g('edit', 12)])), 1);
+        $many = [];
+        foreach (['open', 'settings', 'view', 'child', 'duplicate', 'menu', 'publish', 'versions', 'copy', 'task'] as $k) $many[] = ['key' => $k, 'label' => $k, 'href' => '/' . $k];
+        $many[] = ['key' => 'zzz', 'label' => 'Erweiterung', 'href' => '/x'];
+        $many[] = ['key' => 'delete', 'label' => 'Weg', 'post' => '/d'];
+        $h2 = self::pop('m5', 'T', $many);
+        $eq('Ab COLS Punkten zweispaltig mit Überschriften', str_contains($h2, 'rm-pop--grouped rm-pop--cols') && substr_count($h2, 'class="rm-col"') === 2, true);
+        $eq('Gruppe: role=group mit aria-labelledby auf die Überschrift', str_contains($h2, 'role="group" aria-labelledby="m5-g-edit"><p class="rm-grp__h" id="m5-g-edit">'), true);
+        $eq('Erweiterungen eigene Gruppe', str_contains($h2, 'aria-labelledby="m5-g-ext"'), true);
+        $eq('Löschen über volle Breite nach den Spalten', (int) strrpos($h2, 'class="rm-col"') < (int) strpos($h2, 'rm-sep-danger') && !str_contains($h2, 'm5-g-danger'), true);
+        $eq('Bis COLS Punkte einspaltig', str_contains(self::pop('m6', 'T', array_slice($many, 0, 8)), 'rm-pop--cols'), false);
         $eq('Ohne Punkte kein Menü', self::render('m2', 'T', []), '');
         $eq('Knopf öffnet das Popover', str_contains(self::button('m3', 'T'), 'popovertarget="m3"'), true);
         $eq('Felder als Liste', str_contains(self::pop('m4', 'T', [['key' => 'publish', 'label' => 'P', 'post' => '/b', 'fields' => ['ids' => [5]]]]), 'name="ids[]" value="5"'), true);

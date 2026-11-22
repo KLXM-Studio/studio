@@ -586,16 +586,19 @@ return [
         'scrolly' => [
             'label' => 'Scrollytelling', 'icon' => 'article', 'group' => 'Inhalt',
             'description' => 'Ein Bild bleibt stehen, während die Texte daneben vorbeiziehen.',
-            'help' => 'Ein Bild bleibt stehen, während die Texte daneben vorbeiziehen; das Bild wechselt passend zum Abschnitt. Bei wenig Platz stehen Bild und Text jeweils untereinander.',
+            'help' => 'Ein Bild bleibt stehen, während die Texte daneben vorbeiziehen; das Bild wechselt passend zum Abschnitt. Abschnitte ohne eigenes Bild behalten das vorige, Texte dürfen lang sein (Zwischenüberschriften, Links). Bei wenig Platz stehen Bild und Text jeweils untereinander.',
             'variants' => ['left' => 'Bild links', 'right' => 'Bild rechts'],
             'fields' => [
                 ...$head(),
-                ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => '4:5', 'width' => 'half', 'options' => $ratios],
+                ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => 'auto', 'width' => 'half',
+                    'options' => ['auto' => 'Automatisch (je Bild, ohne Zuschnitt)'] + $ratios],
                 ['name' => 'items', 'label' => 'Abschnitte', 'type' => 'repeater', 'item_label' => 'Abschnitt', 'title_field' => 'title', 'max_items' => 8, 'fields' => [
                     ['name' => 'eyebrow', 'label' => 'Dachzeile (optional)', 'type' => 'text', 'max' => 40, 'width' => 'half'],
                     ['name' => 'title', 'label' => 'Titel', 'type' => 'text', 'required' => true, 'max' => 90, 'width' => 'half'],
-                    ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 4, 'max' => 600],
-                    ['name' => 'image', 'label' => 'Bild', 'type' => 'media'],
+                    // Früher mehrzeiliger Text: alter Klartext bleibt unverändert ('from_text'), hohe Grenze statt Kürzen
+                    ['name' => 'text', 'label' => 'Text', 'type' => 'richtext', 'from_text' => true, 'max' => 6000,
+                        'help' => 'Zwischenüberschriften, Fettdruck, Links und Listen möglich. Gut lesbar bis etwa 2.500 Zeichen je Abschnitt – längere Texte lieber teilen.'],
+                    ['name' => 'image', 'label' => 'Bild (optional)', 'type' => 'media', 'help' => 'Ohne Bild bleibt das Bild des vorigen Abschnitts stehen.'],
                 ]],
             ],
         ],

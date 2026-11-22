@@ -61,6 +61,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 - `css/preview.css` – templates/layout.php
 - `css/site.css` – templates/layout.php, templates/maintenance.php, templates/offline.php
 - `js/site.js` – templates/layout.php
+- `js/vt.js` – templates/layout.php
 
 ### Bedingt geladen – theme.php → conditional_css
 
@@ -70,8 +71,10 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `css/b-photo-hero.css` | photo_hero |
 | `css/b-series.css` | series_index, series_head |
 | `css/b-photo-text.css` | photo_text |
-| `css/lightbox.css` | photo_grid, photo_text, series_head |
-| `js/lightbox.js` | photo_grid, photo_text, series_head |
+| `css/b-moments.css` | moments |
+| `js/moments.js` | moments |
+| `css/lightbox.css` | photo_grid, photo_text, series_head, moments |
+| `js/lightbox.js` | photo_grid, photo_text, series_head, moments |
 | `js/photo-hero.js` | photo_hero |
 | `js/series.js` | series_index:list |
 | `js/reel.js` | quote, cards, photo_grid:strip |
@@ -112,6 +115,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `logos` Logos (Kunden, Publikationen) | `blocks/logos.php` | grid, marquee | `css/b-logos.css` |
 | `map` Karte | `blocks/map.php` | – | `css/b-contact.css` |
 | `media_text` Text + Bild | `blocks/media_text.php` | auto, right, left, split, overlap | `css/prose.css`, `css/b-media-text.css` |
+| `moments` Bildstrom (Bento) | `blocks/moments.php` | bento, stream | `css/b-moments.css`, `js/moments.js`, `css/lightbox.css`, `js/lightbox.js` |
 | `photo_grid` Fotostrecke | `blocks/photo_grid.php` | masonry, justified, grid, single, strip | `css/b-photo-grid.css`, `css/lightbox.css`, `js/lightbox.js`, `js/reel.js` (strip), `css/reel.css` (strip) |
 | `photo_hero` Bühne (Vollbild) | `blocks/photo_hero.php` | single, slideshow | `css/b-photo-hero.css`, `js/photo-hero.js` |
 | `photo_text` Bild & Text | `blocks/photo_text.php` | left, right | `css/b-photo-text.css`, `css/lightbox.css`, `js/lightbox.js`, `css/prose.css` |
@@ -126,34 +130,38 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 
 ### Variablen je Stylesheet
 
-**css/_base.css** (24)
+**css/_base.css** (28)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
 | `--f-a-soft` | `color-mix(in srgb,var(--f-fg) 12%,transparent)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-btn-bg` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-btn-hover` | `color-mix(in srgb,var(--f-fg) 86%,var(--f-sec-bg))` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-btn-ink` | `var(--f-a)` | `.bg-accent` | 2 |
+| `--f-btn-bg` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
+| `--f-btn-hover` | `color-mix(in srgb,var(--f-fg) 86%,var(--f-sec-bg))` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
+| `--f-btn-ink` | `var(--f-a)` | `.bg-accent` | 3 |
 | `--f-card` | `var(--f-bg)` | `.bg-muted` | 1 |
 | `--f-card-bd` | `var(--f-line)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
 | `--f-card-sh` | `none` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-fg` | `var(--f-a-on)` | `.bg-accent` | 2 |
+| `--f-fg` | `var(--f-a-on)` | `.bg-accent` | 3 |
 | `--f-focus` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
 | `--f-ico` | `var(--f-a)` | `.bg-tint` | 1 |
 | `--f-ico-bg` | `var(--f-bg)` | `.bg-tint` | 1 |
-| `--f-ink` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
+| `--f-ink` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
 | `--f-line` | `color-mix(in srgb,var(--f-fg) 20%,transparent)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
 | `--f-line-strong` | `color-mix(in srgb,var(--f-fg) 48%,transparent)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-link` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-muted` | `var(--f-a-on)` | `.bg-accent` | 3 |
+| `--f-link` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
+| `--f-muted` | `var(--f-a-on)` | `.bg-accent` | 4 |
 | `--f-sec-bg` | `var(--f-surface)` | `.bg-muted` | 3 |
 | `--f-surface` | `color-mix(in srgb,var(--f-bg) 60%,transparent)` | `.bg-tint` | 1 |
 | `--f-surface-2` | `color-mix(in srgb,var(--f-fg) 14%,transparent)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
-| `--f-text` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
+| `--f-text` | `var(--f-fg)` | `.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | 1 |
 | `--fx` | `0%` | `.fx0` | 9 |
 | `--fy` | `0%` | `.fy0` | 9 |
 | `--ico-2-opacity` | `.24` | `.ico` | – |
 | `--min` | `12.5rem` | `.min-s` | 2 |
+| `--sp-card` | `var(--f-card)` | `:root .cms-subpages` | – |
+| `--sp-card-bd` | `var(--f-card-bd)` | `:root .cms-subpages` | – |
+| `--sp-card-sh` | `var(--f-card-sh)` | `:root .cms-subpages` | – |
+| `--sp-r` | `var(--f-r-l)` | `:root .cms-subpages` | – |
 
 **css/_footer.css** (2)
 
@@ -162,10 +170,17 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-card` | `var(--f-bg)` | `.ftr` | – |
 | `--gap` | `.25rem 1.5rem` | `.ftr__legal` | 1 |
 
-**css/_header.css** (10)
+**css/_header.css** (17)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
+| `--f-a` | `#FFF` | `.hrc-quiet .hdr` | – |
+| `--f-a-strong` | `#FFF` | `.hrc-quiet .hdr` | – |
+| `--f-ink` | `#FFF` | `.hrc-quiet .hdr` | – |
+| `--f-line-strong` | `transparent` | `.hrc-quiet .hdr` | – |
+| `--f-link` | `#FFF` | `.hrc-quiet .hdr` | – |
+| `--f-muted` | `#FFF` | `.hrc-quiet .hdr` | – |
+| `--f-text` | `#FFF` | `.hrc-quiet .hdr` | – |
 | `--ha-accent` | `var(--f-a)` | `.ha,.ha-below` | – |
 | `--ha-bg` | `var(--f-bg)` | `.ha,.ha-below` | – |
 | `--ha-gap` | `.5rem` | `.ha,.ha-below` | – |
@@ -184,9 +199,9 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-bg` | `var(--f-zone)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-btn-bg` | `var(--f-fg)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-btn-hover` | `color-mix(in srgb,var(--f-fg) 86%,var(--f-zone))` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
-| `--f-btn-ink` | `var(--f-b)` | `.bg-secondary` | 1 |
+| `--f-btn-ink` | `var(--f-b)` | `.bg-secondary` | 5 |
 | `--f-card` | `color-mix(in srgb,var(--f-fg) 7%,transparent)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
-| `--f-fg` | `var(--f-b-on)` | `.bg-secondary` | 2 |
+| `--f-fg` | `var(--f-b-on)` | `.bg-secondary` | 6 |
 | `--f-focus` | `var(--f-fg)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-hdr-bg` | `var(--f-surface)` | `.hbg-surface .hdr` | 1 |
 | `--f-ico` | `var(--f-b)` | `html:is(.sec2-details,.sec2-all)` | – |
@@ -195,8 +210,8 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-line` | `color-mix(in srgb,var(--f-fg) 20%,transparent)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-line-strong` | `color-mix(in srgb,var(--f-fg) 48%,transparent)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-link` | `var(--f-fg)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
-| `--f-muted` | `var(--f-b-on)` | `.bg-secondary` | 1 |
-| `--f-sec-bg` | `var(--f-b)` | `.bg-secondary` | – |
+| `--f-muted` | `var(--f-b-on)` | `.bg-secondary` | 5 |
+| `--f-sec-bg` | `var(--f-b)` | `.bg-secondary` | 4 |
 | `--f-surface` | `color-mix(in srgb,var(--f-fg) 12%,transparent)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-surface-2` | `color-mix(in srgb,var(--f-fg) 16%,transparent)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
 | `--f-text` | `var(--f-fg)` | `:is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr,:is(.fbg-accent,.fbg-secondary,.fbg-dark) .ftr,:is(.meta-accent,.meta-secondary,.meta-dark) .hdr__meta` | – |
@@ -211,7 +226,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-mat-bg` | `color-mix(in srgb,var(--f-bg) 78%,#FFF)` | `html.has-dark` | – |
 | `--f-mat-in` | `calc(.35rem + 1px)` | `.mat-line .ph` | 1 |
 
-**css/_tokens.css** (100)
+**css/_tokens.css** (112)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -315,6 +330,18 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f0-link` | `var(--f-link)` | `:root` | – |
 | `--f0-muted` | `var(--f-muted)` | `:root` | – |
 | `--f0-text` | `var(--f-text)` | `:root` | – |
+| `--kit-accent` | `var(--f-a)` | `:where(*)` | – |
+| `--kit-bg` | `var(--f-bg)` | `:where(*)` | – |
+| `--kit-font` | `var(--f-font)` | `:where(*)` | – |
+| `--kit-font-head` | `var(--f-font-head)` | `:where(*)` | – |
+| `--kit-ink` | `var(--f-ink)` | `:where(*)` | – |
+| `--kit-line` | `var(--f-line)` | `:where(*)` | – |
+| `--kit-link` | `var(--f-link)` | `:where(*)` | – |
+| `--kit-muted` | `var(--f-muted)` | `:where(*)` | – |
+| `--kit-on-accent` | `var(--f-a-on)` | `:where(*)` | – |
+| `--kit-radius` | `var(--f-radius)` | `:where(*)` | – |
+| `--kit-surface` | `var(--f-surface)` | `:where(*)` | – |
+| `--kit-text` | `var(--f-text)` | `:where(*)` | – |
 
 **css/b-cards.css** (7)
 
@@ -350,6 +377,15 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 |---|---|---|---|
 | `--f-card` | `var(--f-surface)` | `.mt-over__card` | – |
 
+**css/b-moments.css** (4)
+
+| Variable | erster Wert | an | weitere Werte |
+|---|---|---|---|
+| `--mo-gap` | `var(--f-gap-img,1rem)` | `.mo` | – |
+| `--mo-row` | `clamp(3.25rem,5.5cqi,6.5rem)` | `.mo-rh-s .mo__grid` | 2 |
+| `--mo-tone` | `var(--f-surface)` | `.mo-tone-muted` | 3 |
+| `--mo-tone-ink` | `var(--f-ink)` | `.mo-tone-muted` | 3 |
+
 **css/b-photo-grid.css** (5)
 
 | Variable | erster Wert | an | weitere Werte |
@@ -360,12 +396,11 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--rh` | `clamp(8rem,20cqi,13rem)` | `.pg--justified.rh-s,.pg--strip.rh-s` | 2 |
 | `--sh` | `clamp(11rem,38svh,18rem)` | `.pg--justified.rh-s,.pg--strip.rh-s` | 2 |
 
-**css/b-photo-hero.css** (3)
+**css/b-photo-hero.css** (2)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
 | `--ov` | `.7` | `.stage--ov-medium` | 1 |
-| `--ov2` | `.66` | `.stage--ov-medium` | 1 |
 | `--pad` | `clamp(1.25rem,.6rem + 3cqi,3.5rem)` | `.stage` | – |
 
 **css/b-pricing.css** (1)
@@ -428,11 +463,15 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--dl-gap` | `var(--f-s-l)` | `.dl,.df` | – |
 | `--min` | `22rem` | `.dl--cards .dl-cols-2` | 2 |
 
-**css/dataform.css** (2)
+**css/dataform.css** (6)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
 | `--dff-gap` | `var(--f-s-m)` | `.dff-wrap` | – |
+| `--dff-ink` | `var(--f-ink)` | `.dff-wrap` | – |
+| `--dff-muted` | `var(--f-muted)` | `.dff-wrap` | – |
+| `--dff-sec-line` | `var(--f-line-strong)` | `.dff-wrap` | – |
+| `--dff-sec-radius` | `var(--f-radius)` | `.dff-wrap` | – |
 | `--f-danger` | `color-mix(in srgb,#E5484D 66%,var(--f-ink))` | `.dff-wrap` | – |
 
 **css/hero-x.css** (13)
@@ -549,7 +588,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--f-sh1` | `rgb(0 0 0/.3)` | `html.is-dark` | – |
 | `--f-sh2` | `rgb(0 0 0/.55)` | `html.is-dark` | – |
 
-**css/prose.css** (5)
+**css/prose.css** (6)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -558,6 +597,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--rt-muted` | `var(--f-muted)` | `:root,.bg-white,.bg-muted,.bg-tint,.bg-accent,.bg-secondary,.bg-dark,.on-media,.sec--ov-dark` | – |
 | `--rt-success` | `#1A7240` | `:root` | 6 |
 | `--rt-warning` | `#8A4B00` | `:root` | 6 |
+| `--rx` | `var(--rt-success)` | `.t-tip,.t-warn` | 1 |
 
 **css/search.css** (7)
 
@@ -582,12 +622,13 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | Datei | Keyframes | animiert | reduced-motion | forced-colors | :focus-visible |
 |---|---|---|---|---|---|
 | `css/_base.css` | – | ja | ja | – | ja |
-| `css/_header.css` | f-hdr | ja | – ⚠ | – | – |
+| `css/_header.css` | f-hdr | ja | ja | – | – |
 | `css/_options.css` | – | ja | ja | ja | – |
 | `css/_photo.css` | – | ja | ja | ja | ja |
 | `css/b-cards.css` | – | ja | – | – | – |
 | `css/b-faq.css` | f-drop | ja | ja | – | – |
 | `css/b-logos.css` | f-marquee | ja | ja | – | – |
+| `css/b-moments.css` | mo-drift | ja | ja | – | ja |
 | `css/b-photo-hero.css` | f-hint | ja | ja | ja | ja |
 | `css/b-scrolly.css` | – | ja | – | – | – |
 | `css/b-series.css` | – | ja | ja | – | ja |
@@ -597,21 +638,24 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `css/editing.css` | – | ja | – | – | ja |
 | `css/hero-x.css` | f-float | ja | ja | – | – |
 | `css/hx-compare.css` | – | – | – | ja | ja |
-| `css/lightbox.css` | f-lb | ja | ja | ja | ja |
+| `css/lightbox.css` | – | ja | – | ja | ja |
 | `css/media.css` | cms-lb-in, cms-stack | ja | ja | – | ja |
 | `css/opt-buttons-sharp.css` | – | ja | – | – | – |
 | `css/overlay.css` | f-sheet | ja | – ⚠ | – | – |
 | `css/search.css` | – | – | – | ja | ja |
+| `css/site.css` | f-vt-out, f-vt-in | ja | ja | – | – |
 
 | Skript | reduced-motion | IntersectionObserver | requestAnimationFrame | Modul/Nachladen | Größe |
 |---|---|---|---|---|---|
 | `js/editor-photos.js` | – | – | – | – | 14,1 KB (Quelle) |
-| `js/lightbox.js` | – | – | – | – | 3,9 KB (Quelle) |
+| `js/lightbox.js` | ja | – | – | – | 7,4 KB (Quelle) |
+| `js/moments.js` | ja | ja | ja | – | 4,7 KB (Quelle) |
 | `js/photo-hero.js` | ja | – | – | – | 3,9 KB (Quelle) |
 | `js/reel.js` | ja | – | ja | – | 1,3 KB (Quelle) |
-| `js/scrolly.js` | – | ja | – | – | 1,0 KB (Quelle) |
+| `js/scrolly.js` | – | ja | – | – | 1,1 KB (Quelle) |
 | `js/series.js` | ja | – | ja | – | 2,3 KB (Quelle) |
-| `js/site.js` | ja | ja | ja | – | 7,6 KB (Quelle) |
+| `js/site.js` | ja | ja | ja | – | 13,1 KB (Quelle) |
+| `js/vt.js` | ja | – | – | – | 1,9 KB (Quelle) |
 
 ⚠ = Keyframes/Scroll-Animation bzw. requestAnimationFrame ohne eigene `prefers-reduced-motion`-Abfrage in derselben Datei (kann trotzdem korrekt sein, wenn eine andere Datei die Regel setzt – prüfen).
 
@@ -628,6 +672,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `data-accept` | assets/js/editor-photos.js, functions.php |
 | `data-active` | functions.php |
 | `data-allow-collection` | assets/js/editor-photos.js, functions.php |
+| `data-alt` | assets/js/lightbox.js, functions.php |
 | `data-as-col` | assets/js/editor-photos.js |
 | `data-autoplay` | blocks/photo_hero.php, assets/js/photo-hero.js |
 | `data-bg-video` | blocks/hero.php, assets/js/site.js |
@@ -647,14 +692,27 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `data-foto-item` | assets/js/editor-photos.js, functions.php |
 | `data-h` | assets/js/lightbox.js |
 | `data-header` | templates/partials/header.php, assets/js/site.js |
+| `data-img` | blocks/scrolly.php, assets/js/scrolly.js |
 | `data-label-pause` | blocks/hero.php, blocks/photo_hero.php, assets/js/photo-hero.js, assets/js/site.js |
 | `data-label-play` | blocks/hero.php, blocks/photo_hero.php, assets/js/photo-hero.js, assets/js/site.js |
-| `data-lb` | assets/js/lightbox.js, functions.php |
-| `data-lb-group` | blocks/photo_grid.php, blocks/photo_text.php, assets/js/lightbox.js |
+| `data-lb` | assets/js/lightbox.js, assets/js/site.js, functions.php |
+| `data-lb-group` | blocks/moments.php, blocks/photo_grid.php, blocks/photo_text.php, assets/js/lightbox.js |
 | `data-lb-video` | assets/js/lightbox.js, functions.php |
 | `data-mnav` | templates/partials/sheet.php, assets/js/site.js |
+| `data-mo` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-batch` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-load` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-loop` | assets/js/moments.js, functions.php |
+| `data-mo-more` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-n` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-pause` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-status` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-t` | blocks/moments.php, assets/js/moments.js |
+| `data-mo-tile` | assets/js/moments.js |
+| `data-mo-title` | blocks/moments.php, assets/js/moments.js |
 | `data-mode` | assets/js/editor-photos.js, functions.php |
 | `data-more` | assets/js/editor-photos.js |
+| `data-msg` | blocks/moments.php, assets/js/moments.js |
 | `data-mu-start` | assets/js/editor-photos.js |
 | `data-reel-ctrl` | blocks/cards.php, blocks/photo_grid.php, blocks/quote.php, assets/js/reel.js |
 | `data-reel-next` | blocks/cards.php, blocks/photo_grid.php, blocks/quote.php, assets/js/reel.js |
