@@ -10,7 +10,7 @@
 .dl-intro{color:var(--f-muted);font-size:var(--f-t1);line-height:1.5}
 .dl-items{display:grid;gap:var(--dl-gap);margin:0;padding:0;list-style:none}
 /* Spalten (2/3/4) als Höchstzahl: Spaltenbreite mindestens --min, sonst Anteil der Zeile – schmal weniger Spalten */
-.dl--cards .dl-items{--cols:3;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(var(--min,17rem),calc((100% - (var(--cols) - 1) * var(--dl-gap)) / var(--cols)))),1fr))}
+.dl--cards .dl-items{--cols:3;grid-template-columns:repeat(auto-fill,minmax(min(100%,max(var(--min,17rem),calc((100% - (var(--cols) - 1) * var(--dl-gap)) / var(--cols)))),1fr))}
 .dl--cards .dl-cols-2{--cols:2;--min:22rem}.dl--cards .dl-cols-3{--min:17rem}.dl--cards .dl-cols-4{--cols:4;--min:13rem}
 .dl-item{position:relative;container-type:inline-size;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--f-card-bd);border-radius:var(--f-r-l);background:var(--f-card);box-shadow:var(--f-card-sh);transition:border-color .2s,translate .25s cubic-bezier(.2,.7,.2,1)}
 .dl-item:has(.dl-link):hover{border-color:var(--f-line-strong)}
