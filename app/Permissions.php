@@ -60,6 +60,10 @@ final class Permissions
                 'users.manage' => __('Benutzer und Rollen'),
                 'api.manage' => __('API & MCP'),
             ],
+            // Netzwerk-Verwaltung (nur Netzwerk-Konten, Rolle network): Website-Vorlagen und Kopien (Core\Blueprint)
+            __('Netzwerk') => [
+                'network.blueprints' => __('Website-Vorlagen verwalten, Websites aus Vorlagen anlegen und kopieren (Netzwerk-Verwaltung)'),
+            ],
             // KI (Core\AI\Ai) – zusätzlich Funktion „ai“ und Schalter der Website (Grundeinstellungen → KI)
             __('KI') => [
                 'ai.use' => __('KI-Funktionen nutzen (Texte, Übersetzung, SEO, Alt-Texte)'),

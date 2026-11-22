@@ -35,6 +35,9 @@ return function (Router $r): void {
     $r->get('/admin/passwort/{token}', [Admin\PasswordController::class, 'resetForm']);
     $r->post('/admin/passwort/{token}', [Admin\PasswordController::class, 'reset']);
     // Erststart: Kit und Startinhalte wählen (Core\Onboarding)
+    // Schnelleinrichtung einer Website aus einer Vorlage (Core\Blueprint\QuickConfig)
+    $r->get('/admin/schnelleinrichtung', [Admin\QuickConfigController::class, 'index']);
+    $r->post('/admin/schnelleinrichtung/{step}', [Admin\QuickConfigController::class, 'save']);
     $r->get('/admin/willkommen', [Admin\WelcomeController::class, 'index']);
     $r->post('/admin/willkommen', [Admin\WelcomeController::class, 'save']);
     $r->get('/admin/setup', [Admin\AuthController::class, 'setupForm']);
@@ -92,6 +95,13 @@ return function (Router $r): void {
     $r->get('/admin/network/branding', [Admin\BrandingController::class, 'index']);
     $r->get('/admin/network/integritaet', [Admin\IntegrityController::class, 'index']);
     $r->get('/admin/network/meldungen', [Admin\AlertsController::class, 'index']);   // Systemmeldungen (Core\Mail\Alerts)
+    // Website-Vorlagen und Kopien (Core\Blueprint, Recht network.blueprints, nur Netzwerk-Konten)
+    $r->get('/admin/network/vorlagen', [Admin\BlueprintsController::class, 'index']);
+    $r->post('/admin/network/vorlagen', [Admin\BlueprintsController::class, 'create']);
+    $r->post('/admin/network/vorlagen/kopieren', [Admin\BlueprintsController::class, 'copy']);
+    $r->get('/admin/network/vorlagen/{name}', [Admin\BlueprintsController::class, 'show']);
+    $r->get('/admin/network/vorlagen/{name}/vorschau', [Admin\BlueprintsController::class, 'preview']);
+    $r->post('/admin/network/vorlagen/{name}/{action}', [Admin\BlueprintsController::class, 'action']);
     $r->get('/admin/network/{section}', [Admin\NetworkController::class, 'section']);   // Bereiche (NetworkController::SECTIONS)
     $r->post('/admin/network/open', [Admin\NetworkController::class, 'open']);
     $r->post('/admin/network/mail', [Admin\MailAccountsController::class, 'network']);        // E-Mail-Konto des Netzwerks (Core\Mail\Accounts)
