@@ -455,3 +455,16 @@ export function initToolbar() {
   initLang();
   setMode(mode);
 }
+
+// ------------------------------------------------------------------ Seitenwechsel mit View Transitions (Kits mit @view-transition)
+// In den Modus „Bearbeiten“ (?edit=…) bzw. aus ihm heraus gibt es keinen Übergang: Die Editor-Seite meldet sich nicht an („ViewTransition
+// opt-in disabled“) – der Browser bräche den Übergang ab und meldete das je Versprechen (ready, finished, updateCallbackDone) als Fehler.
+// Daher: überspringen und die Versprechen abfangen – höchstens ein Übergang, keiner ohne Gegenstück.
+addEventListener('pageswap', (e) => {
+  const tr = e.viewTransition;
+  if (!tr) return;
+  [tr.ready, tr.finished, tr.updateCallbackDone].forEach((p) => p?.catch(() => {}));
+  let to = null;
+  try { to = new URL(e.activation?.entry?.url || '', location.href); } catch { /* ohne Ziel */ }
+  if (!to || to.searchParams.has('edit') || new URLSearchParams(location.search).has('edit')) tr.skipTransition();
+});

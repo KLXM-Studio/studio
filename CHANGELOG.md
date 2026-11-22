@@ -34,6 +34,14 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
   `data:kind-upgrade` with dry run and revert.
 
+### Seitenwechsel ohne Konsolenfehler beim Wechsel „Ansehen ↔ Bearbeiten“
+- Kits mit fließenden Seitenwechseln (View Transitions): Der Wechsel in den Modus „Bearbeiten“ meldete je Klick dreimal
+  „Transition was aborted because of invalid state. ViewTransition opt-in disabled“ – die Editor-Seite meldet sich nicht für den
+  Übergang an. Die Redaktions-Leiste überspringt den Übergang in den bzw. aus dem Bearbeiten-Modus, `pageswap` in fluid, foto und
+  galerie fängt die Versprechen des Übergangs ab (auch beim Verlassen zu Seiten ohne Übergang).
+- *EN:* No more “ViewTransition opt-in disabled” console errors when switching to edit mode: the toolbar skips the cross-document
+  transition and kits catch the transition promises.
+
 ### Wissen: Kapitel-Layout auch beim Bearbeiten
 - Im Modus „Bearbeiten“ (`?edit=inhalt`) bleibt das Layout des Kapitels (Seitenleiste mit Kapitelbaum, Nummer, Brotkrumen, Fuß)
   stehen; Seitenleiste ohne Suche und inaktiv (`inert`) – kein optischer Sprung zwischen Ansehen und Bearbeiten.

@@ -176,7 +176,9 @@ d.addEventListener('click', e => {
 });
 // Wechsel ohne Klick auf einen Link (Zurück, Vor, Adresse): Überschrift und großes Bild dieser Seite benennen
 addEventListener('pageswap', e => {
-  if (!e.viewTransition || !vtOn()) return;
+  const t = e.viewTransition;
+  if (t) [t.ready, t.finished, t.updateCallbackDone].forEach(p => p?.catch(() => {}));   // Ziel ohne Opt-in (z. B. Editor): kein Fehler
+  if (!t || !vtOn()) return;
   if (!vtClicked) { vtClear(); own(bigImg(), 'f-morph'); vtSet(title(), 'f-title'); }
   vtClicked = false;
 });

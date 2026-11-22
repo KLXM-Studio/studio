@@ -13,6 +13,7 @@ const off = () => !html.classList.contains('has-motion') || matchMedia('(prefers
 addEventListener('pageswap', e => {
   const t = e.viewTransition, to = e.activation?.entry?.url;
   try { sessionStorage.setItem(key, location.href); } catch {}
+  if (t) [t.ready, t.finished, t.updateCallbackDone].forEach(p => p?.catch(() => {}));   // Ziel ohne Opt-in (z. B. Editor): kein Fehler
   if (!t || !to || off()) return;
   const img = detailImg() || imgOf([...d.querySelectorAll('main a[href]')].find(x => x.href === to && vis(imgOf(x))));
   set(img, 'f-morph');
