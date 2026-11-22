@@ -134,6 +134,21 @@ final class FeaturedSelfTest
                 $ck(str_contains($html, 'Ein Tag für alle.'), 'Kurzbeschreibung aus dem Beschreibungsfeld');
                 $tea = $theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'title' => '']));
                 $ck(substr_count($tea, 'hl-item hl-lead"') === 1 && str_contains($tea, 'hl--teaser') && str_contains($tea, '<h2 class="dl-name'), 'Großer Teaser: erster groß, Titel h2 ohne Überschrift');
+                // Volle Reihen: kleine Karten nehmen die Spaltenzahl aus der Restmenge (höchstens die eingestellte), Rest 1 = 50/50
+                $t3 = $theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'columns' => '3', 'limit' => 3]));
+                $ck(str_contains($t3, 'hl--rest-2') && str_contains($t3, 'dl-items dl-cols-2'), 'Teaser 1 + 2: zwei Spalten (volle Reihe)');
+                $t2 = $theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'columns' => '3', 'limit' => 2]));
+                $ck(str_contains($t2, 'hl--rest-1') && str_contains($t2, 'dl-items dl-cols-2'), 'Teaser 1 + 1: nebeneinander (50/50)');
+                $t4 = $theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'columns' => '3', 'limit' => 4]));
+                $ck(str_contains($t4, 'hl--rest-3') && str_contains($t4, 'dl-items dl-cols-3'), 'Teaser 1 + 3: drei Spalten');
+                $t1 = $theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'limit' => 1]));
+                $ck(!str_contains($t1, 'hl--rest') && substr_count($t1, 'class="dl-item hl-item') === 1, 'Teaser allein');
+                $ck(!str_contains($theme->renderBlock($blk(['sources' => $src, 'columns' => '3', 'limit' => 2])), 'hl--rest'), 'Karten: auto-fill wie die Datenliste (keine Rest-Klasse)');
+                app()->editing = true;
+                $gapHint = __('Für volle Reihen 1 + {a} bzw. 1 + {b} Einträge hervorheben (Anzahl gesamt oder je Tabelle anpassen).', ['a' => '3', 'b' => 2]);
+                $ck(str_contains($theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'columns' => '3', 'limit' => 5])), e($gapHint))
+                    && !str_contains($theme->renderBlock($blk(['sources' => $src, 'layout' => 'teaser', 'columns' => '3', 'limit' => 4])), 'hl-note'), 'Editor: Hinweis nur bei Lücke (1 + 4 bei 3 Spalten)');
+                app()->editing = false;
                 $ck($theme->renderBlock($blk(['sources' => [['table' => $plain['handle']]]])) === '', 'Nichts hervorgehoben: Abschnitt entfällt');
                 $ck(str_contains($theme->renderBlock($blk(['sources' => [['table' => $plain['handle']]], 'hide_empty' => false])), 'dl-empty'), 'Nichts hervorgehoben: Hinweistext, wenn gewünscht');
                 $css = implode(' ', $theme->conditionalCss(['highlights']));

@@ -77,7 +77,7 @@
   <ul>
     <li><b>Tabellen:</b> je Zeile eine Tabelle, wie viele Einträge höchstens kommen und optional ein eigenes <b>Etikett</b> (sonst der Name der Tabelle, z. B. „Aktuelles“).</li>
     <li><b>Sortierung:</b> „Neueste zuerst“ oder „Reihenfolge“ – dann zählt die Zahl, die Sie im Eintrag unter „Hervorheben“ eintragen; Einträge ohne Zahl folgen.</li>
-    <li><b>Darstellung:</b> Karten wie in der Datenliste (das Kit gestaltet sie gleich) oder <b>Großer Teaser</b> – der erste Eintrag groß über die ganze Breite, die übrigen als Karten darunter.</li>
+    <li><b>Darstellung:</b> Karten wie in der Datenliste (das Kit gestaltet sie gleich) oder <b>Großer Teaser</b> – der erste Eintrag groß über die ganze Breite, die übrigen als Karten darunter. Die Reihe darunter wird immer voll: Bei zwei weiteren Einträgen stehen zwei Karten nebeneinander, bei drei drei (höchstens die eingestellte Spaltenzahl); bei nur einem weiteren Eintrag stehen Teaser und Karte halb/halb nebeneinander. Bleibt bei mehr Einträgen in der letzten Reihe eine Lücke, schlägt der Editor passende Anzahlen vor (z. B. 1 + 3 bzw. 1 + 2).</li>
     <li>Ist nichts hervorgehoben, entfällt der Abschnitt (abschaltbar, dann mit Hinweistext). Auf einer Detailseite erscheint der aufgerufene Eintrag nicht noch einmal.</li>
     <li><b>Einträge auslassen, die schon im Slider dieser Seite stehen</b> (bei neuen Blöcken an): Zeigt der Einstieg derselben Seite hervorgehobene Einträge als Folien, erscheinen sie hier nicht noch einmal. Im Editor weist ein Hinweis auf Überschneidungen hin.</li>
   </ul>

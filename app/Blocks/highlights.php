@@ -35,6 +35,16 @@ if (is_editing() && $inSlider) {
 if (!$items && !empty($d['hide_empty']) && !is_editing()) return;
 $layout = ($d['layout'] ?? '') === 'teaser' ? 'teaser' : 'cards';
 $cols = in_array((string) ($d['columns'] ?? ''), ['2', '3', '4'], true) ? (string) $d['columns'] : '3';
+// Großer Teaser: volle Reihen – die kleinen Karten nehmen die Spaltenzahl aus der Restmenge (höchstens die eingestellte);
+// ein Rest von 1 steht 50/50 neben dem Teaser (hl--rest-1, Teaser ohne volle Breite). Karten: auto-fill wie die Datenliste.
+$rest = $layout === 'teaser' ? max(0, count($items) - 1) : 0;
+$restCls = '';
+if ($layout === 'teaser' && $rest > 0) {
+    $restCls = ' hl--rest-' . min($rest, (int) $cols);
+    $cols = (string) max(2, min($rest, (int) $cols));
+}
+// Hinweis im Editor: Lücke in der letzten Reihe der kleinen Karten
+$gap = is_editing() && $layout === 'teaser' && $rest > (int) $cols && $rest % (int) $cols !== 0;
 $ratio = in_array((string) ($d['ratio'] ?? ''), ['16:10', '4:3', '1:1', '16:9'], true) ? (string) $d['ratio'] : '16:10';
 $hTag = !empty($d['title']) ? 'h3' : 'h2';
 $titleClamp = Clamp::titleClass($d);
@@ -42,13 +52,16 @@ $titleClamp = Clamp::titleClass($d);
 $tones = [];
 foreach ($sources as $s) $tones[(string) $s['table']] ??= 'dl-tone-' . (count($tones) % 5 + 1);
 ?>
-<div class="<?= e($wrap) ?> dl dl--cards dl--highlights hl--<?= e($layout) ?>">
+<div class="<?= e($wrap) ?> dl dl--cards dl--highlights hl--<?= e($layout) ?><?= e($restCls) ?>">
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
   <header class="dl-head">
     <?php if (!empty($d['eyebrow'])): ?><p class="eyebrow eyebrow--accent"<?= $b->edit('eyebrow') ?>><?= emphasis((string) $d['eyebrow']) ?></p><?php endif; ?>
     <?php if (!empty($d['title'])): ?><h2 id="<?= e($b->titleId()) ?>" class="h2 h2--m dl-title"><span<?= $b->edit('title') ?>><?= emphasis((string) $d['title']) ?></span></h2><?php endif; ?>
     <?php if (!empty($d['intro'])): ?><p class="muted dl-intro"<?= $b->edit('intro') ?>><?= emphasis((string) $d['intro']) ?></p><?php endif; ?>
   </header>
+  <?php endif; ?>
+  <?php if ($gap): ?>
+  <p class="dl-empty hl-note"><small><?= e(__('Für volle Reihen 1 + {a} bzw. 1 + {b} Einträge hervorheben (Anzahl gesamt oder je Tabelle anpassen).', ['a' => $cols, 'b' => (int) $cols - 1])) ?></small></p>
   <?php endif; ?>
   <?php if ($overlap): ?>
   <p class="dl-empty hl-note"><small><?= e(!empty($d['exclude_slider'])
