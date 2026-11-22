@@ -6,7 +6,8 @@
  * Rechtsklick und Umschalt+F10/Menütaste in [data-rowmenu="id"] öffnen dasselbe Menü, „Link kopieren“ in die Zwischenablage.
  *
  * Aus Skripten (Seitenbaum, Medien): openMenu({ items, title, x, y, anchor, root, back }) baut dasselbe Menü;
- * items: { key, label, icon?, run?|href?, danger?, keys?, title? } – Reihenfolge und Symbole wie ORDER/ICONS (wie im PHP).
+ * items: { key, label, icon?, group?, run?|href?, danger?, keys?, title?, sep? } – Reihenfolge, Symbole und Gruppen wie ORDER/ICONS/GROUPS
+ * (wie im PHP); mehr als COLS Punkte → Gruppen mit Überschrift in zwei Spalten (Telefon: Blatt, einspaltig), ←/→ wechseln die Spalte.
  *
  * Mehrfachauswahl ([data-rm-select] mit [data-rm-check], [data-rm-checkall], Leiste [data-rm-bar] aus RowMenu::bar):
  * Zähler, Leiste ab einer Auswahl, Rechtsklick auf eine gewählte Zeile (mehr als eine gewählt) → Aktionen der Leiste als Menü.
@@ -22,6 +23,15 @@ export const ICONS = {
   menu: 'list', publish: 'globe', unpublish: 'eye-slash', versions: 'clock-counter-clockwise', copy: 'link', export: 'export', task: 'list-checks',
   ext: 'puzzle-piece', delete: 'trash',
 };
+/** Gruppe je Aktion (wie RowMenu::GROUPS), Reihenfolge der Gruppen, Schwelle für zwei Spalten (RowMenu::COLS) */
+export const GROUPS = {
+  open: 'edit', settings: 'edit', view: 'edit', preview: 'edit', child: 'create', duplicate: 'create', move: 'create',
+  menu: 'visibility', publish: 'visibility', unpublish: 'visibility', versions: 'share', copy: 'share', export: 'share', task: 'share',
+  ext: 'ext', delete: 'danger',
+};
+export const GROUP_ORDER = ['edit', 'create', 'visibility', 'share', 'ext', 'danger'];
+export const COLS = 8;
+const groupLabel = g => ({ edit: t('Bearbeiten'), create: t('Anlegen & Ordnen'), visibility: t('Sichtbarkeit'), share: t('Teilen & Verlauf'), ext: t('Erweiterungen'), danger: t('Löschen') })[g] || t('Erweiterungen');
 const SHEET = '(max-width: 640px)';
 const ITEM = '.rm-item:not([aria-disabled="true"])';
 
@@ -31,6 +41,33 @@ export function sortItems(items) {
   return items.filter(Boolean).map((it, n) => ({ it, n })).sort((a, b) => rank(a.it.key) - rank(b.it.key) || a.n - b.n).map(x => x.it);
 }
 
+/** Gruppe eines Punkts: it.group, sonst nach Schlüssel; gefährliche Punkte immer „danger“ */
+export function groupOf(it) {
+  if (it.danger || it.key === 'delete') return 'danger';
+  if (it.group && it.group !== 'danger' && GROUP_ORDER.includes(it.group)) return it.group;
+  return GROUPS[it.key || 'ext'] || 'ext';
+}
+
+/** Sortierte Punkte in Gruppen: [{ group, items: [[index, item], …] }] (Index = Stelle in der sortierten Liste) */
+export function groupItems(sorted) {
+  const by = {};
+  sorted.forEach((it, i) => (by[groupOf(it)] ||= []).push([i, it]));
+  return GROUP_ORDER.filter(g => by[g]).map(g => ({ group: g, items: by[g] }));
+}
+
+/** Gruppen auf zwei Spalten verteilen (wie RowMenu::split): Gruppen bleiben ganz, vordere links, links darf höher sein */
+export function splitGroups(groups) {
+  if (groups.length < 2) return [groups];
+  const w = groups.map(g => g.items.length + 1), total = w.reduce((a, b) => a + b, 0);
+  let best = 1, diff = Infinity, left = 0;
+  for (let k = 1; k < groups.length; k++) {
+    left += w[k - 1];
+    const d = Math.abs(total - 2 * left) + (left < total - left ? 1 : 0);
+    if (d < diff) { diff = d; best = k; }
+  }
+  return [groups.slice(0, best), groups.slice(best)];
+}
+
 /** Menü platzieren: Blatt auf dem Telefon, sonst am Punkt (Rechtsklick) bzw. rechtsbündig unter/über dem Knopf */
 function place(pop, at) {
   pop.dataset.placed = '';
@@ -38,7 +75,10 @@ function place(pop, at) {
   delete pop.dataset.sheet;
   const w = pop.offsetWidth, h = pop.offsetHeight;
   let top, left;
-  if (at?.x != null) { left = at.x; top = at.y; if (top + h > innerHeight - 8) top = Math.max(8, top - h); }
+  if (at?.x != null) {   // am Mauszeiger: rechts/unten davon, sonst links/oben – nie aus dem Fenster
+    left = at.x + w > innerWidth - 8 ? at.x - w : at.x;
+    top = at.y + h > innerHeight - 8 ? Math.max(8, Math.min(at.y - h, innerHeight - 8 - h)) : at.y;
+  }
   else {
     const r = (at?.anchor || pop._btn)?.getBoundingClientRect();
     if (!r) return;
@@ -50,14 +90,31 @@ function place(pop, at) {
 }
 
 const items = pop => [...pop.querySelectorAll(ITEM)];
+let seq = 0;
 const activeIn = pop => pop.getRootNode().activeElement;
 
-/** Tastatur im Menü: ↑/↓, Pos1/Ende, Anfangsbuchstabe, Tab schließt (Fokus zurück an den Auslöser) */
+/** ←/→ in zweispaltigen Menüs: Punkt der anderen Spalte auf derselben Höhe (sonst nichts) */
+function sideways(pop, cur, dir) {
+  const col = cur?.closest('.rm-col');
+  const cols = [...pop.querySelectorAll('.rm-col')].filter(c => c.offsetParent && c.querySelector(ITEM));
+  if (!col || cols.length < 2) return null;
+  const a = cols[cols.indexOf(col) + dir];
+  if (!a || a.offsetLeft === col.offsetLeft) return null;   // Blatt/schmal: Spalten untereinander
+  const y = cur.getBoundingClientRect().top;
+  return [...a.querySelectorAll(ITEM)].reduce((best, b) => Math.abs(b.getBoundingClientRect().top - y) < Math.abs(best.getBoundingClientRect().top - y) ? b : best);
+}
+
+/** Tastatur im Menü: ↑/↓ (Lesereihenfolge: linke Spalte, rechte Spalte, Löschen), ←/→ Spalte wechseln, Pos1/Ende, Anfangsbuchstabe, Tab schließt */
 function keys(pop, e) {
-  const list = items(pop), i = list.indexOf(activeIn(pop));
+  const list = items(pop), cur = activeIn(pop), i = list.indexOf(cur);
   const go = n => { e.preventDefault(); list[(n + list.length) % list.length]?.focus(); };
   if (e.key === 'ArrowDown') go(i + 1);
   else if (e.key === 'ArrowUp') go(i < 0 ? -1 : i - 1);
+  else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const rtl = getComputedStyle(pop).direction === 'rtl';
+    const hit = sideways(pop, cur, (e.key === 'ArrowRight') !== rtl ? 1 : -1);
+    if (hit) { e.preventDefault(); hit.focus(); }
+  }
   else if (e.key === 'Home') go(0);
   else if (e.key === 'End') go(-1);
   else if (e.key === 'Tab') { e.preventDefault(); close(pop); }
@@ -123,15 +180,24 @@ export function openMenu({ items: list, title = '', x = null, y = null, anchor =
   pop.className = 'rm-pop'; pop.dataset.rmJs = ''; pop.setAttribute('role', 'menu'); pop.setAttribute('popover', 'auto');
   if (title) pop.setAttribute('aria-label', title);
   const sorted = sortItems(list.filter(it => it && it.label));
-  let prevDanger = null, html = title ? `<p class="rm-pop__title" aria-hidden="true">${esc(title)}</p>` : '';
-  sorted.forEach((it, i) => {
-    const danger = !!it.danger || it.key === 'delete';
-    if ((danger && prevDanger === false) || (it.sep && i > 0)) html += '<hr role="separator">';
-    prevDanger = danger;
+  const uid = 'rm' + (++seq);
+  const item = ([i, it], danger, first) => {
     const inner = `${it.icon === false ? '' : ico(it.icon || ICONS[it.key] || 'circle')}<span>${esc(it.label)}</span>${it.keys ? `<kbd aria-hidden="true">${esc(it.keys)}</kbd>` : ''}`;
     const attrs = ` class="rm-item${danger ? ' is-danger' : ''}" role="menuitem" data-i="${i}" data-rm-key="${esc(it.key || 'ext')}"${it.title ? ` title="${esc(it.title)}"` : ''}${it.aria ? ` aria-keyshortcuts="${esc(it.aria)}"` : ''}${it.disabled ? ' aria-disabled="true"' : ''}`;
-    html += it.href && !it.run ? `<a href="${esc(it.href)}"${attrs}${it.target ? ` target="${esc(it.target)}" rel="noopener"` : ''}>${inner}</a>` : `<button type="button"${attrs}>${inner}</button>`;
-  });
+    return (it.sep && !first ? '<hr role="separator">' : '')
+      + (it.href && !it.run ? `<a href="${esc(it.href)}"${attrs}${it.target ? ` target="${esc(it.target)}" rel="noopener"` : ''}>${inner}</a>` : `<button type="button"${attrs}>${inner}</button>`);
+  };
+  const groups = groupItems(sorted);
+  const danger = groups.at(-1)?.group === 'danger' ? groups.pop() : null;
+  const grouped = sorted.length > COLS;
+  const cols = grouped ? splitGroups(groups) : [groups];
+  const grp = g => `<div class="rm-grp" role="group" aria-labelledby="${uid}-g-${g.group}"><p class="rm-grp__h" id="${uid}-g-${g.group}">${esc(groupLabel(g.group))}</p>${g.items.map((x, n) => item(x, false, n === 0)).join('')}</div>`;
+  let html = title ? `<p class="rm-pop__title" aria-hidden="true">${esc(title)}</p>` : '';
+  html += '<div class="rm-cols" role="none">' + cols.filter(c => c.length).map(c => `<div class="rm-col" role="none">${c.map(grp).join('<hr role="separator">')}</div>`).join('');
+  if (danger) html += (groups.length ? '<hr role="separator" class="rm-sep-danger">' : '') + danger.items.map(x => item(x, true, true)).join('');
+  html += '</div>';
+  if (grouped) pop.classList.add('rm-pop--grouped');
+  if (cols.length > 1) pop.classList.add('rm-pop--cols');
   pop.innerHTML = html;
   const ret = back || (host.getRootNode?.() || document).activeElement || document.activeElement;
   pop._manual = false;

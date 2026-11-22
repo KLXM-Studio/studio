@@ -45,7 +45,7 @@ $row = function (array $n) use (&$row, &$count, $multi, $statusCell, $short): st
     $h = '<li class="pt-node" role="treeitem" id="pt-' . $id . '" data-id="' . $id . '" data-parent="' . (int) ($p['parent_id'] ?? 0) . '"'
         . ' data-url="' . e($url) . '" data-title="' . e($p['title']) . '" data-home="' . (int) $p['is_home'] . '" data-dirty="' . (int) $dirty . '"'
         . ' data-published="' . (int) ($p['content_published'] !== null) . '" data-state="' . Pages::state($p) . '" data-langs="' . e(implode(',', $trans)) . '" data-noindex="' . (int) !empty($p['noindex']) . '" aria-level="' . ($n['depth'] + 1) . '"'
-        . ($ext['actions'] ? ' data-ext-actions="' . json_attr(array_map(fn($a) => [$a['label'], url($a['href'])], $ext['actions'])) . '"' : '')
+        . ($ext['actions'] ? ' data-ext-actions="' . json_attr(array_map(fn($a) => [$a['label'], url($a['href']), $a['icon'] ?? '', $a['group'] ?? ''], $ext['actions'])) . '"' : '')
         . ($kids ? ' aria-expanded="true"' : '') . ' aria-selected="false">'
         . '<div class="pt-row" draggable="' . ($p['is_home'] ? 'false' : 'true') . '">'
         . '<span class="pt-name" data-presence-slot style="--depth:' . $n['depth'] . '">'

@@ -3889,6 +3889,19 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .rm-pop::backdrop{background:transparent}
 .rm-pop__title{display:none;margin:2px 10px 8px;font-size:13px;font-weight:700;color:var(--adm-t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rm-pop hr{margin:4px 6px;border:0;border-top:1px solid var(--adm-line)}
+.rm-pop{max-height:calc(100vh - 16px);overflow:auto}
+/* Gruppen nach Art (RowMenu::GROUPS): kleine Überschrift wie in den Menüs der Website-Werkzeugleiste; ab RowMenu::COLS Punkten zweispaltig */
+.rm-cols,.rm-col,.rm-grp{display:grid;gap:1px;align-content:start;min-width:0}
+.rm-grp__h{display:none;margin:0;padding:7px 10px 3px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--adm-t3);user-select:none}
+.rm-pop--grouped .rm-grp__h{display:block}
+.rm-pop--grouped .rm-col>hr{margin:5px 6px 2px}
+.rm-col+.rm-col{margin-top:4px;padding-top:2px;border-top:1px solid var(--adm-line)}
+@media (min-width:641px){
+  .rm-pop--cols{max-width:min(600px,calc(100vw - 16px))}
+  .rm-pop--cols .rm-cols{grid-template-columns:repeat(2,minmax(210px,1fr));column-gap:6px}
+  .rm-pop--cols .rm-col+.rm-col{margin-top:0;padding:0 0 0 6px;border-top:0;border-left:1px solid var(--adm-line)}
+  .rm-pop--cols .rm-cols>hr,.rm-pop--cols .rm-cols>.rm-form>.rm-item,.rm-pop--cols .rm-cols>.rm-item{grid-column:1/-1}
+}
 .rm-form{display:contents}
 .rm-item{display:flex;align-items:center;gap:9px;width:100%;min-height:32px;padding:6px 10px;border:0;border-radius:6px;background:none;color:var(--adm-ink);font:inherit;font-weight:500;text-align:left;text-decoration:none;cursor:pointer}
 .rm-item>span{flex:1;min-width:0}

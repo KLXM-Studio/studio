@@ -1119,7 +1119,7 @@ if (pt) {
         } })),
       ...(pt.dataset.tasks ? [{ key: 'task', label: t('Aufgabe anlegen'), href: `${pt.dataset.tasks}?link=page:${id}&back=${encodeURIComponent('/admin/pages')}` }] : []),
       // Erweiterungen (Extension::pageList): [Beschriftung, Adresse]
-      ...(n.dataset.extActions ? JSON.parse(n.dataset.extActions).map(([label, href]) => ({ key: 'ext', label, href })) : []),
+      ...(n.dataset.extActions ? JSON.parse(n.dataset.extActions).map(([label, href, icon, group]) => ({ key: 'ext', label, href, icon: icon || '', group })) : []),
       ...(home ? [] : [{ key: 'delete', label: t('Löschen …'), run: async () => {
         const kids = $$('.pt-node', n).length;
         if (!(await bar_.ask({ title: t('„{title}“ löschen?', { title: n.dataset.title }) + (kids ? '\n\n' + t('{n} Unterseite(n) rücken eine Ebene nach oben.', { n: kids }) : ''), ok: t('Löschen') }))) return;
