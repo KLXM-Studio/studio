@@ -14,6 +14,7 @@ namespace Core;
  * Absätze (text_to_rich()), die Ausgabe des Kits entscheidet selbst (alter Klartext wie bisher, sonst rich()).
  * Typen: text textarea richtext inline email tel url link number bool select date time
  *        page pages (mehrere Seiten, Core\PagePicker) media file repeater secret heading icon (Symbolauswahl, Wert = Symbolname, Ausgabe: icon($wert))
+ *        hotspots (Markierungen eines Bildes, Core\Hotspots – 'image_field' = Bildfeld desselben Formulars) hidden (verstecktes Feld)
  * Überschrift mit 'collapse' => true|'open': aufklappbarer Abschnitt bis zur nächsten Überschrift (geöffnet bei Fehlern darin
  * und bei leeren Pflichtfeldern); 'summary' = Kurztext im Kopf, 'count' => true = „3 von 7 ausgefüllt“ im Kopf,
  * 'variants' => [...] = ganzer Abschnitt nur bei diesen Varianten des Blocks.
@@ -24,7 +25,7 @@ namespace Core;
 final class Fields
 {
     public const TYPES = ['text', 'textarea', 'richtext', 'inline', 'email', 'tel', 'url', 'link', 'number',
-        'bool', 'select', 'multiselect', 'iban', 'datatable', 'datafield', 'datafields', 'date', 'datetime', 'time', 'recurrence', 'color', 'icon', 'geo', 'page', 'pages', 'media', 'file', 'collection', 'mediatext', 'blocks', 'repeater', 'group', 'secret', 'heading'];
+        'bool', 'select', 'multiselect', 'iban', 'datatable', 'datafield', 'datafields', 'date', 'datetime', 'time', 'recurrence', 'color', 'icon', 'geo', 'page', 'pages', 'media', 'file', 'collection', 'mediatext', 'blocks', 'repeater', 'group', 'hotspots', 'hidden', 'secret', 'heading'];
 
     /** Standardwerte eines Schemas als flaches Array */
     public static function defaults(array $fields): array
@@ -44,6 +45,7 @@ final class Fields
         return match ($f['type'] ?? 'text') {
             'bool' => false,
             'repeater', 'group', 'multiselect', 'datafields', 'blocks' => [],
+            'hotspots' => Hotspots::empty(),
             'pages' => ($f['store'] ?? 'ids') === 'paths' ? '' : [],
             'number', 'media', 'file', 'page', 'collection' => null,
             default => '',
@@ -95,6 +97,15 @@ final class Fields
                 $values[$name] = \Core\Data\EntryBlocks::sanitize($f, $raw);
                 if (!empty($f['required']) && !$values[$name]) {
                     $errors[$p] = self::msg('Bitte mindestens einen Block für „{label}“ anlegen.', ['label' => $label]);
+                }
+                continue;
+            }
+
+            if ($type === Hotspots::TYPE) {
+                // Interaktives Bild: Formularzeilen des Marker-Editors oder das Format {v, items} (API, Grafik-Editor) → Format Version 1
+                $values[$name] = Hotspots::fromForm($raw);
+                if (!empty($f['required']) && !$values[$name]['items']) {
+                    $errors[$p] = self::msg('Bitte mindestens eine Markierung für „{label}“ setzen.', ['label' => $label]);
                 }
                 continue;
             }
@@ -652,6 +663,14 @@ final class Fields
 
         if ($type === 'blocks') {
             return \Core\Data\EntryBlocks::renderInput($f, $inputName, $value, $errors, $p, $label, $errHtml);
+        }
+
+        if ($type === Hotspots::TYPE) {
+            return Hotspots::renderInput($f, $value, $errors, $prefix, $path, $label);
+        }
+
+        if ($type === 'hidden') {
+            return '<input type="hidden" name="' . $inputName . '" value="' . e(is_scalar($value) ? (string) $value : '') . '">';
         }
 
         if ($type === 'repeater' || $type === 'group') {

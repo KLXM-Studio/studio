@@ -17,7 +17,7 @@ use Core\Sanitizer;
 final class Templates
 {
     /** Kurznamen der Vorlagen ohne Angabe von --handle */
-    private const HANDLES = ['jobs' => 'stellen', 'applications' => 'bewerbungen', 'events' => 'termine', 'blog' => 'aktuelles', 'inbox' => 'anfragen', 'contacts' => 'kontakte', 'calendar' => 'kalender', 'places' => 'orte'];
+    private const HANDLES = ['jobs' => 'stellen', 'applications' => 'bewerbungen', 'events' => 'termine', 'blog' => 'aktuelles', 'inbox' => 'anfragen', 'contacts' => 'kontakte', 'calendar' => 'kalender', 'places' => 'orte', 'hotspots' => 'interaktive_bilder'];
 
     /**
      * Tabelle aus einer Vorlage anlegen bzw. ergänzen. $o: handle, name, slug (Adresse der Detailseiten, '' = keine),

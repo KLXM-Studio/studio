@@ -56,6 +56,8 @@ final class Tables
         'iban' => ['IBAN (Bankverbindung)', 'string', 'bank'],
         // Wiederholbare Gruppe: Liste gleichartiger Einträge (z. B. mehrere Medikamente) – JSON-Array von Objekten
         'group' => ['Wiederholbare Gruppe', 'text', 'copy'],
+        // Interaktives Bild: Markierungen auf dem Bildfeld des Eintrags (Core\Hotspots, Format Version 1 als JSON)
+        'hotspots' => ['Markierungen (Interaktives Bild)', 'text', 'crosshair'],
         // Gestaltung des Formulars (keine Daten, keine Spalte – Spaltentyp „layout“): Abschnitt mit Überschrift, Freitext
         'section' => ['Abschnitt (Überschrift)', 'layout', 'layout'],
         'content' => ['Freitext', 'layout', 'article'],

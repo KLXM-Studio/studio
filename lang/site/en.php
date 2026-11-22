@@ -453,4 +453,11 @@ return [
     'Nächster Termin' => 'Next date',
     'öffnet Google' => 'opens Google',
     'öffnet Microsoft' => 'opens Microsoft',
+    // Interaktives Bild (Core\Hotspots)
+    'Interaktives Bild' => 'Interactive image',
+    'Interaktives Bild: {name}' => 'Interactive image: {name}',
+    'Markierung {n}' => 'Hotspot {n}',
+    'Markierungen im Bild' => 'Hotspots in the image',
+    '{n} Markierungen – zum Öffnen anklicken oder mit der Tab-Taste wählen.' => '{n} hotspots – click to open or select with the Tab key.',
+    '{n}: {title}' => '{n}: {title}',
 ];
