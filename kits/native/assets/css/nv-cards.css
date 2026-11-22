@@ -8,6 +8,8 @@
   .nv-cards__item > .ncss-card, .nv-cards > .ncss-card-container > .ncss-card { block-size: 100%; }
   /* Rahmen, Radius und Schatten hier statt über die Hilfsklassen von NativeCSS (ncss-border, ncss-radius-lg, ncss-shadow-*) –
      die lädt das Kit nicht, die Karten folgen so den Design-Werten (Radius, Linienfarbe) */
+  /* Karte in Seitenfarbe: auch in farbigen Abschnitten die Schrift der Seite (--f0-*, wie die Karten von fluid) */
+  .nv-cards .ncss-card { --f-ink: var(--f0-ink); --f-text: var(--f0-text); --f-muted: var(--f0-muted); --f-link: var(--f0-link); --f-fg: var(--f0-ink); }
   .nv-cards .ncss-card { inline-size: 100%; border: 1px solid var(--f-line); border-radius: var(--ncss-radius-lg);
     background: var(--f-bg); color: var(--f-text); box-shadow: var(--ncss-shadow-sm); transition: box-shadow .2s, translate .2s; }
   @media (hover: hover) and (pointer: fine) {

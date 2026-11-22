@@ -3,7 +3,11 @@
 @import "../../vendor/ncss/components/split.css" layer(components);
 
 @layer native {
-  .nv-mt { align-items: center; gap: clamp(1.5rem, 1rem + 4vw, 4.5rem); }
+  /* Mittig nur nebeneinander (split.css: align-items über --ncss-split-align) – gestapelt bleibt stretch, sonst schrumpft die
+     Bildspalte auf die Breite ihres Inhalts: der Rahmen (.frame, Bild absolut) hätte 0 px und das Bild verschwände */
+  .nv-mt { gap: clamp(1.5rem, 1rem + 4vw, 4.5rem); }
+  /* Bild füllt den Rahmen im gewählten Format (split.css setzt height: auto und überstimmt .frame img von fluid) */
+  .nv-mt .ncss-split-media .frame img { height: 100%; }
   .nv-mt .ncss-split-content { display: flex; flex-direction: column; gap: var(--f-s-m); }
   .nv-mt .ncss-split-content > * { margin: 0; }
   .nv-mt__head { margin-block-end: 0; }
