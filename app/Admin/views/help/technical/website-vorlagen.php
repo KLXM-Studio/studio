@@ -38,8 +38,12 @@
       Felder mit <code>private</code> leer; Fließtext ohne E-Mail-Adressen, Telefonnummern, IBANs und Redaktionsnotizen <code>[# … #]</code>;
       Datum relativ (<code>{"@rel": Tage}</code>, Kalender so verschoben, dass der erste Termin in einer Woche liegt). Keine Einträge aus Eingangs-Tabellen
       und Tabellen mit öffentlichem Formular. Verknüpfungen nur zwischen exportierten Einträgen.</li>
-    <li><b>Bilder:</b> nur mit Urheber und freier Lizenz (<code>Export::FREE_LICENSE</code>), sonst beim Anlegen ein Platzhalterbild (Tag <code>vorlage-platzhalter</code>);
-      Medien-IDs in Blöcken über die Schlüssel-Regel von <code>ContentSync::isMediaKey()</code>.</li>
+    <li><b>Bilder:</b> nur mit Urheber und freier Lizenz (<code>Export::FREE_LICENSE</code>; ohne Lizenzfeld zählt <code>Media::licenseFromCredit()</code> –
+      Pixabay, Pexels, Unsplash im Urheberhinweis), sonst beim Anlegen ein Platzhalterbild (<code>Apply::PLACEHOLDER_TAG</code>): Fläche in
+      <code>dark_section</code> mit feinen Linien, weiße Schrift überall ≥ 4,5; <code>Palette::apply()</code> zeichnet es neu (<code>Apply::refreshPlaceholder()</code>,
+      gleiche ID). <code>Media::pictureOf()</code> setzt <code>data-cms-ph</code>, die Werkzeugleiste (<code>resources/js/_bar.js</code>) zeigt
+      Angemeldeten „Bild fehlt“. Medien-IDs in Blöcken über die Schlüssel-Regel von <code>ContentSync::isMediaKey()</code>; ein nicht
+      mitgenommenes <code>video</code> wird leer, ein leeres <code>image</code> daneben bekommt das Platzhalterbild (<code>Anonymizer::remapMedia()</code>).</li>
     <li><b>Personen der Quelle</b> (<code>Anonymizer::personNames()</code>): Namen aus Konten, Kontakten, Personenfeldern und Kombifeldern „Ansprechperson“ werden in allen Texten (Seiten, Einstellungen, Einträge, Abschnitte der Erweiterungen) durch Platzhalter-Personen ersetzt und im Paket geprüft.</li>
     <li><b>Prüfung</b> (<code>Export::audit()</code>): Nach dem Schreiben wird das Paket gegen E-Mail-Adressen und Namen der Konten, Zugangsdaten der
       E-Mail-Konten, Werte geheimer Einstellungen, <code>app_key</code>, Domains, Abonnenten, Einladungen und Aufgaben der Quelle sowie gegen
@@ -73,15 +77,24 @@
   Kontrast-Vorgabe seines Tokens (<code>contrast</code> =&gt; with, min, dark_with) mit <code>Design::readable()</code>. <code>Palette::apply()</code> speichert in
   <code>design.{kit}</code> der aktuellen (neuen) Website; die Quelle bleibt unverändert. Die Schnelleinrichtung zeigt die Varianten mit Vorschau
   (<code>GET /admin/schnelleinrichtung/paletten?color=</code>, <code>resources/js/_quickconfig.js</code>); <code>site:create --color=#… [--palette=…]</code>.
-  Selbsttest: fünf Farben × vier Varianten (Akzent und Fläche mit Text ≥ 4,5, zweite Farbe ≥ 3, dunkle Abschnitte mit weißer Schrift ≥ 7, dunkel).</p>
+  <code>dark_section</code>: Farbton und Sättigung der Akzentfarbe bei HSL-Helligkeit 13–20 % (nicht fast schwarz), weiße Schrift ≥ 7.
+  <code>Palette::charts()</code>: <code>chart_1</code> … <code>chart_6</code> (<code>Charts::designGroup</code>) – Akzent, zweite Farbe (wenn unterscheidbar), dann
+  Farbtöne mit größtem Abstand, abwechselnd heller/dunkler, je ≥ 3 gegen den Hintergrund hell und dunkel. Gewählte Palette:
+  <code>look.palette</code> in <code>sys.quick_config.values</code>; <code>QuickConfig::palette()</code> nimmt sie, wenn keine angegeben ist.
+  Selbsttest: fünf Farben × vier Varianten (Akzent und Fläche mit Text ≥ 4,5, zweite Farbe ≥ 3, dunkle Abschnitte mit weißer Schrift ≥ 7, dunkel,
+  Diagrammfarben ≥ 3 und paarweise unterscheidbar).</p>
 
   <h3 id="blueprint-texte">Texte der Quelle, Bilder, Probelauf</h3>
   <p>Region der Quelle: <code>--region=</code> beim Export, sonst Einstellung <code>org.region</code>, sonst Filter <code>blueprint.source</code> (z. B. Ausschnitt einer
   Gebietskarte). <code>QuickConfig::region()</code> kennt Bundesländer, Abkürzungen ab drei Zeichen (NRW, NDS, RLP) und Landesschlüssel. <code>Export::review()</code>
   zählt die Platzhalter und meldet Stellen, die nicht eindeutig ersetzt werden konnten: Angabe der Quelle als Wortteil bzw. Wortstamm der Region
-  („NRW-weit“, „nordrhein-westfälisch“) und Zahlen neben <code>{{region.*}}</code> (ohne Jahreszahlen, Datum, Uhrzeit) – als <code>manifest.review</code>
+  („NRW-weit“, „nordrhein-westfälisch“) und Zahlen bzw. Zahlwörter (<code>Export::NUMBER_WORDS</code>) neben <code>{{region.*}}</code> (ohne Jahreszahlen,
+  Datum, Uhrzeit, Rechtsverweise wie „Art. 6 Abs. 1 lit. a“, „§ 25 Abs. 1“; <code>Export::regionNumber()</code>). Technische Felder und Werte
+  (<code>Export::technicalKey()</code>/<code>technicalValue()</code>: Adressen, IDs, Video, Verweise) werden nicht geprüft; Felder mit Block-JSON werden
+  entpackt, der Auszug ist Klartext – als <code>manifest.review</code>
   {where, link, title, reason, sample}; beim Anlegen je Stelle eine Aufgabe „Text an Ihre Organisation anpassen“. Das Impressum der Quelle wird durch
-  <code>Export::IMPRINT</code> (Platzhalter, Redaktionsnotizen) ersetzt. Bilder, die Platzhalter werden, stehen mit Grund (<code>Export::mediaReason()</code>:
+  <code>Export::IMPRINT</code> ersetzt – mit <code>{{org.representatives}}</code> und <code>{{org.responsible}}</code> (Schritt Organisation, CLI
+  <code>--representatives=… --responsible=…</code>); ältere Pakete mit Redaktionsnotizen übersetzt <code>Placeholders::legacyImprint()</code> beim Anlegen. Bilder, die Platzhalter werden, stehen mit Grund (<code>Export::mediaReason()</code>:
   missing, pool, license, credit, both) in <code>manifest.media_report</code> und im Bericht der Version (<code>meta.json → versions[].report</code>).
   <code>site:blueprint … --check</code>: Plan ohne Paket.</p>
 

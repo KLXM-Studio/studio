@@ -67,7 +67,7 @@ final class SelfTest
         $eq('Text: Beispiel-Adressen bleiben', $a->text('info@example.org, x@demo.test'), 'info@example.org, x@demo.test');
         $eq('Text: Telefon', $a->text('Tel. ' . self::PHONE . ' oder +49 211 12345678'), 'Tel. +49 30 1234567 oder +49 30 1234567');
         $eq('Text: Jahreszahl und Uhrzeit bleiben', $a->text('Seit 1890, Beginn 18:30, Raum 0815'), 'Seit 1890, Beginn 18:30, Raum 0815');
-        $eq('Text: IBAN', str_contains($a->text('IBAN ' . self::IBAN), '3704'), false);
+        $eq('Text: IBAN', $a->text('IBAN ' . self::IBAN), 'IBAN DE00 0000 0000 0000 0000 00');
         $eq('Text: Redaktionsnotizen fallen weg', $a->text('Text [# intern: Frau X fragen #] Ende'), 'Text Ende');
         $rel = $a->relDate('2026-01-15 18:30');
         $eq('Datum relativ', $rel, ['@rel' => 14, 't' => '18:30', 'f' => ' ']);
@@ -130,6 +130,37 @@ final class SelfTest
             [['handle' => 't', 'fields' => [['name' => 'x', 'type' => 'text'], ['name' => 'y', 'type' => 'date']], 'settings' => []]], [['rkey' => 'presse', 'permissions_json' => '["pages.edit"]']], [], []);
         $d = Diff::compare($s1, $s2);
         $eq('Vergleich: neue Seite, Feld, Rolle', [$d['added']['pages'], $d['added']['fields'], $d['added']['roles'], Diff::any(Diff::compare($s2, $s2))], [['-:/b'], ['t.y'], ['presse'], false]);
+        // Prüfung der Texte (--check): Rechtsverweise und technische Felder sind keine Fundstellen, Zahlwörter schon, Auszug als Klartext
+        $eq('Zahl zur Region: Rechtsverweise zählen nicht', [Export::regionNumber('Art. 6 Abs. 1 lit. a DSGVO in {{region.name}}'), Export::regionNumber('nach § 25 Abs. 1 TTDSG und §§ 12, 13 BGB')], [null, null]);
+        $eq('Zahl zur Region: Ziffern und Zahlwörter', [Export::regionNumber('42 Gruppen'), Export::regionNumber('in elf Regionen in ganz'), Export::regionNumber('Dutzende Gruppen'),
+            Export::regionNumber('zweier Kreise'), Export::regionNumber('Wir achten auf Natur, seit 1990')], ['42', 'elf', 'Dutzende', 'zweier', null]);
+        $eq('Technische Felder und Werte', [Export::technicalKey('video_url'), Export::technicalKey('button_link'), Export::technicalKey('text'), Export::technicalValue('3uwI9hSyX6g'),
+            Export::technicalValue('https://example.org/x'), Export::technicalValue('NRW-weit')], [true, true, false, true, true, false]);
+        [, $rv] = Export::review([['id' => 3, 'title' => 'T', 'content_published' => ['blocks' => [['type' => 'video', 'data' => ['video_url' => 'https://youtu.be/AB12cd34', 'caption' => 'Video aus {{region.short}}', 'id' => 'x1y2z3']],
+            ['type' => 'richtext', 'data' => ['text' => '<p>Rechtsgrundlage in {{region.short}}: Art. 6 Abs. 1 lit. a DSGVO</p>']]]]]],
+            ['t' => ['rows' => [['id' => 1, 'inhalt' => json_encode([['type' => 'richtext', 'data' => ['text' => '<p>In zwölf Gruppen in ganz {{region.short}}</p>']]])]]]], [], [['handle' => 't', 'name' => 'T']], ['region.short' => 'NRW']);
+        $eq('Prüfung: keine Fehlalarme auf der Seite, Zahlwort im Eintrag mit Klartext-Auszug', [count(array_filter($rv, fn($r) => $r['where'] === 'page:3')),
+            array_values(array_map(fn($r) => $r['sample'], array_filter($rv, fn($r) => $r['where'] === 'entry:t:1')))], [0, ['In zwölf Gruppen in ganz {{region.short}}']]);
+        // Lizenz aus dem Urheberhinweis
+        $eq('Lizenz aus Urheberhinweis', [\Core\Media::licenseFromCredit('Image by Erika Musterfrau from Pixabay'), \Core\Media::licenseFromCredit('Foto: Max Mustermann / pexels.com'),
+            \Core\Media::licenseFromCredit('Photo by X on Unsplash'), \Core\Media::licenseFromCredit('Foto: privat'), Export::license(['license' => 'Eigenes Foto', 'credit' => 'Pixabay'])],
+            ['Pixabay-Lizenz', 'Pexels-Lizenz', 'Unsplash-Lizenz', '', 'Eigenes Foto']);
+        $eq('Bild mit Pixabay im Urheberhinweis geht mit', Export::mediaReason(null) === 'missing' && preg_match(Export::FREE_LICENSE, Export::license(['license' => '', 'credit' => 'Image by A from Pixabay'])) === 1, true);
+        // Fehlendes Video → Platzhalterbild (Einstieg nicht schwarz); Impressum älterer Pakete → Platzhalter
+        $eq('Video fehlt: Feld leer, Platzhalterbild', Anonymizer::remapMedia(['video' => 100, 'image' => null, 'title' => 'x'], [0 => 99]), ['video' => null, 'image' => 99, 'title' => 'x']);
+        $eq('Video vorhanden bleibt', Anonymizer::remapMedia(['video' => 100, 'image' => null], [100 => 7, 0 => 99]), ['video' => 7, 'image' => null]);
+        $eq('Impressum älterer Pakete', Placeholders::legacyImprint(['t' => '<p>Vertreten durch: [# Vorstand bzw. Geschäftsführung ergänzen #]</p>']), ['t' => '<p>Vertreten durch: {{org.representatives}}</p>']);
+        $eq('Impressum der Vorlage mit Vertretung und Verantwortlichem', [str_contains(Export::IMPRINT, '{{org.representatives}}'), str_contains(Export::IMPRINT, '{{org.responsible}}'), str_contains(Export::IMPRINT, '[#')], [true, true, false]);
+        // Platzhalterbild: Fläche in der Farbe, ohne Grau, helle Schrift überall lesbar
+        if (function_exists('imagecreatefrompng')) {
+            $tmp = Package::tempDir();
+            $f = Apply::renderPlaceholder($tmp . '/p.png', '#193E20');
+            $im = $f ? imagecreatefrompng($f) : false;
+            $px = [];
+            if ($im) foreach ([[5, 5], [800, 500], [1590, 990], [30, 980]] as [$x, $y]) { $c = imagecolorat($im, $x, $y); $px[] = sprintf('#%02X%02X%02X', ($c >> 16) & 255, ($c >> 8) & 255, $c & 255); }
+            Package::remove($tmp);
+            $eq('Platzhalterbild: farbig, weiße Schrift ≥ 4,5 an jeder Stelle', [count($px), count(array_filter($px, fn($p) => Palette::hsl($p)[1] > 0.2 && \Core\Contrast::ratio('#FFFFFF', $p) >= 4.5))], [4, 4]);
+        }
         $pal = Palette::selftest();
         $ok += $pal['ok'];
         array_push($fails, ...$pal['fails']);
@@ -170,13 +201,21 @@ final class SelfTest
             $man = (array) json_decode((string) @file_get_contents($pkg . '/manifest.json'), true);
             $eq('Paket: Stellen zum Anpassen (Wortteil, Zahlen zur Region)', [count(array_filter((array) ($man['review'] ?? []), fn($r) => str_contains((string) $r['reason'], 'Wortteil'))) > 0,
                 count(array_filter((array) ($man['review'] ?? []), fn($r) => str_contains((string) $r['reason'], 'Zahlen'))) > 0], [true, true]);
-            $eq('Paket: Impressum als Vorlage (keine Person der Quelle)', str_contains($raw, 'Vorstand bzw. Geschäftsführung ergänzen'), true);
+            $regRev = array_values(array_filter((array) ($man['review'] ?? []), fn($r) => ($r['title'] ?? '') === 'Regionen' && str_contains((string) $r['reason'], 'Zahlen')));
+            $eq('Paket: Zahlwort gefunden, Rechtsverweis nicht, Auszug Klartext', [count($regRev), str_contains((string) ($regRev[0]['sample'] ?? ''), 'elf'), str_contains((string) ($regRev[0]['sample'] ?? ''), '{"')], [1, true, false]);
+            $eq('Paket: Bild mit Pixabay im Urheberhinweis geht mit (Lizenz erkannt, im Bericht)', [str_contains($raw, 'Pixabay-Lizenz'), count(glob($pkg . '/demo/media/*') ?: []) >= 1,
+                str_contains(implode("\n", (array) ($man['report'] ?? [])) . $out, 'Urheberhinweis erkannt')], [true, true, true]);
+            $eq('Paket: Impressum als Vorlage (keine Person der Quelle)', [str_contains($raw, '{{org.representatives}}'), str_contains($raw, '{{org.responsible}}')], [true, true]);
             $eq('Probelauf --check schreibt kein Paket', $run(['site:blueprint', $src, '--out=' . $pkg . '-check', '--check']) === 0 && !is_dir($pkg . '-check') && str_contains($out, 'Probelauf'), true);
-            $eq('Neue Website aus der Vorlage', $run(['site:create', $dst, $dst . '.localhost', '--blueprint=' . $pkg, '--name=Neuer Musterverein', '--short=NMV', '--region=06', '--color=#B00020']), 0);
+            $eq('Neue Website aus der Vorlage', $run(['site:create', $dst, $dst . '.localhost', '--blueprint=' . $pkg, '--name=Neuer Musterverein', '--short=NMV', '--region=06', '--color=#B00020', '--palette=calm']), 0);
             if ($fails) echo $out;
             $eq('Ziel: Struktur, Demo, Wartung, Platzhalter', $run(['blueprint:selftest', '--step=check', '--pkg=' . $pkg, '--site=' . $dst]), 0);
             echo $out;
-            $eq('Ziel: Schnelleinrichtung abschließen', $run(['site:quick-config', '--step=org', '--name=Neuer Musterverein', '--street=Beispielweg 1', '--zip=12345', '--city=Musterstadt', '--phone=+49 30 1234567', '--email=info@example.org', '--finish', '--site=' . $dst]), 0);
+            $eq('Ziel: Farbe ändern ohne Palette (gewählte Palette bleibt)', $run(['site:quick-config', '--step=look', '--color=#2F6B3A', '--site=' . $dst]) === 0 && str_contains($out, 'Ruhig'), true);
+            $eq('Ziel: Schnelleinrichtung abschließen', $run(['site:quick-config', '--step=org', '--street=Beispielweg 1', '--zip=12345', '--city=Musterstadt', '--phone=+49 30 1234567', '--email=info@example.org',
+                '--representatives=Erika Beispiel (Vorsitzende)', '--responsible=Max Beispiel, Beispielweg 1, 12345 Musterstadt', '--finish', '--site=' . $dst]), 0);
+            $eq('Ziel: Palette, Diagrammfarben, Platzhalterbild, Impressum', $run(['blueprint:selftest', '--step=final', '--site=' . $dst]), 0);
+            if ($fails) echo $out;
             $eq('Ziel: health', $run(['health', '--site=' . $dst]), 0);
             if ($fails) echo $out;
             $eq('Ziel: data:selftest', $run(['data:selftest', '--site=' . $dst]), 0);
@@ -255,6 +294,15 @@ final class SelfTest
                 $blocks = [['id' => 'bpst000001', 'type' => 'richtext', 'data' => ['text' => '<p>Willkommen beim Bpst Verein Echtstadt e. V.! Fragen an ' . self::MAIL . ' oder ' . self::PHONE . '. Spenden: ' . self::IBAN . ' [# intern: ' . self::PERSON[1] . ' #]</p>'], 'tunes' => []],
                     ['id' => 'bpst000002', 'type' => 'richtext', 'data' => ['title' => 'Gruppen in NRW', 'text' => '<p>In Nordrhein-Westfalen gibt es 42 Gruppen. BVE ist NRW-weit aktiv, auch in nordrhein-westfälischen Schulen. Ansprechpartnerin ist Waltraud Wahrnamig.</p>'], 'tunes' => []]];
                 $app->settings->set('org.region', 'Nordrhein-Westfalen');
+                // Bild mit Urheberhinweis „… from Pixabay“ ohne Lizenzfeld (geht mit), Einstieg mit fehlendem Video (wird Platzhalterbild)
+                $tmp = Package::tempDir();
+                $img = Apply::renderPlaceholder($tmp . '/bpst-bild.png', '#0F766E');
+                [$pm] = $img ? \Core\Media::import($img, 'bpst-bild.png', 'Beispielbild', ['credit' => 'Image by Erika Musterfrau from Pixabay', 'require_alt' => false]) : [null];
+                Package::remove($tmp);
+                $blocks[] = ['id' => 'bpst000004', 'type' => 'hero', 'data' => ['variant' => 'fullbleed', 'title' => 'Willkommen', 'image' => null, 'video' => 99999, 'overlay' => 'gradient'], 'tunes' => []];
+                if ($pm) $blocks[] = ['id' => 'bpst000005', 'type' => 'media_text', 'data' => ['title' => 'Bild', 'text' => '<p>Text</p>', 'image' => (int) $pm['id']], 'tunes' => []];
+                \Core\Pages::create(['slug' => 'regionen-test', 'title' => 'Regionen', 'status' => 'published'], \Core\Pages::sanitizeBlocks([['id' => 'bpst000006', 'type' => 'richtext',
+                    'data' => ['text' => '<p>Wir sind in elf Regionen in ganz NRW aktiv. Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TTDSG.</p>'], 'tunes' => ['section' => []]]]));
                 $imp = \Core\Pages::create(['slug' => 'impressum-test', 'title' => 'Impressum', 'status' => 'published'], \Core\Pages::sanitizeBlocks([['id' => 'bpst000003', 'type' => 'richtext',
                     'data' => ['text' => '<p>Verantwortlich: ' . implode(' ', self::PERSON) . ', Echtweg 9</p>'], 'tunes' => ['section' => []]]]));
                 $app->settings->set('imprint_page', $imp);
@@ -303,6 +351,27 @@ final class SelfTest
                 $home = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1');
                 $eq('Region im Text ersetzt (Langname und Abkürzung)', [str_contains($home, 'In Hessen gibt es'), str_contains($home, 'Gruppen in Hessen')], [true, true]);
                 $eq('Demo gekennzeichnet', array_sum(Demo::counts()) >= 4, true);
+                break;
+            case 'final':
+                $vals = QuickConfig::values();
+                $dv = \Core\Design::values();
+                $want = Palette::forKit('#2F6B3A', 'calm', $dv)['values'];
+                $eq('Palette aus site:create bleibt (Ruhig)', [(string) ($vals['look.palette'] ?? ''), isset($dv['dark_section']) ? strtoupper((string) $dv['dark_section']) === strtoupper((string) $want['dark_section']) : true], ['calm', true]);
+                if (isset(\Core\Design::tokens()['chart_1'])) $eq('Diagrammfarben aus der Palette', [strtoupper((string) $dv['chart_1']), strtoupper((string) ($dv['chart_2'] ?? '')) !== strtoupper(\Core\Charts::PALETTE[1])],
+                    [strtoupper((string) $dv['accent']), true]);
+                $ph = Apply::placeholderId();
+                $pm = $ph ? \Core\Media::find($ph) : null;
+                $im = $pm && function_exists('imagecreatefrompng') ? @imagecreatefrompng(\Core\Media::path($pm)) : false;
+                $c = $im ? imagecolorat($im, 800, 500) : 0;
+                $hex = sprintf('#%02X%02X%02X', ($c >> 16) & 255, ($c >> 8) & 255, $c & 255);
+                $eq('Platzhalterbild in der Farbe der Website (nicht grau, weiße Schrift lesbar)', [$ph > 0, Palette::hsl($hex)[1] > 0.1 && abs(Palette::hsl($hex)[0] - Palette::hsl((string) ($dv['dark_section'] ?? '#2F6B3A'))[0]) < 20, \Core\Contrast::ratio('#FFFFFF', $hex) >= 4.5], [true, true, true]);
+                $home = (array) json_decode((string) app()->db->fetchValue('SELECT content_published FROM pages WHERE is_home = 1'), true);
+                $hero = array_values(array_filter((array) ($home['blocks'] ?? []), fn($b) => ($b['id'] ?? '') === 'bpst000004'))[0]['data'] ?? [];
+                $eq('Einstieg mit fehlendem Video zeigt das Platzhalterbild', [array_key_exists('video', $hero) ? $hero['video'] : 'x', (int) ($hero['image'] ?? 0)], [null, $ph]);
+                $free = app()->db->fetchValue("SELECT license FROM media WHERE credit LIKE '%Pixabay%' AND deleted_at IS NULL");
+                $eq('Bild mit Pixabay-Hinweis mitgenommen, Lizenz eingetragen', (string) $free, 'Pixabay-Lizenz');
+                $imp = (string) app()->db->fetchValue('SELECT content_published FROM pages WHERE id = :i', ['i' => (int) app()->settings->get('imprint_page')]);
+                $eq('Impressum: Vertreten durch und Verantwortlicher eingesetzt', [str_contains($imp, 'Erika Beispiel (Vorsitzende)'), str_contains($imp, 'Max Beispiel, Beispielweg 1'), str_contains($imp, '{{org.representatives}}') || str_contains($imp, '{{org.responsible}}')], [true, true, false]);
                 break;
             case 'grow':
                 $t = Tables::find('personen');

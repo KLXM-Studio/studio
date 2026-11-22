@@ -65,9 +65,18 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   zeigt den Plan; der Bericht nennt Bilder, die Platzhalter werden, und wie sie mitgehen (Lizenz und Urheber).
 - **Erweiterungen und Gebiet** im zweiten Schritt (`blueprint:apply-ext`); Filter `blueprint.source`, Aufgaben aus `blueprint.apply/region`.
   Werte aus `site:create` gelten in der Schnelleinrichtung als Vorbelegung (Erscheinungsbild, Gebiet, Netzwerk erledigt).
+- **Nachbesserungen aus dem ersten Praxistest:** die beim Anlegen gewählte Palette bleibt bei späterem Farbwechsel; dunkle Abschnitte
+  (Kopf/Fuß „dunkel“) behalten den Farbton statt fast schwarz; Diagrammfarben aus der Palette; Lizenz aus dem Urheberhinweis (Pixabay,
+  Pexels, Unsplash) – im Export-Bericht und als Vorschlag in der Mediathek; Platzhalterbild als ruhige Fläche in der Akzentfarbe, Hinweis
+  „Bild fehlt“ nur für Angemeldete, fehlendes Video im Einstieg zeigt die Fläche statt Schwarz; `--check` ohne Fehlalarme bei Rechtsverweisen
+  und technischen Feldern, mit Zahlwörtern und Klartext-Auszug; Impressum: „Vertreten durch“ und inhaltlich Verantwortliche aus der
+  Schnelleinrichtung; Beispiel-IBAN im Text wird nicht mehr als Telefonnummer ersetzt.
 - *EN:* Website templates (blueprints): export a site's structure with anonymised demo content (`site:blueprint`), create new sites from a
   template (`site:create --blueprint`) with a guided quick setup, roll out new template versions as structure-only proposals, and copy whole
-  sites without secrets or personal data (`site:copy`); network administration → Website templates.
+  sites without secrets or personal data (`site:copy`); network administration → Website templates. Follow-ups: the palette chosen at
+  creation is kept, dark sections keep their hue, chart colours follow the palette, licences are recognised from credits (Pixabay, Pexels,
+  Unsplash), a calm accent-coloured placeholder image with an “Image missing” hint for signed-in users only, fewer false positives in
+  `--check` (legal references, technical fields) plus number words, and imprint fields for representatives and the person responsible for content.
 ### Wissensbereich: Abschnitte mit Hintergrund in der Kapitelspalte als Karte
 - Blöcke mit Abschnitts-Hintergrund (grau, getönt, Akzent …) bekommen in der Kapitelspalte Innenabstand und Kartenradius – vorher klebten
   Dachzeile, Überschrift und Text an der Kante der Fläche. Ohne Hintergrund bleibt alles wie bisher.

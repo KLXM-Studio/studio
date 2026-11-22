@@ -18,12 +18,16 @@
       werden sie mit Ihren Angaben gefüllt. Ebenso die Region der Quelle – Langname und gängige Abkürzung („Nordrhein-Westfalen“, „NRW“) werden
       <code>{{region.name}}</code> bzw. <code>{{region.short}}</code>.</li>
     <li><b>Texte zum Anpassen:</b> Steht die Quelle nur als Wortteil oder in anderer Form im Text („NRW-weit“, „nordrhein-westfälisch“) oder nennt
-      ein Absatz Zahlen zur Region (Anzahl der Gruppen, Statistik), ersetzt die Vorlage nichts selbst. Die neue Website bekommt dafür je Stelle die
+      ein Absatz Zahlen zur Region (Anzahl der Gruppen, Statistik – auch als Wort: „in elf Regionen“), ersetzt die Vorlage nichts selbst.
+      Rechtsverweise („Art. 6 Abs. 1 lit. a DSGVO“), Adressen und Video-Kennungen zählen nicht. Die neue Website bekommt dafür je Stelle die
       Aufgabe „Text an Ihre Organisation anpassen“ mit Link. Das <b>Impressum</b> der Quelle geht nie mit – die Vorlage enthält ein Impressum mit
-      Platzhaltern und Hinweisen. Vorab prüfen: <code>php bin/console site:blueprint &lt;website&gt; --check</code> zeigt den Plan, ohne ein Paket zu schreiben.</li>
+      Platzhaltern; „Vertreten durch“ und „Verantwortlich nach § 18 Abs. 2 MStV“ füllt die Schnelleinrichtung. Vorab prüfen: <code>php bin/console site:blueprint &lt;website&gt; --check</code> zeigt den Plan, ohne ein Paket zu schreiben.</li>
     <li><b>Bilder:</b> Der Bericht jeder Version (Versionen → „Bericht des Exports“) nennt die Bilder, die als Platzhalter ersetzt werden, mit Grund.
       Damit eine Vorlage echte Beispielbilder bekommt, in der Quelle unter Medien → Bild → Rechte eine freie Lizenz (z. B. „Pixabay-Lizenz“) und den
-      Urheber eintragen und eine neue Version erstellen.</li>
+      Urheber eintragen und eine neue Version erstellen. Nennt der Urheberhinweis Pixabay, Pexels oder Unsplash („Image by … from Pixabay“),
+      gilt die Lizenz des Portals als erkannt – das Bild geht mit, der Bericht nennt es, und die Mediathek schlägt die Lizenz zum Übernehmen vor.
+      Das Platzhalterbild ist eine ruhige Fläche im dunklen Ton Ihrer Akzentfarbe (folgt jeder neuen Palette); angemeldete Personen sehen
+      darauf den Hinweis „Bild fehlt“, Besucher nicht. Fehlt ein Video im Einstieg, zeigt er ebenfalls diese Fläche.</li>
     <li><b>Demoinhalte</b> (wählbar: wenige, alle oder keine): immer anonymisiert – Personen werden Platzhalter („Erika Musterfrau“),
       Organisationen „Beispiel-Organisation“, Kontaktangaben Beispielwerte, Termine liegen relativ zu heute in der Zukunft. Bilder nur, wenn sie
       frei sind (Lizenz wie Pixabay/Pexels und Urheber), sonst ein neutrales Platzhalterbild. Redaktionsnotizen fallen weg. Namen von Personen aus
@@ -56,11 +60,13 @@
   später an der gewohnten Stelle ändern:</p>
   <ol>
     <li><b>Organisation:</b> Name, Kurzname, Claim, Rechtsform, Registereintrag, Anschrift, Telefon, E-Mail – erscheinen im Impressum, im
-      Fußbereich, in den Kontaktdaten und als Absendername der E-Mails.</li>
+      Fußbereich, in den Kontaktdaten und als Absendername der E-Mails. Dazu für das Impressum: „Vertreten durch“ (z. B. der Vorstand mit
+      Funktion) und die inhaltlich verantwortliche Person nach § 18 Abs. 2 MStV.</li>
     <li><b>Erscheinungsbild:</b> Logo und Akzentfarbe. Aus der Farbe entstehen alle Farben der Website – Kopf und dunkle Abschnitte, getönte
       Flächen, Linien, zweite Farbe, hell und dunkel. Zur Wahl stehen vier Paletten (Ausgewogen, Kräftig, Ruhig, Hoher Kontrast) mit Vorschau.
-      Jede Farbe wird so angepasst, dass Text darauf lesbar bleibt (Text mindestens 4,5 : 1, Bedienelemente 3 : 1). Die Website der Vorlage bleibt
-      unverändert.</li>
+      Jede Farbe wird so angepasst, dass Text darauf lesbar bleibt (Text mindestens 4,5 : 1, Bedienelemente 3 : 1). Dunkle Abschnitte behalten
+      den Farbton (dunkelgrün statt schwarz); die Diagrammfarben entstehen ebenfalls aus der Palette. Die beim Anlegen gewählte Palette bleibt,
+      bis Sie eine andere wählen. Die Website der Vorlage bleibt unverändert.</li>
     <li><b>Gebiet:</b> Region bzw. Bundesland (auch „NRW“ oder der Landesschlüssel „05“) – setzt den Kartenpunkt der Organisation und „In deiner
       Nähe“ und ersetzt die Region in den Texten. Mit der Erweiterung Gebietskarten zeigen die Karten das neue Land; die Beispiel-Gebiete bekommen
       einzelne Kreise, dazu entsteht die Aufgabe „Gebiete zuordnen“.</li>

@@ -1357,6 +1357,7 @@ class Finder {
       out.push(`<details class="fx-i-sec fx-i-rights"${(RIGHTS === 'required' && missing) || expired ? ' open' : ''}><summary><h3>${ico('copyright')} ${esc(t('Rechte & Einwilligung'))}${(RIGHTS === 'required' && missing) || expired ? ` <span class="fx-trans-miss">${esc(expired ? t('abgelaufen') : t('fehlt'))}</span>` : ''}</h3></summary>
         <form class="fx-rights" novalidate>
           <label>${esc(t('Lizenz / Quelle'))}${RIGHTS === 'required' ? ' <span class="req">*</span>' : ''}<input name="license" value="${esc(m.license)}" maxlength="250" placeholder="${esc(t('z. B. eigenes Foto, Pixabay-Lizenz, Agentur XY'))}"></label>
+          ${m.license_hint && !this.ro ? `<p class="fx-i-hint">${esc(t('Laut Urheberhinweis vermutlich: {license}', { license: m.license_hint }))} <button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-license-hint>${esc(t('Übernehmen'))}</button></p>` : ''}
           <label>${esc(t('Nutzungsrecht bis'))}<input type="date" name="rights_until" value="${esc(m.rights_until)}"></label>
           ${isPhoto ? `<label>${esc(t('Personen auf dem Bild'))}${RIGHTS === 'required' ? ' <span class="req">*</span>' : ''}<select name="consent">${Object.entries(CONSENT).map(([k, l]) => `<option value="${k}"${(m.consent || '') === k ? ' selected' : ''}>${esc(t(l))}</option>`).join('')}</select></label>` : ''}
           <p class="fx-i-state" aria-live="polite"></p>
@@ -1387,6 +1388,7 @@ class Finder {
         try { const r = await api.save(m.id, { title: m.title, alt: m.alt, decorative: m.decorative ? 1 : 0, credit: m.credit, tags: m.tags.join(','), focus: m.focus, ...body }); Object.assign(m, r.item); st.textContent = '✓ ' + t('Gespeichert'); this.patchItem(r.item); }
         catch (ex) { st.className = 'fx-i-state is-err'; st.textContent = ex.message; }
       };
+      $('[data-license-hint]', f)?.addEventListener('click', e => { f.license.value = m.license_hint; e.target.closest('p')?.remove(); clearTimeout(timer); timer = setTimeout(save, 100); });
       f.addEventListener('input', () => { clearTimeout(timer); st.textContent = ''; timer = setTimeout(save, 700); });
       f.addEventListener('change', () => { clearTimeout(timer); timer = setTimeout(save, 100); });
     }

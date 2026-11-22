@@ -80,7 +80,7 @@ final class Apply
         $pages = (array) Package::read($dir, 'structure/pages.json');
         foreach ($pages as $p) {
             if (!is_array($p) || (int) ($p['id'] ?? 0) <= 0) continue;
-            foreach (['content_draft', 'content_published'] as $c) if (is_array($p[$c] ?? null)) $p[$c] = json_encode($p[$c], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            foreach (['content_draft', 'content_published'] as $c) if (is_array($p[$c] ?? null)) $p[$c] = json_encode(Placeholders::legacyImprint($p[$c]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $p['updated_at'] = now();
             $p['published_at'] = ($p['status'] ?? '') === 'published' ? now() : null;
             $db->insert('pages', array_intersect_key($p, array_flip($pageCols)));
@@ -217,8 +217,11 @@ final class Apply
         if (empty($o['no_quick_config'])) {
             QuickConfig::start((array) ($m['quick_config']['steps'] ?? QuickConfig::STEPS), $values);
             // Werte aus site:create sind Vorbelegung: Farbe/Logo erledigen „Erscheinungsbild“ (Gebiet erledigt applyExtensions)
+            // Die gewählte Palette bleibt gespeichert – auch ohne Farbe gilt sie später für quick-config --step=look --color=…
+            $pal = isset(Palette::VARIANTS[(string) ($params['palette'] ?? '')]) ? (string) $params['palette'] : '';
             if (!empty($params['color']) || !empty($params['logo'])) QuickConfig::markDone('look', array_filter(['look.color' => (string) ($params['color'] ?? ''),
-                'look.palette' => (string) ($params['palette'] ?? '')]));
+                'look.palette' => $pal]));
+            elseif ($pal !== '') QuickConfig::remember(['look.palette' => $pal]);
         }
         // Stellen, die die Vorlage nicht automatisch anpassen konnte (Export::review) → Aufgaben „Text an Ihre Organisation anpassen“
         $actor = \Core\Tasks\Tasks::actor(null, 'cli', __('Website-Vorlage'));
@@ -304,30 +307,74 @@ final class Apply
         }
     }
 
-    /** Platzhalterbild (neutral, mit Hinweis „Bild folgt“) in die Mediathek – einmal je Website */
+    /** Tag des Platzhalterbilds (Core\Media::pictureOf kennzeichnet es, die Werkzeugleiste zeigt angemeldeten Personen „Bild fehlt“) */
+    public const PLACEHOLDER_TAG = 'vorlage-platzhalter';
+
+    /**
+     * Platzhalterbild in die Mediathek – einmal je Website: ruhige Fläche im dunklen Ton der Akzentfarbe (Design-Wert dark_section)
+     * mit dezentem Linienmuster, ohne Symbol – wirkt wie gestaltete Fläche statt wie ein Fehler, und helle Schrift darauf bleibt lesbar
+     * (≥ 4,5:1 an jeder Stelle). Nach einer neuen Palette erneuert refreshPlaceholder() die Datei (gleiche ID).
+     */
     public static function placeholderImage(): int
     {
-        $have = app()->db->fetchValue("SELECT id FROM media WHERE tags LIKE '%vorlage-platzhalter%' AND deleted_at IS NULL ORDER BY id LIMIT 1");
-        if ($have) return (int) $have;
-        if (!function_exists('imagecreatetruecolor')) return 0;
-        $w = 1600;
-        $h = 1000;
-        $im = imagecreatetruecolor($w, $h);
-        imagefill($im, 0, 0, (int) imagecolorallocate($im, 226, 232, 236));
-        $line = (int) imagecolorallocate($im, 203, 213, 220);
-        for ($x = -$h; $x < $w; $x += 80) imageline($im, $x, $h, $x + $h, 0, $line);
-        $ink = (int) imagecolorallocate($im, 96, 112, 124);
-        imagefilledrectangle($im, (int) ($w / 2 - 170), (int) ($h / 2 - 120), (int) ($w / 2 + 170), (int) ($h / 2 + 120), (int) imagecolorallocate($im, 241, 245, 247));
-        imagerectangle($im, (int) ($w / 2 - 170), (int) ($h / 2 - 120), (int) ($w / 2 + 170), (int) ($h / 2 + 120), $ink);
-        imagefilledellipse($im, (int) ($w / 2 - 70), (int) ($h / 2 - 40), 60, 60, $ink);
-        imagefilledpolygon($im, [(int) ($w / 2 - 150), (int) ($h / 2 + 100), (int) ($w / 2 - 20), (int) ($h / 2 - 10), (int) ($w / 2 + 60), (int) ($h / 2 + 60), (int) ($w / 2 + 100), (int) ($h / 2 + 20), (int) ($w / 2 + 150), (int) ($h / 2 + 100)], $ink);
+        $have = self::placeholderId();
+        if ($have) return $have;
         $dir = Package::tempDir();
-        $file = $dir . '/platzhalter.png';
-        imagepng($im, $file);
-        [$row] = Media::import($file, 'platzhalter.png', __('Platzhalter – Bild folgt'), ['credit' => 'KLXM Studio', 'license' => 'CC0', 'tags' => 'vorlage-platzhalter, demo',
+        $file = self::renderPlaceholder($dir . '/platzhalter.png');
+        if ($file === null) { Package::remove($dir); return 0; }
+        [$row] = Media::import($file, 'platzhalter.png', __('Platzhalter – Bild folgt'), ['credit' => 'KLXM Studio', 'license' => 'CC0', 'tags' => self::PLACEHOLDER_TAG . ', demo',
             'title' => __('Platzhalter – Bild folgt'), 'require_alt' => false]);
         Package::remove($dir);
         return $row ? (int) $row['id'] : 0;
+    }
+
+    /** ID des Platzhalterbilds dieser Website (0 = keins) */
+    public static function placeholderId(): int
+    {
+        return (int) app()->db->fetchValue("SELECT id FROM media WHERE tags LIKE :t AND deleted_at IS NULL ORDER BY id LIMIT 1", ['t' => '%' . self::PLACEHOLDER_TAG . '%']);
+    }
+
+    /** Platzhalterbild in den aktuellen Farben neu zeichnen (nach Palette::apply) – gleiche ID, Verwendungen bleiben */
+    public static function refreshPlaceholder(?array $values = null): void
+    {
+        $id = self::placeholderId();
+        if (!$id) return;
+        $dir = Package::tempDir();
+        if (($file = self::renderPlaceholder($dir . '/platzhalter.png', self::placeholderColor($values))) !== null) Media::replace($id, $file, 'platzhalter.png');
+        Package::remove($dir);
+    }
+
+    /** Farbe der Fläche: dunkle Abschnitte des Designs, sonst Akzent abgedunkelt – weiße Schrift ≥ 7:1 */
+    public static function placeholderColor(?array $values = null): string
+    {
+        $vals = $values ?? (\Core\Design::enabled() ? \Core\Design::values() : []);
+        $c = \Core\Design::color((string) ($vals['dark_section'] ?? '')) ?? (($a = \Core\Design::color((string) ($vals['accent'] ?? ''))) !== null ? \Core\Contrast::mix('#000000', $a, 55) : '#24323C');
+        return \Core\Design::readable($c, '#FFFFFF', 7);
+    }
+
+    /** PNG zeichnen (GD): Fläche $color, nach rechts oben leicht aufgehellt, feine Diagonalen – Ergebnis-Pfad oder null ohne GD */
+    public static function renderPlaceholder(string $file, ?string $color = null): ?string
+    {
+        if (!function_exists('imagecreatetruecolor')) return null;
+        $c = $color ?? self::placeholderColor();
+        // hellster Ton der Fläche: höchstens so hell, dass weiße Schrift ≥ 4,5:1 bleibt
+        $light = \Core\Design::readable(\Core\Contrast::mix('#FFFFFF', $c, 10), '#FFFFFF', 4.5);
+        $line = \Core\Design::readable(\Core\Contrast::mix('#FFFFFF', $c, 6), '#FFFFFF', 4.5);
+        $rgb = fn(string $hex) => array_map(fn($i) => (int) hexdec(substr(ltrim($hex, '#'), $i, 2)), [0, 2, 4]);
+        [$w, $h] = [1600, 1000];
+        $im = imagecreatetruecolor($w, $h);
+        [$r1, $g1, $b1] = $rgb($c);
+        [$r2, $g2, $b2] = $rgb($light);
+        for ($y = 0; $y < $h; $y += 4) {
+            $t = 1 - $y / $h;   // oben heller
+            imagefilledrectangle($im, 0, $y, $w, $y + 3, (int) imagecolorallocate($im, (int) round($r1 + ($r2 - $r1) * $t * 0.6), (int) round($g1 + ($g2 - $g1) * $t * 0.6), (int) round($b1 + ($b2 - $b1) * $t * 0.6)));
+        }
+        [$r3, $g3, $b3] = $rgb($line);
+        $lc = (int) imagecolorallocate($im, $r3, $g3, $b3);
+        imagesetthickness($im, 2);
+        for ($x = -$h; $x < $w; $x += 56) imageline($im, $x, $h, $x + $h, 0, $lc);
+        imagepng($im, $file);
+        return is_file($file) ? $file : null;
     }
 
     /** Werte der Platzhalter aus den Parametern (Name, Kurzname, Region, eigene Werte, Vorgaben der Vorlage) */
@@ -358,10 +405,11 @@ final class Apply
         foreach (Placeholders::KEYS as $key => [, , $setting]) {
             if ($setting !== '' && isset($values[$key]) && self::kitField($setting)) $app->settings->set($setting, $values[$key]);
         }
-        foreach (['legal_form' => 'org.legal_form', 'register' => 'org.register', 'region' => 'region.name'] as $s => $key) {
+        foreach (['legal_form' => 'org.legal_form', 'register' => 'org.register', 'region' => 'region.name', 'representatives' => 'org.representatives',
+            'responsible' => 'org.responsible'] as $s => $key) {
             if (isset($values[$key])) $app->settings->set('org.' . $s, $values[$key]);
         }
-        if (($c = \Core\Design::color($params['color'] ?? '')) !== null) QuickConfig::setAccent($c, (string) ($params['palette'] ?? 'balanced'));
+        if (($c = \Core\Design::color($params['color'] ?? '')) !== null) QuickConfig::setAccent($c, QuickConfig::palette((string) ($params['palette'] ?? '')));
         if (!empty($params['logo']) && is_file((string) $params['logo'])) QuickConfig::setLogo((string) $params['logo']);
         $open = Placeholders::applySite($values)['open'];
         // Angaben der Organisation ohne Wert: leer statt „{{org.short}}“ im Kopf – das Kit zeigt dann seinen Rückfall (z. B. den Namen);

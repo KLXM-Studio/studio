@@ -236,6 +236,7 @@ final class Export
         // ---------------------------------------------------------------- Medien: nur freie mit Urheber, sonst Platzhalter
         $mediaRows = [];
         $placeholderIds = [];
+        $creditLicense = [];   // Lizenz aus dem Urheberhinweis erkannt (Bericht)
         $mediaReport = [];   // Bilder, die Platzhalter werden – mit Grund (Bericht: so bekommt eine Vorlage echte Beispielbilder)
         foreach ($media as $id => $use) {
             $m = \Core\Media::find((int) $id);
@@ -253,12 +254,17 @@ final class Export
             $file = Package::cleanPath((string) $m['file']);
             if ($file === null) { $placeholderIds[] = (int) $id; continue; }
             $copies[$rel] = site()->mediaDir() . '/' . $file;
+            if (trim((string) $m['license']) === '') $creditLicense[] = '#' . (int) $id . ' ' . mb_strimwidth($anon->text((string) ($m['title'] ?: $m['original_name'] ?: $m['file'])), 0, 50, '…') . ' → ' . self::license($m);
             $mediaRows[] = ['id' => (int) $id, 'file' => $rel, 'name' => basename((string) ($m['original_name'] ?: $m['file'])), 'alt' => $anon->text((string) $m['alt']),
-                'title' => $anon->text((string) ($m['title'] ?? '')), 'credit' => (string) $m['credit'], 'license' => (string) $m['license'],
+                'title' => $anon->text((string) ($m['title'] ?? '')), 'credit' => (string) $m['credit'], 'license' => self::license($m),
                 'focus_x' => (int) ($m['focus_x'] ?? 50), 'focus_y' => (int) ($m['focus_y'] ?? 50), 'demo' => (bool) $use['demo']];
         }
         $report[] = 'Bilder: ' . count($mediaRows) . ' frei mit Urheber, ' . count($placeholderIds) . ' werden Platzhalter';
         array_push($report, ...self::mediaReportLines($mediaReport));
+        if ($creditLicense) {
+            $report[] = 'Lizenz aus dem Urheberhinweis erkannt (' . count($creditLicense) . ') – geht mit, bitte in der Quelle unter Medien → Rechte bestätigen:';
+            foreach (array_slice($creditLicense, 0, 25) as $l) $report[] = '  - ' . $l;
+        }
 
         // ---------------------------------------------------------------- Projekt-Hinweise (Kit-Guide der Website)
         $guide = 0;
@@ -346,8 +352,8 @@ final class Export
     public const IMPRINT = '<p><strong>{{org.name}}</strong><br>{{org.street}}<br>{{org.zip}} {{org.city}}</p>'
         . '<p>Telefon: {{org.phone}}<br>E-Mail: {{org.email}}</p>'
         . '<p>Rechtsform: {{org.legal_form}}<br>Registereintrag: {{org.register}}</p>'
-        . '<p>Vertreten durch: [# Vorstand bzw. Geschäftsführung ergänzen #]</p>'
-        . '<p>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: [# Name und Anschrift ergänzen #]</p>';
+        . '<p>Vertreten durch: {{org.representatives}}</p>'
+        . '<p>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: {{org.responsible}}</p>';
 
     /** Seite „Impressum“: erster Textblock (richtext) bekommt die Vorlage, weitere Textblöcke entfallen; andere Blöcke bleiben */
     private static function imprintTemplate(array $p): array
@@ -381,9 +387,16 @@ final class Export
         if (!$m || !empty($m['deleted_at']) || !is_file(\Core\Media::path($m))) return 'missing';
         if (!empty($m['pool_ref'])) return 'pool';
         $credit = trim((string) ($m['credit'] ?? '')) !== '';
-        $free = preg_match(self::FREE_LICENSE, (string) ($m['license'] ?? '')) === 1;
+        $free = preg_match(self::FREE_LICENSE, self::license($m)) === 1;
         if ($credit && $free) return null;
         return $credit ? 'license' : ($free ? 'credit' : 'both');
+    }
+
+    /** Lizenz eines Bildes: eingetragen, sonst aus dem Urheberhinweis erkannt („Image by … from Pixabay“ → Pixabay-Lizenz) */
+    public static function license(array $m): string
+    {
+        $l = trim((string) ($m['license'] ?? ''));
+        return $l !== '' ? $l : \Core\Media::licenseFromCredit((string) ($m['credit'] ?? ''));
     }
 
     /** Bericht der Platzhalter-Bilder: Gründe, welche mitgehen könnten und wie man sie markiert @return list<string> */
@@ -428,10 +441,11 @@ final class Export
             $hits = [];
             $found = array_keys(array_filter($needles, fn($k, $n) => mb_stripos($rest, (string) $n) !== false, ARRAY_FILTER_USE_BOTH));
             if ($found) $hits[] = [(string) $found[0], 'Angabe der Quelle als Wortteil oder in anderer Form („' . implode('“, „', array_map('strval', $found)) . '“) – bitte an die Organisation anpassen'];
-            // Zahlen neben der Region (Anzahl der Gruppen, Mitglieder, Statistik) – Jahreszahlen, Datum und Uhrzeit zählen nicht
+            // Zahlen neben der Region (Anzahl der Gruppen, Mitglieder, Statistik) – Jahreszahlen, Datum, Uhrzeit und Rechtsverweise
+            // („Art. 6 Abs. 1 lit. a DSGVO“, „§ 25 Abs. 1 TTDSG“) zählen nicht; Zahlwörter („in elf Regionen“, „Dutzende“) schon
             if (preg_match('~\{\{\s*region\.[a-z_]+\s*\}\}~', $plain)) {
-                $nums = preg_match_all('~(?<![\d.:/-])\d{2,}(?:[.,]\d+)?(?![\d.:/-]|\s*(?:Uhr|h\b))~u', $rest, $mm) ? array_filter($mm[0], fn($n) => !preg_match('~^(19|20)\d\d$~', $n)) : [];
-                if ($nums) $hits[] = [(string) reset($nums), 'Zahlen und Angaben zur Region (z. B. Anzahl, Statistik) – bitte für die eigene Organisation prüfen'];
+                $num = self::regionNumber($rest);
+                if ($num !== null) $hits[] = [$num, 'Zahlen und Angaben zur Region (z. B. Anzahl, Statistik) – bitte für die eigene Organisation prüfen'];
             }
             foreach ($hits as [$needle, $reason]) {
                 $pos = (int) mb_stripos($plain, $needle);
@@ -440,9 +454,20 @@ final class Export
                 if (!isset($items[$key])) $items[$key] = ['where' => $where, 'link' => $link, 'title' => $title, 'reason' => $reason, 'sample' => trim($sample)];
             }
         };
-        $walk = function (mixed $v, callable $fn) use (&$walk): void {
-            if (is_string($v)) { $fn($v); return; }
-            if (is_array($v)) foreach ($v as $x) $walk($x, $fn);
+        // Nur Texte prüfen: technische Felder (Adressen, IDs, Video, Verweise, Varianten) und Werte wie URLs oder Kennungen nicht;
+        // Felder mit Blöcken als JSON (Inhaltsblöcke eines Eintrags) werden entpackt – der Auszug zeigt Klartext statt JSON
+        $walk = function (mixed $v, callable $fn, string $key = '') use (&$walk): void {
+            if (self::technicalKey($key)) return;
+            if (is_string($v)) {
+                $t = ltrim($v);
+                if (($t[0] ?? '') === '[' || ($t[0] ?? '') === '{') {
+                    $d = json_decode($v, true);
+                    if (is_array($d)) { $walk($d, $fn, $key); return; }
+                }
+                if (!self::technicalValue($v)) $fn($v);
+                return;
+            }
+            if (is_array($v)) foreach ($v as $k => $x) $walk($x, $fn, is_string($k) ? $k : $key);
         };
         foreach ($pages as $p) {
             $where = 'page:' . (int) $p['id'];
@@ -461,6 +486,36 @@ final class Export
         foreach ($settings as $k => $v) $walk($v, fn(string $s) => $check($s, 'setting:' . $k, '/admin/settings', 'Einstellung ' . $k));
         ksort($counts);
         return [$counts, array_values($items)];
+    }
+
+    /** Zahlwörter (eins bis zwanzig, Zehner, hundert, tausend, Dutzend – auch gebeugt: „zweier“, „dreien“, „Dutzende“) */
+    public const NUMBER_WORDS = '~\b(?:(?:zwei|drei|vier)(?:en|er)?|eins|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|'
+        . 'zwanzig|dreißig|vierzig|fünfzig|sechzig|siebzig|achtzig|neunzig|hundert|hunderte|tausend|tausende|dutzend|dutzende|dutzenden)\b~iu';
+    /** Rechtsverweise, deren Ziffern keine Angaben der Organisation sind: Art. 6 Abs. 1 lit. a, § 25 Abs. 1, Nr. 3, Satz 2 */
+    private const LEGAL_REF = '~(?:\bArt(?:ikel|\.)?|§§?|\bAbs(?:atz|\.)|\bNr\.|\blit\.|\bSatz|\bS\.|\bZiff(?:er|\.)|\bUAbs\.)\s*\d+[a-z]?(?:\s*(?:,|und|bis|-|–)\s*\d+[a-z]?)*~u';
+
+    /** Erste Zahl bzw. erstes Zahlwort in einem Text zur Region – ohne Jahreszahlen, Datum, Uhrzeit, Rechtsverweise; null = keine */
+    public static function regionNumber(string $text): ?string
+    {
+        $t = (string) preg_replace(self::LEGAL_REF, ' ', $text);
+        if (preg_match_all('~(?<![\d.:/-])\d{2,}(?:[.,]\d+)?(?![\d.:/-]|\s*(?:Uhr|h\b))~u', $t, $mm)) {
+            foreach ($mm[0] as $n) if (!preg_match('~^(19|20)\d\d$~', $n)) return $n;
+        }
+        return preg_match(self::NUMBER_WORDS, $t, $w) ? $w[0] : null;
+    }
+
+    /** Feldname ohne Fließtext (Adresse, Kennung, Video, Verweis, Variante …) – nicht prüfen */
+    public static function technicalKey(string $key): bool
+    {
+        return $key !== '' && preg_match('~(?:^|_)(?:url|urls|link|href|src|id|ids|ref|key|handle|slug|table|tables|source|type|variant|ratio|anchor|embed|video|file|mime|icon|class|'
+            . 'color|layout|preset|format|lang|code|token|hash|uuid|time|tunes|field|fields|sort|filter|op|mode|style|fit|align|height|width|space|bg|overlay|motion|toggle)$~i', $key) === 1;
+    }
+
+    /** Wert ohne Fließtext: Adresse, interner Verweis, Kennung mit Ziffern ohne Leerzeichen (Video-ID, Hash) */
+    public static function technicalValue(string $v): bool
+    {
+        $v = trim($v);
+        return preg_match('~^(?:https?:|mailto:|tel:|page:|media:|entry:|data:|/|#)~i', $v) === 1 || (preg_match('~^\S+$~u', $v) === 1 && preg_match('~\d~', $v) === 1);
     }
 
     /** Verworfenes Paket entfernen: temporäres Verzeichnis bzw. das von write() angelegte Ziel (war leer oder neu) */

@@ -28,6 +28,9 @@ final class Placeholders
         'org.phone' => ['Telefon', 'org', 'phone'],
         'org.email' => ['E-Mail', 'org', 'email'],
         'org.domain' => ['Domain', 'org', ''],
+        // Impressum: Vertretungsberechtigte (Vorstand, Geschäftsführung) und inhaltlich Verantwortliche nach § 18 Abs. 2 MStV
+        'org.representatives' => ['Vertreten durch (z. B. Vorstand)', 'org', ''],
+        'org.responsible' => ['Inhaltlich verantwortlich (§ 18 Abs. 2 MStV)', 'org', ''],
         'region.name' => ['Region', 'region', 'region'],
         'region.short' => ['Region (Abkürzung)', 'region', ''],
     ];
@@ -105,6 +108,16 @@ final class Placeholders
             $v = (string) $values[$m[1]];
             return $html ? htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : $v;
         }, $s);
+    }
+
+    /** Redaktionsnotizen älterer Pakete im Impressum (Export::IMPRINT bis Format-Stand 2026-11-22) → Platzhalter, die die Schnelleinrichtung füllt */
+    public const LEGACY_IMPRINT = ['[# Vorstand bzw. Geschäftsführung ergänzen #]' => '{{org.representatives}}', '[# Name und Anschrift ergänzen #]' => '{{org.responsible}}'];
+
+    public static function legacyImprint(mixed $v): mixed
+    {
+        if (is_string($v)) return str_contains($v, '[#') ? strtr($v, self::LEGACY_IMPRINT) : $v;
+        if (is_array($v)) { foreach ($v as $k => $x) $v[$k] = self::legacyImprint($x); }
+        return $v;
     }
 
     /** Werte in einer beliebigen Struktur füllen (Strings rekursiv) */

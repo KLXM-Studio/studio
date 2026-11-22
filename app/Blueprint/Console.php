@@ -211,7 +211,7 @@ final class Console
         if ($s['open']) {
             self::out("Offene Punkte:\n");
             foreach (QuickConfig::checklist() as $c) self::out("  - {$c['title']}\n");
-            self::out("Schritt speichern: site:quick-config --step=org --name=\"…\" --short=… --city=… | --step=look --color=#0F766E --logo=datei.png\n"
+            self::out("Schritt speichern: site:quick-config --step=org --name=\"…\" --short=… --city=… --representatives=\"…\" --responsible=\"…\" | --step=look --color=#0F766E [--palette=calm] --logo=datei.png\n"
                . "  --step=region --region=Nordrhein-Westfalen | --step=network --join=glossar | --step=accounts --invite=a@example.org:editor\n"
                . "  --step=demo --demo=keep|remove | --step=mail --mode=network|smtp --host=… | --step=legal · Abschluss: --finish\n");
         }

@@ -1096,6 +1096,8 @@ final class Media
             . (isset($opt['path']) ? ' data-media-path="' . e((string) $opt['path']) . '"' : '')
             . ($ratio && !$fit && $m['mime'] !== Svg::MIME ? ' data-ratio="' . e($ratio) . '"' : '')
             . ($ratio ? ' data-frame="' . e($ratio) . '"' : '') : '';
+        // Platzhalterbild einer Website-Vorlage: Kennung – die Werkzeugleiste zeigt angemeldeten Personen „Bild fehlt“ (resources/js/_bar.js)
+        if (str_contains((string) ($m['tags'] ?? ''), \Core\Blueprint\Apply::PLACEHOLDER_TAG)) $edit .= ' data-cms-ph';
         $picClass = $fit ? ImageFit::pictureClass($fit, $m, $ratio) : '';
         $sources = '';
         // Infografik mit Design-Farben (Core\Graphics\Themed): Fassung mit den Farben dieser Website, dunkel über <source>
@@ -1735,6 +1737,16 @@ final class Media
         return $list ? ',' . implode(',', $list) . ',' : '';
     }
 
+    /** Bekannte Bildportale mit eigener freier Lizenz – Erkennung am Urheberhinweis („Image by … from Pixabay“, „Foto: … / Pexels“) */
+    public const CREDIT_LICENSES = ['pixabay' => 'Pixabay-Lizenz', 'pexels' => 'Pexels-Lizenz', 'unsplash' => 'Unsplash-Lizenz'];
+
+    /** Lizenz aus dem Urheberhinweis ableiten (Vorschlag in der Mediathek, Website-Vorlagen) – '' wenn kein bekanntes Portal genannt ist */
+    public static function licenseFromCredit(string $credit): string
+    {
+        foreach (self::CREDIT_LICENSES as $k => $l) if (preg_match('~\b' . $k . '(\.com)?\b~i', $credit)) return $l;
+        return '';
+    }
+
     public static function tagList(?string $stored): array
     {
         return array_values(array_filter(explode(',', (string) $stored), fn($v) => $v !== ''));
@@ -2151,7 +2163,8 @@ final class Media
             'original_size' => $isImg ? ImageEdit::stored($m)['orig'] ?? ['w' => (int) $m['width'], 'h' => (int) $m['height']] : null,
             'created_at' => $m['created_at'], 'updated_at' => $m['updated_at'] ?? null,
             // Rechte, Papierkorb, doppelt, zu groß
-            'license' => (string) ($m['license'] ?? ''), 'rights_until' => (string) ($m['rights_until'] ?? ''), 'consent' => (string) ($m['consent'] ?? ''),
+            'license' => (string) ($m['license'] ?? ''), 'license_hint' => trim((string) ($m['license'] ?? '')) === '' ? self::licenseFromCredit((string) ($m['credit'] ?? '')) : '',
+            'rights_until' => (string) ($m['rights_until'] ?? ''), 'consent' => (string) ($m['consent'] ?? ''),
             'deleted_at' => $m['deleted_at'] ?? null,
             'purge_at' => !empty($m['deleted_at']) && self::trashDays() > 0 ? date('Y-m-d', strtotime((string) $m['deleted_at'] . ' +' . self::trashDays() . ' days')) : null,
             'oversize' => (int) $m['size'] > self::largeBytes(),

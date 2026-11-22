@@ -27,8 +27,9 @@ final class Palette
         'calm' => ['Ruhig', 'Neutrale dunkle Abschnitte und Flächen, Farbe nur für Akzente.'],
         'contrast' => ['Hoher Kontrast', 'Sehr dunkle Abschnitte, kräftiger Akzent, gut lesbar auch bei Sonnenlicht.'],
     ];
-    /** Tokens, die eine Palette setzt (sofern das Kit sie hat) */
+    /** Tokens, die eine Palette setzt (sofern das Kit sie hat); dazu die Diagrammfarben chart_1 … chart_6 */
     public const TOKENS = ['accent', 'accent_strong', 'on_accent', 'highlight', 'secondary', 'on_secondary', 'surface', 'line', 'dark_section'];
+    public const CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'chart_5', 'chart_6'];
 
     public static function label(string $variant): string
     {
@@ -80,11 +81,12 @@ final class Palette
         $a = Design::readable($accent, $bg, 4.5);
         [$h, $s, $l] = self::hsl($a);
         // Stufen je Variante: Anteil Schwarz in dunklen Abschnitten, Tönung der Flächen/Linien/Hervorhebung, Lage der zweiten Farbe
-        [$darkMix, $surf, $line, $hi, $secShift, $secSat] = match ($variant) {
-            'vivid' => [55, 10, 24, 30, 150, 1.0],
-            'calm' => [90, 3, 10, 14, 0, 0.35],
-            'contrast' => [88, 4, 20, 22, 30, 0.9],
-            default => [78, 6, 16, 20, 32, 0.85],
+        // $darkL/$darkS: Helligkeit und Sättigungsfaktor der dunklen Abschnitte (HSL) – tief, aber mit erkennbarem Farbton
+        [$darkL, $darkS, $surf, $line, $hi, $secShift, $secSat] = match ($variant) {
+            'vivid' => [0.20, 1.15, 10, 24, 30, 150, 1.0],
+            'calm' => [0.16, 0.45, 3, 10, 14, 0, 0.35],
+            'contrast' => [0.13, 1.0, 4, 20, 22, 30, 0.9],
+            default => [0.17, 1.1, 6, 16, 20, 32, 0.85],
         };
         $out = [];
         $out['accent'] = $variant === 'contrast' ? Design::readable($a, $bg, 7) : $a;
@@ -96,7 +98,9 @@ final class Palette
         $out['on_secondary'] = Contrast::ratio('#FFFFFF', $out['secondary']) >= 4.5 ? '#FFFFFF' : '#111111';
         $out['surface'] = Contrast::mix($variant === 'calm' ? self::hex($h, 0.12, 0.5) : $a, '#FFFFFF', $surf);
         $out['line'] = Contrast::mix($variant === 'calm' ? self::hex($h, 0.12, 0.5) : $a, '#FFFFFF', $line);
-        $out['dark_section'] = Contrast::mix('#000000', $variant === 'calm' ? self::hex($h, 0.25, 0.3) : $a, $darkMix);
+        // Dunkle Abschnitte (Kopf/Fuß „dunkel“): Farbton und Sättigung der Akzentfarbe, Helligkeit 13–20 % – nicht fast schwarz;
+        // weiße Schrift darauf ≥ 7 (sonst etwas dunkler)
+        $out['dark_section'] = Design::readable(self::hex($h, min(1.0, max(0.25, $s) * $darkS), $darkL), '#FFFFFF', 7);
         // Dunkles Farbschema: Akzent aufgehellt, Flächen und Abschnitte als Tönung des dunklen Hintergrunds
         $out['accent@dark'] = Design::readable(Contrast::mix('#FFFFFF', $a, 45), $bgDark, 4.5);
         $out['accent_strong@dark'] = Contrast::mix('#FFFFFF', $a, 62);
@@ -106,8 +110,47 @@ final class Palette
         $out['on_secondary@dark'] = Contrast::ratio('#FFFFFF', $out['secondary@dark']) >= 4.5 ? '#FFFFFF' : '#111111';
         $out['surface@dark'] = Contrast::mix($a, $bgDark, $surf + 4);
         $out['line@dark'] = Contrast::mix($a, $bgDark, $line + 6);
-        $out['dark_section@dark'] = Contrast::mix($variant === 'calm' ? self::hex($h, 0.2, 0.4) : $a, $bgDark, $variant === 'vivid' ? 30 : 16);
+        $out['dark_section@dark'] = Design::readable(self::hex($h, min(1.0, max(0.25, $s) * $darkS * 0.9), max(0.11, $darkL - 0.03)), '#FFFFFF', 7);
+        return $out + self::charts($a, $out['secondary'], $variant, $bg, $bgDark);
+    }
+
+    /**
+     * Diagrammfarben chart_1 … chart_6 (Charts::designGroup): Reihe 1 = Akzent, Reihe 2 = zweite Farbe (wenn gut unterscheidbar), dann
+     * Farbtöne mit größtem Abstand zu den schon gewählten, abwechselnd heller/dunkler. Jede Farbe ≥ 3:1 gegen den Hintergrund (hell und
+     * dunkel, Grafiken nach WCAG 1.4.11). @return array<string, string>
+     */
+    public static function charts(string $accent, string $secondary, string $variant, string $bg = '#FFFFFF', string $bgDark = '#0B0C14'): array
+    {
+        [$h, $s] = self::hsl($accent);
+        $sat = $variant === 'calm' ? 0.42 : ($variant === 'vivid' ? 0.8 : 0.62);
+        $sat = max($sat, min(0.85, $s));
+        $colors = [$accent];
+        $hues = [$h];
+        if (self::distance($accent, $secondary) >= 0.18) { $colors[] = $secondary; $hues[] = self::hsl($secondary)[0]; }
+        while (count($colors) < 6) {
+            $best = 0.0;
+            $bestD = -1.0;
+            for ($o = 15; $o < 360; $o += 15) {
+                $cand = fmod($h + $o, 360);
+                $d = min(array_map(fn($u) => min(abs($cand - $u), 360 - abs($cand - $u)), $hues));
+                if ($d > $bestD) { $bestD = $d; $best = $cand; }
+            }
+            $hues[] = $best;
+            $colors[] = self::hex($best, $sat, count($colors) % 2 ? 0.36 : 0.46);
+        }
+        $out = [];
+        foreach ($colors as $i => $c) {
+            $out['chart_' . ($i + 1)] = Design::readable($c, $bg, 3);
+            $out['chart_' . ($i + 1) . '@dark'] = Design::readable(Contrast::mix('#FFFFFF', $c, $i < 2 ? 40 : 30), $bgDark, 3);
+        }
         return $out;
+    }
+
+    /** Abstand zweier Farben im RGB-Würfel (0–1,73) – grobes Maß für „unterscheidbar“ */
+    public static function distance(string $a, string $b): float
+    {
+        [$x, $y] = [Contrast::rgb($a), Contrast::rgb($b)];
+        return sqrt(($x[0] - $y[0]) ** 2 + ($x[1] - $y[1]) ** 2 + ($x[2] - $y[2]) ** 2);
     }
 
     /**
@@ -164,7 +207,7 @@ final class Palette
         foreach (array_keys(self::VARIANTS) as $v) {
             $p = self::forKit($accent, $v);
             $colors = [];
-            foreach (array_merge(self::TOKENS, array_map(fn($t) => $t . '@dark', self::TOKENS), ['background', 'ink', 'text', 'background@dark', 'ink@dark', 'text@dark']) as $k) {
+            foreach (array_merge(self::TOKENS, array_map(fn($t) => $t . '@dark', self::TOKENS), self::CHARTS, ['background', 'ink', 'text', 'background@dark', 'ink@dark', 'text@dark']) as $k) {
                 if (isset($p['values'][$k]) && is_string($p['values'][$k])) $colors[$k] = $p['values'][$k];
             }
             $out[] = ['key' => $v, 'label' => self::label($v), 'description' => self::description($v), 'colors' => $colors];
@@ -183,6 +226,7 @@ final class Palette
         if (!$p['set']) return ['color' => $accent, 'adjusted' => false, 'set' => [], 'fixed' => []];
         app()->settings->set('design.' . app()->theme->name, Design::normalize($p['values']));
         Design::override(null);
+        Apply::refreshPlaceholder($p['values']);   // Platzhalterbild in den neuen Farben (Werte direkt – Design::values() ist im Prozess zwischengespeichert)
         \Core\PageCache::clear();
         $final = (string) ($p['values']['accent'] ?? $accent);
         return ['color' => $final, 'adjusted' => strtoupper($final) !== strtoupper($accent), 'set' => $p['set'], 'fixed' => $p['fixed']];
@@ -209,8 +253,21 @@ final class Palette
                     Contrast::ratio($vals['surface'], '#2B2F3A') >= 4.5, Contrast::ratio($vals['accent@dark'], '#0B0C14') >= 4.5,
                     Contrast::ratio('#FFFFFF', $vals['dark_section@dark']) >= 7];
                 $eq("$c $v: Akzent, Schrift auf Akzent, zweite Farbe, dunkle Abschnitte, Fläche, dunkel", $r, [true, true, true, true, true, true, true]);
+                // Diagrammfarben: ≥ 3 gegen den Hintergrund (hell/dunkel), paarweise unterscheidbar
+                $ch = [];
+                $min = 9.0;
+                for ($i = 1; $i <= 6; $i++) {
+                    $ch[] = Contrast::ratio($vals['chart_' . $i], '#FFFFFF') >= 3 && Contrast::ratio($vals['chart_' . $i . '@dark'], '#0B0C14') >= 3;
+                    for ($j = 1; $j < $i; $j++) $min = min($min, self::distance($vals['chart_' . $i], $vals['chart_' . $j]));
+                }
+                $eq("$c $v: Diagrammfarben Kontrast", $ch, array_fill(0, 6, true));
+                $eq("$c $v: Diagrammfarben unterscheidbar", $min >= 0.12, true);
             }
         }
+        // Dunkle Abschnitte behalten den Farbton (Befund: #2F6B3A wurde #0A180D – wirkte schwarz)
+        $d = self::derive('#2F6B3A', 'balanced')['dark_section'];
+        [$dh, $ds, $dl] = self::hsl($d);
+        $eq('Dunkler Abschnitt grün, nicht schwarz', [abs($dh - self::hsl('#2F6B3A')[0]) < 12, $ds >= 0.3, $dl >= 0.12 && $dl <= 0.21, Contrast::ratio('#FFFFFF', $d) >= 7], [true, true, true, true]);
         $eq('Varianten unterscheiden sich', count(array_unique(array_map(fn($v) => self::derive('#0F766E', $v)['dark_section'], array_keys(self::VARIANTS)))), 4);
         return ['ok' => $ok, 'fails' => $fails];
     }

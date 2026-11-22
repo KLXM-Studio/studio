@@ -122,10 +122,11 @@ final class Anonymizer
         $s = (string) preg_replace_callback('~[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,}~', fn($m) => preg_match('~@(example\.(org|com|net)|[a-z0-9-]+\.(test|example|invalid))$~i', $m[0]) ? $m[0] : self::EMAIL, $s);
         $s = str_replace(['@{{org.domain}}', 'mailto:' . self::EMAIL], ['@example.org', 'mailto:' . self::EMAIL], $s);
         // IBAN (DE + 20 Ziffern, auch mit Leerzeichen) und andere Länder grob
-        $s = (string) preg_replace('~\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\b~', 'DE00 0000 0000 0000 0000 00', $s);
+        $s = (string) preg_replace('~\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\b~', "\x1FIBAN\x1F", $s);
         // Telefonnummern: +49 / 0 gefolgt von mindestens 6 Ziffern (Leerzeichen, /, -, Klammern erlaubt) – Jahreszahlen und Uhrzeiten nicht
         $s = (string) preg_replace_callback('~(?<![\w./-])(?:\+\d{2}[\s/-]?|\(0\d+\)\s?|0\d{2,5}[\s/-]?)(?:\d[\s/-]?){5,12}\d(?![\w.-])~', fn($m) => preg_match('~^\+49 30 1234567~', $m[0]) ? $m[0] : '+49 30 1234567', $s);
-        return $s;
+        // Beispiel-IBAN erst nach den Telefonnummern einsetzen (ihre Nullen sähen sonst wie eine Nummer aus)
+        return str_replace("\x1FIBAN\x1F", 'DE00 0000 0000 0000 0000 00', $s);
     }
 
     /** Strings einer Struktur säubern (JSON von Blöcken, Kombifeldern) */
@@ -285,6 +286,12 @@ final class Anonymizer
     public static function remapMedia(mixed $v, array $map, string $key = ''): mixed
     {
         if (!$map) return $v;
+        // Video, das nicht mitgeht (Platzhalter sind Bilder): Feld leeren und – ohne eigenes Bild – das Platzhalterbild zeigen,
+        // sonst bliebe z. B. der vollflächige Einstieg schwarz
+        if (is_array($v) && !array_is_list($v) && isset($v['video']) && is_numeric($v['video']) && (int) $v['video'] > 0 && !array_key_exists((int) $v['video'], $map)) {
+            $v['video'] = null;
+            if (array_key_exists('image', $v) && empty($v['image']) && !empty($map[0])) $v['image'] = (int) $map[0];
+        }
         if (is_array($v)) { foreach ($v as $k => $x) $v[$k] = self::remapMedia($x, $map, is_string($k) ? $k : $key); return $v; }
         if ($key !== '' && \Core\ContentSync::isMediaKey($key) && (is_int($v) || (is_string($v) && ctype_digit($v))) && (int) $v > 0) {
             $new = array_key_exists((int) $v, $map) ? (int) $map[(int) $v] : (int) ($map[0] ?? 0);

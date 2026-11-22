@@ -454,6 +454,33 @@ export function initToolbar() {
   initModes();
   initLang();
   setMode(mode);
+  markPlaceholders();
+}
+
+// ------------------------------------------------------------------ Platzhalterbilder (Website-Vorlagen) für Angemeldete kennzeichnen
+// Media::pictureOf setzt data-cms-ph; die Werkzeugleiste gibt es nur für angemeldete Personen – Besucher sehen nur die ruhige Fläche.
+// Hinweis im nächsten positionierten Vorfahren (offsetParent), Lage per CSSOM (CSP: keine style-Attribute im HTML).
+function markPlaceholders() {
+  const imgs = [...document.querySelectorAll('img[data-cms-ph]')];
+  if (!imgs.length) return;
+  const place = (img, tag) => {
+    const host = img.offsetParent;
+    if (!host) { tag.hidden = true; return; }
+    if (tag.parentNode !== host) host.append(tag);
+    tag.hidden = false;
+    tag.style.setProperty('top', (img.offsetTop + 8) + 'px');
+    tag.style.setProperty('left', (img.offsetLeft + 8) + 'px');
+  };
+  imgs.forEach(img => {
+    const tag = document.createElement('span');
+    tag.className = 'cms-ph-tag';
+    tag.textContent = t('Bild fehlt');
+    tag.title = t('Platzhalter der Website-Vorlage – bitte ein eigenes Bild wählen. Nur für angemeldete Personen sichtbar.');
+    for (const [k, v] of Object.entries({ position: 'absolute', 'z-index': '5', padding: '.2em .55em', 'border-radius': '.4em', font: '600 12px/1.4 system-ui, sans-serif',
+      background: 'rgba(17,17,17,.78)', color: '#fff', 'pointer-events': 'auto', 'max-width': 'calc(100% - 16px)' })) tag.style.setProperty(k, v);
+    place(img, tag);
+    if ('ResizeObserver' in window) new ResizeObserver(() => place(img, tag)).observe(img);
+  });
 }
 
 // ------------------------------------------------------------------ Seitenwechsel mit View Transitions (Kits mit @view-transition)

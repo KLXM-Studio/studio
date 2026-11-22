@@ -55,6 +55,8 @@ $custom = array_filter($placeholders, fn($p) => is_array($p) && ($p['step'] ?? '
         <?= $field('qc-city', 'city', __('Ort'), $org['city'], 'text', ['half' => true, 'auto' => 'address-level2']) ?>
         <?= $field('qc-phone', 'phone', __('Telefon'), $org['phone'], 'tel', ['half' => true, 'auto' => 'tel']) ?>
         <?= $field('qc-email', 'email', __('E-Mail'), $org['email'], 'email', ['half' => true, 'auto' => 'email']) ?>
+        <?= $field('qc-rep', 'representatives', __('Vertreten durch'), $org['representatives'], 'text', ['help' => __('Für das Impressum: vertretungsberechtigte Personen mit Funktion, z. B. „Erika Musterfrau (1. Vorsitzende), Max Mustermann (Kassenwart)“.')]) ?>
+        <?= $field('qc-resp', 'responsible', __('Inhaltlich verantwortlich (§ 18 Abs. 2 MStV)'), $org['responsible'], 'text', ['help' => __('Name und Anschrift der Person, die für die Inhalte verantwortlich ist.')]) ?>
         <?php foreach ($custom as $k => $p): ?>
         <?= $field('qc-ph-' . preg_replace('~[^a-z0-9]~', '-', (string) $k), 'ph[' . $k . ']', (string) ($p['label'] ?? $k), (string) ($values[$k] ?? $p['default'] ?? '')) ?>
         <?php endforeach; ?>

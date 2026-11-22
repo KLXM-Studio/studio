@@ -77,7 +77,8 @@ final class QuickConfig
 
     /** Felder des Schritts „Organisation“: Eingabe → Platzhalter */
     public const ORG_FIELDS = ['name' => 'org.name', 'short' => 'org.short', 'claim' => 'org.claim', 'legal_form' => 'org.legal_form', 'register' => 'org.register',
-        'street' => 'org.street', 'zip' => 'org.zip', 'city' => 'org.city', 'phone' => 'org.phone', 'email' => 'org.email'];
+        'street' => 'org.street', 'zip' => 'org.zip', 'city' => 'org.city', 'phone' => 'org.phone', 'email' => 'org.email',
+        'representatives' => 'org.representatives', 'responsible' => 'org.responsible'];
 
     public static function state(): array
     {
@@ -141,6 +142,14 @@ final class QuickConfig
         if (in_array($step, self::STEPS, true)) self::done($step, $values);
     }
 
+    /** Werte merken, ohne einen Schritt zu erledigen (Vorbelegung) */
+    public static function remember(array $values): void
+    {
+        $s = self::state();
+        $s['values'] = array_merge((array) $s['values'], $values);
+        self::save($s);
+    }
+
     /** Aufgabe aus der Vorlage anlegen (einmal je Titel, solange offen) */
     public static function addTask(string $title, string $body, string $link, array $actor): void
     {
@@ -182,7 +191,7 @@ final class QuickConfig
     {
         $values = [];
         $errors = [];
-        foreach (self::ORG_FIELDS as $f => $key) if (array_key_exists($f, $in)) $values[$key] = self::clean($in[$f], $f === 'claim' ? 240 : 191);
+        foreach (self::ORG_FIELDS as $f => $key) if (array_key_exists($f, $in)) $values[$key] = self::clean($in[$f], in_array($f, ['claim', 'representatives', 'responsible'], true) ? 240 : 191);
         // Vorbelegung aus site:create (--name, --short …) gilt, wenn die Eingabe das Feld nicht nennt – nicht erneut abfragen
         if (!array_key_exists('name', $in)) $values['org.name'] = (string) (self::values()['org.name'] ?? '');
         if (($values['org.name'] ?? '') === '') $errors['name'] = __('Bitte den Namen der Organisation angeben.');
@@ -211,7 +220,8 @@ final class QuickConfig
         if (trim((string) ($in['color'] ?? '')) !== '') {
             $c = \Core\Design::color($in['color']);
             if ($c === null) return ['errors' => ['color' => __('Bitte eine Farbe als #RRGGBB angeben.')], 'messages' => []];
-            $variant = isset(Palette::VARIANTS[(string) ($in['palette'] ?? '')]) ? (string) $in['palette'] : 'balanced';
+            // Palette: Eingabe, sonst die zuletzt gewählte (z. B. site:create --palette=calm), sonst „Ausgewogen“
+            $variant = self::palette((string) ($in['palette'] ?? ''));
             $r = self::setAccent($c, $variant);
             $msg[] = $r['adjusted'] ? __('Farben übernommen (Palette „{palette}“) – Akzent für gute Lesbarkeit angepasst ({color}).', ['palette' => Palette::label($variant), 'color' => $r['color']])
                 : __('Farben übernommen (Palette „{palette}“).', ['palette' => Palette::label($variant)]);
@@ -219,6 +229,13 @@ final class QuickConfig
         }
         self::done('look');
         return ['errors' => [], 'messages' => $msg ?: [__('Erscheinungsbild bleibt wie in der Vorlage.')]];
+    }
+
+    /** Gültige Palette: $given, sonst die gespeicherte (look.palette), sonst 'balanced' */
+    public static function palette(string $given = ''): string
+    {
+        foreach ([$given, (string) (self::values()['look.palette'] ?? '')] as $v) if (isset(Palette::VARIANTS[$v])) return $v;
+        return 'balanced';
     }
 
     /**
