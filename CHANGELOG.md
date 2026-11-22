@@ -29,6 +29,12 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Verknüpfungen auf Tabellen, die lokal bleiben (Regionalgruppen, Workshops), werden auf Wunsch (`data:share --local-fields=…`, Probelauf
   `--dry-run`, Häkchen in der Verwaltung) Zusatzfelder der teilenden Website – Werte bleiben, Filter „verknüpft mit dem aufgerufenen
   Eintrag“ und „In deiner Nähe“ wirken weiter, beim Aufheben kehren sie in die Spalte zurück.
+- **„In deiner Nähe“ ohne eigenen Kartenpunkt:** Einträge ohne Kartenfeld nehmen den Punkt eines verknüpften Eintrags (Termin →
+  Regionalgruppe) bzw. über den Filter `data.nearby_point` die Mitte ihres Gebiets aus einer Gebietskarte – nach der zuständigen Gruppe
+  erscheinen so auch die benachbarten. Hinweis im Block auf Gemeindedaten für Orte unterhalb der Kreisebene.
+- **Datenliste „Karten“ mit wenigen Treffern:** Die Karten behalten ihre Spaltenbreite (Raster `auto-fill` statt `auto-fit` in den Kits
+  fluid, essenz, foto, galerie, glas und nature; der Core tat es schon) – eine einzelne Karte wird nicht mehr über die ganze Breite gezogen.
+  Volle Reihen bleiben pixelgleich.
 - **Zusatzfelder überall wie Felder:** Feldauswahl im Block-Editor (Filter, Sortierung, Besucher-Filter, angezeigte Felder) mit
   „(nur diese Website)“, „Datensatz-Felder“ und Detailseite zeigen sie mit derselben Freigabe; Seitenleiste „Eintrag bearbeiten“ mit
   Zusatzfeldern und Weitergabe-Stufe (nur mit Veröffentlichungsrecht).

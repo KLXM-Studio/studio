@@ -33,7 +33,7 @@ final class Nearby
     {
         return [
             ['name' => 'nearby', 'label' => '„In deiner Nähe“: Besucher geben PLZ oder Ort ein', 'type' => 'bool', 'default' => false,
-                'help' => 'Zuerst Einträge des zuständigen Gebiets (z. B. Regionalgruppe über die Gebietskarte), dann im Umkreis. Ohne Eingabe wie gewohnt.'],
+                'help' => 'Zuerst Einträge des zuständigen Gebiets (z. B. Regionalgruppe über die Gebietskarte), dann im Umkreis. Ohne Eingabe wie gewohnt. Orte unterhalb der Kreisebene (Gemeinden) findet die Gebietskarte erst mit geladenen Gemeindedaten (Gebietskarten → Kartendaten).'],
             ['name' => 'nearby_km', 'label' => 'Umkreis (km)', 'type' => 'number', 'default' => 50, 'width' => 'half'],
             ['name' => 'nearby_mode', 'label' => 'Bei einer Eingabe', 'type' => 'select', 'default' => 'order', 'width' => 'half',
                 'options' => ['order' => 'Zuständige zuerst, dann im Umkreis', 'site' => 'Nur Einträge der zuständigen Website (Netzwerk)']],
@@ -93,8 +93,22 @@ final class Nearby
         return $res;
     }
 
-    /** Kartenpunkt eines Eintrags: erstes Kartenfeld, sonst der Ort aus der Liste (ort_ref → Orte-Tabelle) */
-    public static function point(array $t, array $e): ?array
+    /**
+     * Kartenpunkt eines Eintrags: erstes Kartenfeld, sonst der Ort aus der Liste (ort_ref → Orte-Tabelle), sonst über den Filter
+     * „data.nearby_point“ (z. B. Mitte des Gebiets einer Gebietskarte – Regionalgruppen ohne Kartenfeld), sonst der Punkt eines
+     * verknüpften Eintrags (z. B. Termin → Regionalgruppe; auch Zusatzfelder dieser Website, eine Stufe tief).
+     */
+    public static function point(array $t, array $e, int $depth = 0): ?array
+    {
+        static $memo = [];
+        $mk = site()->key . ':' . $t['handle'] . ':' . (int) ($e['id'] ?? 0) . ':' . $depth;
+        if (!empty($e['id']) && array_key_exists($mk, $memo)) return $memo[$mk];
+        $p = self::findPoint($t, $e, $depth);
+        if (!empty($e['id'])) $memo[$mk] = $p;
+        return $p;
+    }
+
+    private static function findPoint(array $t, array $e, int $depth): ?array
     {
         foreach ($t['fields'] as $f) {
             if ($f['type'] !== 'geo') continue;
@@ -102,7 +116,18 @@ final class Nearby
         }
         if (Kinds::isCalendar($t) && ($rf = Tables::field($t, 'ort_ref')) && (int) ($e['ort_ref'] ?? 0) > 0 && ($pt = Tables::findContent((string) ($rf['target'] ?? '')))) {
             $pl = Entries::find($pt, (int) $e['ort_ref']);
-            if ($pl) return self::point($pt, $pl);
+            if ($pl && ($p = self::point($pt, $pl, $depth + 1))) return $p;
+        }
+        if (!empty($e['id']) && Extensions::filters('data.nearby_point')) {
+            $p = Extensions::filter('data.nearby_point', null, ['table' => (string) $t['handle'], 'id' => (int) $e['id']]);
+            if (is_array($p) && isset($p['lat'], $p['lng']) && is_numeric($p['lat']) && is_numeric($p['lng'])) return ['lat' => (float) $p['lat'], 'lng' => (float) $p['lng']];
+        }
+        if ($depth > 0) return null;
+        foreach ([...$t['fields'], ...(array) ($t['site_fields'] ?? [])] as $f) {
+            if ($f['type'] !== 'relation' || (int) ($e[$f['name']] ?? 0) <= 0 || ($f['target'] ?? '') === $t['handle']) continue;
+            $tt = Tables::findContent((string) ($f['target'] ?? ''));
+            $te = $tt ? Entries::find($tt, (int) $e[$f['name']]) : null;
+            if ($te && ($p = self::point($tt, $te, $depth + 1))) return $p;
         }
         return null;
     }
