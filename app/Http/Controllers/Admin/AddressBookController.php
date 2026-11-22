@@ -60,10 +60,14 @@ final class AddressBookController extends AdminController
         if ($e && Tables::isShared($t) && Shared::isForeign($t, $e)) $e = null;
         $letter = in_array($r->str('buchstabe'), AddressBook::alphabet(), true) ? $r->str('buchstabe') : '';
         $offset = AddressBook::offset($rows, max(0, (int) $r->str('ab')), $letter, $e ? (int) $e['id'] : 0);
-        $pane = $e ? 'card' : ($r->str('ansicht') === 'listen' ? 'src' : 'names');
+        // Bearbeiten bzw. neuer Kontakt in der rechten Spalte (_ab_edit.php) – nur mit Recht, nicht für Einträge aus einer Quelle
+        $canEdit = can('data.edit', $t['handle']);
+        $edit = $canEdit && $e && $r->str('bearbeiten') === '1' && !\Core\Sources\Sources::origin($t, (int) $e['id']);
+        $new = $canEdit && !$e && $r->str('neu') === '1';
+        $pane = $e || $new ? 'card' : ($r->str('ansicht') === 'listen' ? 'src' : 'names');
         return ['t' => $t, 'lists' => $lists, 'list' => $list, 'filter' => $filter, 'q' => $q, 'rows' => $rows, 'e' => $e,
             'offset' => $offset, 'until' => (int) $r->str('bis') ?: null, 'select' => $r->str('auswahl') === '1', 'pane' => $pane, 'counts' => in_array($part, ['karte', 'mehr', 'namen'], true) ? [] : AddressBook::counts($t),
-            'books' => AddressBook::tables()];
+            'books' => AddressBook::tables(), 'edit' => $edit, 'new' => $new];
     }
 
     /** Kontakte einer Liste zuordnen bzw. aus ihr entfernen (Ziehen auf eine Liste, Auswahl, Karte); „Neue Liste“ legt sie vorher an */

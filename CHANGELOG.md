@@ -10,6 +10,12 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Adressbuch: Bearbeiten in der Karte, Löschen klar getrennt
+- „Bearbeiten“ und „neuer Kontakt“ öffnen das Formular in der rechten Spalte statt im klassischen Formular; Speichern führt zur Karte
+  zurück (Liste, Filter, Suche bleiben). „Alle Optionen“ öffnet das vollständige Formular.
+- Im Menü einer geöffneten Liste: „Aus Liste „…“ entfernen“; Löschen heißt „Kontakt löschen (ganz)“ und erklärt im Rückfrage-Dialog, dass
+  der Kontakt aus allen Listen und von der Website verschwindet.
+
 ### Mit einem Agentur-Hub verbinden per Einmal-Code
 - Benutzer & Rollen → Sicherheit (im Netzwerk: Netzwerk → Anmeldung & Domain) → „Mit einem Agentur-Hub verbinden“ erzeugt einen Code,
   15 Minuten gültig und einmal verwendbar. Im Hub eingefügt, richtet er Anmeldung über den Hub und Überwachung aller Websites ein –

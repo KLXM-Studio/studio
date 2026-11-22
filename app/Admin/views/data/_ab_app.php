@@ -115,6 +115,6 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
   </section>
 
   <article class="ab-card" data-ab-card aria-label="<?= e(__('Kontakt')) ?>">
-    <?= \Core\Theme::capture(__DIR__ . '/_ab_card.php', get_defined_vars()) ?>
+    <?= \Core\Theme::capture(__DIR__ . (!empty($edit) || !empty($new) ? '/_ab_edit.php' : '/_ab_card.php'), get_defined_vars()) ?>
   </article>
 </div>

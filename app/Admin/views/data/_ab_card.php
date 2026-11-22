@@ -36,7 +36,7 @@ $badge = function (array $r) use ($tg): string {
 <div class="ab-card__bar">
   <a class="ab-back" href="<?= e(AddressBook::link($t, $s, ['k' => ''])) ?>" data-ab-pane="names"><?= icon('arrow-left') ?> <span><?= e($scopeLabel) ?></span></a>
   <span class="ab-chip<?= $online ? ' is-public' : '' ?>"><?= icon($online ? 'globe' : 'lock') ?> <?= e($online ? __('Auf der Website') : ($e['status'] !== 'published' ? __('Entwurf') : __('Nur intern'))) ?></span>
-  <a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e($base . '/' . $id) ?>"><?= icon('pencil-simple') ?> <?= e(__('Bearbeiten')) ?></a>
+  <a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e(AddressBook::link($t, $s, ['bearbeiten' => '1'])) ?>"><?= icon('pencil-simple') ?> <?= e(__('Bearbeiten')) ?></a>
   <?php // Weitere Aktionen: Zeilenmenü wie in allen Listen (Core\RowMenu, AddressBook::menu) – ⋯, Rechtsklick auf die Karte, Umschalt+F10 ?>
   <?= \Core\RowMenu::render('ab-menu-' . $id, $name, AddressBook::menu($t, $s, $e), ['class' => 'ab-rowmenu']) ?>
 </div>

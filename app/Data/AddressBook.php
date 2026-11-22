@@ -211,12 +211,30 @@ final class AddressBook
         $id = (int) $e['id'];
         $back = self::link($t, $s, ['k' => (string) $id]);
         $items = \Core\RowMenu::forEntry($t, $e, [
+            'open' => self::link($t, $s, ['k' => (string) $id, 'bearbeiten' => '1']),   // Bearbeiten in der Karte (data/_ab_edit.php)
             'back' => '/admin/data/' . $t['handle'] . '?k=' . $id,
             'move' => Tables::field($t, 'listen') && self::lists($t) ? ['label' => __('Zu Liste hinzufügen'), 'href' => $back . '#ab-card-lists', 'icon' => 'list-bullets'] : null,
             'row' => \Core\Extensions::tableActions($t)['row'],
         ]);
-        foreach ($items as &$it) if (($it['key'] ?? '') === 'export') $it['label'] = __('vCard – alle Angaben');
+        $lists = self::lists($t);
+        $inList = ($s['list'] ?? '') !== '' && isset($lists[$s['list']]) && in_array((string) $s['list'], self::listKeys($e), true);
+        $title = trim(implode(' ', self::nameParts($e)));
+        foreach ($items as $i => &$it) {
+            if (($it['key'] ?? '') === 'export') $it['label'] = __('vCard – alle Angaben');
+            // Löschen entfernt den Kontakt ganz – deutlich von „Aus Liste entfernen“ abgrenzen
+            if (($it['key'] ?? '') === 'delete') {
+                $it['label'] = __('Kontakt löschen (ganz)');
+                $it['confirm'] = __('„{title}“ endgültig löschen? Der Kontakt verschwindet aus dem Adressbuch, aus allen Listen und von der Website. Nur aus einer Liste nehmen: „Aus Liste entfernen“.', ['title' => $title]);
+            }
+        }
         unset($it);
+        // In einer Liste: „Aus Liste entfernen“ im Menü (Gruppe wie „Zu Liste hinzufügen“) – der Kontakt selbst bleibt
+        if ($inList && can('data.edit', $t['handle'])) {
+            $rm = ['key' => 'move', 'icon' => 'x', 'label' => __('Aus Liste „{list}“ entfernen', ['list' => $lists[$s['list']]]), 'post' => url('/admin/data/' . $t['handle'] . '/listen'),
+                'fields' => ['ids' => [$id], 'liste' => (string) $s['list'], 'op' => 'remove', 'zurueck' => self::link($t, $s, ['k' => ''])]];
+            $pos = array_search('delete', array_column($items, 'key'), true);
+            array_splice($items, $pos === false ? count($items) : (int) $pos, 0, [$rm]);
+        }
         if (can('data.edit', $t['handle']) && self::online($t, $e)) {
             $items[] = ['key' => 'export', 'label' => __('vCard – nur öffentliche Angaben'), 'href' => url('/admin/data/' . $t['handle'] . '/vcard') . '?ids[]=' . $id . '&umfang=oeffentlich', 'download' => true];
         }

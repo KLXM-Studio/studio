@@ -14,7 +14,7 @@ $base = '/admin/data/' . $t['handle'];
       <a href="<?= e(url($base) . '?view=list') ?>"><?= icon('list-bullets') ?> <?= e(__('Tabelle')) ?></a>
     </nav>
     <?php if (can('data.schema') && \Core\Data\Shared::canSchema($t)): ?><a class="adm-btn adm-btn--ghost ab-hide-s" href="<?= e(url($base . '/schema')) ?>"><?= icon('gear-six') ?> <?= e(__('Felder')) ?></a><?php endif; ?>
-    <a class="adm-btn adm-btn--primary" href="<?= e(url($base . '/new')) ?>"><?= icon('plus') ?> <?= e($t['singular'] ?: __('Kontakt')) ?></a>
+    <a class="adm-btn adm-btn--primary" href="<?= e(\Core\Data\AddressBook::link($t, $s, ['k' => '', 'neu' => '1'])) ?>"><?= icon('plus') ?> <?= e($t['singular'] ?: __('Kontakt')) ?></a>
   </div>
 </header>
 <?= \Core\Theme::capture(__DIR__ . '/_ab_app.php', $s + ['s' => $s]) ?>

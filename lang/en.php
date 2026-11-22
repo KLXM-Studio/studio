@@ -10028,4 +10028,8 @@ return [
     'Mit einem Agentur-Hub verbinden' => 'Connect to an agency hub',
     'Neuen Code erzeugen' => 'Create new code',
     'Zuletzt verbunden mit {issuer} am {date} ({n} Websites überwacht).' => 'Last connected to {issuer} on {date} ({n} websites monitored).',
+    // Adressbuch: Bearbeiten in der Karte, Löschen vs. aus Liste entfernen
+    'Alle Optionen' => 'All options',
+    'Kontakt löschen (ganz)' => 'Delete contact (entirely)',
+    '„{title}“ endgültig löschen? Der Kontakt verschwindet aus dem Adressbuch, aus allen Listen und von der Website. Nur aus einer Liste nehmen: „Aus Liste entfernen“.' => 'Permanently delete “{title}”? The contact disappears from the address book, from all lists and from the website. To take it out of one list only: “Remove from list”.',
 ];

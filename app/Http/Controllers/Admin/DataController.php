@@ -806,6 +806,17 @@ final class DataController extends AdminController
         }
         $this->changed();
         $to = $r->str('then') === 'new' ? "/admin/data/$handle/new" : ($r->str('then') === 'list' ? "/admin/data/$handle" : "/admin/data/$handle/$newId");
+        // Aus dem Adressbuch (data/_ab_edit.php): zurück zur Karte mit Liste/Filter/Suche – nur Adressen dieser Tabelle
+        if ($r->str('then') === 'ab') {
+            $ab = $r->str('ab');
+            $p = (string) parse_url($ab, PHP_URL_PATH);
+            if ($p === url("/admin/data/$handle")) {
+                parse_str((string) parse_url($ab, PHP_URL_QUERY), $qs);
+                unset($qs['bearbeiten'], $qs['neu']);
+                $qs['k'] = (string) $newId;
+                return $this->back("/admin/data/$handle?" . http_build_query($qs), 'success', $t['singular'] . ' gespeichert.');
+            }
+        }
         $saved = Entries::find($t, (int) $newId);
         $plan = $saved && \Core\Schedule::pending($saved) ? ' ' . __('Geht automatisch online: {date}.', ['date' => fmt()->datetime($saved['online_from'])]) : '';
         return $this->back($to, 'success', $t['singular'] . ' gespeichert.' . $plan);
