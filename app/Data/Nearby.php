@@ -190,7 +190,8 @@ final class Nearby
         $q = $loc['q'] ?? '';
         static $n = 0;
         $id = 'nb-' . substr(hash('crc32b', (string) json_encode([$d['table'] ?? '', $d['title'] ?? ''])), 0, 6) . '-' . (++$n);   // je Block eindeutig (Landmarke über das Etikett)
-        $h = '<form class="nearby" method="get" role="search" aria-labelledby="' . e($id) . '-l">'
+        // Anker auf das Formular: nach dem Absenden (GET, neu geladen) steht die Seite wieder beim Ergebnis (scroll-margin im CSS)
+        $h = '<form class="nearby" id="' . e($id) . '-f" action="#' . e($id) . '-f" method="get" role="search" aria-labelledby="' . e($id) . '-l">'
             . '<label class="nearby__label" id="' . e($id) . '-l" for="' . e($id) . '">' . e(lt('In deiner Nähe – PLZ oder Ort')) . (!empty($d['title']) ? '<span class="nearby__sr"> (' . e(strip_emphasis((string) $d['title'])) . ')</span>' : '') . '</label>'
             . '<span class="nearby__row"><input class="nearby__input" id="' . e($id) . '" type="search" name="' . self::PARAM . '" value="' . e($q) . '" maxlength="80" autocomplete="postal-code" inputmode="text">'
             . '<button class="nearby__btn" type="submit">' . e(lt('Suchen')) . '</button></span></form>';
@@ -198,7 +199,7 @@ final class Nearby
             $where = $loc && $loc['label'] !== '' ? $loc['label'] : $q;
             $msg = !$loc || ($loc['point'] === null && !$loc['regions'] && !$loc['sites']) ? lt('„{ort}“ wurde nicht gefunden – es werden alle Einträge gezeigt.', ['ort' => $q])
                 : ($count ? lt('In der Nähe von {ort}: {n}', ['ort' => $where, 'n' => $count]) : lt('In der Nähe von {ort} gibt es keine Einträge.', ['ort' => $where]));
-            $h .= '<p class="nearby__note" role="status">' . e($msg) . ' <a href="?">' . e(lt('Alle zeigen')) . '</a></p>';
+            $h .= '<p class="nearby__note" role="status">' . e($msg) . ' <a href="?#' . e($id) . '-f">' . e(lt('Alle zeigen')) . '</a></p>';
         }
         return $h;
     }

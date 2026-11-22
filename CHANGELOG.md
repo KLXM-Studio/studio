@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### „In deiner Nähe“: nach der Suche beim Ergebnis bleiben
+- Das Formular trägt einen Anker (`action="#…"`, ebenso „Alle zeigen“): Nach dem Neuladen steht die Seite wieder beim Formular und
+  Ergebnis statt am Seitenanfang; `scroll-margin-top` berücksichtigt den festen Kopf.
+
 ### Einstieg als Slider: Pause nur über Bedienelementen
 - Der Slider hält nicht mehr an, sobald die Maus irgendwo über der Fläche liegt (bei bildschirmhohen Slidern lief er sonst praktisch nie),
   sondern nur über der Steuerung und über Links/Knöpfen der Folie – dazu wie bisher bei Tastatur-Fokus und mit dem Pause-Knopf.

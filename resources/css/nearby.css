@@ -1,6 +1,6 @@
 /* Netzwerk: „In deiner Nähe“ (Core\Data\Nearby::form – PLZ oder Ort, ohne JavaScript) und Herkunft geteilter Einträge bzw. von Terminen
    aus Abos (Core\Data\Network::originNote). Nur Kit-Vertrag --kit-*; ein Kit kann css/nearby.css mitbringen. Lädt über das Merkmal '@nearby'. */
-.nearby{display:grid;gap:.4rem;max-width:32rem;margin:0 0 1.25rem}
+.nearby{display:grid;gap:.4rem;max-width:32rem;margin:0 0 1.25rem;scroll-margin-top:var(--kit-header-h,6.5rem)}
 .nearby__label{font-weight:650;color:var(--kit-ink,currentColor)}
 .nearby__row{display:flex;flex-wrap:wrap;gap:.5rem}
 .nearby__input{flex:1 1 12rem;min-width:0;min-height:2.75rem;padding:.55rem .8rem;border:1px solid var(--kit-line-strong,color-mix(in srgb,currentColor 45%,transparent));border-radius:var(--kit-radius-sm,8px);background:var(--kit-bg,Canvas);color:var(--kit-ink,currentColor);font:inherit}
