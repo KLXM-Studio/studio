@@ -14,3 +14,5 @@ html.logo-over.hdr-sticky.is-scrolled{--lo-h:3.25rem}
 @media (prefers-reduced-motion:reduce){.logo-over .hdr .brand__logo img{transition:none}}
 /* Wissensbereich (Core\Data\Knowledge, .kn): Seitenleiste und Kapitel beginnen unter dem überhängenden Logo (Überhang ≈ --lo-h − Kopfhöhe) */
 .logo-over .kn{padding-block-start:max(clamp(1rem,3vw,2.5rem),calc(var(--lo-h) - 2.75rem))}
+/* … außer ein Einstieg über die volle Breite steht davor (Einstieg mit Quelle „Eintrag“, .kn--headed): er trägt den Überhang wie auf Seiten */
+.logo-over .kn.kn--headed{padding-block-start:clamp(1rem,3vw,2.5rem)}

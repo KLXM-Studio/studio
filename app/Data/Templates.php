@@ -20,7 +20,8 @@ final class Templates
     private const HANDLES = ['jobs' => 'stellen', 'applications' => 'bewerbungen', 'events' => 'termine', 'blog' => 'aktuelles', 'inbox' => 'anfragen', 'contacts' => 'kontakte', 'calendar' => 'kalender', 'places' => 'orte', 'knowledge' => 'wissen', 'hotspots' => 'interaktive_bilder'];
 
     /**
-     * Tabelle aus einer Vorlage anlegen bzw. ergänzen. $o: handle, name, slug (Adresse der Detailseiten, '' = keine),
+     * Tabelle aus einer Vorlage anlegen bzw. ergänzen. $o: handle, name, slug (Adresse der Detailseiten, '' = keine), hero (neue
+     * Detailseiten-Vorlage mit Kopf wie Seiten, Core\Blocks\EntryHero),
      * form (Stellen: Kurzname des Bewerbungs-Eingangs, 'new' = „bewerbungen“ anlegen/nutzen, 'none' = keiner), detail (bool),
      * list (bool). $log erhält eine Zeile je Schritt. Rückgabe: ['ok' => bool, 'table' => ?array]
      */
@@ -102,7 +103,7 @@ final class Templates
             elseif ($has) $log('= Detailseiten-Vorlage gibt es schon (Seite ' . $t['settings']['detail_page_id'] . ').');
             else {
                 $log($pfx . '+ Detailseiten-Vorlage' . ($isJobs ? ' (Kopf, Eckdaten, Beschreibung, Bewerbung #bewerben)' : ''));
-                if (!$dry && $t) DataController::makeTemplate(Tables::find($handle));
+                if (!$dry && $t) DataController::makeTemplate(Tables::find($handle), !empty($o['hero']));
             }
         }
         if (!$dry) PageCache::clear();

@@ -55,7 +55,8 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
         if ($f !== '_title' && ($h = Entries::html($t, $e, $f)) !== '') $meta[] = ($ea = entry_edit_attr($t, $e, $f, 'plain')) !== '' ? '<span' . $ea . '>' . $h . '</span>' : $h;
     } ?>
     <?php if ($meta): ?><p class="df-meta"><?= implode('<span class="df-sep" aria-hidden="true"> · </span>', $meta) ?></p><?php endif; ?>
-    <?php if (in_array('_title', $fields, true)): $ea = entry_edit_attr($t, $e, '_title'); ?><h1 class="h2 df-title"><?= $ea !== '' ? '<span' . $ea . '>' . e(Entries::title($t, $e)) . '</span>' : e(Entries::title($t, $e)) ?><span class="dot">.</span></h1><?php endif; ?>
+    <?php // Genau eine H1: steht schon ein Einstieg mit Quelle „Eintrag“ darüber (Core\Blocks\EntryHero), wird der Titel hier h2
+    if (in_array('_title', $fields, true)): $ea = entry_edit_attr($t, $e, '_title'); $hx = \Core\Blocks\EntryHero::$titled ? 'h2' : 'h1'; ?><<?= $hx ?> class="h2 df-title"><?= $ea !== '' ? '<span' . $ea . '>' . e(Entries::title($t, $e)) . '</span>' : e(Entries::title($t, $e)) ?><span class="dot">.</span></<?= $hx ?>><?php endif; ?>
     <?php // Termin-Aktionen bei Kalender-Tabellen (Core\Data\EventActions): „In den Kalender“, „Abonnieren“ – abschaltbar im Block
     if (($d['event_actions'] ?? true) !== false && \Core\Data\Calendar::enabled($t)) echo fragment('event-actions', ['table' => $t, 'entry' => $e,
         'options' => ['external' => (string) ($d['event_links'] ?? ''), 'class' => 'df-eva', 'when' => in_array('_when', $fields, true) ? 'unkeyed' : 'auto']]);   // _when im Kopf zeigt schon das Datum des Vorkommens ?>

@@ -15,6 +15,8 @@
 .kn-skip:focus{position:static;justify-self:start;padding:.4rem .7rem;border-radius:var(--kn-r);background:var(--kn-accent);color:var(--kit-on-accent,#fff)}
 .kn-num{font-variant-numeric:tabular-nums;color:var(--kn-muted);font-weight:600;margin-right:.15em}
 .kn-num--h1{color:var(--kn-accent)}
+/* Kapitelnummer als Plakette im Einstieg (Kopf über der vollen Breite, Dachzeile mit anderem Feld belegt) – außerhalb von .kn, darum ohne --kn-* */
+.kn-num--badge{display:inline-block;vertical-align:.35em;margin-inline-end:.45em;padding:.2em .6em;border:1px solid currentColor;border-radius:999px;font-size:max(.8rem,.32em);line-height:1.2;letter-spacing:.02em;color:inherit;opacity:.9}
 
 /* Seitenleiste */
 .kn-side{display:flex;flex-direction:column;gap:1rem;min-width:0;font-size:.95rem}

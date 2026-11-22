@@ -112,6 +112,8 @@ final class Theme
         if (VideoLinks::on()) {
             foreach ($this->blocks as $type => $b) $this->blocks[$type]['fields'] = VideoLinks::blockFields((array) ($b['fields'] ?? []));
         }
+        // Einstieg mit Quelle „Felder des Eintrags“ (Core\Blocks\EntryHero): Felder „Quelle“ + Zuordnung am Hero jedes Kits (mit Titel und Bild)
+        if (isset($this->blocks['hero'])) $this->blocks['hero'] = Blocks\EntryHero::decorate($this->blocks['hero']);
         // Listen-Vorlagen (Core\Blocks\ListTemplates): Feld „Vorlage“ für Blöcke mit 'list_template' => true (Kern-Datenliste, Kopien in Kits)
         foreach ($this->blocks as $type => $b) {
             if (Blocks\ListTemplates::supports($b)) $this->blocks[$type] = Blocks\ListTemplates::decorate($b, (string) $type);
@@ -655,6 +657,11 @@ final class Theme
             $data['variant'] = array_key_first($def['variants']);
         }
         $tunes = $this->sanitizeTunes($b['tunes']['section'] ?? [], $def);
+        // Einstieg mit Quelle „Felder des Eintrags“: Bild, Titel, Dachzeile, Text aus dem aufgerufenen Eintrag (Core\Blocks\EntryHero) –
+        // Kit-Renderer bekommen normale Blockdaten
+        if (app()->entry && ($data['source'] ?? '') === Blocks\EntryHero::SOURCE) {
+            $data = Blocks\EntryHero::apply($data, $def, (bool) $tunes['visible']);
+        }
         return new Block((string) ($b['id'] ?? uniqid()), $def['type'], $data, $tunes, $def, $prev);
     }
 

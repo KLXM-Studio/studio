@@ -399,7 +399,7 @@ final class DataController extends AdminController
             return $this->back('/admin/data/' . $def['handle'] . '/schema', 'success', __('Eingang „{name}“ angelegt. Formular mit dem Block „Formular (Datentabelle)“ auf einer Seite einfügen – eingegangene Anfragen lesen Sie im „Eingang“.', ['name' => $def['name']]));
         }
         if ($r->str('with_template') === '1' && $def['settings']['route'] !== '') {
-            $this->makeTemplate($t);
+            $this->makeTemplate($t, $r->str('with_hero') === '1');
         }
         return $this->back('/admin/data/' . $def['handle'], 'success', 'Tabelle „' . $def['name'] . '“ angelegt. Jetzt den ersten Eintrag anlegen.');
     }
@@ -519,10 +519,14 @@ final class DataController extends AdminController
         return Response::redirect((string) Entries::url($t, $first) . '?edit=1');
     }
 
-    public static function makeTemplate(array $t): int
+    /**
+     * Detailseiten-Vorlage einer Tabelle anlegen. $hero („Kopf wie Seiten“, nur neue Vorlagen): Einstieg des Kits mit Quelle
+     * „Felder des Eintrags“ (Core\Blocks\EntryHero) statt des Kopfs aus „Datensatz-Felder“ – Stellen und Adressbuch behalten ihre Vorlage.
+     */
+    public static function makeTemplate(array $t, bool $hero = false): int
     {
         if (\Core\Data\Jobs::is($t)) return \Core\Data\Jobs::makeTemplate($t);   // Stellen: Eckdaten + Bewerbungsformular
-        if (\Core\Data\Knowledge::is($t)) return \Core\Data\Knowledge::makeTemplate($t);   // Wissen: Kopf, Anreißer, Inhaltsblöcke (Rahmen: Knowledge::frame)
+        if (\Core\Data\Knowledge::is($t)) return \Core\Data\Knowledge::makeTemplate($t, $hero);   // Wissen: Kopf, Anreißer, Inhaltsblöcke (Rahmen: Knowledge::frame)
         // Adressbuch (Core\Data\Kinds): Porträt mit allen Feldern – Foto, Funktion, Kontakt-Knöpfe aus freigegebenen Angaben, Vita …
         if (\Core\Data\Kinds::isContacts($t)) {
             $id = Pages::create(['slug' => '_vorlage-' . $t['handle'], 'title' => $t['name'] . ' – Detailseite', 'type' => 'template',
@@ -554,6 +558,22 @@ final class DataController extends AdminController
             ['id' => bin2hex(random_bytes(5)), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => $body, 'ratio' => '16:9'],
                 'tunes' => ['section' => ['spaceTop' => 'none']]],
         ];
+        // „Kopf wie Seiten“: Einstieg mit Bild, Titel, Dachzeile (Kategorie bzw. Termin) und Beschreibung aus dem Eintrag; darunter bei
+        // Kalendern Ort + Termin-Aktionen (Kopf ohne Titel und Bild), dann die übrigen Felder mit dem Link zur Übersicht
+        if ($hero && ($hb = \Core\Blocks\EntryHero::templateBlock($t))) {
+            $desc = (string) $st['description_field'];
+            $rest = array_values(array_filter($body, fn($n) => !in_array($n, [$h . $desc, $cal && $cal['location'] !== '' ? $h . $cal['location'] : ''], true)));
+            $back = ['back_label' => 'Zur Übersicht', 'back_link' => '/' . $st['route']];
+            $blocks = [$hb];
+            if ($cal) {
+                $meta = array_values(array_filter([$cal['location'] !== '' ? $h . $cal['location'] : null]));
+                $blocks[] = ['id' => bin2hex(random_bytes(5)), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'head', 'fields' => $meta ?: [$h . '_when']] + $back,
+                    'tunes' => ['section' => ['spaceBottom' => 'small']]];
+                $back = [];
+            }
+            $blocks[] = ['id' => bin2hex(random_bytes(5)), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => $rest, 'ratio' => '16:9'] + $back]
+                + ($cal ? ['tunes' => ['section' => ['spaceTop' => 'none']]] : []);
+        }
         $id = Pages::create(['slug' => '_vorlage-' . $t['handle'], 'title' => $t['name'] . ' – Detailseite', 'type' => 'template',
             'template_for' => $t['handle'], 'status' => 'published', 'noindex' => 0], Pages::sanitizeBlocks($blocks));
         Tables::setDetailPage($t, $id);   // geteilte Tabellen: Vorlage gehört dieser Website

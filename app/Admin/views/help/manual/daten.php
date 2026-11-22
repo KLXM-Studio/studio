@@ -102,6 +102,20 @@
     <li>Es werden nur passende Felder angeboten (für ein Bildfeld nur Bilder, für ein Datum nur Datumsfelder). Verknüpfte Stellen sind in der Vorschau gestrichelt umrandet.</li>
     <li>Nochmals auf <b><?= icon('link', ['label' => 'Kette']) ?></b> klicken hebt die Verknüpfung auf – dann gilt wieder der fest eingetragene Inhalt.</li>
   </ol>
+  <h4 id="kopf-wie-seiten">Kopf wie auf Seiten: Einstieg mit „Felder des Eintrags“</h4>
+  <p>Detailseiten von Neuigkeiten, Terminen, Workshops, Wissens-Kapiteln usw. können denselben großen Einstieg bekommen wie normale Seiten – Bild über die volle Breite, Titel und Anreißer darauf, mit allen Varianten des Kits (z. B. vollflächig, kompakt) und Überlagerungen wie „Verlauf von unten“.</p>
+  <ol class="doc-steps">
+    <li>In der Vorlage den Block <b>Einstieg (Hero)</b> als ersten Block einfügen und anklicken.</li>
+    <li>Unter <b>Quelle</b> „Felder des Eintrags“ wählen. Ohne weitere Angaben kommen <b>Bild</b> aus dem Bildfeld der Tabelle, <b>Titel (H1)</b> aus dem Titel, <b>Dachzeile</b> automatisch (Kapitelnummer im Wissensbereich, Datum und Uhrzeit bei Kalendern, sonst Kategorie bzw. Bereich) und <b>Text</b> aus dem Beschreibungsfeld (z. B. Teaser oder Anreißer).</li>
+    <li>Jede Angabe lässt sich ändern: „Bild aus“, „Titel (H1) aus“, „Dachzeile aus“, „Text aus“ – oder „– nichts –“. Optional kommt ein <b>Button</b> aus einem Link-Feld des Eintrags (ist es leer, entfällt der Button).</li>
+    <li>Variante, Abdunkelung, Höhe usw. wählen Sie wie bei jedem Einstieg. Den alten Kopf (Block „Datensatz-Felder“ in der Darstellung „Kopf“) entfernen – oder ihn ohne Titel stehen lassen, z. B. für Ort und „In den Kalender“.</li>
+  </ol>
+  <ul>
+    <li><b>Ohne Bild</b> im Eintrag erscheint automatisch die schlichte Variante „kompakt“ – keine leere Bildfläche. Fehlt ein Feld (leer, gelöscht), bleibt die Stelle einfach leer.</li>
+    <li>Der Fokuspunkt des Bildes aus der Mediathek gilt wie überall.</li>
+    <li>Titel und Text lassen sich auf der Detailseite direkt im Einstieg ändern (wie andere Felder des Eintrags), dazu „Eintrag bearbeiten“ in der Leiste.</li>
+    <li>Neue Tabellen: Im Assistenten bzw. beim Anlegen „<b>Detailseiten mit Kopf wie Seiten</b>“ einschalten – die Vorlage beginnt dann gleich mit diesem Einstieg. Bestehende Vorlagen bleiben, wie sie sind.</li>
+  </ul>
   <ul>
     <li>Block <b>Datensatz-Felder</b>: gibt mehrere Felder auf einmal aus (Kopf, Fließtext, Steckbrief).</li>
     <li>Block <b>Vor / Zurück</b>: Links zum vorherigen und nächsten Eintrag in der Reihenfolge der Tabelle (z. B. „älterer / neuerer Beitrag“), Beschriftungen frei wählbar.</li>

@@ -217,9 +217,8 @@ final class SiteController
             $app->editing = false;
             $app->contentSlot = true;
             $app->entryEdit = true;
-            $full = $theme->renderBlocks($blocks);
             // Wissensbereich: Kapitel-Layout auch beim Bearbeiten (Seitenleiste inaktiv, ohne Suche) – kein Sprung zwischen Ansehen und Bearbeiten
-            if (\Core\Data\Knowledge::is($ctx['table'])) $full = \Core\Data\Knowledge::frame($full, $ctx['table'], $ctx['entry'], true);
+            $full = \Core\Data\Knowledge::is($ctx['table']) ? \Core\Data\Knowledge::render($theme, $blocks, $ctx['table'], $ctx['entry'], true) : $theme->renderBlocks($blocks);
             $app->contentSlot = false;
             $app->entryEdit = false;
             $app->editing = true;
@@ -238,11 +237,11 @@ final class SiteController
             $editor = ['page' => $page, 'blocks' => $blocks, 'previews' => $previews];
             $content = '';
         } else {
-            $content = $theme->renderBlocks($blocks);
+            // Wissensbereich (Tabellenart knowledge, Core\Data\Knowledge): Seitenleiste mit Kapiteln, Abschnitte, Vor/Zurück um den Inhalt
+            // (Einstieg mit Quelle „Eintrag“ als erster Block: über die volle Breite davor)
+            $content = !$error && \Core\Data\Knowledge::applies() ? \Core\Data\Knowledge::render($theme, $blocks, $ctx['table'], $ctx['entry']) : $theme->renderBlocks($blocks);
         }
-        // Wissensbereich (Tabellenart knowledge, Core\Data\Knowledge): Seitenleiste mit Kapiteln, Abschnitte, Vor/Zurück um den Inhalt
         $knowledge = !$error && \Core\Data\Knowledge::applies();
-        if ($knowledge) $content = \Core\Data\Knowledge::frame($content, $ctx['table'], $ctx['entry']);
         $types = $app->editing ? null : [...self::types($blocks), ...($knowledge ? ['@knowledge'] : [])];
 
         // Angemeldet auf der Website unterwegs: „online“ mit Ort (Core\Presence::ONLINE) – Besucher nie

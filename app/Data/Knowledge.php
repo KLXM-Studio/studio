@@ -106,11 +106,15 @@ final class Knowledge
         return self::refUrl($t, $e) ?? Entries::href($t, $e);
     }
 
-    /** Detailseiten-Vorlage: Kopf (Bereich, Titel), Anreißer, Inhaltsblöcke – Seitenleiste & Co. legt frame() darum */
-    public static function makeTemplate(array $t): int
+    /**
+     * Detailseiten-Vorlage: Kopf (Bereich, Titel), Anreißer, Inhaltsblöcke – Seitenleiste & Co. legt frame() darum.
+     * $hero („Kopf wie Seiten“): Einstieg mit Quelle „Eintrag“ (Bild, Titel, Kapitelnummer als Dachzeile, Anreißer) über die volle Breite.
+     */
+    public static function makeTemplate(array $t, bool $hero = false): int
     {
         $id = fn() => bin2hex(random_bytes(5));
-        $blocks = [
+        $hb = $hero ? \Core\Blocks\EntryHero::templateBlock($t) : null;
+        $blocks = $hb ? [$hb, ['id' => $id(), 'type' => 'entry_blocks', 'data' => ['table' => $t['handle'], 'field' => $t['handle'] . '.inhalt']]] : [
             ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'head', 'fields' => [$t['handle'] . '._title', $t['handle'] . '.bereich', $t['handle'] . '.bild']],
                 'tunes' => ['section' => ['spaceBottom' => 'small']]],
             ['id' => $id(), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => [$t['handle'] . '.anreisser']],
@@ -298,10 +302,34 @@ final class Knowledge
     }
 
     /**
-     * Rahmen um den Inhalt der Detailseite: Seitenleiste (Suche, Kapitel), Brotkrumen, „In diesem Kapitel“, Fuß mit Schlagworten,
-     * Begriffen, verwandten Kapiteln und Vor/Zurück.
+     * Blöcke der Detailseiten-Vorlage rendern und rahmen (SiteController::render). Beginnt die Vorlage mit einem Einstieg mit Quelle
+     * „Felder des Eintrags“ (Core\Blocks\EntryHero::leadIndex), steht er über die volle Breite vor dem Rahmen – Seitenleiste,
+     * Brotkrumen und Kapiteltext beginnen darunter.
      */
-    public static function frame(string $content, array $t, array $e, bool $editing = false): string
+    public static function render(\Core\Theme $theme, array $blocks, array $t, array $e, bool $editing = false): string
+    {
+        $blocks = array_values($blocks);
+        $i = \Core\Blocks\EntryHero::leadIndex($blocks);
+        if ($i === null) return self::frame($theme->renderBlocks($blocks), $t, $e, $editing);
+        $head = $theme->renderBlocks(array_slice($blocks, 0, $i + 1));
+        // Kapitelnummer: steht sie nicht schon als Dachzeile im Einstieg (Dachzeile mit einem Feld belegt oder „nichts“), als dezente
+        // Plakette vor dem Titel (.kn-num--badge) – nie groß wie ohne Einstieg
+        $num = self::config($t)['numbers'] ? (string) (self::tree($t)['nodes'][(int) $e['id']]['number'] ?? '') : '';
+        $src = \Core\Blocks\EntryHero::mapping($t, (array) ($blocks[$i]['data'] ?? []))['eyebrow'];
+        if ($num !== '' && $src !== '_chapter') {
+            $badge = '<span class="kn-num kn-num--badge"><span class="kn-sr">' . e(lt('Kapitel')) . ' </span>' . e($num) . '</span> ';
+            $head = (string) preg_replace('~(<h1\b[^>]*>)~i', '$1' . self::protect($badge), $head, 1);
+            $head = self::unprotect($head);
+        }
+        return self::frame($theme->renderBlocks(array_slice($blocks, $i + 1)), $t, $e, $editing, $head);
+    }
+
+    /**
+     * Rahmen um den Inhalt der Detailseite: Seitenleiste (Suche, Kapitel), Brotkrumen, „In diesem Kapitel“, Fuß mit Schlagworten,
+     * Begriffen, verwandten Kapiteln und Vor/Zurück. $head: Einstieg über die volle Breite davor (Kapitelnummer steht dann in
+     * seiner Dachzeile, nicht vor der H1; Klasse kn--headed).
+     */
+    public static function frame(string $content, array $t, array $e, bool $editing = false, string $head = ''): string
     {
         self::$framed = true;
         $cfg = self::config($t);
@@ -311,7 +339,7 @@ final class Knowledge
         $num = $cfg['numbers'] && $node ? $node['number'] : '';
         [$content, $sections] = self::sections($content);
         self::$sections = $sections;
-        $content = self::numberHeading($content, $num);
+        if ($head === '') $content = self::numberHeading($content, $num);
         $layout = $cfg['layout'];
         $handbook = in_array($layout, ['handbook', 'handbook_menu'], true);
         $overview = self::overviewUrl($t);
@@ -390,7 +418,7 @@ final class Knowledge
             : '';
         $toggle = '<button class="kn-toggle" type="button" data-kn-toggle aria-expanded="false" aria-controls="' . e($uid) . '-side" hidden>'
             . icon('list', ['class' => 'kn-ico']) . '<span>' . e(lt('Kapitel')) . '</span></button>';
-        return '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . ($editing ? ' kn--editing' : '') . '"' . ($editing ? '' : ' data-kn') . '>'
+        return $head . '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . ($editing ? ' kn--editing' : '') . ($head !== '' ? ' kn--headed' : '') . '"' . ($editing ? '' : ' data-kn') . '>'
             . ($editing ? '' : '<a class="kn-skip" href="#' . e($uid) . '-text">' . e(lt('Zum Kapiteltext springen')) . '</a>' . $toggle)
             . $side
             . '<div class="kn-main" id="' . e($uid) . '-text" tabindex="-1">' . $crumbs . '<div class="kn-content">' . $content . '</div>' . $foot . '</div>'

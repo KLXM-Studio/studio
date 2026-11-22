@@ -214,9 +214,11 @@
  *                                                     Kapitel mit Oberkapitel und Reihenfolge, Seiten offline ins Archiv, Links und 301-
  *                                                     Weiterleitungen, Datenliste „Kapitel“ auf der Startseite (Standard: Probelauf);
  *                                                     --keep: Seiten bleiben, Kapitel vom Typ „Verweis“; --blocks: erlaubte Blöcke beim Anlegen
+ *   hero:selftest                                     Selbsttest Einstieg mit Quelle „Felder des Eintrags“: Werte, fehlendes Bild/Felder, eine H1,
+ *                                                     Bestand, Vorlage „Kopf wie Seiten“, Wissensbereich mit Kopf über der Seitenleiste
  *   knowledge:selftest                                Selbsttest Wissensbereich: Kapitelbaum, Nummern, Abschnitte, Ansicht (Layout-Modi), Suche mit
  *                                                     Auszug, Glossar-Treffer, Mehrfach-Filter, Schlagworte, data:import-pages mit Zurückdrehen
- *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
+ *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page [--hero]]
  *                 [--with-list-page] [--dry-run]     Tabelle aus Vorlage anlegen bzw. ergänzen (wie „Neue Tabelle aus Vorlage“; wiederholbar):
  *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), knowledge (Wissen), jobs (Stellenangebote, Google for Jobs) + Eingang
  *                                                     „Bewerbungen“, faq, inbox, applications
@@ -1693,6 +1695,13 @@ switch ($cmd) {
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         break;
 
+    case 'hero:selftest':
+        // Einstieg mit Quelle „Felder des Eintrags“ (Core\Blocks\EntryHero) – vorübergehende Tabellen und Seiten
+        $res = Core\Blocks\EntryHeroSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
     case 'knowledge:selftest':
         $res = Core\Data\Knowledge::selftest();
         $db = Core\Data\KnowledgeSelfTest::run();   // mit vorübergehender Tabelle und Seiten
@@ -1705,11 +1714,11 @@ switch ($cmd) {
         // Tabelle aus Vorlage (Core\Data\Templates::install) – vorhandene Tabelle bleibt, fehlende Teile werden ergänzt
         $preset = (string) ($args[0] ?? '');
         if ($preset === '' || str_starts_with($preset, '--')) {
-            fwrite(STDERR, "Aufruf: data:template <vorlage> [--handle=…] [--name=\"…\"] [--slug=…] [--form=…] [--with-detail-page] [--with-list-page] [--dry-run]\n"
+            fwrite(STDERR, "Aufruf: data:template <vorlage> [--handle=…] [--name=\"…\"] [--slug=…] [--form=…] [--with-detail-page [--hero]] [--with-list-page] [--dry-run]\n"
                 . 'Vorlagen: ' . implode(', ', array_keys(Core\Http\Controllers\Admin\DataController::presets())) . "\n");
             exit(1);
         }
-        $o = ['detail' => in_array('--with-detail-page', $args, true), 'list' => in_array('--with-list-page', $args, true)];
+        $o = ['detail' => in_array('--with-detail-page', $args, true), 'list' => in_array('--with-list-page', $args, true), 'hero' => in_array('--hero', $args, true)];
         foreach ($args as $a) if (preg_match('~^--(handle|name|slug|form)=(.*)$~s', $a, $m)) $o[$m[1]] = $m[2];
         $dry = in_array('--dry-run', $args, true);
         $res = Core\Data\Templates::install($preset, $o, fn(string $l) => print($l . "\n"), $dry);

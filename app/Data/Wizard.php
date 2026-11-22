@@ -12,7 +12,7 @@ use Core\Http\Controllers\Admin\DataController;
  *
  * Zustand: purpose, preset ('' = leer beginnen, '_ai' = Vorschlag von KLXM AI), kind (content|inbox), name, singular, icon,
  * fields (Liste: on, label, type, required, options als Zeilen, übrige Angaben der Vorlage), detail (Detailseiten), route,
- * list (Übersicht auf der Website – Vorschlag unter „Einsetzen“), notify, to (Empfänger der E-Mail), mode (Zustellung eines
+ * list (Übersicht auf der Website – Vorschlag unter „Einsetzen“), hero (Detailseiten mit Kopf wie Seiten: Einstieg aus dem Eintrag), notify, to (Empfänger der E-Mail), mode (Zustellung eines
  * Eingangs: system | both | mail), receipt (Bestätigung an die Absender), retention (Tage), max (Obergrenze), push, ai (Beschreibung für die KI).
  */
 final class Wizard
@@ -79,7 +79,7 @@ final class Wizard
             'route' => (string) ($p['route'] ?? ''), 'detail' => $purpose === 'content' && (string) ($p['route'] ?? '') !== '',
             'list' => in_array($purpose, ['content', 'source'], true), 'notify' => '', 'to' => (string) ($p['delivery']['to'] ?? ''),
             'mode' => (string) ($p['delivery']['mode'] ?? 'system'), 'retention' => (int) ($p['inbox']['retention_days'] ?? Inbox::DEFAULTS['retention_days']),
-            'max' => 0, 'push' => false];
+            'max' => 0, 'push' => false, 'hero' => false];
         if ($purpose === 'content' && $preset === '') $st['detail'] = true;
         // „Nur E-Mail“: Empfänger aus den Grundeinstellungen vorschlagen (E-Mail-Versand → Empfänger)
         if ($purpose === 'mail' && $st['to'] === '') $st['to'] = (string) setting('sys.mail_to', '');
@@ -149,7 +149,7 @@ final class Wizard
             $j = $m[1] === 'up' ? $i - 1 : $i + 1;
             if (isset($st['fields'][$i], $st['fields'][$j])) [$st['fields'][$i], $st['fields'][$j]] = [$st['fields'][$j], $st['fields'][$i]];
         }
-        foreach (['detail', 'list', 'receipt', 'push'] as $k) if (array_key_exists($k, $in)) $st[$k] = !empty($in[$k]);
+        foreach (['detail', 'list', 'receipt', 'push', 'hero'] as $k) if (array_key_exists($k, $in)) $st[$k] = !empty($in[$k]);
         if (isset($in['mode']) && in_array($in['mode'], self::modes($st), true)) $st['mode'] = (string) $in['mode'];
         if (isset($in['notify'])) $st['notify'] = $clip($in['notify'], 400);
         if (isset($in['to'])) $st['to'] = $clip($in['to'], 600);
@@ -300,7 +300,7 @@ final class Wizard
             $t = Tables::find($def['handle']);
         }
         if (!Tables::isInbox($t) && $t['settings']['route'] !== '' && !empty($st['detail'])) {
-            DataController::makeTemplate($t);
+            DataController::makeTemplate($t, !empty($st['hero']));   // „Kopf wie Seiten“: Einstieg aus dem Eintrag (Core\Blocks\EntryHero)
             $t = Tables::find($def['handle']);
         }
         return ['table' => $t, 'errors' => []];

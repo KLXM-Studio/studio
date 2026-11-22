@@ -607,6 +607,12 @@ final class Fields
 
     public static function renderField(array $f, mixed $value, array $errors, string $prefix, string $path = ''): string
     {
+        // Feld nur auf Detailseiten-Vorlagen ('entry_only' => true, z. B. „Quelle“ des Einstiegs, Core\Blocks\EntryHero): sonst nur
+        // der gespeicherte Wert als verstecktes Feld, damit er beim Speichern erhalten bleibt
+        if (!empty($f['entry_only']) && !self::$binding && $path === '' && isset($f['name'])) {
+            return is_scalar($value) && (string) $value !== '' && $value !== ($f['default'] ?? '')
+                ? '<input type="hidden" name="' . $prefix . '[' . e($f['name']) . ']" value="' . e((string) $value) . '">' : '';
+        }
         // Feld nur bei bestimmten Varianten des Blocks ('variants' => ['search', …]): Seitenleiste blendet es sonst aus
         // (resources/js/editor.js; ohne Varianten-Auswahl bleibt es sichtbar). Wert bleibt beim Umschalten erhalten.
         if (!empty($f['variants']) && $path === '') {
@@ -870,8 +876,16 @@ final class Fields
     private static function renderDataField(string $id, string $name, string $v, string $aria, array $f): string
     {
         $h = '<select id="' . $id . '" name="' . $name . '"' . $aria . ' data-datafield><option value="">' . e($f['empty_label'] ?? '– keine –') . '</option>';
-        foreach (\Core\Data\Tables::content() as $t) {
+        // 'entry' => true: nur Felder der Tabelle dieser Detailseiten-Vorlage (Fields::$binding bzw. Vorschau-Eintrag), z. B. Einstieg mit Quelle „Eintrag“
+        $only = !empty($f['entry']) ? (self::$binding['table'] ?? app()->entry['table'] ?? null) : null;
+        foreach ($only ? [$only] : \Core\Data\Tables::content() as $t) {
             $opts = [];
+            // 'special' => ['_none', '_chapter', '_when']: „nichts“, Kapitelnummer (Wissen), Termin (Kalender) – nur, wo es sie gibt
+            foreach ((array) ($f['special'] ?? []) as $sp) {
+                if ($sp === '_none') $opts['_none'] = '– nichts –';
+                elseif ($sp === '_chapter' && \Core\Data\Knowledge::is($t)) $opts['_chapter'] = 'Kapitelnummer („Kapitel 2.1“)';
+                elseif ($sp === '_when' && \Core\Data\Calendar::enabled($t)) $opts['_when'] = 'Termin (Datum und Uhrzeit)';
+            }
             if (!empty($f['system'])) {
                 $opts += ['sort' => 'Manuelle Reihenfolge', 'published_at' => 'Veröffentlicht am', 'created_at' => 'Angelegt am'];
             }

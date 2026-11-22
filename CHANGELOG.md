@@ -10,6 +10,21 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Detailseiten mit Kopf wie Seiten: Einstieg mit Quelle „Felder des Eintrags“ (`Core\Blocks\EntryHero`)
+- **Einstieg (Hero) in Detailseiten-Vorlagen:** neue Option „Quelle: Eigene Inhalte | Felder des Eintrags“ am Hero jedes Kits (mit Titel
+  und Bild; praxis unverändert). Bild, Titel (H1), Dachzeile und Text kommen aus wählbaren Feldern – Standard: Bildfeld der Tabelle, Titel,
+  Kapitelnummer (Wissen) bzw. Termin (Kalender) bzw. Kategorie/Bereich, Beschreibungsfeld; Button optional aus einem Link-Feld. Alle
+  Varianten, Überlagerungen und Design-Einstellungen gelten, weil der Kern die Blockdaten vor dem Rendern füllt (`Theme::makeBlock`) –
+  Kit-Renderer bleiben unverändert. Fokuspunkt wie bei jedem Bild.
+- **Robust:** ohne Bild die schlichte Variante „compact“, leere oder gelöschte Felder bleiben leer, leerer Titel → automatischer Titel.
+  Genau eine H1: ein Kopf aus „Datensatz-Felder“ darunter setzt den Titel als h2.
+- **Bearbeiten:** im Vorlagen-Editor „Aus dem Eintrag“, auf der Detailseite Titel und Text direkt im Einstieg bearbeitbar (`EntryEdit`).
+- **Wissensbereich:** steht der Einstieg zuerst, läuft er über die volle Breite, Seitenleiste und Brotkrumen beginnen darunter
+  (`Knowledge::render`, `.kn--headed`); Kapitelnummer als Dachzeile („Kapitel 2.1“) bzw. – wenn die Dachzeile ein anderes Feld zeigt – als dezente Plakette vor dem Titel; ohne Nummern keine.
+  fluid: Logo-Überhang trägt der Einstieg.
+- **Neue Tabellen:** „Detailseiten mit Kopf wie Seiten“ im Assistenten und beim Anlegen, `data:template … --with-detail-page --hero`.
+  Bestehende Vorlagen und Blöcke bleiben unverändert (Standard „Eigene Inhalte“). Selbsttest `hero:selftest`.
+
 ### Netzwerk: Verband und Vereine teilen Kontakte und Termine (`Core\Data\Network`, `Core\Data\Nearby`)
 - **Weitergabe je Eintrag** (Schalter der geteilten Tabelle, Standard aus): nur diese Website, ausgewählte Websites (erscheinen dort von
   selbst) oder ganzes Netzwerk. Neue Kontakte zuerst „nur diese Website“, Termine „ganzes Netzwerk“; Einträge von vor dem Schalter gelten

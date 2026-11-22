@@ -495,4 +495,5 @@ return [
     'Veranstalter: {name}' => 'Organiser: {name}',
     'Zum Original' => 'Original',
     '„{ort}“ wurde nicht gefunden – es werden alle Einträge gezeigt.' => '“{ort}” was not found – showing all entries.',
+    'Kapitel {n}' => 'Chapter {n}',
 ];
