@@ -72,6 +72,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   Veröffentlichen/Offline nehmen · Versionen · Link kopieren · Exportieren (vCard bzw. ICS je Eintrag) · Aufgabe anlegen ·
   Erweiterungen · Löschen (rot, Rückfrage). Rechte je Aktion; ohne JavaScript Popover mit Links und Formularen (CSRF), im Seitenbaum
   führt „⋯“ dann zu den Seiteneinstellungen.
+- **Zeilenmenü nach Art gruppiert** (`RowMenu::GROUPS`, `COLS`, `split()`; JavaScript `groupOf`/`splitGroups`): Bearbeiten · Anlegen &
+  Ordnen · Sichtbarkeit · Teilen & Verlauf · Erweiterungen, Löschen getrennt unten über die volle Breite. Ab mehr als 8 Punkten
+  (z. B. Seitenbaum) zweispaltig mit kleinen Überschriften wie in den Menüs der Website-Werkzeugleiste, ganze Gruppen je Spalte;
+  darunter einspaltig mit Trennlinien, auf dem Telefon immer einspaltig. ←/→ wechseln die Spalte, ARIA `group` mit
+  `aria-labelledby`; das Kontextmenü am Mauszeiger klappt am Fensterrand nach links/oben und bleibt im Fenster.
 - **Mehrfachauswahl einheitlich** (`RowMenu::bar`): Häkchen, Leiste mit Anzahl und denselben Aktionen (Datenlisten zusätzlich
   „Exportieren“, Adressbuch mit Listen und vCard); Rechtsklick auf eine gewählte Zeile bietet die Aktionen für alle gewählten.
 - Neu: `GET /admin/data/{tabelle}/kalender.ics?ids[]=…` (einzelne bzw. gewählte Termine), Filter `rowmenu.actions` für

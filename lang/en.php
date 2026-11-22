@@ -8446,6 +8446,8 @@ return [
     'Redaktion entscheidet je Eintrag' => 'Editors decide per entry',
     'Sieht nach einer privaten Angabe aus (z. B. Mobilnummer) – Freigabe „Nie öffentlich“ oder „Redaktion entscheidet“ wählen; „Bewusst öffentlich“ bestätigt, dass sie immer erscheinen soll.' => 'Looks like private information (e.g. a mobile number) – choose “Never public” or “Editors decide”; “Deliberately public” confirms that it should always appear.',
     'Sichtbarkeit' => 'Visibility',
+    'Anlegen & Ordnen' => 'Create & arrange',
+    'Teilen & Verlauf' => 'Share & history',
     'Standard für neue Einträge' => 'Default for new entries',
     'Tabellen' => 'Tables',
     'Typ passt nicht zu „{to}“ – bleibt eigenes Feld' => 'Type does not match “{to}” – stays a custom field',

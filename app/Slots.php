@@ -61,7 +61,7 @@ final class Slots
 
     /**
      * Aktionen prüfen: Beschriftung, Pfad dieser Installation (beginnt mit „/“, kein „//“), Platzhalter aus $vars (kodiert).
-     * @return list<array{label: string, href: string, primary: bool, icon: string}>
+     * @return list<array{label: string, href: string, primary: bool, icon: string, group: string}>
      */
     public static function actions(array $list, array $vars = []): array
     {
@@ -72,7 +72,8 @@ final class Slots
             foreach ($vars as $k => $v) $href = str_replace('{' . $k . '}', rawurlencode((string) $v), $href);
             if (!self::localPath($href)) continue;
             $out[] = ['label' => trim((string) $a['label']), 'href' => $href, 'primary' => !empty($a['primary']),
-                'icon' => preg_match('~^[a-z0-9-]{1,40}$~', (string) ($a['icon'] ?? '')) ? (string) $a['icon'] : ''];
+                'icon' => preg_match('~^[a-z0-9-]{1,40}$~', (string) ($a['icon'] ?? '')) ? (string) $a['icon'] : '',
+                'group' => preg_match('~^[a-z]{1,20}$~', (string) ($a['group'] ?? '')) ? (string) $a['group'] : ''];   // Zeilenmenü: Gruppe (RowMenu::GROUPS)
         }
         return $out;
     }

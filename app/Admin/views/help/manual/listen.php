@@ -4,10 +4,12 @@
     <tr><th>So öffnen Sie das Menü</th><th>Wie</th></tr>
     <tr><td><b>Drei-Punkte-Knopf</b> <span aria-hidden="true">⋯</span></td><td>Am Ende jeder Zeile bzw. oben an der Karte. Im Adressbuch erscheint er, sobald Sie über einen Namen fahren oder ihn mit der Tastatur erreichen.</td></tr>
     <tr><td><b>Rechtsklick</b></td><td>Irgendwo auf die Zeile, die Karte, den Termin im Kalender oder die Datei – das Menü erscheint direkt am Mauszeiger. Mit gedrückter <kbd>Umschalt</kbd>-Taste oder in Eingabefeldern bleibt das gewohnte Menü des Browsers.</td></tr>
-    <tr><td><b>Tastatur</b></td><td><kbd>Umschalt</kbd> + <kbd>F10</kbd> oder die Menütaste öffnet das Menü der Zeile, in der Sie gerade stehen. <kbd>↑</kbd> <kbd>↓</kbd> wählen, <kbd>Pos1</kbd>/<kbd>Ende</kbd> springen an den Anfang bzw. ans Ende, ein Buchstabe springt zum passenden Punkt, <kbd>↵</kbd> führt aus, <kbd>Esc</kbd> oder <kbd>Tab</kbd> schließt.</td></tr>
-    <tr><td><b>Telefon</b></td><td>Das Menü kommt als Blatt von unten, mit großen Zeilen und dem Namen des Eintrags oben. Tippen daneben schließt es.</td></tr>
+    <tr><td><b>Tastatur</b></td><td><kbd>Umschalt</kbd> + <kbd>F10</kbd> oder die Menütaste öffnet das Menü der Zeile, in der Sie gerade stehen. <kbd>↑</kbd> <kbd>↓</kbd> wählen, in zweispaltigen Menüs wechseln <kbd>←</kbd> <kbd>→</kbd> die Spalte, <kbd>Pos1</kbd>/<kbd>Ende</kbd> springen an den Anfang bzw. ans Ende, ein Buchstabe springt zum passenden Punkt, <kbd>↵</kbd> führt aus, <kbd>Esc</kbd> oder <kbd>Tab</kbd> schließt.</td></tr>
+    <tr><td><b>Telefon</b></td><td>Das Menü kommt als Blatt von unten, mit großen Zeilen und dem Namen des Eintrags oben – immer einspaltig. Tippen daneben schließt es.</td></tr>
   </table>
-  <h3>Die Aktionen – immer in dieser Reihenfolge</h3>
+  <h3>Gruppen und zwei Spalten</h3>
+  <p>Die Aktionen sind nach Art gruppiert: <b>Bearbeiten</b> (Bearbeiten, Einstellungen, Ansehen, Vorschau), <b>Anlegen &amp; Ordnen</b> (Unterseite, Duplizieren, Vorlage, Verschieben und Zuordnen), <b>Sichtbarkeit</b> (Veröffentlichen bzw. Offline nehmen, Im Menü zeigen, Indexierung), <b>Teilen &amp; Verlauf</b> (Versionen, Link kopieren, Exportieren, Aufgabe anlegen) und <b>Erweiterungen</b>. <b>Löschen</b> steht getrennt ganz unten. Kurze Menüs bleiben einspaltig mit Trennlinien zwischen den Gruppen; hat ein Menü mehr als acht Punkte – etwa im Seitenbaum –, zeigt es die Gruppen mit kleinen Überschriften in zwei Spalten, so bleibt es kurz und übersichtlich.</p>
+  <h3>Die Aktionen – immer in dieser Reihenfolge und Gruppe</h3>
   <table class="doc-table">
     <tr><th>Aktion</th><th>Wirkung</th></tr>
     <tr><td><?= icon('pencil-simple') ?> <b>Bearbeiten</b> / Öffnen</td><td>Eintrag, Seite oder Datei bearbeiten. Im Seitenbaum zusätzlich <b>Seiteneinstellungen</b>.</td></tr>
