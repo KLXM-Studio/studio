@@ -261,7 +261,7 @@ final class SourceController extends AdminController
             for ($n = 2, $base = $route; Tables::byRoute($route) || \Core\Pages::byPath($route); $n++) $route = $base . '-' . $n;
         }
         $def = ['name' => $name, 'singular' => $name, 'handle' => $freeHandle,
-            'icon' => match ($vals['format']) { 'rss', 'atom' => 'newspaper', 'json' => 'brackets-curly', 'openimmo' => 'house-line', default => 'file-code' },
+            'icon' => match ($vals['format']) { 'rss', 'atom' => 'newspaper', 'json' => 'brackets-curly', 'openimmo' => 'house-line', 'ics' => 'calendar-blank', default => 'file-code' },
             'description' => __('Aus der externen Quelle „{name}“', ['name' => $vals['name']]), 'fields' => $fields,
             'settings' => ['route' => $route, 'title_field' => $title, 'image_field' => $pick(['media']), 'description_field' => $pick(['textarea']) ?: $pick(['richtext']),
                 'sort_field' => $date ?: 'created_at', 'sort_dir' => 'desc', 'workflow' => 1]];
@@ -400,16 +400,17 @@ final class SourceController extends AdminController
         $head = (string) file_get_contents((string) $f['tmp_name'], false, null, 0, 64);
         $isZip = str_starts_with($head, "PK\x03\x04");
         $isXml = !$isZip && preg_match('~^\s*(<\?xml|<)~', ltrim($head, "\xEF\xBB\xBF"));
-        if (!$isZip && !$isXml) return $this->back($back, 'error', __('Nur ZIP (openimmo.xml + Bilder) oder XML-Dateien.'));
+        $isIcs = !$isZip && !$isXml && preg_match('~^\s*BEGIN:VCALENDAR~i', ltrim($head, "\xEF\xBB\xBF"));
+        if ($src['format'] === 'ics' ? !$isIcs : (!$isZip && !$isXml)) return $this->back($back, 'error', $src['format'] === 'ics' ? __('Nur Kalender-Dateien (.ics).') : __('Nur ZIP (openimmo.xml + Bilder) oder XML-Dateien.'));
         $dir = Sync::dir($src['id']);
-        $ext = $isZip ? 'zip' : 'xml';
+        $ext = $isZip ? 'zip' : ($isIcs ? 'ics' : 'xml');
         $new = $dir . '/incoming.' . $ext;
         if (!move_uploaded_file((string) $f['tmp_name'], $new)) return $this->back($back, 'error', __('Datei konnte nicht gespeichert werden.'));
         @set_time_limit(300);
         $s = Sync::run($src, 'upload', ['upload' => $new]);
         // Nur eine erfolgreich gelesene Datei ersetzt die bisherige (für „Jetzt abrufen“ ohne Adresse)
         if ($s['ok']) {
-            foreach (['upload.zip', 'upload.xml'] as $old) @unlink($dir . '/' . $old);
+            foreach (['upload.zip', 'upload.xml', 'upload.ics'] as $old) @unlink($dir . '/' . $old);
             @rename($new, $dir . '/upload.' . $ext);
         } else {
             @unlink($new);

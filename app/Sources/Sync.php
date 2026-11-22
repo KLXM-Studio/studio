@@ -70,7 +70,7 @@ final class Sync
     /** Hochgeladene ZIP-/XML-Datei (OpenImmo) – bleibt für erneutes Einlesen liegen */
     public static function uploadFile(int $id): ?string
     {
-        foreach (['upload.zip', 'upload.xml'] as $f) if (is_file(self::dir($id) . '/' . $f)) return self::dir($id) . '/' . $f;
+        foreach (['upload.zip', 'upload.xml', 'upload.ics'] as $f) if (is_file(self::dir($id) . '/' . $f)) return self::dir($id) . '/' . $f;
         return null;
     }
 
@@ -97,7 +97,7 @@ final class Sync
             $body = (string) file_get_contents($cache);
             $res = ['body' => $body, 'cached' => true, 'bytes' => strlen($body), 'ms' => 0, 'files' => [], 'tmp' => null, 'url' => $src['url']];
         } else {
-            $kind = match ($src['format']) { 'json' => 'json', 'openimmo' => null, default => 'xml' };
+            $kind = match ($src['format']) { 'json' => 'json', 'openimmo' => null, 'ics' => 'ics', default => 'xml' };
             $r = \Core\Http\Fetch::get($src['url'], ['timeout' => (int) $o['timeout'], 'max' => $maxBytes, 'kind' => $kind, 'ua' => $o['ua'],
                 'headers' => array_merge([self::accept($src['format'])], Sources::authOptions($src)['headers'] ?? [])] + array_intersect_key(Sources::authOptions($src), ['basic' => 1]));
             if ($src['format'] === 'openimmo' && !str_starts_with($r['body'], 'PK') && !preg_match('~^\s*<~', $r['body'])) {
@@ -124,6 +124,7 @@ final class Sync
             'atom' => 'application/atom+xml, application/xml;q=0.9, */*;q=0.5',
             'rss' => 'application/rss+xml, application/rdf+xml, application/xml;q=0.9, text/xml;q=0.9, */*;q=0.5',
             'openimmo' => 'application/zip, application/xml;q=0.9, */*;q=0.5',
+            'ics' => 'text/calendar, text/plain;q=0.9, */*;q=0.5',
             default => 'application/xml, text/xml;q=0.9, */*;q=0.5',
         };
     }
@@ -221,7 +222,9 @@ final class Sync
             $table = $src['table'];
             if (!$table) throw new SourceException(__('Keine Zieltabelle gewählt.'));
             if (Tables::isShared($table) || Tables::isInbox($table)) throw new SourceException(__('Die Zieltabelle ist keine eigene Inhaltstabelle.'));
-            if ($missing = Mapper::missingRequired($table, $src['mapping'])) {
+            // Kalender-Abo in einen Kalender der Art calendar: feste Abbildung aufs Grundschema (Serien, Einzeltermine, UID-Abgleich)
+            $icsCal = $src['format'] === 'ics' && \Core\Data\Kinds::isCalendar($table);
+            if (!$icsCal && ($missing = Mapper::missingRequired($table, $src['mapping']))) {
                 throw new SourceException(__('Pflichtfelder ohne Zuordnung: {list}', ['list' => implode(', ', $missing)]));
             }
             $raw = self::load($src, !empty($o['force']), $o['upload'] ?? null);
@@ -231,7 +234,8 @@ final class Sync
             @file_put_contents(self::dir($src['id']) . '/paths.json', json_encode(Parser::paths($parsed['items']), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             self::storeSample($src, $parsed['items'], $parsed['meta']);
             self::$writing = true;
-            self::apply($src, $table, $parsed, $raw['files'], $stats);
+            if ($icsCal) self::applyIcs($src, $table, $raw['body'], $stats);
+            else self::apply($src, $table, $parsed, $raw['files'], $stats);
             $stats['ok'] = true;
             $stats['message'] = __('{n} Einträge gelesen: {c} neu, {u} geändert, {s} unverändert, {h} ausgeblendet, {d} gelöscht, {f} Fehler.', [
                 'n' => $stats['fetched'], 'c' => $stats['created'], 'u' => $stats['updated'], 's' => $stats['unchanged'],
@@ -348,6 +352,21 @@ final class Sync
             $db->update('ext_source_items', ['state' => 'missing', 'hidden_by_sync' => $hidden], 'id = :id', ['id' => (int) $row['id']]);
         }
         if (!$parsed['items'] && $existing) self::detail($stats, __('Die Quelle lieferte keine Einträge – vorhandene Einträge bleiben unverändert.'));
+    }
+
+    /** Kalender-Abo (Format ics) in einen Kalender der Art calendar: Core\Data\IcsImport mit Herkunft je Termin */
+    private static function applyIcs(array $src, array $table, string $body, array &$stats): void
+    {
+        $rep = \Core\Data\IcsImport::import($table, $body, ['source' => $src, 'status' => $src['options']['status'], 'categories' => true,
+            'missing' => $src['options']['missing'], 'note' => __('Abgleich der Quelle „{name}“', ['name' => $src['name']])]);
+        if (!$rep['ok']) throw new SourceException((string) $rep['error']);
+        foreach (['created', 'updated', 'unchanged', 'hidden', 'deleted', 'failed'] as $k) $stats[$k] = (int) $rep[$k];
+        $stats['fetched'] = (int) $rep['total'];
+        foreach ($rep['rows'] as $r) {
+            if ($r['action'] === 'failed') self::detail($stats, $r['name'] . ': ' . $r['detail']);
+            foreach (array_slice($r['warnings'], 0, 1) as $w) self::detail($stats, $r['name'] . ': ' . $w);
+        }
+        foreach ($rep['warnings'] as $w) self::detail($stats, $w);
     }
 
     /** Wieder aufgetaucht: nur einblenden, was der Abgleich selbst ausgeblendet hat (von Hand Ausgeblendetes bleibt aus) */
