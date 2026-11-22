@@ -66,7 +66,7 @@ final class HotspotsSelfTest
         $eq('Leerwert', Fields::emptyValue(['type' => 'hotspots']), Hotspots::empty());
 
         // Datentabellen: Feldtyp, Bildfeld, Vorlage
-        $eq('Feldtyp „hotspots“ (Spalte text)', \Core\Data\Tables::TYPES['hotspots'][1] ?? null, 'text');
+        $eq('Feldtyp „hotspots“ (Spalte text)', \Core\Data\Tables::TYPES['hotspots'][1], 'text');
         $t = ['fields' => [['name' => 'titel', 'type' => 'text'], ['name' => 'a', 'type' => 'media'], ['name' => 'b', 'type' => 'media'], ['name' => 'm', 'type' => 'hotspots'], ['name' => 'c', 'type' => 'media']]];
         $eq('Bildfeld: letztes davor, ausdrücklich, Rückfall', [Hotspots::imageField($t, $t['fields'][3]), Hotspots::imageField($t, ['name' => 'm', 'image_field' => 'c']),
             Hotspots::imageField(['fields' => [['name' => 'm', 'type' => 'hotspots'], ['name' => 'z', 'type' => 'media']]], ['name' => 'm'])], ['b', 'c', 'z']);
