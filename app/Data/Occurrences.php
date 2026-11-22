@@ -207,7 +207,7 @@ final class Occurrences
             $m = self::meta($t);
             if (!$m || $from->getTimestamp() < (int) $m['from_ts'] || $to->getTimestamp() > (int) $m['to_ts'] || !self::fresh($t)) return null;
             $q = ['status' => $opts['status'] ?? 'published', 'where' => (array) ($opts['where'] ?? []), 'overrides' => true];
-            foreach (['lang', 'ids', 'q', 'source'] as $k) if (!empty($opts[$k])) $q[$k] = $opts[$k];
+            foreach (['lang', 'ids', 'q', 'source', 'source_sites'] as $k) if (!empty($opts[$k])) $q[$k] = $opts[$k];
             [$sql, $params] = Entries::filterSql($t, $q);
             $db = Tables::db($t);
             $rows = $db->fetchAll('SELECT * FROM ' . self::TABLE . ' WHERE tbl = ? AND start_ts < ? AND end_ts > ? AND entry_id IN (' . $sql . ')'

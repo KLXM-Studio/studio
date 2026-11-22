@@ -70,7 +70,7 @@ if ($host && $host['table']['handle'] === $t['handle']) $o['exclude'] = $host['e
 if (str_starts_with((string) ($d['sort_field'] ?? ''), $pfx)) $o['sort'] = substr($d['sort_field'], strlen($pfx));
 if (!empty($d['sort_dir'])) $o['dir'] = $d['sort_dir'];
 // Geteilte Tabellen: Quelle (leer = wie für die Website eingestellt), hervorgehobene Einträge zuerst
-if (!empty($d['source'])) $o['source'] = (string) $d['source'];
+$o += \Core\Data\Shared::blockQuery($d);   // Quelle, auch „bestimmte Websites“ (Core\Data\Network)
 if (!empty($d['featured_first'])) $o['featured_first'] = true;
 // Besucher-Filter: Schaltflächen je Auswahlfeld, Suche, A–Z (Verzeichnis, Mitglieder, Partner …)
 $query = (array) (app()->request?->query ?? []);
@@ -124,10 +124,19 @@ if ($vq !== '') { $o['q'] = $vq; $o['q_public'] = true; }   // Besucher-Suche: n
 $filtering = $vq !== '' || array_filter(array_column($vfilters, 'sel'), fn($v) => $v !== null && $v !== []);
 if ($az && ($tf = (string) ($t['settings']['title_field'] ?? '')) !== '') { $o['sort'] = $tf; $o['dir'] = 'asc'; }
 $o = \Core\Data\Roles::listQuery($t, $d, $extend($o));   // Adressbuch: beendete Funktionen schon in der Abfrage (Blättern, Anzahl)
+// „In deiner Nähe“ (Core\Data\Nearby): mit Eingabe des Besuchers zuerst das zuständige Gebiet, dann im Umkreis – ohne Blättern
+$nearLoc = empty($d['paginate']) ? \Core\Data\Nearby::forBlock($d) : null;
+$near = \Core\Data\Nearby::found($nearLoc);
+if ($near) unset($o['limit'], $o['offset']);
 $rows = \Core\Data\Exposure::publicRows($t, Entries::query($t, $o));   // Stellenangebote: abgelaufene fehlen schon hier (Core\Data\Jobs, Entries::where)
 // Adressbuch mit Funktionen (Core\Data\Roles): Filter nach Liste → deren Funktion, Detailseite eines verknüpften Eintrags → die
 // verknüpfte Funktion, sonst die Hauptfunktion (in position); beendete Funktionen der gefilterten Liste fallen heraus
 $rows = \Core\Data\Roles::listRows($t, $d, $rows, empty($o['sort']) && !$az);
+if ($near) {
+    $rows = \Core\Data\Nearby::arrange($t, $rows, $nearLoc, $d);
+    if ($limit) $rows = array_slice($rows, 0, $limit);
+    $filtering = true;
+}
 // Wissen ohne eigene Sortierung: Lesereihenfolge des Kapitelbaums (Bereich, Oberkapitel, Reihenfolge)
 if ($know && empty($d['sort_field']) && !$az) {
     $kpos = array_flip($ktree['order']);
@@ -195,6 +204,7 @@ $colLabel = fn(string $f) => match (true) {
 <?php // Filtern, Suche, Blättern ohne Seitenwechsel (Core\Live::region – Links/Formulare mit data-live-nav, ohne JS normale Links)
 $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : '';   // im Eintrag: normale Links (Block steht nicht auf der Seite) ?>
 <div class="<?= e($wrap) ?> dl dl--<?= e($layout) ?>"<?= $reload ?>>
+  <?= !empty($d['nearby']) && empty($d['paginate']) ? \Core\Data\Nearby::form($d, $nearLoc, count($rows)) : '' ?>
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
   <header class="dl-head">
     <?php if (!empty($d['eyebrow'])): ?><p class="eyebrow eyebrow--accent"<?= $b->edit('eyebrow') ?>><?= emphasis((string) $d['eyebrow']) ?></p><?php endif; ?>

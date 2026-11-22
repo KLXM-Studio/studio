@@ -35,7 +35,9 @@ $back = $base . '/' . $e['id'];
       <dt><?= e($f['label']) ?></dt><dd><?= $h ?></dd>
       <?php endforeach; ?>
     </dl>
+    <?php if ($x = \Core\Data\Network::originNote($t, $e)): ?><div class="sh-note"><?= $x ?></div><?php endif; ?>
   </section>
+  <?= /* Netzwerk: Zusatzangaben dieser Website zum fremden Eintrag (Core\Data\Network) */ can('data.edit', $t['handle']) ? \Core\Theme::capture(__DIR__ . '/_network.php', ['t' => $t, 'e' => $e, 'values' => [], 'part' => 'extra', 'action' => $base . '/' . (int) $e['id'] . '/zusatz']) : '' ?>
   <aside class="dt-entry__side">
     <section class="adm-card">
       <h2 class="sh-h"><?= e(__('Auf dieser Website')) ?></h2>

@@ -193,6 +193,13 @@
  *   data:kind-upgrade <tabelle> [--to=N] [--dry-run|--apply] | --revert
  *                                                     Grundschema einer Tabellenart heben (nur additiv), z. B. Adressbuch v1 → v2
  *                                                     (Funktionen je Person aus Funktion + Listen); Standard: Probelauf
+ *   data:network <tabelle> [--levels=on|off] [--site-fields=on|off] [--existing=site|network] | --status
+ *                                                     Netzwerk einer geteilten Tabelle (Core\Data\Network): Weitergabe je Eintrag,
+ *                                                     Zusatzfelder je Website (nur Eigentümer-Website); --status: Schalter und Versionen
+ *   data:network-join <tabelle> [--apply] [--choice=ID:existing|mine|both,…]
+ *                                                     Beitritt mit Plan: eigene Einträge zusammenführen (Probelauf zeigt Doppel)
+ *   shared:selftest [--sandbox --sites=verband,land1,land2]
+ *                                                     Selbsttest Netzwerk; mit --sandbox Ende-zu-Ende mit drei Websites (nur in einer Kopie)
  *   calendar:reindex [<tabelle>…] [--all] [--status]  Vorkommens-Index der Kalender neu aufbauen (Cron täglich) bzw. Stand zeigen
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
  *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
@@ -1500,7 +1507,7 @@ switch ($cmd) {
         $res = Core\Data\SchemaPanel::selftest(in_array('--roundtrip', $args, true));
         // Verwendungszweck (Ableitung, Passung) und – ohne --roundtrip – der Assistent „Neue Tabelle“ je Zweck (vorübergehende Tabellen)
         // … dazu Abschnitte und Freitext im Formular (Core\Data\LayoutSelfTest, vorübergehende Tabelle)
-        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data(), Core\Data\RolesSelfTest::run()] as $x) {
+        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data(), Core\Data\RolesSelfTest::run(), Core\Data\NetworkSelfTest::logic()] as $x) {
             $res['ok'] += $x['ok'];
             array_push($res['fails'], ...$x['fails']);
         }
@@ -1552,6 +1559,45 @@ switch ($cmd) {
             foreach (Core\Data\KindUpgrade::apply($t, $plan) as $l) echo "$l\n";
         } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
         break;
+
+    case 'data:network':
+        // Netzwerk einer geteilten Tabelle (Core\Data\Network): Schalter (nur Eigentümer-Website) bzw. Stand
+        $handle = (string) ($args[0] ?? '');
+        if ($handle === '' || str_starts_with($handle, '--') || !Core\Data\Shared::meta($handle)) {
+            fwrite(STDERR, "Aufruf: data:network <geteilte tabelle> [--levels=on|off] [--site-fields=on|off] [--existing=site|network] | --status\n"); exit(1);
+        }
+        $in = [];
+        foreach (['levels' => 'levels', 'site-fields' => 'site_fields'] as $opt => $k) if (($v = Core\Cli::opt($args, $opt)) !== null) $in[$k] = in_array($v, ['on', '1', 'an', 'true'], true);
+        try {
+            if ($in) foreach (Core\Data\Network::setFlags($handle, $in, Core\Cli::opt($args, 'existing')) as $l) echo "  ✓ $l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        $f = Core\Data\Network::flags($handle);
+        $v = Core\Data\Network::versions($handle);
+        echo "  Weitergabe je Eintrag: " . ($f['levels'] ? 'an' : 'aus') . " · Zusatzfelder je Website: " . ($f['site_fields'] ? 'an' : 'aus') . "\n";
+        if ($v['shared']) echo "  Art: {$v['shared']['kind']}, Grundschema {$v['shared']['version']}\n";
+        foreach ($v['sites'] as $s => $x) echo '  ' . str_pad($s, 16) . " {$x['entries']} Einträge" . ($x['local_table'] ? ' · eigene Tabelle gleichen Namens (Beitritt mit Plan)' : '') . "\n";
+        break;
+
+    case 'data:network-join':
+        // Beitritt mit Plan (Core\Data\Network::joinPlan/join) – Standard: Probelauf
+        $handle = (string) ($args[0] ?? '');
+        if ($handle === '' || str_starts_with($handle, '--')) { fwrite(STDERR, "Aufruf: data:network-join <tabelle> [--apply] [--choice=ID:existing|mine|both,…]\n"); exit(1); }
+        $plan = Core\Data\Network::joinPlan($handle);
+        if (!$plan['ok']) { fwrite(STDERR, $plan['error'] . "\n"); exit(1); }
+        echo "  Eigene Einträge: {$plan['local']} · Einträge der anderen: {$plan['shared']} · Doppel: " . count($plan['dupes']) . "\n";
+        foreach ($plan['dupes'] as $d) echo "    #{$d['id']} {$d['title']} ↔ " . implode(', ', array_map(fn($m) => "#{$m['id']} {$m['title']} ({$m['site']})", $d['matches'])) . "\n";
+        if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply beitreten (Doppel ohne Wahl: existing). Rückweg: data:unshare bzw. Verlassen in der Verwaltung.\n"; break; }
+        $choices = [];
+        foreach (explode(',', (string) Core\Cli::opt($args, 'choice')) as $c) if (preg_match('~^(\d+):(existing|mine|both)$~', trim($c), $m)) $choices[(int) $m[1]] = $m[2];
+        try {
+            foreach (Core\Data\Network::join($handle, $choices) as $l) echo "  $l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
+    case 'shared:selftest':
+        // Netzwerk (Core\Data\NetworkSelfTest): ohne --sandbox Logik; mit --sandbox Ende-zu-Ende mit drei Websites (nur in einer Kopie)
+        exit(Core\Data\NetworkSelfTest::run(in_array('--sandbox', $args, true), explode(',', (string) Core\Cli::opt($args, 'sites')),
+            Core\Cli::opt($args, 'step'), Core\Cli::opt($args, 'state')));
 
     case 'calendar:reindex':
         // Vorkommens-Index der Kalender (Core\Data\Occurrences) neu aufbauen – täglich per Cron (rollierendes Fenster), nach Importen

@@ -284,6 +284,8 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/pick', [Admin\DataController::class, 'pick']);
     $r->get('/admin/data/{handle}/display', [Admin\DataController::class, 'display']);
     $r->post('/admin/data/{handle}/display', [Admin\DataController::class, 'displaySave']);
+    $r->post('/admin/data/{handle}/netzwerk', [Admin\DataController::class, 'networkSave']);         // Netzwerk: Schalter (Eigentümer)
+    $r->post('/admin/data/{handle}/zusatzfelder', [Admin\DataController::class, 'siteFieldsSave']);  // Netzwerk: Zusatzfelder dieser Website
     // Abonnieren per App: öffentliche Adressen, Abo-Tokens (Core\Data\Subscriptions)
     $r->get('/admin/data/{handle}/abonnieren', [Admin\SubscriptionController::class, 'index']);
     $r->post('/admin/data/{handle}/abonnieren', [Admin\SubscriptionController::class, 'store']);
@@ -303,6 +305,7 @@ return function (Router $r): void {
     $r->get('/admin/data/{handle}/wiederholung', [Admin\DataController::class, 'rrulePreview']);
     $r->get('/admin/data/{handle}/kalender.ics', [Admin\DataController::class, 'exportIcs']);
     $r->post('/admin/data/{handle}/{id}/serie', [Admin\DataController::class, 'series']);
+    $r->post('/admin/data/{handle}/{id}/zusatz', [Admin\DataController::class, 'extraSave']);   // Netzwerk: Zusatzangaben dieser Website
     $r->get('/admin/data/{handle}/{id}', [Admin\DataController::class, 'entryEdit']);
     $r->post('/admin/data/{handle}/{id}', [Admin\DataController::class, 'entrySave']);
     $r->get('/admin/data/{handle}', [Admin\DataController::class, 'entries']);

@@ -42,8 +42,9 @@ final class Shared
      * Quellen für Entries::query(…, ['source' => …]):
      * site (Standard: wie für die Website eingestellt), own, owner, members, own_owner, all (alles Sichtbare), featured (nur hervorgehobene)
      */
-    public const SOURCES = ['site', 'own', 'owner', 'members', 'own_owner', 'all', 'featured'];
-    public const CONFIG = ['owner' => true, 'members' => 'off', 'sites' => [], 'where' => [], 'link_origin' => false, 'canonical' => 'origin', 'detail_page_id' => null];
+    public const SOURCES = ['site', 'own', 'owner', 'members', 'own_owner', 'all', 'featured', 'sites'];
+    /** except: Regeln [[feld, op, wert], …] – fremde Einträge, die eine davon erfüllen, zeigt diese Website nicht (Core\Data\Network) */
+    public const CONFIG = ['owner' => true, 'members' => 'off', 'sites' => [], 'where' => [], 'except' => [], 'link_origin' => false, 'canonical' => 'origin', 'detail_page_id' => null];
     /** Canonical fremder Einträge: origin (Ursprungs-Website, falls sie Detailseiten hat – Standard) oder self (eigene Adresse, dann auch in der Sitemap) */
     public const CANONICAL = ['origin', 'self'];
 
@@ -225,6 +226,7 @@ final class Shared
         $c['members'] = in_array($c['members'], ['off', 'all', 'selected'], true) ? $c['members'] : 'off';
         $c['sites'] = array_values(array_map('strval', (array) $c['sites']));
         $c['where'] = array_values(array_filter((array) $c['where'], 'is_array'));
+        $c['except'] = array_values(array_filter((array) $c['except'], 'is_array'));
         $c['link_origin'] = (bool) $c['link_origin'];
         $c['canonical'] = in_array($c['canonical'], self::CANONICAL, true) ? (string) $c['canonical'] : 'origin';
         $c['detail_page_id'] = ctype_digit((string) ($c['detail_page_id'] ?? '')) ? (int) $c['detail_page_id'] : null;
@@ -260,9 +262,21 @@ final class Shared
     /**
      * WHERE-Teil für eine Quelle (Parameter werden in derselben Reihenfolge angehängt).
      * $cond: fn(array $where, array &$params): array – Bedingungen wie in Entries (Felder, Operatoren, „heute“)
+     * $only: Quelle „sites“ (bestimmte Websites, Block-Einstellung) – alles Sichtbare dieser Websites.
+     * Netzwerk (Core\Data\Network): mit Weitergabe-Stufen nur, was die Stufe erlaubt; „ausgewählte Websites“ erscheinen von selbst;
+     * „außer“-Regeln der Website nehmen fremde Einträge heraus.
      */
-    public static function sourceSql(array $t, string $source, array &$params, callable $cond): string
+    public static function sourceSql(array $t, string $source, array &$params, callable $cond, array $only = []): string
     {
+        $sql = self::sourceSqlRaw($t, $source, $params, $cond, $only);
+        if (in_array($source, ['site', 'featured', 'all', 'sites'], true) && ($x = Network::exceptSql($t, $params, $cond)) !== '') $sql = "($sql AND $x)";
+        if (Network::levelsOn($t)) $sql = '(' . $sql . ' AND ' . Network::gateSql($t, $params) . ')';
+        return $sql;
+    }
+
+    private static function sourceSqlRaw(array $t, string $source, array &$params, callable $cond, array $only): string
+    {
+        $levels = Network::levelsOn($t);
         $site = site()->key;
         $owner = (string) $t['shared']['owner'];
         $isOwner = $site === $owner;
@@ -300,10 +314,17 @@ final class Shared
             case 'own_owner':
                 return $isOwner ? $own() : $or([$own(), $ownerPart()]);
             case 'all':
+            case 'sites':
                 $parts = [$own()];
                 if (!$isOwner) $parts[] = $ownerPart();
                 if ($isOwner || $mm) $parts[] = $membersPart();
-                return $or($parts);
+                if ($levels) $parts[] = Network::targetedSql($params);
+                $sql = $or($parts);
+                if ($source === 'sites') {
+                    $list = array_values(array_intersect(array_map('strval', $only), self::participants(self::meta($t['shared']['key']) ?? ['owner' => $owner, 'members' => $members])));
+                    $sql = $list ? "($sql AND origin_site IN (" . $in($list) . '))' : '1 = 0';
+                }
+                return $sql;
         }
         // site / featured: so, wie die Website es eingestellt hat
         $parts = [$own()];
@@ -323,6 +344,8 @@ final class Shared
                 $parts[] = '(' . $membersPart($c['members'] === 'selected' ? $c['sites'] : [], self::cleanWhere($t, $c['where'])) . ' AND ' . $notHidden() . ')';
             }
         }
+        // Stufe „ausgewählte Websites“: an diese Website gerichtete Einträge erscheinen von selbst (Core\Data\Network)
+        if ($levels) $parts[] = Network::targetedSql($params);
         $sql = $or($parts);
         if ($source === 'featured') {
             $params[] = $site;
@@ -381,6 +404,8 @@ final class Shared
         $origin = (string) ($e['origin_site'] ?? '');
         if ($origin === site()->key) return true;
         if (($e['status'] ?? 'published') !== 'published') return false;
+        if (!Network::allows($t, $e)) return false;
+        if (Network::levelsOn($t) && Network::level($e) === 'sites') return true;   // an diese Website gerichtet (allows prüft die Websites)
         if ($origin === $t['shared']['owner']) return true;
         if (!in_array($origin, (array) $t['shared']['members'], true)) return false;
         return self::isOwner($t) || !empty($t['shared']['members_see_members']);
@@ -785,6 +810,9 @@ final class Shared
             }
             // Kurzname ist lokal belegt – nur die geteilte Tabelle direkt lesen
             $shared = self::hydrateRaw($handle);
+            // Grundschema im Netzwerk (Core\Data\Network::mergeCheck): gleiche Art; lokal v1 in geteilt v2 → Funktionen füllen, lokal neuer → ablehnen
+            $mc = Network::mergeCheck($local, $shared);
+            if ($mc['error'] !== null) throw new \InvalidArgumentException($mc['error']);
             if ($members && !$joining) self::update($handle, ['members' => array_unique(array_merge($meta['members'], $members))]);
         } else {
             if (self::meta($handle)) throw new \InvalidArgumentException(__('Eine geteilte Tabelle „{key}“ gibt es schon – mit --merge zusammenführen.', ['key' => $handle]));
@@ -862,6 +890,17 @@ final class Shared
             }
         });
         $log[] = __('{n} Einträge übernommen.', ['n' => $moved]);
+        // Netzwerk: übernommene Einträge mit Weitergabe-Stufe bekommen den Standard der Art (Adressbuch: nur diese Website)
+        if ($merge && Network::levelsOn($shared)) {
+            $sdb->query("UPDATE {$shared['table']} SET " . Network::COL . ' = ? WHERE origin_site = ? AND ' . Network::COL . ' IS NULL', [Network::defaultLevel($shared), site()->key]);
+            $log[] = __('Weitergabe der übernommenen Einträge: {level} – je Eintrag änderbar.', ['level' => Network::levelLabel(Network::defaultLevel($shared))]);
+        }
+        if ($merge && !empty($mc['fill'])) {
+            $rows = array_map(fn($r) => ['listen' => json_decode((string) ($r['listen'] ?? ''), true) ?: []] + $r,
+                $sdb->fetchAll("SELECT * FROM {$shared['table']} WHERE origin_site = ?", [site()->key]));
+            $n = KindUpgrade::fill($shared, $rows);
+            $log[] = __('Grundschema: Funktionen aus Funktion und Listen ergänzt ({n} Einträge).', ['n' => $n]);
+        }
         if ($renamed) $log[] = __('Adresse geändert, weil sie in der geteilten Tabelle schon vergeben war: {list}', ['list' => implode(', ', $renamed)]);
         if ($skip) $log[] = __('{n} Einträge nicht übernommen – stattdessen gilt der vorhandene Eintrag der geteilten Tabelle.', ['n' => count($skip)]);
         // Verweise anderer lokaler Tabellen auf umnummerierte Einträge
@@ -1059,20 +1098,34 @@ final class Shared
      * Blockfeld „Quelle“ für Datenliste, Kalender und Nächste Termine – nur auf Websites, die an geteilten Tabellen teilnehmen.
      * $list: zusätzlich „Hervorgehobene zuerst“ (Datenliste).
      */
-    public static function blockFields(bool $list = false): array
+    public static function blockFields(bool $list = false, string $name = 'source'): array
     {
         try {
-            if (!self::forSite()) return [];
+            if (!($mine = self::forSite())) return [];
         } catch (\Throwable) {
             return [];
         }
         $owner = term('shared_owner');
-        $out = [['name' => 'source', 'label' => __('Quelle (geteilte Tabellen)'), 'type' => 'select', 'default' => '', 'width' => 'half',
+        // „Bestimmte Websites“: alle Beteiligten der geteilten Tabellen dieser Website (geprüft wird beim Abfragen je Tabelle)
+        $sites = [];
+        foreach ($mine as $k => $m) foreach (self::participants($m) as $s) $sites[$s] ??= self::siteInfo($s, $k)['name'];
+        $out = [['name' => $name, 'label' => __('Quelle (geteilte Tabellen)'), 'type' => 'select', 'default' => '', 'width' => 'half',
             'options' => ['' => __('Wie für die Website eingestellt'), 'own' => __('Nur eigene Einträge'), 'own_owner' => __('Eigene + {owner}', ['owner' => $owner]),
-                'owner' => __('Nur {owner}', ['owner' => $owner]), 'all' => __('Alle freigegebenen Einträge'), 'featured' => __('Nur hervorgehobene')],
-            'help' => __('Nur für geteilte Tabellen: welche Einträge dieser Block zeigt. Filter gelten zusätzlich.')]];
+                'owner' => __('Nur {owner}', ['owner' => $owner]), 'all' => __('Alle freigegebenen Einträge'), 'featured' => __('Nur hervorgehobene'),
+                'sites' => __('Bestimmte Websites')],
+            'help' => __('Nur für geteilte Tabellen: welche Einträge dieser Block zeigt. Filter gelten zusätzlich.')],
+            ['name' => $name . '_sites', 'label' => __('Websites'), 'type' => 'multiselect', 'options' => $sites, 'width' => 'half', 'show_if' => [$name => ['sites']],
+                'help' => __('Einträge dieser Websites, soweit sie für diese Website freigegeben sind.')]];
         if ($list) $out[] = ['name' => 'featured_first', 'label' => __('Hervorgehobene Einträge zuerst'), 'type' => 'bool', 'default' => false, 'width' => 'half'];
         return $out;
+    }
+
+    /** Optionen für Entries::query aus den Blockdaten (Quelle, bestimmte Websites); $name = Blockfeld der Quelle */
+    public static function blockQuery(array $d, string $name = 'source'): array
+    {
+        $src = (string) ($d[$name] ?? '');
+        if (!in_array($src, self::SOURCES, true)) return [];
+        return ['source' => $src] + ($src === 'sites' ? ['source_sites' => array_values(array_map('strval', (array) ($d[$name . '_sites'] ?? [])))] : []);
     }
 
     // ================================================================= Wartung

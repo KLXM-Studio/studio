@@ -903,6 +903,8 @@ final class Theme
         // – nur über den Kit-Vertrag --kit-*; ein Kit kann css/knowledge.css bzw. css/list-filter.css mitbringen. Nicht beim Bearbeiten.
         if (($types !== null && in_array('@knowledge', $types, true)) || ($types === null && \Core\Data\Knowledge::$framed)) $out[] = $this->coreCss('knowledge.css');   // auch im Modus „Bearbeiten“
         if ($types !== null && in_array('@kfilter', $types, true)) $out[] = $this->coreCss('list-filter.css');
+        // Netzwerk: „In deiner Nähe“ (Core\Data\Nearby::form) und Herkunft (Core\Data\Network::originNote) – Kit kann css/nearby.css mitbringen
+        if ($types !== null && in_array('@nearby', $types, true)) $out[] = $this->coreCss('nearby.css');
         // Termin-Aktionen (Block event_actions; Fragment event-actions meldet sich auch aus „Datensatz-Felder“) – Kit kann css/event-actions.css mitbringen
         if ($types === null || in_array('event_actions', $types, true)) $out[] = $this->coreCss('event-actions.css');
         // Kalender-Blöcke (Monatsübersicht, Nächste Termine) – Theme kann css/calendar.css mitbringen

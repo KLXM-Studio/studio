@@ -1,0 +1,12 @@
+/* Netzwerk: „In deiner Nähe“ (Core\Data\Nearby::form – PLZ oder Ort, ohne JavaScript) und Herkunft geteilter Einträge bzw. von Terminen
+   aus Abos (Core\Data\Network::originNote). Nur Kit-Vertrag --kit-*; ein Kit kann css/nearby.css mitbringen. Lädt über das Merkmal '@nearby'. */
+.nearby{display:grid;gap:.4rem;max-width:32rem;margin:0 0 1.25rem}
+.nearby__label{font-weight:650;color:var(--kit-ink,currentColor)}
+.nearby__row{display:flex;flex-wrap:wrap;gap:.5rem}
+.nearby__input{flex:1 1 12rem;min-width:0;min-height:2.75rem;padding:.55rem .8rem;border:1px solid var(--kit-line-strong,color-mix(in srgb,currentColor 45%,transparent));border-radius:var(--kit-radius-sm,8px);background:var(--kit-bg,Canvas);color:var(--kit-ink,currentColor);font:inherit}
+.nearby__input:focus-visible,.nearby__btn:focus-visible{outline:2px solid var(--kit-link,var(--kit-accent,currentColor));outline-offset:2px}
+.nearby__btn{min-height:2.75rem;padding:.55rem 1.1rem;border:1px solid var(--kit-ink,currentColor);border-radius:var(--kit-radius-sm,8px);background:var(--kit-ink,currentColor);color:var(--kit-bg,Canvas);font:inherit;font-weight:650;cursor:pointer}
+.nearby__note{margin:0;color:var(--kit-text,currentColor);font-size:.93em}
+.nearby__note a{color:var(--kit-link,inherit)}
+.net-origin{margin:.3rem 0 0;color:var(--kit-text,currentColor);font-size:.85em;line-height:1.45}
+.net-origin a{color:var(--kit-link,inherit)}

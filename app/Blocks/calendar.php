@@ -33,7 +33,7 @@ $catField = $c['category'] !== '' ? Tables::field($t, $c['category']) : null;
 $catButtons = [];
 if (!empty($d['visitor_filter']) && $catField) {
     [$baseWhere] = Calendar::blockWhere($t, $d);
-    $soon = Calendar::upcoming($t, Calendar::MAX_OCCURRENCES, 0, ['where' => $baseWhere, 'source' => (string) ($d['source'] ?? '')]);
+    $soon = Calendar::upcoming($t, Calendar::MAX_OCCURRENCES, 0, ['where' => $baseWhere] + \Core\Data\Shared::blockQuery($d));
     if (\Core\Blocks\ListFilter::enough($d, count($soon))) {
         $counts = [];
         foreach ($soon as $o) {
@@ -44,7 +44,7 @@ if (!empty($d['visitor_filter']) && $catField) {
     }
 }
 [$where, $cat] = Calendar::blockWhere($t, $d, $catButtons ? $query : []);
-$occ = Calendar::occurrences($t, $view === 'month' ? $gridStart : $first, $view === 'month' ? $gridEnd : $next, ['where' => $where, 'source' => (string) ($d['source'] ?? '')]);
+$occ = Calendar::occurrences($t, $view === 'month' ? $gridStart : $first, $view === 'month' ? $gridEnd : $next, ['where' => $where] + \Core\Data\Shared::blockQuery($d));
 $occ = array_map(fn($o) => ['entry' => \Core\Data\Exposure::publicEntry($t, $o['entry'])] + $o, $occ);   // ohne „Nie öffentlich“-Felder
 \Core\StructuredData::events($t, array_values(array_filter($occ, fn($o) => $o['start'] >= new DateTimeImmutable('today', Calendar::tz()))));   // schema.org Event (anstehende)
 

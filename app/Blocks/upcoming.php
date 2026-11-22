@@ -17,7 +17,12 @@ if (!$t || !Calendar::enabled($t)) {
 }
 $c = Calendar::config($t);
 [$where] = Calendar::blockWhere($t, $d);
-$occ = Calendar::upcoming($t, max(1, min(50, (int) ($d['limit'] ?? 5))), max(0, (int) ($d['days'] ?? 0)), ['where' => $where, 'source' => (string) ($d['source'] ?? '')]);
+$limit = max(1, min(50, (int) ($d['limit'] ?? 5)));
+// „In deiner Nähe“ (Core\Data\Nearby): mit Eingabe des Besuchers zuerst die Termine des zuständigen Gebiets, dann im Umkreis
+$nearLoc = \Core\Data\Nearby::forBlock($d);
+$near = \Core\Data\Nearby::found($nearLoc);
+$occ = Calendar::upcoming($t, $near ? 200 : $limit, max(0, (int) ($d['days'] ?? 0)), ['where' => $where] + \Core\Data\Shared::blockQuery($d));
+if ($near) $occ = array_slice(\Core\Data\Nearby::arrange($t, $occ, $nearLoc, $d), 0, $limit);
 \Core\StructuredData::events($t, $occ);   // schema.org Event
 $layout = ($d['layout'] ?? 'list') === 'compact' ? 'compact' : 'list';
 $hTag = !empty($d['title']) ? 'h3' : 'h2';
@@ -32,6 +37,7 @@ $today = (new DateTimeImmutable('today', Calendar::tz()))->format('Y-m-d');
   </header>
   <?php endif; ?>
 
+  <?= !empty($d['nearby']) ? \Core\Data\Nearby::form($d, $nearLoc, count($occ)) : '' ?>
   <?php if (!$occ): ?>
   <p class="cal-empty"><?= e($d['empty_text'] ?: lt('Zurzeit sind keine Termine geplant.')) ?></p>
   <?php else: ?>
@@ -47,6 +53,7 @@ $today = (new DateTimeImmutable('today', Calendar::tz()))->format('Y-m-d');
         <<?= $hTag ?> class="cal-upname"><?= $url ? '<a class="cal-link" href="' . e($url) . '">' . e($title) . '</a>' : e($title) ?><?= !empty($o['cancelled']) ? ' <span class="cal-tag cal-tag--cancelled">' . e(lt('fällt aus')) . '</span>' : '' ?></<?= $hTag ?>>
         <p class="cal-upmeta"><time datetime="<?= e($o['all_day'] ? $o['start']->format('Y-m-d') : $o['start']->format('Y-m-d\TH:iP')) ?>"><?= e(Calendar::when($o)) ?></time><?php if ($loc !== ''): ?><span aria-hidden="true"> · </span><span class="cal-loc"><?= $loc ?></span><?php endif; ?></p>
         <?php if ($desc !== ''): ?><p class="cal-updesc"><?= e($desc) ?></p><?php endif; ?>
+        <?= \Core\Data\Network::originNote($t, $e) /* Netzwerk: Herkunft (Abo-Quelle, Veranstalter, andere Website) */ ?>
       </div>
     </li>
     <?php endforeach; ?>

@@ -19,7 +19,10 @@ use Core\PageCache;
  * Ablauf mit --apply: Sicherung (VACUUM INTO), Revision je Eintrag, Schema (Tables::validate mit _kind_version), Werte direkt.
  * Zustand in storage/sites/{website}/convert/{tabelle}.kind-v{n}.json. Rückweg (--revert): Version zurück, neue Grundfelder als
  * ausgeblendete Altfelder (Spalte und Werte bleiben, ein erneutes Upgrade nimmt sie wieder auf), Feldliste wie vorher.
- * Geteilte Tabellen: noch nicht (Schema gehört der Eigentümer-Website, Werte liegen in share.sqlite).
+ * Geteilte Tabellen (Netzwerk): nur die Eigentümer-Website hebt – für alle Beteiligten auf einmal (ein Schema, Werte in share.sqlite);
+ * der Probelauf zeigt die Einträge je Website, Sicherung = Kopie von share.sqlite, Werte aller Websites werden gefüllt (Funktionen
+ * aus Funktion und Listen der jeweiligen Website). Lokale Tabellen gleicher Art treten nur bei gleicher oder älterer Version bei
+ * (Core\Data\Network::mergeCheck – ältere werden beim Beitritt gefüllt).
  */
 final class KindUpgrade
 {
@@ -32,7 +35,7 @@ final class KindUpgrade
         $kind = Kinds::of($t);
         $errors = [];
         if (!Kinds::isSpecial($kind)) $errors[] = __('Die Tabelle hat keine Art mit Grundschema (Adressbuch, Kalender, Orte).');
-        if (Tables::isShared($t)) $errors[] = __('Geteilte Tabellen lassen sich in dieser Version noch nicht heben.');
+        if (Tables::isShared($t) && !Shared::isOwner($t)) $errors[] = __('Eine geteilte Tabelle hebt nur die Website, der sie gehört ({site}) – für alle Beteiligten.', ['site' => (string) $t['shared']['owner']]);
         $from = Kinds::tableVersion($t);
         $to ??= Kinds::version($kind);
         if (!$errors && $from >= $to) $errors[] = __('Die Tabelle hat schon Version {v} des Grundschemas.', ['v' => $from]);
@@ -56,12 +59,20 @@ final class KindUpgrade
             if ($have) { $keep++; continue; }
             if (count($sample) < 5) $sample[] = ['title' => Entries::title($t, $e), 'roles' => self::rolesFor($t, $e)];
         }
-        return ['ok' => true, 'errors' => [], 'kind' => $kind, 'from' => $from, 'to' => $to, 'added' => $added, 'entries' => count($rows), 'keep' => $keep, 'sample' => $sample];
+        $sites = [];
+        if (Tables::isShared($t)) foreach ($rows as $e) $sites[(string) ($e['origin_site'] ?? '')] = ($sites[(string) ($e['origin_site'] ?? '')] ?? 0) + 1;
+        ksort($sites);
+        return ['ok' => true, 'errors' => [], 'kind' => $kind, 'from' => $from, 'to' => $to, 'added' => $added, 'entries' => count($rows), 'keep' => $keep, 'sample' => $sample, 'sites' => $sites];
     }
 
     /** Alle Einträge (alle Sprachen, Entwürfe) roh aus der Datenbank – die Spalte funktionen auch, wenn sie (noch) kein Feld ist */
     private static function rows(array $t): array
     {
+        // Geteilt: alle Einträge aller Websites roh aus share.sqlite (ohne Quelle, ohne öffentliche Fassung fremder Einträge)
+        if (Tables::isShared($t)) {
+            return array_map(fn($r) => ['id' => (int) $r['id'], 'listen' => json_decode((string) ($r['listen'] ?? ''), true) ?: [], Roles::FIELD => $r[Roles::FIELD] ?? null] + $r,
+                Tables::db($t)->fetchAll("SELECT * FROM {$t['table']} ORDER BY id"));
+        }
         $cols = Tables::db($t)->driver === 'mysql' ? array_column(Tables::db($t)->fetchAll("SHOW COLUMNS FROM {$t['table']}"), 'Field')
             : array_column(Tables::db($t)->fetchAll("PRAGMA table_info({$t['table']})"), 'name');
         $rows = Entries::query($t, ['status' => 'all', 'lang' => 'all', 'source' => 'all', 'internal' => true]);
@@ -99,6 +110,7 @@ final class KindUpgrade
         if (!$plan['ok']) return array_map(fn($e) => '! ' . $e, $plan['errors']);
         $l = ["Tabelle „{$t['name']}“ ({$t['handle']}): " . Kinds::label($plan['kind']) . " · Grundschema {$plan['from']} → {$plan['to']} · {$plan['entries']} Einträge", ''];
         $l[] = 'Neue Grundfelder: ' . implode(', ', $plan['added']);
+        if (!empty($plan['sites'])) $l[] = 'Geteilte Tabelle – betroffene Websites: ' . implode(', ', array_map(fn($s, $n) => "$s ($n)", array_keys($plan['sites']), $plan['sites']));
         if ($plan['kind'] === Kinds::CONTACTS && in_array(Roles::FIELD, $plan['added'], true)) {
             $l[] = 'Funktionen: je Liste eine Funktion, „Funktion“ (position) bei der ersten; ohne Listen eine Funktion ohne Liste.';
             if ($plan['keep']) $l[] = "  {$plan['keep']} Einträge haben schon Funktionen – bleiben unverändert.";
@@ -127,25 +139,29 @@ final class KindUpgrade
         $in['_kind_version'] = $plan['to'];
         [$def, $errors] = Tables::validate($in, $t);
         if ($errors) throw new \RuntimeException('Schema: ' . implode(' ', array_map('strval', $errors)));
-        if (app()->db->driver !== 'mysql') {
+        $sdb = Tables::db($t);
+        if ($sdb->driver !== 'mysql') {
             $dir = site()->storage('convert');
             if (!is_dir($dir)) mkdir($dir, 0775, true);
             $bak = $dir . '/' . $t['handle'] . '-kind-v' . $plan['to'] . '-' . date('Ymd-His') . '-' . bin2hex(random_bytes(2)) . '.sqlite';
-            app()->db->pdo->exec('VACUUM INTO ' . app()->db->pdo->quote($bak));
+            $sdb->pdo->exec('VACUUM INTO ' . $sdb->pdo->quote($bak));
             $log[] = '✓ Sicherung: ' . $bak;
         }
         $rows = self::rows($t);
-        foreach ($rows as $e) Revisions::record($t, $e, __('Vor dem Upgrade auf Grundschema {v}', ['v' => $plan['to']]));
-        $log[] = '✓ Revision je Eintrag (' . count($rows) . ')';
+        if (!Tables::isShared($t)) {
+            foreach ($rows as $e) Revisions::record($t, $e, __('Vor dem Upgrade auf Grundschema {v}', ['v' => $plan['to']]));
+            $log[] = '✓ Revision je Eintrag (' . count($rows) . ')';
+        }
         Tables::update($t, $def);
         Tables::flush();
-        $nt = Tables::find((string) $t['handle']) ?? throw new \RuntimeException('Tabelle fehlt nach dem Upgrade.');
+        $nt = (Tables::isShared($t) ? Tables::sharedTable((string) $t['shared']['key']) : Tables::find((string) $t['handle'])) ?? throw new \RuntimeException('Tabelle fehlt nach dem Upgrade.');
         $log[] = '✓ Schema: Version ' . $plan['to'] . ', neue Grundfelder ' . implode(', ', $plan['added']);
         $n = $plan['kind'] === Kinds::CONTACTS ? self::fill($nt, $rows) : 0;
         if ($plan['kind'] === Kinds::CONTACTS) $log[] = "✓ Funktionen aus Funktion und Listen ({$n} Einträge)";
         file_put_contents(self::stateFile($t, (int) $plan['to']), json_encode(['plan' => $plan, 'fields_before' => $before, 'from' => $plan['from'], 'at' => now()],
             JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         PageCache::clear();
+        if (Tables::isShared($t)) Shared::clearCaches((string) $t['shared']['key']);
         $log[] = '✓ Fertig. Suchindex neu aufbauen: php bin/console search:index --site=' . site()->key;
         return $log;
     }
