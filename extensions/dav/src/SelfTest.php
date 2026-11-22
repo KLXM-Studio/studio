@@ -10,7 +10,7 @@ namespace Klxm\Dav;
  */
 final class SelfTest
 {
-    public static function run(): int
+    public static function run(array $args = []): int
     {
         $fail = 0;
         $eq = function (string $name, mixed $got, mixed $want) use (&$fail): void {
@@ -136,6 +136,9 @@ final class SelfTest
         $eq('TITLE = Hauptfunktion (erste aktuelle, frisch)', self::val($tc, 'TITLE'), 'Vorsitz');
         $eq('Funktionen nicht als X-MYCMS-*', str_contains($tc, 'X-MYCMS-FUNKTIONEN'), false);
         \Core\Data\Roles::$today = null;
+
+        echo "Alt-Tabellen ohne Tabellenart (Inhaltstabellen mit freier Zuordnung) unverändert\n";
+        LegacySelfTest::run($eq, in_array('--legacy-dump', $args, true));
 
         echo $fail ? "\n$fail Prüfungen fehlgeschlagen\n" : "\nAlle Prüfungen bestanden\n";
         return $fail ? 1 : 0;
