@@ -765,6 +765,16 @@ final class Extensions
         return false;
     }
 
+    /** Anbieter eigener Such-Dokumente (Extension::searchProvider): Schlüssel → Definition + owner (erste Anmeldung gewinnt) */
+    public static function searchProviders(): array
+    {
+        $out = [];
+        foreach (self::$active as $x) {
+            foreach ($x->searchProviders as $k => $def) $out[$k] ??= $def + ['owner' => $x->name];
+        }
+        return $out;
+    }
+
     /** E-Mail-Zwecke der Erweiterungen (Extension::mailPurpose): Schlüssel → {label, help, owner} */
     public static function mailPurposes(): array
     {

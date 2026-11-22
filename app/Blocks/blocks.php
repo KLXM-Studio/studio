@@ -433,6 +433,8 @@ return [
     ],
     'live_text' => [
         'label' => 'Live-Text (Ticker)', 'icon' => 'broadcast', 'group' => 'Daten', 'live' => true,
+        // Website-Suche: Momentaufnahme der hier geschriebenen Meldungen als Text (nicht als Überschriften); Quelle „Datentabelle“ → nur Kopf
+        'search_text' => [\Core\Search\Documents::class, 'liveTextSearch'],
         'description' => 'Meldungen, die sich ohne Neuladen aktualisieren – als Ticker oder aktuelle Meldung.',
         'help' => 'Meldungen, die sich bei Besuchern ohne Neuladen aktualisieren – als Ticker (neueste oben) oder nur die aktuelle Meldung, z. B. Spielstand, Wartezeit, Ablauf einer Veranstaltung. Direkt hier geschrieben (erscheinen beim Veröffentlichen der Seite) oder aus einer Datentabelle (erscheinen sofort, auch per API/MCP).',
         'fields' => [

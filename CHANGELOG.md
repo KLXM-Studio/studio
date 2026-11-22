@@ -29,6 +29,17 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   „Zuletzt geprüft“, Inhaltsverzeichnis) – beim Anlegen wählbar, später umschaltbar; `data:template knowledge --style=…`.
 - **Kapitelnummer steuerbar:** im Einstieg automatisch (Dachzeile bzw. Plakette), als Plakette oder keine, Text der Dachzeile mit
   `{nummer}`; im Kopf „Datensatz-Felder“ große Nummer an/aus. Selbsttest `detailtemplates:selftest`.
+### Website-Suche: Schnittstelle für Erweiterungen und dynamische Blöcke (`Core\Search\Providers`)
+- **Eigene Dokumente:** `Extension::searchProvider($key, ['label', 'documents' => fn(string $lang)])` – Inhalte, die weder Seite noch Eintrag
+  sind, landen im selben Index (auch Besucher-Chat, KI-Antwort, Vektoren); nur öffentliche (`public`), Sprache, Adresse geprüft, HTML → Klartext,
+  Fehler isoliert. Reiter je Anbieter frei benennbar (`?typ=ext-{key}`), Filter `search.document` gilt mit (`provider`, `id`).
+- **Text eines Blocks:** Blockdefinition `'search_text'` (fn → Text/`head`+`text`, `false`, `null` = Standard, `'render'` = sichtbare Ausgabe mit
+  `data-search-text` für Inhalte, die erst ein Skript zeichnet), neuer Filter `search.block`. Kern-Entscheidungen: Datenliste, Kalender, Termine
+  verweisen nur auf ihre Einträge; gemeinsame Bausteine zählen mit ihrem Text (jetzt auch in Inhaltsblöcken von Einträgen); Live-Text als
+  Momentaufnahme der geschriebenen Meldungen (Quelle Datentabelle: nur Kopf).
+- **Aktualisierung:** `Search::invalidate($type, $id)` merkt den Abgleich vor (Warteschlange wie bei Seiten/Einträgen, Cron `search.sync`).
+  Doku: Entwicklerhandbuch → Erweiterungen → Website-Suche. Selbsttest `extensions:selftest`.
+
 ### Website-Suche: Inhaltsblöcke in Einträgen, Reiter „Wissen“, Sprung zum Abschnitt (`Core\Search\Documents`)
 - **Inhaltsblöcke (`blocks`) im Index:** Wissens-Kapitel, „weitere Inhalte“ von Nachrichten, Workshops usw. werden über ihren Text gefunden –
   mit derselben Extraktion wie Seiten (`Documents::blocksText`: Rich-Text, Text + Bild, Reiter, Scrolly, FAQ, Zitat, Merkmale, Karten, Schritte,

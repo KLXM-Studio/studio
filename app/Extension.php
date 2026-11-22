@@ -58,6 +58,11 @@ namespace Core;
  * Eingangs-Tabellen (Anfragen, Core\Data\Inbox):
  *   $x->inbox(fn(array $t) => $t['handle'] === 'buchungen' ? ['statuses' => [...], 'info' => fn(array $row) => '…'] : null)   eigene Status, Zusatzzeile, Prüfung
  *   $x->on('inbox.status', fn(array $t, array $ids, string $status, array $old) => …)   Ereignisse inbox.status / inbox.deleted
+ * Website-Suche (Core\Search\Providers, Technik → Erweiterungen → „Website-Suche“):
+ *   $x->searchProvider('gebiete', ['label' => 'Gebiet', 'documents' => fn(string $lang) => [['id' => '1', 'url' => '/…', 'title' => …, 'text' => …]]])
+ *                                                                      eigene Dokumente (nur öffentliche); danach Search::invalidate()
+ *   Blockdefinition 'search_text' => fn(array $data, array $ctx) => ['head' => [...], 'text' => [...]] | 'Text' | false | null, oder 'render'
+ *                                                                      indexierbarer Text eines Blocks (null = Standard, false = nichts)
  * Übersetzungen: {dir}/lang/{locale}.php (Verwaltung, __()) und {dir}/lang/site/{lang}.php (Website, lt()) werden automatisch geladen.
  */
 final class Extension
@@ -138,6 +143,8 @@ final class Extension
     public array $mailPurposes = [];
     /** @var array<string, array{label: string, factory: callable}> E-Mail-Versandwege (mailTransport()) */
     public array $mailTransports = [];
+    /** @var array<string, array{label: string|callable, documents: callable, feature?: string}> Eigene Dokumente der Website-Suche (searchProvider()) */
+    public array $searchProviders = [];
     /** @var array<string, callable(Db\Table): mixed> Tabellen (table()) */
     private array $tables = [];
 
@@ -461,6 +468,22 @@ final class Extension
             return $this;
         }
         $this->filters[$name][] = $fn;
+        return $this;
+    }
+
+    /**
+     * Eigene Dokumente für die Website-Suche (Core\Search\Providers): Inhalte, die weder Seite noch Eintrag sind. $def: 'label' (Reiter/Art
+     * im Treffer, Text oder fn(string $lang)), 'documents' => fn(string $lang): iterable – je Dokument id, url, title, dazu optional headings,
+     * text, extra, summary, date, date_label, image, facets, anchors, lang, public; nur öffentliche Inhalte. Optional 'feature' (nur, wenn
+     * die Funktion an ist). Nach Änderungen Core\Search\Search::invalidate() aufrufen.
+     */
+    public function searchProvider(string $key, array $def): self
+    {
+        if (!\Core\Search\Providers::validKey($key) || !is_callable($def['documents'] ?? null)) {
+            error_log('[Erweiterung ' . $this->name . '] searchProvider: ungültiger Schlüssel „' . $key . '“ oder documents fehlt');
+            return $this;
+        }
+        $this->searchProviders[$key] = $def;
         return $this;
     }
 
