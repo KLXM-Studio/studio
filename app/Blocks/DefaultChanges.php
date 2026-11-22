@@ -41,6 +41,10 @@ final class DefaultChanges
         '2026-11-scrolly-ratio' => [
             'scrolly' => ['ratio' => '4:5'],
         ],
+        // 1.0.0: Highlights „Einträge auslassen, die schon im Slider dieser Seite stehen“ (Standard an) – bestehende zeigen weiter alle
+        '2026-11-highlights-exclude-slider' => [
+            'highlights' => ['exclude_slider' => false],
+        ],
     ];
     public const SETTING = 'sys.block_defaults';
 

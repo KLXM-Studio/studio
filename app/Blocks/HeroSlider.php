@@ -28,6 +28,9 @@ use Core\Theme;
  *  - Barrierefreiheit (WAI-ARIA Carousel): role="region" + aria-roledescription „Karussell“, Folien role="group" + „Folie“ mit
  *    „x von n“, Steuerung vor den Folien (Pause zuerst), Live-Region nur nach Bedienung, Pause bei Maus und Fokus, kein Auto-Wechsel
  *    und harte Schnitte bei „Bewegung reduzieren“, Tastatur (Pfeile, Pos1/Ende), Wischen auf Touch.
+ *  - Hintergrundvideos in Folien: der Video-Schalter der Folie entfällt (Hero::$inSlider); EIN Knopf in der Leiste hält Auto-Wechsel
+ *    und das Video der aktuellen Folie zusammen an („Bewegung anhalten/fortsetzen“). Das Skript pausiert Videos inaktiver Folien und
+ *    spielt das der aktiven nur, wenn nicht angehalten, ohne „Bewegung reduzieren“ und ohne „Daten sparen“ (hero.mjs lässt sie aus).
  *  - Bearbeiten-Modus und Inline-Bearbeitung auf Detailseiten: nur der Inhalt des Blocks (wie bisher) mit Hinweis im Editor.
  */
 final class HeroSlider
@@ -112,8 +115,9 @@ final class HeroSlider
     }
 
     /**
-     * Daten der Folien in Reihenfolge – jede ein vollständiger Datensatz des Blocks (Variante, Design …) mit anderen Inhalten.
-     * @return list<array{data: array, label: string}>
+     * Daten der Folien in Reihenfolge – jede ein vollständiger Datensatz des Blocks (Variante, Design …) mit anderen Inhalten;
+     * 'key' = „tabelle:id“ bei Folien aus Einträgen (sonst null).
+     * @return list<array{data: array, label: string, key: ?string}>
      */
     public static function slides(Block $b): array
     {
@@ -135,7 +139,7 @@ final class HeroSlider
             $x = $clean;
             foreach ($content as $k) if (array_key_exists($k, $s)) $x[$k] = $s[$k];
             $x['image'] = !empty($s['image']) ? (int) $s['image'] : null;
-            $own[] = $x;
+            $own[] = ['data' => $x, 'key' => null];
         }
         $entries = [];
         $ctx = app()->entry;
@@ -147,13 +151,52 @@ final class HeroSlider
         }
         foreach (Featured::items((array) ($d['slides_sources'] ?? []), ['sort' => (string) ($d['slides_sort'] ?? 'date'),
             'exclude' => $ctx ? [$ctx['table']['handle'] => (int) $ctx['entry']['id']] : []]) as $it) {
-            $entries[] = self::entryData($clean, $b->def, $it, $button, $badges[$it['table']['handle']] ?? '');
+            $entries[] = ['data' => self::entryData($clean, $b->def, $it, $button, $badges[$it['table']['handle']] ?? ''),
+                'key' => $it['table']['handle'] . ':' . (int) $it['entry']['id']];
         }
         $list = ($d['slides_mix'] ?? 'own') === 'entries' ? [...$entries, ...$own] : [...$own, ...$entries];
-        if (($d['slides_lead'] ?? 'block') !== 'none') array_unshift($list, $base);
+        if (($d['slides_lead'] ?? 'block') !== 'none') array_unshift($list, ['data' => $base, 'key' => null]);
         $list = array_slice($list, 0, self::MAX);
         $n = count($list);
-        return array_map(fn(array $x, int $i) => ['data' => $x, 'label' => lt('{n} von {total}', ['n' => $i + 1, 'total' => $n])], $list, array_keys($list));
+        return array_map(fn(array $x, int $i) => $x + ['label' => lt('{n} von {total}', ['n' => $i + 1, 'total' => $n])], $list, array_keys($list));
+    }
+
+    /** @var array<string, array<string, list<int>>> Einträge in Slidern je Seite (pageEntries, einmal je Anfrage) */
+    private static array $pageCache = [];
+
+    /**
+     * Einträge, die als Folien in einem Slider dieser Seite stehen: [handle => [ids]] – für den Block „Highlights“ (Option „Einträge
+     * auslassen, die schon im Slider dieser Seite stehen“). Liest die Blöcke der aufgerufenen Seite (beim Bearbeiten den Entwurf),
+     * unabhängig von der Reihenfolge der Blöcke. Nur Slider mit mindestens zwei Folien (sonst gibt es keinen).
+     */
+    public static function pageEntries(): array
+    {
+        $page = app()->currentPage;
+        if (!$page || empty($page['id'])) return [];
+        $ck = (int) $page['id'] . (app()->editing ? ':d' : ':p') . (app()->entry ? ':' . app()->entry['table']['handle'] . (int) app()->entry['entry']['id'] : '');
+        if (isset(self::$pageCache[$ck])) return self::$pageCache[$ck];
+        $out = [];
+        $theme = app()->theme;
+        foreach (\Core\Pages::blocks($page, app()->editing) as $raw) {
+            if (!is_array($raw) || ($raw['type'] ?? '') !== 'hero' || empty($raw['data']['slider'])) continue;
+            if (($raw['tunes']['section']['visible'] ?? true) === false) continue;
+            $blk = $theme->makeBlock($raw);
+            if (!$blk || !self::supports($blk->def)) continue;
+            $slides = self::slides($blk);
+            if (count($slides) < 2) continue;
+            foreach ($slides as $s) {
+                if ($s['key'] === null) continue;
+                [$h, $id] = explode(':', $s['key'], 2);
+                $out[$h][] = (int) $id;
+            }
+        }
+        return self::$pageCache[$ck] = $out;
+    }
+
+    /** Nur für Selbsttests: Zwischenspeicher leeren */
+    public static function reset(): void
+    {
+        self::$pageCache = [];
     }
 
     /** Folie aus einem hervorgehobenen Eintrag: Zuordnung wie Einstieg „Felder des Eintrags“, Button zur Detailseite */
@@ -205,6 +248,7 @@ final class HeroSlider
         $navMode = in_array($d['slides_nav'] ?? 'dots', ['dots', 'numbers', 'none'], true) ? (string) ($d['slides_nav'] ?? 'dots') : 'dots';
         $overlay = in_array($b->variant(), self::OVERLAY, true);
         $html = '';
+        $video = false;
         foreach ($slides as $i => $s) {
             $data = $s['data'];
             if ($i > 0) Media::$lazyAll = true;
@@ -213,16 +257,22 @@ final class HeroSlider
                 $tunes = $i === 0 ? $b->tunes : array_replace($b->tunes, ['anchor' => '', 'reveal' => '']);
                 $blk = new Block($i === 0 ? $b->id : $b->id . '-s' . ($i + 1), $b->type, $data, $tunes, $b->def, $i === 0 ? $b->prev : $b);
                 $blk->first = $i === 0 && $b->first;
+                // Ein Knopf für alle Bewegung: der Video-Schalter der Folie (Hero::videoToggle) entfällt, die Leiste übernimmt ihn
+                Hero::$inSlider = true;
                 $section = $theme->renderBlock($blk);
             } finally {
                 Media::$lazyAll = false;
+                Hero::$inSlider = false;
             }
+            $video = $video || str_contains($section, 'data-hero-video');
             if ($i > 0) $section = self::demote($section);
             $html .= '<div class="hs__slide' . ($i === 0 ? ' is-active' : '') . '" id="' . e($id . '-' . ($i + 1)) . '" role="group" aria-roledescription="' . e(lt('Folie')) . '"'
                 . ' aria-label="' . e($s['label']) . '" data-hs-title="' . e($blk->titleId()) . '"' . ($i > 0 ? ' hidden' : '') . '>' . $section . '</div>';
         }
         // Steuerung vor den Folien (Reihenfolge beim Tabben: Pause, zurück, Auswahl, weiter), sichtbar erst mit Skript
-        $ctrl = $interval > 0 ? Hero::playToggle('hs__btn hs__toggle', (string) ($d['slides_toggle'] ?? 'icon'), lt('Automatischen Wechsel anhalten'), lt('Automatischen Wechsel starten'), 'data-hs-toggle') : '';
+        // Ein Knopf für Auto-Wechsel und Hintergrundvideo der aktuellen Folie (mit Video: „Bewegung anhalten/fortsetzen“)
+        $ctrl = $interval > 0 || $video ? Hero::playToggle('hs__btn hs__toggle', (string) ($d['slides_toggle'] ?? 'icon'),
+            $video ? lt('Bewegung anhalten') : lt('Automatischen Wechsel anhalten'), $video ? lt('Bewegung fortsetzen') : lt('Automatischen Wechsel starten'), 'data-hs-toggle') : '';
         $arrow = fn(string $dir, string $label) => '<button type="button" class="hs__btn hs__arrow hs__arrow--' . $dir . '" data-hs-' . $dir . ' aria-controls="' . e($id . '-track') . '">'
             . icon($dir === 'prev' ? 'arrow-left' : 'arrow-right', ['class' => 'hs__ico']) . '<span class="hs__sr">' . e($label) . '</span></button>';
         $arrows = !empty($d['slides_arrows']);

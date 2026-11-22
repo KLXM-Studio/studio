@@ -311,6 +311,9 @@ return [
             ['name' => 'sort', 'label' => 'Sortierung', 'type' => 'select', 'required' => true, 'default' => 'date', 'width' => 'half',
                 'options' => ['date' => 'Neueste zuerst', 'order' => 'Reihenfolge (Zahl am Eintrag), dann neueste']],
             ['name' => 'limit', 'label' => 'Anzahl gesamt', 'type' => 'number', 'default' => 6, 'min' => 0, 'max' => 24, 'width' => 'half', 'help' => '0 = alle'],
+            // Standard an für neue Blöcke; bestehende behalten „aus“ (Core\Blocks\DefaultChanges)
+            ['name' => 'exclude_slider', 'label' => 'Einträge auslassen, die schon im Slider dieser Seite stehen', 'type' => 'bool', 'default' => true,
+                'help' => 'Steht auf der Seite ein Einstieg als Slider mit Folien aus denselben Tabellen, erscheint jeder Eintrag nur einmal.'],
             ['type' => 'heading', 'label' => 'Darstellung', 'collapse' => true, 'summary' => 'Karten oder großer Teaser, Etikett, Text'],
             ['name' => 'layout', 'label' => 'Darstellung', 'type' => 'select', 'required' => true, 'default' => 'cards', 'width' => 'half',
                 'options' => ['cards' => 'Karten', 'teaser' => 'Großer Teaser (erster groß, Rest als Karten)']],

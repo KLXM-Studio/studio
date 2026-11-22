@@ -26,6 +26,7 @@ const still = () => { const m = d.documentElement.getAttribute('data-motion'); r
 // Von selbst nur ohne „Bewegung reduzieren“ und „Daten sparen“; dann steht der Schalter auf „abspielen“ – die bewusste
 // Wahl der Besucherin (Klick) gilt, bis sie wieder klickt, auch wenn die Einstellung zur Laufzeit wechselt.
 d.querySelectorAll('[data-hero-video]').forEach(v => {
+  if (v.closest('[data-hero-slider]')) return;   // Einstieg als Slider: hero-slider.js steuert Videos mit dem Knopf der Leiste
   const box = v.closest('[data-hero-video-box]') || v.parentElement;
   const btn = box.querySelector('[data-hero-video-toggle]');
   let choice = null, seen = false;
