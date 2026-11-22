@@ -29,8 +29,12 @@ SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
     Header set Cache-Control "public, max-age=31536000, immutable"
   &lt;/LocationMatch&gt;
 &lt;/IfModule&gt;</code></pre>
-      <b>Nur nginx</b> (Plesk ohne Apache): unter „Zusätzliche nginx-Anweisungen“ – ein leeres Apache-Feld genügt dann. Die Ordner stehen als <code>location ^~</code>: Diese Regeln haben Vorrang vor den Regex-Regeln, die Plesk für „Statische Dateien direkt durch nginx bedienen“ selbst anlegt – mit <code>location ~*</code> griffen die Cache-Regeln dort nicht. Fehlt eine Datei (z. B. eine Bildvariante, die erst beim ersten Aufruf entsteht), antwortet Studio.<pre><code># Saubere Adressen
-location / { try_files $uri $uri/ /index.php$is_args$args; }
+      <b>Nur nginx</b> (Plesk ohne Apache): unter „Zusätzliche nginx-Anweisungen“ – ein leeres Apache-Feld genügt dann. Kein eigenes <code>location /</code>: Plesk legt es selbst an und lehnt ein zweites ab („duplicate location "/"“); die erste Zeile leitet fehlende Dateien deshalb per <code>rewrite</code> an Studio. Die Ordner stehen als <code>location ^~</code>: Diese Regeln haben Vorrang vor den Regex-Regeln, die Plesk für „Statische Dateien direkt durch nginx bedienen“ selbst anlegt – mit <code>location ~*</code> griffen die Cache-Regeln dort nicht. Fehlt eine Datei (z. B. eine Bildvariante, die erst beim ersten Aufruf entsteht), antwortet Studio.<pre><code># Saubere Adressen
+# Plesk legt „location /“ selbst an (sonst Fehler „duplicate location "/"“) – daher als Rewrite; geht auch auf eigenen Servern.
+# REQUEST_URI bleibt die Originaladresse, fehlende Bildvarianten (/sites/…/cache/…) gehen weiter an Studio.
+if (!-e $request_filename) { rewrite ^ /index.php last; }
+# Eigener nginx-Server ohne Plesk: stattdessen auch möglich
+# location / { try_files $uri $uri/ /index.php$is_args$args; }
 location = /robots.txt { try_files $uri /index.php$is_args$args; }
 # JavaScript-Module und Untertitel: viele nginx-Installationen kennen .mjs/.vtt nicht (sonst application/octet-stream → Karte, PDF-Viewer und Untertitel gehen nicht)
 location ~* \.mjs$ { types { } default_type "text/javascript; charset=utf-8"; add_header Cache-Control "public, max-age=31536000, immutable"; }

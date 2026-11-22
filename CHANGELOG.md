@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Installation: nginx-Anweisungen für Plesk
+- Die nginx-Vorlage im Entwicklerhandbuch (Installation) nutzt `if (!-e $request_filename) { rewrite ^ /index.php last; }` statt
+  `location /` – Plesk legt `location /` selbst an und lehnte die Vorlage mit „duplicate location "/"“ ab. Die bisherige Variante steht als
+  Kommentar für eigene nginx-Server dabei.
+
 ### Kit NativeCSS: nur ein Untermenü offen
 - Die Untermenüs der Kopfleiste teilen sich `name="ncss-nav"` – öffnet man eines, schließt das andere (auch ohne Skript).
   Klick daneben und Escape schließen das offene Untermenü, der Fokus kehrt zum Menüpunkt zurück.
