@@ -60,6 +60,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   applies instantly and is saved without reload. Implemented without CSS `zoom`: the build converts admin CSS to `rem`
   (shadow-DOM CSS to `calc(px * var(--adm-s))`), so coordinates, drag & drop and the website preview stay unaffected; the website
   toolbar scales too. Halved effect on phones. Self-test `uiscale:selftest`.
+
 ### Kit fluid: Handlungsaufruf und kompakte Darstellung im Fußbereich
 - **Handlungsaufruf im Fußbereich** (Website → Darstellung: Beschriftung + Link, Seite über die Linkauswahl `page:ID` oder Adresse),
   getrennt vom Button im Kopf: „Spalten“ → Button unter Claim und Text, „Schlicht“/„Zentriert“ → in der Zeile, „Großer Schriftzug“ →
