@@ -34,6 +34,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   (optionally “Former members”); lists follow from roles; vCard TITLE = main role, lists as Apple Contacts groups (dav 1.7.0);
   `data:kind-upgrade` with dry run and revert.
 
+### Wissen: Kapitel-Layout auch beim Bearbeiten
+- Im Modus „Bearbeiten“ (`?edit=inhalt`) bleibt das Layout des Kapitels (Seitenleiste mit Kapitelbaum, Nummer, Brotkrumen, Fuß)
+  stehen; Seitenleiste ohne Suche und inaktiv (`inert`) – kein optischer Sprung zwischen Ansehen und Bearbeiten.
+- *EN:* Edit mode keeps the chapter layout (inert sidebar without search, number, breadcrumbs).
+
 ### Wissen: vollständige strukturierte Daten (`Core\Data\KnowledgeLd`)
 - Kapitel als `Article` in einer Sammlung (`{Übersicht}#collection`) mit Kette der Oberkapitel, Kapitelnummer (`alternateName`,
   `position`), Schlagworten, Bereich (`articleSection`), Glossarbegriffen (`about` als `DefinedTerm` mit derselben `@id` wie die

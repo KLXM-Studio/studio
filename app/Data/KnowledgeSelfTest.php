@@ -96,6 +96,11 @@ final class KnowledgeSelfTest
             Knowledge::flush();
             $rel = Knowledge::related($t, Entries::find($t, $a), Knowledge::tree($t));
             $ck(array_column($rel, 'id') === [$b], 'Verwandte Kapitel über gemeinsame Schlagworte');
+            // Modus „Bearbeiten“: dasselbe Layout (Kapitelbaum, Nummer, Brotkrumen), Seitenleiste inaktiv und ohne Suche, kein Skript-Anker
+            $ed = Knowledge::frame('<h1 class="h2">Bestand</h1>' . EntryBlocks::SLOT, $t, Entries::find($t, $b), true);
+            $ck(str_contains($ed, 'kn--editing') && str_contains($ed, 'class="kn-side" id="') && str_contains($ed, '" inert>') && !str_contains($ed, 'role="search"')
+                && !str_contains($ed, 'data-kn>') && !str_contains($ed, 'data-kn-toggle') && str_contains($ed, 'kn-num--h1">1.1.1<') && str_contains($ed, EntryBlocks::SLOT) && Knowledge::$framed,
+                'Bearbeiten: Kapitel-Layout bleibt, Seitenleiste inaktiv ohne Suche, Platz für den Editor');
             // 4b. Einträge im Menü (Core\Data\MenuEntries) unter der Übersichtsseite: zwei Ebenen mit Nummern, oberste Ebene, aus
             $setMenu = function (array $me) use (&$t, $h): void {
                 $in = Tables::toInput($t);

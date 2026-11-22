@@ -33,6 +33,8 @@ final class Knowledge
     public const MAX = 2000;
 
     private static array $trees = [];
+    /** Wurde in dieser Anfrage ein Kapitel gerahmt? (Stile auch im Modus „Bearbeiten“, Theme::conditionalCss) */
+    public static bool $framed = false;
     /** Abschnitte des zuletzt gerahmten Kapitels (frame) – für JSON-LD hasPart (KnowledgeLd::entry) */
     public static array $sections = [];
 
@@ -299,8 +301,9 @@ final class Knowledge
      * Rahmen um den Inhalt der Detailseite: Seitenleiste (Suche, Kapitel), Brotkrumen, „In diesem Kapitel“, Fuß mit Schlagworten,
      * Begriffen, verwandten Kapiteln und Vor/Zurück.
      */
-    public static function frame(string $content, array $t, array $e): string
+    public static function frame(string $content, array $t, array $e, bool $editing = false): string
     {
+        self::$framed = true;
         $cfg = self::config($t);
         $tree = self::tree($t);
         $id = (int) $e['id'];
@@ -353,11 +356,13 @@ final class Knowledge
             foreach ($a['ids'] as $c) $nav .= $item($tree['nodes'][$c]);
             $nav .= '</ul>';
         }
-        $search = $overview === null ? '' : '<form class="kn-search" role="search" aria-label="' . e(lt('Wissensbereich')) . '" method="get" action="' . e($overview) . '">'
+        // Modus „Bearbeiten“ (?edit=inhalt): gleiches Layout, Seitenleiste ohne Suche und inaktiv (inert) – der Zusammenhang bleibt sichtbar,
+        // ein Klick führt nicht aus dem Editor
+        $search = $overview === null || $editing ? '' : '<form class="kn-search" role="search" aria-label="' . e(lt('Wissensbereich')) . '" method="get" action="' . e($overview) . '">'
             . '<label class="kn-search__label" for="' . e($uid) . '-q">' . e(lt('Im Wissensbereich suchen')) . '</label>'
             . '<span class="kn-search__row"><input id="' . e($uid) . '-q" class="kn-search__input" type="search" name="q" maxlength="80" autocomplete="off" enterkeyhint="search">'
             . '<button class="kn-search__btn" type="submit">' . icon('magnifying-glass', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Suchen')) . '</span></button></span></form>';
-        $side = '<div class="kn-side" id="' . e($uid) . '-side" data-kn-drawer>'
+        $side = '<div class="kn-side" id="' . e($uid) . '-side"' . ($editing ? ' inert' : ' data-kn-drawer') . '>'
             . '<div class="kn-side__head"><p class="kn-side__title">' . ($overview ? '<a href="' . e($overview) . '">' . e($name) . '</a>' : e($name)) . '</p>'
             . '<button class="kn-close" type="button" data-kn-close hidden>' . icon('x', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Kapitelmenü schließen')) . '</span></button></div>'
             . $search
@@ -375,15 +380,18 @@ final class Knowledge
         }
 
         $foot = self::footer($t, $e, $tree, $cfg);
+        if ($editing) {
+            if ($foot !== '') $foot = '<div class="kn-foot-wrap" inert>' . $foot . '</div>';
+            if ($crumbs !== '') $crumbs = '<div inert>' . $crumbs . '</div>';
+        }
         $aside = $layout === 'handbook' && count($sections) > 1
             ? '<aside class="kn-aside" aria-labelledby="' . e($uid) . '-on"><div class="kn-aside__in"><p class="kn-aside__title" id="' . e($uid) . '-on">' . e(lt('In diesem Kapitel')) . '</p>'
                 . '<nav aria-labelledby="' . e($uid) . '-on">' . $secList('kn-secs--aside') . '</nav></div></aside>'
             : '';
         $toggle = '<button class="kn-toggle" type="button" data-kn-toggle aria-expanded="false" aria-controls="' . e($uid) . '-side" hidden>'
             . icon('list', ['class' => 'kn-ico']) . '<span>' . e(lt('Kapitel')) . '</span></button>';
-        return '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . '" data-kn>'
-            . '<a class="kn-skip" href="#' . e($uid) . '-text">' . e(lt('Zum Kapiteltext springen')) . '</a>'
-            . $toggle
+        return '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . ($editing ? ' kn--editing' : '') . '"' . ($editing ? '' : ' data-kn') . '>'
+            . ($editing ? '' : '<a class="kn-skip" href="#' . e($uid) . '-text">' . e(lt('Zum Kapiteltext springen')) . '</a>' . $toggle)
             . $side
             . '<div class="kn-main" id="' . e($uid) . '-text" tabindex="-1">' . $crumbs . '<div class="kn-content">' . $content . '</div>' . $foot . '</div>'
             . $aside

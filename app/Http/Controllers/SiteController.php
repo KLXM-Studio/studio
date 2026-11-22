@@ -218,6 +218,8 @@ final class SiteController
             $app->contentSlot = true;
             $app->entryEdit = true;
             $full = $theme->renderBlocks($blocks);
+            // Wissensbereich: Kapitel-Layout auch beim Bearbeiten (Seitenleiste inaktiv, ohne Suche) – kein Sprung zwischen Ansehen und Bearbeiten
+            if (\Core\Data\Knowledge::is($ctx['table'])) $full = \Core\Data\Knowledge::frame($full, $ctx['table'], $ctx['entry'], true);
             $app->contentSlot = false;
             $app->entryEdit = false;
             $app->editing = true;

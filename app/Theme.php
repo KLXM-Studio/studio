@@ -893,7 +893,7 @@ final class Theme
         if ($types === null || in_array('entry_nav', $types, true)) $out[] = $this->coreCss('entry-nav.css');
         // Wissensbereich (Core\Data\Knowledge): Rahmen der Detailseite ('@knowledge') bzw. Suche/Filter/Kapitel der Datenliste ('@kfilter')
         // – nur über den Kit-Vertrag --kit-*; ein Kit kann css/knowledge.css bzw. css/list-filter.css mitbringen. Nicht beim Bearbeiten.
-        if ($types !== null && in_array('@knowledge', $types, true)) $out[] = $this->coreCss('knowledge.css');
+        if (($types !== null && in_array('@knowledge', $types, true)) || ($types === null && \Core\Data\Knowledge::$framed)) $out[] = $this->coreCss('knowledge.css');   // auch im Modus „Bearbeiten“
         if ($types !== null && in_array('@kfilter', $types, true)) $out[] = $this->coreCss('list-filter.css');
         // Termin-Aktionen (Block event_actions; Fragment event-actions meldet sich auch aus „Datensatz-Felder“) – Kit kann css/event-actions.css mitbringen
         if ($types === null || in_array('event_actions', $types, true)) $out[] = $this->coreCss('event-actions.css');

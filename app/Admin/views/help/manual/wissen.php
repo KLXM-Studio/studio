@@ -41,7 +41,7 @@
     <li><b>Bild</b> (optional): erscheint im Kopf des Kapitels, in Karten und beim Teilen.</li>
     <li><b>Inhalt:</b> Blöcke wie auf einer Seite – Fließtext, Bilder, Interaktives Bild, Downloads, auch eine <b>Datenliste</b> (z. B. die Termine zum Thema) … Gliedern Sie mit <b>Zwischenüberschriften (H2)</b>; sie werden zu den Abschnitten.</li>
     <li><b>Zuordnung</b> (aufklappen): <b>Schlagworte</b> ankreuzen oder unter „Neue Schlagworte“ ergänzen (durch Komma getrennt), <b>Verwandte Kapitel</b> und <b>Glossarbegriffe</b> verknüpfen, <b>Autor/in</b> und <b>„Zuletzt geprüft“</b> eintragen.</li>
-    <li>Speichern, auf der Website prüfen, veröffentlichen.</li>
+    <li>Speichern, auf der Website prüfen, veröffentlichen. Auch beim Bearbeiten direkt auf der Website („Bearbeiten“ in der Leiste) bleibt das Kapitel-Layout mit Seitenleiste, Nummer und Brotkrumen stehen – die Seitenleiste ist dabei nur Orientierung (ohne Suche, nicht anklickbar).</li>
   </ol>
 
   <h3>Kapitel als Verweis auf eine Seite</h3>
