@@ -197,6 +197,7 @@ export function initFavorites(csrf) {
   // ---------------------------------------------------------- Aufklappen (je Benutzer gemerkt)
   const openKey = 'adm.fav.collapsed.' + uid;
   function setOpen(open, remember = true) {
+    if (!toggle) return;   // Stern-Menü der Kopfleiste: kein Aufklapp-Schalter, Liste immer offen
     toggle.setAttribute('aria-expanded', String(open));
     body.hidden = !open;
     box.classList.toggle('is-collapsed', !open);
