@@ -18,12 +18,15 @@
 .ns-apart .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:var(--f-a-soft);color:var(--f-ink)}
 .ns-apart.nl-underline .hnav .hnav__item--split>.hnav__link.hnav__link--top:is(:hover,:focus-visible),.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub>.hnav__link.hnav__toggle:is(:hover,:focus-visible),.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:none}
 .ns-apart .hdr--rail .hnav__item--split>.hnav__sub>.hnav__toggle::before{display:none}
-/* Pfeil als eigene Schaltfläche sichtbar machen (auch bei „Unterstrichen“, dort hat der Link seine Linie): Fläche aus der Schriftfarbe –
-   auf dunklem Kopf hell, auf hellem dunkel –, Pfeil rückt beim Überfahren leicht nach unten; offen bleibt die Fläche stehen */
-.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle{cursor:pointer;transition:background-color .15s}
-.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle .hnav__chev{transition:translate .2s cubic-bezier(.2,.7,.2,1),scale .2s cubic-bezier(.2,.7,.2,1)}
+/* Pfeil als eigene Schaltfläche sichtbar machen (auch bei „Unterstrichen“, dort hat der Link seine Linie): leicht abgerundetes Quadrat
+   nur um den Pfeil (::after), Farbe aus der Schrift – auf dunklem Kopf hell, auf hellem dunkel; der Pfeil rückt leicht nach unten, offen bleibt
+   das Quadrat stehen. Die Knopffläche selbst bleibt ohne Hintergrund (Klickfläche unverändert) */
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle{cursor:pointer}
 .ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__link.hnav__toggle:is(:hover,:focus-visible),
-.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub>.hnav__link.hnav__toggle:is(:hover,:focus-visible){background:color-mix(in srgb,currentColor 14%,transparent)}
+.ns-apart .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:none}
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle::after{content:"";position:absolute;inset:0;margin:auto;width:min(1.75em,100%);height:auto;aspect-ratio:1;border-radius:.35rem;background:currentColor;opacity:0;pointer-events:none;transition:opacity .15s}
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle:is(:hover,:focus-visible)::after{opacity:.14}
+.ns-apart .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle::after{opacity:.18}
+.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle .hnav__chev{position:relative;z-index:1;transition:translate .2s cubic-bezier(.2,.7,.2,1),scale .2s cubic-bezier(.2,.7,.2,1)}
 .ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle:is(:hover,:focus-visible) .hnav__chev{translate:0 .12em}
-.ns-apart.nl-underline .hnav .hnav__item--split>.hnav__sub[open]>.hnav__toggle{background:color-mix(in srgb,currentColor 18%,transparent)}
-@media (prefers-reduced-motion:reduce){.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle .hnav__chev{transition:none}}
+@media (prefers-reduced-motion:reduce){.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle .hnav__chev,.ns-apart .hnav .hnav__item--split>.hnav__sub>.hnav__toggle::after{transition:none}}

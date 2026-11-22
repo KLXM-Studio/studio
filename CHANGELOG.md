@@ -25,8 +25,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - *EN:* fluid/native: new design option “Overview link in the dropdown menu” (off by default) – first entry linking to the menu item’s own page.
 
 ### Kit fluid: Pfeil im Menü („Link und Pfeil“) mit eigener Hover-Fläche
-- Bei „Link und Pfeil“ (nav_split = apart) bekommt der Pfeil beim Überfahren bzw. Fokus eine abgerundete Fläche aus der Schriftfarbe
-  (auf dunklem Kopf hell, auf hellem dunkel), auch beim Menüstil „Unterstrichen“; der Pfeil rückt leicht nach unten, offen bleibt die Fläche.
+- Bei „Link und Pfeil“ (nav_split = apart) bekommt der Pfeil beim Überfahren bzw. Fokus ein leicht abgerundetes Quadrat aus der
+  Schriftfarbe nur um den Pfeil (auf dunklem Kopf hell, auf hellem dunkel), auch beim Menüstil „Unterstrichen“; der Pfeil rückt leicht
+  nach unten, offen bleibt das Quadrat. Die Breite des Menüs ändert sich dadurch nicht.
 - *EN:* fluid: the dropdown arrow in split menu items gets its own hover/focus area.
 
 ### Wissensbereich: Karten auch bei Suche und Filter; „Filter anwenden“ nur ohne JavaScript
