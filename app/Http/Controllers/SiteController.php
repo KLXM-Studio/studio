@@ -236,6 +236,10 @@ final class SiteController
         } else {
             $content = $theme->renderBlocks($blocks);
         }
+        // Wissensbereich (Tabellenart knowledge, Core\Data\Knowledge): Seitenleiste mit Kapiteln, Abschnitte, Vor/Zurück um den Inhalt
+        $knowledge = !$error && \Core\Data\Knowledge::applies();
+        if ($knowledge) $content = \Core\Data\Knowledge::frame($content, $ctx['table'], $ctx['entry']);
+        $types = $app->editing ? null : [...self::types($blocks), ...($knowledge ? ['@knowledge'] : [])];
 
         // Angemeldet auf der Website unterwegs: „online“ mit Ort (Core\Presence::ONLINE) – Besucher nie
         if ($loggedIn) \Core\Http\Controllers\Admin\PresenceController::seen((string) ($ctx['entry']['title'] ?? $page['title'] ?? ''), (string) $r->path);
@@ -245,10 +249,14 @@ final class SiteController
             'seo' => $error ? ['title' => (string) ($page['meta_title'] ?: $page['title'])] + Seo::forError(404)
                 : ($ctx ? Seo::forEntry($page, $ctx['table'], $ctx['entry']) : Seo::forPage($page)),
             'editor' => $editor,
-            'extraCss' => $theme->conditionalCss($app->editing ? null : self::types($blocks)),
-            'extraJs' => $app->editing ? $theme->editorJs() : $theme->conditionalJs(self::types($blocks)),
+            'extraCss' => $theme->conditionalCss($types),
+            'extraJs' => $types === null ? $theme->editorJs() : $theme->conditionalJs($types),
             'toolbar' => $loggedIn ? ['page' => $page, 'editing' => $app->editing, 'dirty' => Pages::hasUnpublished($page), 'live' => $live] : null,
         ]);
+        // Wissensbereich: <link rel="prev|next"> der Kapitel-Reihenfolge
+        if ($knowledge && ($links = \Core\Data\Knowledge::headLinks($ctx['table'], $ctx['entry'])) !== '' && ($pos = stripos($html, '</head>')) !== false) {
+            $html = substr($html, 0, $pos) . $links . substr($html, $pos);
+        }
 
         // Gerade über die Leiste abgemeldet (AuthController::logout → ?abgemeldet): kurze Meldung, Skript entfernt den Zusatz aus der Adresse
         if (!$loggedIn && !$error && array_key_exists('abgemeldet', $r->query)) {

@@ -261,6 +261,19 @@ final class Entries
             [$f, $op, $v] = array_pad(array_values((array) $w), 3, '');
             if (!in_array($f, $names, true) || $v === '' || $v === null) continue;
             $field = Tables::field($table, (string) $f);
+            // „eine von“ (Besucher-Filter mit Mehrfachauswahl, Datenliste): Auswahl = eine der Optionen, Mehrfachauswahl = enthält eine davon
+            if ($op === 'in') {
+                $vals = array_values(array_unique(array_filter(array_map('strval', (array) $v), fn($x) => $x !== '')));
+                if (!$vals) continue;
+                if (($field['type'] ?? '') === 'multiselect') {
+                    $where[] = '(' . implode(' OR ', array_fill(0, count($vals), "$f LIKE ?")) . ')';
+                    foreach ($vals as $x) $params[] = '%' . json_encode($x, JSON_UNESCAPED_UNICODE) . '%';
+                } else {
+                    $where[] = "$f IN (" . implode(',', array_fill(0, count($vals), '?')) . ')';
+                    array_push($params, ...$vals);
+                }
+                continue;
+            }
             // Verknüpfungen: Wert = ID, Slug oder Titel des verknüpften Eintrags
             if (in_array($field['type'] ?? '', ['relation', 'relations'], true)) {
                 $target = Tables::findContent($field['target'] ?? '');
@@ -425,7 +438,13 @@ final class Entries
                 + (($f['style'] ?? '') === 'collapsed' ? ['collapse' => true, 'count' => true] : []);   // eingeklappt mit Zählung (Core\Fields)
             elseif ($type === 'content') $out[] = ['type' => 'heading', 'label' => '', 'html' => \Core\Sanitizer::block((string) ($f['text'] ?? ''))];
             elseif ($contacts && Exposure::isWebsiteOnly($f) && isset($f['name'], $data[$f['name']])) $web[] = $data[$f['name']];
-            elseif (isset($f['name'], $data[$f['name']])) $out[] = $data[$f['name']];
+            elseif (isset($f['name'], $data[$f['name']])) {
+                $out[] = $data[$f['name']];
+                // Wissen (Core\Data\Knowledge::addOptions): neue Bereiche/Schlagworte direkt beim Eintrag anlegen – vorhandene sind Vorschläge
+                if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true)) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
+                    'label' => $f['name'] === 'bereich' ? __('Neuer Bereich') : __('Neue Schlagworte'), 'width' => 'half', 'maxlength' => 300,
+                    'help' => $f['name'] === 'bereich' ? __('Nur ausfüllen, wenn der Bereich oben noch fehlt – er wird angelegt und gewählt.') : __('Durch Komma getrennt, z. B. „Wald, Jagdrecht“. Vorhandene Schlagworte oben ankreuzen.')];
+            }
         }
         if ($web) $out = [...$out, ['type' => 'heading', 'label' => __('Für die Website'), 'help' => __('Erscheint nur auf der Website (je nach Freigabe des Kontakts) – nicht in Adressbuch-Apps, Visitenkarten oder Exporten.')], ...$web];
         return $out;

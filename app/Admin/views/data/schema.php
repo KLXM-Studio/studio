@@ -270,6 +270,22 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
       <?php foreach ((array) $jc['map'] as $role => $fname): ?><input type="hidden" name="settings[jobs][map][<?= e((string) $role) ?>]" value="<?= e((string) $fname) ?>"><?php endforeach; ?>
     </section>
     <?php endif; ?>
+    <?php if (($s['kind'] ?? '') === \Core\Data\Kinds::KNOWLEDGE): $kc = \Core\Data\Knowledge::validateSettings((array) ($s['knowledge'] ?? [])); // Wissensbereich (Core\Data\Knowledge) ?>
+    <section class="set-group" id="wissen" aria-labelledby="t-g-kn">
+      <h3 class="set-group__title" id="t-g-kn"><?= e(__('Wissensbereich')) ?></h3>
+      <p class="set-group__note"><?= e(__('Die Detailseiten erscheinen als Handbuch: Seitenleiste mit Suche und Kapiteln, Abschnitte aus den Zwischenüberschriften, Schlagworte, Glossarbegriffe, verwandte Kapitel und Vor/Zurück.')) ?></p>
+      <div class="set-list">
+        <div class="f f--inline"><label for="t-kn-layout"><?= e(__('Layout')) ?></label>
+          <p class="f-help"><?= e(__('Klassisch: Seitenleiste mit Kapiteln und den Abschnitten des aufgerufenen Kapitels. Kompakt: wie Klassisch, schmaler. Fokus: ohne Seitenleiste, das Kapitelmenü öffnet als Schublade. Handbuch: Seitenleiste nur mit Kapiteln, „In diesem Kapitel“ rechts neben dem Text (breite Bildschirme) bzw. aufklappbar unter der Überschrift. Handbuch kompakt: „In diesem Kapitel“ immer aufklappbar.')) ?></p>
+          <select id="t-kn-layout" name="settings[knowledge][layout]">
+            <?php foreach (\Core\Data\Knowledge::LAYOUTS as $lk => $ll): ?><option value="<?= e($lk) ?>"<?= $kc['layout'] === $lk ? ' selected' : '' ?>><?= e(__($ll)) ?></option><?php endforeach; ?>
+          </select></div>
+        <?= $sw('settings[knowledge][numbers]', $kc['numbers'], __('Kapitelnummern zeigen (z. B. 2.1)'), __('In Seitenleiste, Überschrift, Inhaltsverzeichnis und Übersicht. Automatisch aus Bereich, Oberkapitel und Reihenfolge – je Kapitel überschreibbar.')) ?>
+        <?= $sw('settings[knowledge][pager]', $kc['pager'], __('Vor / Zurück zwischen den Kapiteln')) ?>
+        <?= $sw('settings[knowledge][related]', $kc['related'], __('Verwandte Kapitel zeigen'), __('Ausdrücklich verknüpfte Kapitel, dann Kapitel mit gemeinsamen Schlagworten.')) ?>
+      </div>
+    </section>
+    <?php endif; ?>
   </section>
 <?php endif; ?>
 

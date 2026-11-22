@@ -882,6 +882,10 @@ final class Theme
         if (($types === null || array_intersect(['data_list', 'data_fields'], $types)) && array_filter(\Core\Combo::TYPES, fn($c) => \Core\Data\Tables::usesType($c))) $out[] = $this->coreCss('combo.css');
         // Vor / Zurück auf Detailseiten (Kern-Block entry_nav) – Kit kann css/entry-nav.css mitbringen
         if ($types === null || in_array('entry_nav', $types, true)) $out[] = $this->coreCss('entry-nav.css');
+        // Wissensbereich (Core\Data\Knowledge): Rahmen der Detailseite ('@knowledge') bzw. Suche/Filter/Kapitel der Datenliste ('@kfilter')
+        // – nur über den Kit-Vertrag --kit-*; ein Kit kann css/knowledge.css bzw. css/list-filter.css mitbringen. Nicht beim Bearbeiten.
+        if ($types !== null && in_array('@knowledge', $types, true)) $out[] = $this->coreCss('knowledge.css');
+        if ($types !== null && in_array('@kfilter', $types, true)) $out[] = $this->coreCss('list-filter.css');
         // Termin-Aktionen (Block event_actions; Fragment event-actions meldet sich auch aus „Datensatz-Felder“) – Kit kann css/event-actions.css mitbringen
         if ($types === null || in_array('event_actions', $types, true)) $out[] = $this->coreCss('event-actions.css');
         // Kalender-Blöcke (Monatsübersicht, Nächste Termine) – Theme kann css/calendar.css mitbringen
@@ -981,6 +985,8 @@ final class Theme
         // Kern-Skript für sortierbare Tabellen (Datenliste → „Spalten sortierbar“; Komponente von NativeCSS, resources/js/table-sort.js)
         // – für jedes Kit, nur mit Merkmal '@tablesort'
         if (in_array('@tablesort', $types, true)) $out[] = asset('js/table-sort.js');
+        // Wissensbereich: Kapitelmenü als Schublade (Telefon, Modus „Fokus“), mitlaufende Abschnitte – Kern-Skript für jedes Kit
+        if (in_array('@knowledge', $types, true)) $out[] = asset('js/knowledge.js');
         foreach ($this->def['conditional_css'] ?? [] as $file => $needs) {
             if (str_ends_with($file, '.js') && array_intersect($needs, $types)) {
                 $out[] = $this->asset($file);

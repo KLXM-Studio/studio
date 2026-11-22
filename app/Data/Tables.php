@@ -367,7 +367,7 @@ final class Tables
         }
         $inbox = $kind === 'inbox';
         // Grundschema der Art (Kontakte): fehlende System-Felder ergänzen, Typ fest (Core\Data\Kinds::enforceInput)
-        if (Kinds::isSpecial($kind)) $in['fields'] = Kinds::enforceInput($kind, (array) ($in['fields'] ?? []), $errors);
+        if (Kinds::isSpecial($kind)) $in['fields'] = Kinds::enforceInput($kind, (array) ($in['fields'] ?? []), $errors, $handle);
         $fields = [];
         $seen = [];
         $rawFields = [];
@@ -538,6 +538,8 @@ final class Tables
         }
         // Version des Grundschemas (nur additiv; data:convert/Upgrade ergänzen neue Grundfelder) und Stand einer Umwandlung
         if (Kinds::isSpecial($kind)) $settings['kind_version'] = Kinds::version($kind);
+        // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
+        if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? [])));
         $conv = $in['_convert'] ?? ($s['convert'] ?? ($existing['settings']['convert'] ?? null));
         if (is_array($conv) && $conv) $settings['convert'] = $conv;
         // Website-Suche je Tabelle (Core\Search\TableSearch) – ohne Formularabschnitt bleibt die bisherige Einstellung

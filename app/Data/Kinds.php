@@ -26,8 +26,10 @@ final class Kinds
     public const CALENDAR = 'calendar';
     /** Orte: Veranstaltungsorte mit Anschrift und Kartenpunkt – Verknüpfung „Ort aus der Liste“ (ort_ref) in Kalendern */
     public const PLACES = 'places';
+    /** Wissen: Kapitel eines Wissensbereichs/Handbuchs mit Bereich, Oberkapitel, Nummer, Schlagworten (Core\Data\Knowledge) */
+    public const KNOWLEDGE = 'knowledge';
     /** Aktuelle Version des Grundschemas je Art */
-    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1];
+    public const VERSIONS = [self::CONTACTS => 1, self::CALENDAR => 1, self::PLACES => 1, self::KNOWLEDGE => 1];
     /** Feste Kalender-Zuordnung der Art calendar (settings.calendar → Grundfelder) */
     public const CALENDAR_MAP = ['start' => 'beginn', 'end' => 'ende', 'all_day' => 'ganztaegig', 'recurrence' => 'wiederholung', 'location' => 'ort',
         'description' => 'beschreibung', 'category' => 'kategorie'];
@@ -69,6 +71,12 @@ final class Kinds
         return self::of($t) === self::PLACES;
     }
 
+    /** Wissensbereich (Kapitel mit Bereich, Oberkapitel, Nummern, Schlagworten – Ansicht Core\Data\Knowledge)? */
+    public static function isKnowledge(array $t): bool
+    {
+        return self::of($t) === self::KNOWLEDGE;
+    }
+
     /**
      * Kalender-Einstellung (settings.calendar) einer Tabelle der Art calendar: Zuordnung fest aufs Grundschema, eingeschaltet;
      * Dauer ohne Ende, öffentlicher Feed und „Datum im Seitentitel“ bleiben einstellbar.
@@ -89,6 +97,7 @@ final class Kinds
             self::CONTACTS => __('Adressbuch'),
             self::CALENDAR => __('Kalender'),
             self::PLACES => __('Orte'),
+            self::KNOWLEDGE => __('Wissen'),
             'inbox' => __('Eingang'),
             default => __('Inhalte'),
         };
@@ -149,6 +158,28 @@ final class Kinds
                 ['name' => 'standort', 'label' => 'Ort (Karte)', 'type' => 'geo', 'since' => 1],
                 ['name' => 'hinweise', 'label' => 'Anfahrt und Hinweise', 'type' => 'textarea', 'since' => 1],
             ],
+            // Wissen: Verknüpfungen auf die eigene Tabelle (oberkapitel, verwandt) bzw. das Glossar (begriffe) setzt enforceInput
+            self::KNOWLEDGE => [
+                ['name' => 'titel', 'label' => 'Titel', 'type' => 'text', 'required' => 1, 'in_list' => 1, 'searchable' => 1, 'since' => 1],
+                ['name' => 'bereich', 'label' => 'Bereich', 'type' => 'select', 'in_list' => 1, 'options' => '', 'width' => 'half', 'since' => 1,
+                    'help' => 'Oberste Gliederung, z. B. „Grundlagen“, „Praxis“. Die Reihenfolge der Bereiche ergibt die erste Stelle der Kapitelnummer.'],
+                ['name' => 'oberkapitel', 'label' => 'Oberkapitel', 'type' => 'relation', 'target' => '', 'width' => 'half', 'since' => 1,
+                    'help' => 'Leer = Kapitel der ersten Ebene. Sonst steht das Kapitel darunter (z. B. 2.1 unter 2).'],
+                ['name' => 'kapitelnummer', 'label' => 'Kapitelnummer', 'type' => 'text', 'width' => 'half', 'since' => 1,
+                    'help' => 'Leer = automatisch aus Bereich, Oberkapitel und Reihenfolge. Eigene Nummer, z. B. „A.1“, ersetzt die automatische.'],
+                ['name' => 'anreisser', 'label' => 'Anreißer', 'type' => 'textarea', 'searchable' => 1, 'since' => 1,
+                    'help' => 'Ein, zwei Sätze: worum es im Kapitel geht – in Übersicht, Suche und Inhaltsverzeichnis.'],
+                ['name' => 'inhalt', 'label' => 'Inhalt', 'type' => 'blocks', 'searchable' => 1, 'since' => 1,
+                    'help' => 'Text, Bilder, Downloads … wie auf einer Seite. Zwischenüberschriften (H2) erscheinen als Abschnitte „In diesem Kapitel“.'],
+                ['name' => 'schlagworte', 'label' => 'Schlagworte', 'type' => 'multiselect', 'in_list' => 1, 'options' => '', 'since' => 1,
+                    'help' => 'Besucher filtern danach; Kapitel mit gleichen Schlagworten erscheinen als „Verwandte Kapitel“.'],
+                ['name' => 'verwandt', 'label' => 'Verwandte Kapitel', 'type' => 'relations', 'target' => '', 'since' => 1],
+                ['name' => 'begriffe', 'label' => 'Glossarbegriffe', 'type' => 'relations', 'target' => '', 'since' => 1,
+                    'help' => 'Begriffe aus dem Glossar der Website, die das Kapitel erklärt – erscheinen als „Begriffe in diesem Kapitel“.'],
+                ['name' => 'autor', 'label' => 'Autor/in', 'type' => 'text', 'width' => 'half', 'since' => 1],
+                ['name' => 'geprueft_am', 'label' => 'Zuletzt geprüft', 'type' => 'date', 'width' => 'half', 'since' => 1,
+                    'help' => 'Wann der Inhalt zuletzt fachlich geprüft wurde – steht unter dem Kapitel.'],
+            ],
             default => [],
         };
         return array_values(array_filter($all, fn($f) => (int) $f['since'] <= $version));
@@ -168,13 +199,14 @@ final class Kinds
     /** Auswahlfeld, das ohne Optionen gespeichert werden darf (Listen einer Kontakte-Tabelle) */
     public static function allowsEmptyOptions(string $kind, string $name): bool
     {
-        return ($kind === self::CONTACTS && $name === 'listen') || ($kind === self::CALENDAR && $name === 'kategorie');
+        return ($kind === self::CONTACTS && $name === 'listen') || ($kind === self::CALENDAR && $name === 'kategorie')
+            || ($kind === self::KNOWLEDGE && in_array($name, ['bereich', 'schlagworte'], true));
     }
 
     /** Verknüpfung, die ohne Zieltabelle gespeichert werden darf (Ort aus der Liste, solange es keine Orte-Tabelle gibt) */
     public static function allowsEmptyTarget(string $kind, string $name): bool
     {
-        return $kind === self::CALENDAR && $name === 'ort_ref';
+        return ($kind === self::CALENDAR && $name === 'ort_ref') || ($kind === self::KNOWLEDGE && $name === 'begriffe');
     }
 
     /** Erste Tabelle der Art „Orte“ (Ziel für ort_ref neuer Kalender), sonst '' */
@@ -188,9 +220,14 @@ final class Kinds
      * Eingabe des Designers (Tables::validate) an das Grundschema anpassen: fehlende System-Felder anhängen, Typ eines vorhandenen
      * System-Feldes festhalten (mit Hinweis). Beschriftung, Hilfe, Breite, „In der Liste“ und Optionen der Listen bleiben änderbar.
      */
-    public static function enforceInput(string $kind, array $fields, array &$errors): array
+    public static function enforceInput(string $kind, array $fields, array &$errors, string $handle = ''): array
     {
         $schema = array_column(self::schema($kind), null, 'name');
+        // Wissen: Oberkapitel und verwandte Kapitel verweisen immer auf die eigene Tabelle, Glossarbegriffe aufs Glossar (falls vorhanden)
+        if ($kind === self::KNOWLEDGE) {
+            foreach (['oberkapitel', 'verwandt'] as $n) $schema[$n]['target'] = $handle;
+            $schema['begriffe']['target'] = Tables::findContent(\Core\Glossary\Glossary::HANDLE) ? \Core\Glossary\Glossary::HANDLE : '';
+        }
         $seen = [];
         foreach ($fields as $i => $f) {
             if (!is_array($f)) continue;
@@ -210,6 +247,9 @@ final class Kinds
                 $fields[$i]['type'] = $schema[$n]['type'];
             }
             $fields[$i]['name'] = $n;
+            if (isset($schema[$n]['target']) && $kind === self::KNOWLEDGE && ($n !== 'begriffe' || $schema[$n]['target'] !== '' || ($f['target'] ?? '') === '')) {
+                $fields[$i]['target'] = $schema[$n]['target'];
+            }
             unset($fields[$i]['legacy']);
         }
         foreach ($schema as $n => $def) {
@@ -249,6 +289,14 @@ final class Kinds
             ];
         }
         if ($kind === self::PLACES) return $pick('name', 'adresse', 'standort', 'hinweise');
+        if ($kind === self::KNOWLEDGE) {
+            return [
+                ['label' => 'Kapitel', 'name' => 'abschnitt_kapitel', 'type' => 'section'],
+                ...$pick('titel', 'bereich', 'oberkapitel', 'kapitelnummer', 'anreisser', 'inhalt'),
+                ['label' => 'Zuordnung', 'name' => 'abschnitt_zuordnung', 'type' => 'section', 'style' => 'collapsed'],
+                ...$pick('schlagworte', 'verwandt', 'begriffe', 'autor', 'geprueft_am'),
+            ];
+        }
         if ($kind !== self::CONTACTS) return [];
         return [
             ...$pick(self::PUBLIC_FIELD),
