@@ -11,9 +11,9 @@ Schatten aus Verwaltung → Design. Gegenstück zum Kit „NativeCSS“ von flui
 | Bereich | Umsetzung |
 |---|---|
 | Kopfleiste | `.ncss-topbar` mit `.ncss-nav`, immer einzeilig: passt das Menü nicht neben Marke und Werkzeuge, öffnet die Schaltfläche dasselbe Menü als Off-Canvas-`<dialog>` (`command="show-modal"`, ohne Skript in aktuellen Browsern; `js/native.js` ergänzt Ersatz, „Klick daneben schließt“, Schließen nach Link). Untermenüs als `<details>` mit „Übersicht“. Kopfbereich-Aktionen (Suche, Handlungsaufruf …), Sprachen (ab drei als Aufklappmenü des Kerns), Hell/Dunkel-Schalter. Umschalten ohne Skript per Container Query: `native_nav_fit()` schätzt die nötige Breite der Zeile (rem) aus Menüpunkten, Marke, Kopfbereich-Aktionen, Sprachen, Hell/Dunkel und Darstellung → `data-ncss-nav-fit`; `js/nav.js` von NativeCSS misst nach. Eigenes CSS für den Kompakt-Zustand liest den Schalter `--ncss-nav-compact` (`_native.css`) |
-| Fußbereich | `.ncss-footer` im Raster: Name und Claim, Kontakt, Seiten, Social Media, Rechtliches, Sprachen |
+| Fußbereich | `.ncss-footer` im Raster: Name und Claim, Kontakt, Seiten, Social Media, Rechtliches, Sprachen; Handlungsaufruf im Fuß (`fluid_footer_cta()`, Website → Darstellung) unter dem Text; Design → Seite → „Dichte des Fußbereichs“ (`fd-compact`, CSS in `_native.css`); die Kopfleiste gleitet am Seitenende mit dem Anfang des Fußes weg (View-Timeline `--nv-ftr`) |
 | Einblend-Effekte | Abschnitt → „Einblend-Effekt“: Sanft einblenden, Von unten, Kreis, Vorhang (`.ncss-reveal … --once`, theme.php → `reveal`) |
-| Einstieg | Text + Bild, Zentriert, Seitenkopf, Großer Schriftzug, Vollflächig mit Hintergrundvideo (`js/video-bg.js`: Pause-Schalter, lädt erst in der Nähe, nie bei „Bewegung reduzieren“/„Daten sparen“) |
+| Einstieg | Text + Bild, Zentriert, Seitenkopf, Großer Schriftzug, Vollflächig mit Hintergrundvideo (Play/Pause-Schalter des Kerns `Core\Blocks\Hero::videoToggle` + `hero.mjs`, in NativeCSS-Tokens gestaltet: spielt nur sichtbar, nie von selbst bei „Bewegung reduzieren“/„Daten sparen“) |
 | Text + Bild, Video | Darstellung „Morphing beim Scrollen“ (`block_extend`, `.ncss-morph`, nur CSS) |
 | Karten | `.ncss-card`: ganze Karte klickbar, „Hervorheben“ mit Etikett, Filter nach Kategorie (sobald fluid die Felder hat) |
 | Kennzahlen | zählen beim Hereinscrollen hoch (`.ncss-count-up`) – nicht Jahreszahlen, „24/7“ oder „3,5“ |
@@ -34,7 +34,7 @@ Pakete „Vergleichstabelle“) bindet die View über `native_parent_view('typ')
 Kopfleiste, Navigation, Off-Canvas, Fußbereich, Brücke. Reihenfolge der Layer steht in der Datei selbst – ein
 `<style>` im Kopf erlaubt die CSP der Website nicht. Jede Komponente lädt über `conditional_css`, ausgelöst vom Block,
 der Variante oder einem Merkmal (`Theme::markUsed`, z. B. `stats:@count`, `logos:@marquee`, `video:@player`,
-`@videobg`, `@morph`, `@reveal`, `@nv-cards`). Player-Skripte (Video ≈ 10 KB, Audio ≈ 5 KB, dazu einmal der gemeinsame Kern `js/ncss-media-core.js` ≈ 13 KB) laden nur mit eigener Datei.
+`@morph`, `@reveal`, `@nv-cards`). Player-Skripte (Video ≈ 10 KB, Audio ≈ 5 KB, dazu einmal der gemeinsame Kern `js/ncss-media-core.js` ≈ 13 KB) laden nur mit eigener Datei.
 
 ## Struktur
 

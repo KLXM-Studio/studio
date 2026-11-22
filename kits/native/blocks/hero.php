@@ -5,8 +5,9 @@
  *   centered   zentriert, Bild darunter
  *   compact    Seitenkopf ohne Bild (Unterseiten) als getönte Kachel
  *   type       großer Schriftzug, Betonung *Wort* im Markenverlauf, Dachzeile als .ncss-badge
- *   fullbleed  Bild oder Hintergrundvideo vollflächig mit Text darauf (.ncss-hero; Video: js/video-bg.js von NativeCSS mit
- *              Pausieren/Abspielen, lädt erst in der Nähe, nie bei „Bewegung reduzieren“ oder „Daten sparen“)
+ *   fullbleed  Bild oder Hintergrundvideo vollflächig mit Text darauf (.ncss-hero; Video: Kern-Schalter Core\Blocks\Hero::videoToggle
+ *              + hero.mjs – Play/Pause-Symbol, spielt nur sichtbar, nie von selbst bei „Bewegung reduzieren“ oder „Daten sparen“;
+ *              gestaltet über NativeCSS-Tokens, css/nv-hero.css)
  * Übrige Varianten (cards, scale, collage, compare) und „Vollflächig“ mit Bilderfolge oder Bildbewegung kommen aus dem Kit fluid.
  * @var \Core\Block $b  @var array $d
  */
@@ -40,16 +41,16 @@ if ($v === 'fullbleed'):
     $height = in_array($d['bleed_height'] ?? '', ['tall', 'medium', 'low'], true) ? $d['bleed_height'] : 'tall';
     // Hintergrundvideo nur für Besucher; beim Bearbeiten das Standbild
     $vid = is_editing() ? null : $vid;
-    if ($vid) native_mark('@videobg');
 ?>
-<div class="ncss-hero nv-hero nv-hero--bleed nv-hero--<?= e($overlay) ?> nv-hero--h-<?= e($height) ?>"<?= $vid ? ' data-ncss-video-bg' : '' ?>>
+<div class="ncss-hero nv-hero nv-hero--bleed nv-hero--<?= e($overlay) ?> nv-hero--h-<?= e($height) ?>"<?= $vid ? ' data-hero-video-box' : '' ?>>
   <div class="ncss-hero-media" aria-hidden="true">
     <?= !empty($d['image']) ? img((int) $d['image'], '100vw', ['eager' => true, 'alt' => '']) : '' ?>
-    <?php if ($vid): ?><video class="nv-hero__video" muted loop playsinline preload="none" aria-hidden="true"><?php /* kein poster: das Standbild liegt darunter */ ?><source data-src="<?= e(\Core\Media::url($vid)) ?>" type="<?= e((string) $vid['mime']) ?>"></video><?php endif; ?>
+    <?php if ($vid): ?><video class="nv-hero__video" data-hero-video muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"><?php /* kein poster: das Standbild liegt darunter */ ?><source src="<?= e(\Core\Media::url($vid)) ?>" type="<?= e((string) $vid['mime']) ?>"></video><?php endif; ?>
   </div>
   <div class="ncss-hero-content ncss-hero-content--<?= $overlay === 'gradient' ? 'transparent' : 'filled' ?>">
     <?= $textHtml() ?>
   </div>
+  <?= $vid ? \Core\Blocks\Hero::videoToggle('nv-hero__toggle', (string) ($d['video_toggle'] ?? 'icon')) : '' ?>
 </div>
 <?php elseif ($v === 'type'): ?>
 <div class="wrap nv-hero nv-hero--type">

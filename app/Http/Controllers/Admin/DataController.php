@@ -60,6 +60,14 @@ final class DataController extends AdminController
             ['label' => 'Antwort', 'type' => 'richtext', 'required' => 1, 'searchable' => 1],
             ['label' => 'Thema', 'type' => 'select', 'in_list' => 1, 'options' => "Allgemein"],
         ], 'title' => 'frage', 'image' => '', 'desc' => ''],
+        // Interaktive Bilder (Core\Hotspots): Bild mit Markierungen – eingesetzt mit dem Block „Interaktives Bild“ (Quelle „aus der Tabelle“),
+        // so an mehreren Stellen und – als geteilte Tabelle – im Netzwerk nutzbar
+        'hotspots' => ['name' => 'Interaktive Bilder', 'singular' => 'Interaktives Bild', 'icon' => 'crosshair', 'route' => '', 'sort' => ['titel', 'asc'], 'fields' => [
+            ['label' => 'Titel', 'type' => 'text', 'required' => 1, 'in_list' => 1, 'searchable' => 1],
+            ['label' => 'Bild', 'type' => 'media', 'required' => 1, 'in_list' => 1, 'help' => 'Alt-Text und Bildnachweis kommen aus der Mediathek.'],
+            ['label' => 'Markierungen', 'type' => 'hotspots', 'help' => 'Ins Bild klicken setzt eine Markierung; je Markierung Titel, Text, Link oder Glossar-Begriff.'],
+            ['label' => 'Notiz (intern)', 'type' => 'textarea'],
+        ], 'title' => 'titel', 'image' => 'bild', 'desc' => ''],
         // Eingang: verschlüsselte Anfragen (Core\Data\Inbox) – Einträge nur über das öffentliche Formular, lesen unter „Anfragen“
         'inbox' => ['name' => 'Anfragen', 'singular' => 'Anfrage', 'icon' => 'envelope-simple', 'route' => '', 'sort' => ['created_at', 'desc'], 'kind' => 'inbox',
             'purpose' => 'inbox', 'fields' => [

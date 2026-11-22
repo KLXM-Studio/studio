@@ -453,7 +453,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--dff-sec-radius` | `var(--f-radius)` | `.dff-wrap` | – |
 | `--f-danger` | `color-mix(in srgb,#E5484D 66%,var(--f-ink))` | `.dff-wrap` | – |
 
-**css/hero-x.css** (16)
+**css/hero-x.css** (18)
 
 | Variable | erster Wert | an | weitere Werte |
 |---|---|---|---|
@@ -473,6 +473,8 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `--hb-d` | `-1.5s` | `.hb-slide:nth-child(1)` | 5 |
 | `--hb-kf` | `hb-f2` | `.has-motion .hb-n2` | 4 |
 | `--hb-t` | `12s` | `.has-motion .hb-n2` | 4 |
+| `--hx-vt-x` | `0` | `.hero-bleed` | – |
+| `--hx-vt-y` | `var(--f-s-l)` | `.hero-bleed` | – |
 
 **css/hx-compare.css** (1)
 
@@ -771,7 +773,7 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | `css/b-logos.css` | f-marquee | ja | ja | – | – |
 | `css/b-pricelist.css` | – | – | – | ja | – |
 | `css/b-quote.css` | f-qmarquee | ja | ja | – | – |
-| `css/b-scrolly.css` | – | ja | – | – | – |
+| `css/b-scrolly.css` | – | ja | ja | – | – |
 | `css/b-steps.css` | steps-draw, steps-pop | ja | ja | – | – |
 | `css/b-tabs.css` | – | ja | ja | – | ja |
 | `css/calendar.css` | – | – | – | ja | ja |
@@ -806,7 +808,6 @@ Feste Namen; zusammengesetzte (z. B. `css/nav-{stil}.css`) erkennt der Generator
 | Skript | reduced-motion | IntersectionObserver | requestAnimationFrame | Modul/Nachladen | Größe |
 |---|---|---|---|---|---|
 | `js/backnav.js` | – | – | – | – | 2,8 KB (Quelle) |
-| `js/bgvideo.js` | ja | – | – | – | 0,9 KB (Quelle) |
 | `js/downloads.js` | ja | – | – | – | 3,1 KB (Quelle) |
 | `js/filter.js` | – | – | – | – | 1,7 KB (Quelle) |
 | `js/nav-hover.js` | – | – | – | – | 0,9 KB (Quelle) |
@@ -832,8 +833,6 @@ _Keine Namensraum-Ereignisse._
 | Attribut | Fundstellen |
 |---|---|
 | `data-active` | functions.php |
-| `data-bg-video` | blocks/hero.php, assets/js/bgvideo.js, assets/js/site.js |
-| `data-bg-video-toggle` | blocks/hero.php, assets/js/bgvideo.js |
 | `data-category` | blocks/cards.php, assets/js/filter.js, functions.php |
 | `data-cms-edit` | blocks/quote.php |
 | `data-contrast` | assets/js/preferences-early.js, assets/js/preferences.js |
@@ -846,12 +845,12 @@ _Keine Namensraum-Ereignisse._
 | `data-focus` | assets/js/preferences-early.js, assets/js/preferences.js |
 | `data-font-preview` | assets/js/preferences.js |
 | `data-header` | templates/partials/header-sidebar.php, templates/partials/header.php, assets/js/site.js |
+| `data-hero-video` | blocks/hero.php |
+| `data-hero-video-box` | blocks/hero.php |
 | `data-img` | blocks/scrolly.php, assets/js/scrolly.js |
 | `data-key` | assets/js/preferences.js |
 | `data-label-dark` | templates/partials/header.php, assets/js/scheme.js |
 | `data-label-light` | templates/partials/header.php, assets/js/scheme.js |
-| `data-label-pause` | blocks/hero.php, assets/js/bgvideo.js |
-| `data-label-play` | blocks/hero.php, assets/js/bgvideo.js |
 | `data-label-status` | functions.php |
 | `data-label-status-none` | functions.php |
 | `data-label-status-one` | functions.php |

@@ -107,14 +107,15 @@ html:not(.has-motifs) .hz-mon__marks{display:none}
 .hz-mon__grille{flex:1;min-width:2rem;height:.75rem;background:radial-gradient(circle,color-mix(in srgb,var(--e-fg) 26%,transparent) 1.3px,transparent 1.7px) 0 50%/8px 8px repeat-x}
 .hz-mon__led{flex:none;width:.5rem;height:.5rem;border-radius:50%;background:color-mix(in srgb,var(--e-fg) 22%,transparent)}
 .hz-mon.is-playing:has(.hx-toggle:not(.is-paused)) .hz-mon__led{background:var(--e-a);box-shadow:0 0 0 3px color-mix(in srgb,var(--e-a) 25%,transparent),0 0 12px var(--e-a)}
-/* Pause als Geräte-Taste (hell auf Graphit, 44 × 44 px) */
-.hz-mon__toggle{flex:none;display:inline-grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;border:0;border-radius:var(--e-r-s);background:linear-gradient(var(--e-on-dark),color-mix(in srgb,var(--e-on-dark) 84%,#000));color:#1B1B19;cursor:pointer;
+/* Play/Pause als Geräte-Taste (hell auf Graphit, 44 × 44 px; Kern-Schalter Core\Blocks\Hero::videoToggle, eigene Optik) */
+.hz-mon__toggle{position:static;flex:none;display:inline-grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;border:0;border-radius:var(--e-r-s);background:linear-gradient(var(--e-on-dark),color-mix(in srgb,var(--e-on-dark) 84%,#000));color:#1B1B19;cursor:pointer;
   box-shadow:inset 0 1px 0 rgb(255 255 255/.7),inset 0 -3px 0 rgb(0 0 0/.22),0 2px 4px rgb(0 0 0/.5);transition:translate .08s,box-shadow .08s}
 .hz-mon__toggle[hidden]{display:none}
 .hz-mon__toggle:hover{background:var(--e-on-dark)}
 .hz-mon__toggle:active{translate:0 1px;box-shadow:inset 0 1px 0 rgb(255 255 255/.5),inset 0 -1px 0 rgb(0 0 0/.22),0 1px 1px rgb(0 0 0/.5)}
 .hz-mon__toggle:focus-visible{outline:2px solid var(--e-on-dark);outline-offset:3px}
-.hz-mon__toggle span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* „Symbol mit Text“ (Core\Blocks\Hero::videoToggle): Taste wird breiter, Text neben dem Symbol */
+.hz-mon__toggle.hx-vt--text{display:inline-flex;gap:.5rem;width:auto;padding-inline:.75rem 1rem;font-size:var(--e-t-1,.875rem);font-weight:600}
 .hx-toggle .hx-ico--play{display:none}
 .hx-toggle.is-paused .hx-ico--pause{display:none}
 .hx-toggle.is-paused .hx-ico--play{display:block}

@@ -904,6 +904,10 @@ final class Theme
         if (($types === null || in_array('dials', $types, true)) && !empty($this->blocks['dials']['core'])) {
             $out[] = $this->coreCss('dials.css');
         }
+        // Interaktives Bild (Kern-Block hotspots; Feldtyp „Markierungen“ in Datenliste/Datensatz-Feldern) – Variablen --hs-* aus den
+        // --kit-*-Farben, oder eigene css/hotspots.css des Kits
+        if ($types === null || in_array(Hotspots::TYPE, $types, true)
+            || (array_intersect(['data_list', 'data_fields'], $types) && \Core\Data\Tables::usesType(Hotspots::TYPE))) $out[] = $this->coreCss('hotspots.css');
         // Personen (Kern-Block people) – Kit kann css/people.css mitbringen
         // … auch in Inhaltsblöcken von Einträgen (entry_blocks, z. B. Ansprechpersonen je Gruppe)
         if ($types === null || array_intersect(['people', 'entry_blocks'], $types)) $out[] = $this->coreCss('people.css');

@@ -311,6 +311,31 @@ return [
             ...\Core\Maps::blockFields(),
         ],
     ],
+    // Interaktives Bild (Core\Hotspots): Bild mit nummerierten Markierungen – hier gepflegt oder aus einer Tabelle (Vorlage „Interaktive Bilder“)
+    'hotspots' => [
+        'label' => 'Interaktives Bild', 'icon' => 'crosshair', 'group' => 'Medien',
+        'description' => 'Bild mit nummerierten Markierungen – ein Klick zeigt Titel, Text, Link oder Glossar-Begriff.',
+        'nestable' => true,   // in einer Spalte des Blocks „Layout“ erlaubt (Core\Layout)
+        'help' => 'Ein Bild aus der Mediathek mit Markierungen: Punkte oder Flächen, die per Klick oder Tastatur ein Hinweisfenster öffnen. Auf dem Telefon stehen alle Markierungen zusätzlich als Liste unter dem Bild. Hier gepflegt oder aus der Tabelle „Interaktive Bilder“ – dann an mehreren Stellen (auch im Netzwerk) dasselbe Bild.',
+        'fields' => [
+            ...\Core\MediaBlocks::headFields(),
+            ['type' => 'heading', 'label' => 'Bild & Markierungen'],
+            ['name' => 'source', 'label' => 'Quelle', 'type' => 'select', 'required' => true, 'default' => 'here', 'width' => 'half',
+                'options' => ['here' => 'Hier pflegen', 'table' => 'Aus einer Datentabelle (Eintrag wählen)'],
+                'help' => '„Aus einer Datentabelle“: einmal pflegen, an mehreren Stellen zeigen – Vorlage „Interaktive Bilder“ unter Daten → Neue Tabelle.'],
+            ['name' => 'entry', 'label' => 'Eintrag', 'type' => 'link', 'width' => 'half', 'show_if' => ['source' => ['table']],
+                'help' => 'Eintrag einer Tabelle mit Feld „Markierungen“ wählen (Struktur-Browser → Datentabellen).'],
+            ['name' => 'image', 'label' => 'Bild', 'type' => 'media', 'show_if' => ['source' => ['here']],
+                'help' => 'Alt-Text aus der Mediathek. Auch Grafiken (SVG) sind möglich.'],
+            ['name' => 'hotspots', 'label' => 'Markierungen', 'type' => 'hotspots', 'image_field' => 'image', 'show_if' => ['source' => ['here']]],
+            ['type' => 'heading', 'label' => 'Darstellung', 'collapse' => true, 'summary' => 'Liste unter dem Bild, Breite'],
+            ['name' => 'list', 'label' => 'Liste der Markierungen unter dem Bild', 'type' => 'select', 'required' => true, 'default' => 'auto', 'width' => 'half',
+                'options' => ['auto' => 'Auf schmalen Bildschirmen (Telefon)', 'always' => 'Immer'],
+                'help' => 'Die Liste (Nummer, Titel, Text) ist immer für Screenreader da; auf großen Bildschirmen zeigt sie sich bei Bedarf.'],
+            ['name' => 'width', 'label' => 'Breite', 'type' => 'select', 'required' => true, 'default' => 'normal', 'width' => 'half',
+                'options' => ['normal' => 'Inhaltsbreite', 'text' => 'Textbreite (wie Fließtext)']],
+        ],
+    ],
     'gallery' => [
         'label' => 'Bildergalerie', 'icon' => 'images', 'group' => 'Medien',
         'description' => 'Bilder als Raster, Mosaik oder in Zeilen – per Klick groß ansehen.',

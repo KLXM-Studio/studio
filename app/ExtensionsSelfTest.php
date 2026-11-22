@@ -203,6 +203,7 @@ final class ExtensionsSelfTest
     {
         // ohne Erweiterung: nichts
         self::eq('previewEditor: ohne Erweiterung kein Knopf', Extensions::previewEditor(), null);
+        self::eq('hotspotEditor: ohne Erweiterung keine Knöpfe', Extensions::hotspotEditors(), []);
         self::eq('media.usages/presence.object: Namen bekannt', Filters::known('media.usages') && Filters::known('presence.object'), true);
         $x = new Extension('qa_selftest', __DIR__, ['label' => 'QA']);
         $x->adminAssets(fn(string $view) => $view === 'media' ? ['js/qa.js'] : []);
@@ -210,6 +211,10 @@ final class ExtensionsSelfTest
         $x->adminData(fn() => throw new \RuntimeException('kaputt'));   // Fehler einer Angabe: die anderen bleiben
         $x->previewEditor(fn() => ['url' => '//fremd.example/x', 'label' => 'Fremd']);   // fremde Adresse → übersprungen
         $x->previewEditor(fn() => ['url' => '/admin/qa/editor', 'label' => '']);
+        $x->hotspotEditor(fn() => ['url' => 'https://fremd.example/x', 'label' => 'Fremd']);   // fremde Adresse → übersprungen
+        $x->hotspotEditor(fn() => ['url' => '/admin/qa/grafik', 'label' => 'Im QA-Editor öffnen', 'icon' => 'pen-nib', 'title' => 'Flächen zeichnen']);
+        $x->hotspotEditor(fn() => ['url' => '/admin/qa/zwei', 'icon' => '<b>']);
+        $x->hotspotEditor(fn() => throw new \RuntimeException('kaputt'));
         $x->filter('media.usages', fn(array $l, array $c) => [...$l, ['label' => 'QA-Verwendung', 'url' => '/admin/qa?m=' . $c['media']], ['url' => 'ohne Bezeichnung']]);
         $x->filter('presence.object', fn(array $v, array $c) => $c['type'] === 'qa' ? ['allowed' => true, 'last' => ['user_id' => null, 'created_at' => '2026-01-01 00:00:00']] : null);
         self::activate($x);
@@ -221,6 +226,11 @@ final class ExtensionsSelfTest
                 strpos($head, 'cms-ext-qa_selftest') < strpos($head, 'js/qa.js')], ['/admin/api/qa', '</script><b>', false, true]);
             self::eq('adminData: andere Ansicht ohne Angaben', str_contains(Extensions::adminHead('pages'), 'cms-ext-qa_selftest'), false);
             self::eq('previewEditor: erste gültige Angabe, Standard-Beschriftung', Extensions::previewEditor(), ['url' => '/admin/qa/editor', 'label' => __('Vorschau gestalten'), 'title' => '']);
+            self::eq('hotspotEditor: gültige Angaben, Standard-Beschriftung und -Symbol', Extensions::hotspotEditors(), [
+                ['url' => '/admin/qa/grafik', 'label' => 'Im QA-Editor öffnen', 'title' => 'Flächen zeichnen', 'icon' => 'pen-nib'],
+                ['url' => '/admin/qa/zwei', 'label' => __('Im Editor öffnen'), 'title' => '', 'icon' => 'pencil-simple']]);
+            $hf = Fields::renderField(['name' => 'hs', 'type' => 'hotspots', 'image_field' => 'bild'], null, [], 'f');
+            self::eq('hotspotEditor: Knöpfe im Feld „Markierungen“', str_contains($hf, '/admin/qa/grafik') && str_contains($hf, 'Im QA-Editor'), true);
             $u = Media::usages(999999995);
             self::eq('media.usages: ergänzt, Einträge ohne label fallen weg', [count(array_filter($u, fn($r) => ($r['label'] ?? '') === 'QA-Verwendung')), count(array_filter($u, fn($r) => !isset($r['label'])))], [1, 0]);
             $rp = new \ReflectionMethod(Http\Controllers\Admin\PresenceController::class, 'allowed');
@@ -232,6 +242,9 @@ final class ExtensionsSelfTest
         $js = (string) @file_get_contents(ROOT . '/resources/js/_media.js');
         self::eq('Mediathek: Haken create/edit/side vorhanden', [str_contains($js, "hook('create', this)"), str_contains($js, "hook('edit', this, m)"), str_contains($js, "hook('side', this)")], [true, true, true]);
         $bp = (string) @file_get_contents(ROOT . '/resources/js/_blockpicker.js');
+        $hs = (string) @file_get_contents(ROOT . '/resources/js/_hotspots.js');
+        self::eq('Marker-Editor: Nachrichten nur von „klxm-hotspot-editor“ (gleiche Herkunft), Antwort „klxm-hotspots“', str_contains($hs, "ev.data?.source !== 'klxm-hotspot-editor'")
+            && str_contains($hs, 'ev.origin !== location.origin') && str_contains($hs, "source: 'klxm-hotspots', type: 'init'"), true);
         self::eq('Blockauswahl: Nachrichten nur von „klxm-preview-editor“', str_contains($bp, "'klxm-preview-editor'") && str_contains($bp, 'cfg.previewEditor'), true);
     }
 
@@ -400,7 +413,7 @@ final class ExtensionsSelfTest
         if ($qg) {
             self::eq('Quick-Glossar: Kürzel ⌥G, Platz main', [$qg['shortcut']['label'] ?? null, $qg['placement']], ['⌥G', 'main']);
             self::eq('Quick-Glossar: ohne data.publish kein Veröffentlichen', $qg['data']['publish'] ?? null, false);
-            self::eq('Quick-Glossar: Endpunkte', array_keys($qg['endpoints']), ['search', 'create', 'page']);
+            self::eq('Quick-Glossar: Endpunkte', array_keys($qg['endpoints']), ['search', 'create', 'page', 'variant']);
             $qv = array_values(array_filter(FrontendTools::forBar(['editing' => false] + $bar), fn($t) => $t['id'] === 'glossary'))[0] ?? null;
             self::eq('Quick-Glossar: auch beim Ansehen, mit schwebendem Knopf', [$qv['when'] ?? null, ($qv['chip'] ?? '') !== ''], ['view', true]);
             self::eq('Quick-Glossar: Ansehen ohne Seitenrecht kein Wechsel-Link', $qv['data']['editUrl'] ?? null, '');

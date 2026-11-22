@@ -128,6 +128,7 @@ return function (Router $r): void {
     $r->get('/admin/api/glossar/suche', [Admin\GlossaryController::class, 'apiSearch']);
     $r->post('/admin/api/glossar/begriff', [Admin\GlossaryController::class, 'apiCreate']);
     $r->post('/admin/api/glossar/seite', [Admin\GlossaryController::class, 'apiPage']);
+    $r->post('/admin/api/glossar/schreibweise', [Admin\GlossaryController::class, 'apiVariant']);
     $r->get('/admin/weiterleitungen', [Admin\RedirectController::class, 'index']);
     $r->get('/admin/weiterleitungen/new', [Admin\RedirectController::class, 'edit']);
     $r->post('/admin/weiterleitungen/new', [Admin\RedirectController::class, 'save']);

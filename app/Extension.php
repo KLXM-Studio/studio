@@ -84,6 +84,7 @@ final class Extension
     public array $adminDataProviders = [];
     /** @var list<callable(): ?array> Blockauswahl: Vorschau gestalten (previewEditor) */
     public array $previewEditorProviders = [];
+    public array $hotspotEditorProviders = [];
     /** @var list<callable(): array<string, ?bool>> */
     public array $healthProviders = [];
     /** @var array<int, string> Kategorie je Eintrag in $healthProviders (Core\Health::CATEGORIES) */
@@ -371,6 +372,23 @@ final class Extension
     public function previewEditor(callable $fn): self
     {
         $this->previewEditorProviders[] = $fn;
+        return $this;
+    }
+
+    /**
+     * Marker-Editor „Interaktives Bild“ (Feldtyp „hotspots“, Core\Hotspots): weiterer Knopf „Im … öffnen“ über den Markierungen,
+     * z. B. im Grafik-Editor Flächen zeichnen. fn(): ?array – ['url' => Verwaltungsseite (gleiche Herkunft, „/…“), 'label' => Knopf,
+     * 'title' => Tooltip (optional), 'icon' => Symbol (optional)] oder null (kein Recht). Alle gültigen Angaben erscheinen.
+     * Die Seite öffnet eingebettet mit ?format=hotspots&media={Bild-ID}&embed=1 und spricht per postMessage (gleiche Herkunft):
+     *   Editor → Feld {source: 'klxm-hotspot-editor', type: 'ready'}  → Feld antwortet {source: 'klxm-hotspots', type: 'init',
+     *     v: 1, data: {v: 1, items: […]}, media: {id, url, width, height, alt}}
+     *   Editor → Feld {source: 'klxm-hotspot-editor', type: 'apply', data: {v: 1, items: […]}, close?: true} – ersetzt die Markierungen
+     *   Editor → Feld {source: 'klxm-hotspot-editor', type: 'close'}
+     * Format: Core\Hotspots (Version 1). Gespeichert wird erst mit dem Formular; der Server bereinigt (Hotspots::normalize).
+     */
+    public function hotspotEditor(callable $fn): self
+    {
+        $this->hotspotEditorProviders[] = $fn;
         return $this;
     }
 

@@ -36,8 +36,8 @@ $darkDefaults = array_combine($colorKeys, $dark) + ['secondary' => '#9DB0D8', 'o
 
 $design = require \Core\Kit::dir('fluid') . '/design.php';
 // „Kopf & Fuß“ gehört zum Seitenrahmen von fluid – der Rahmen dieses Kits kommt aus NativeCSS. Es bleiben die Seiten-Optionen
-// (Seitenhintergrund, Abschnitte, Lesefortschritt, „Nach oben“, Seitenwechsel, Zurück-Link) als Gruppe „Seite“.
-$keep = ['pagebg', 'sections', 'progress', 'totop', 'transitions', 'back_nav'];
+// (Seitenhintergrund, Abschnitte, Lesefortschritt, „Nach oben“, Seitenwechsel, Zurück-Link, Dichte des Fußbereichs) als Gruppe „Seite“.
+$keep = ['pagebg', 'sections', 'progress', 'totop', 'transitions', 'back_nav', 'footer_density'];   // Dichte des Fußes: CSS in _native.css
 foreach ($design['groups'] as &$group) {
     if (($group['id'] ?? '') === 'navigation') {
         $group['label'] = 'Seite';
@@ -111,6 +111,8 @@ return [
         'video' => [
             'variants' => ['morph' => 'Video mit Morphing beim Scrollen'],
             'variant_help' => ['morph' => 'Eigene Videodatei, stumm in Schleife (wie ein Hintergrundvideo, mit Pause-Schalter): startet groß und rückt beim Scrollen zur Seite, der Text daneben erscheint. Bei „Bewegung reduzieren“ nur das Standbild neben dem Text. Beim Bearbeiten wie „Mit Text daneben“.'],
+            // Stil des Play/Pause-Schalters (Core\Blocks\Hero::videoToggle) – nur bei „Morphing“
+            'fields' => [...\Core\Blocks\Hero::fields('video_toggle', ['morph'])],
         ],
     ],
 
@@ -150,7 +152,8 @@ return [
         'js/ncss-media-core.js' => ['video:@player', 'video:@audio'],
         'css/ncss-video-player.css' => ['video:@player'], 'js/ncss-video-player.js' => ['video:@player'],
         'css/ncss-audio-player.css' => ['video:@audio'], 'js/ncss-audio-player.js' => ['video:@audio'],
-        'css/ncss-video-bg.css' => ['@videobg'], 'js/ncss-video-bg.js' => ['@videobg'],
+        // Hintergrundvideo (Einstieg „Vollflächig“, Video „Morphing“): Play/Pause-Schalter und Skript aus dem Kern
+        // (Core\Blocks\Hero::videoToggle, css/video-toggle.css + js/hero.mjs) statt components/video-bg von NativeCSS
         'css/ncss-timeline.css' => ['steps:@timeline'],
         'css/ncss-testimonial.css' => ['quote:@testimonial'],
         'css/ncss-pricing.css' => ['pricing:@plans'],

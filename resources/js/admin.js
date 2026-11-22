@@ -12,6 +12,7 @@ import { toast, toastNext, flushToast } from './_toast.js';   // Meldungen (Verw
 import { openSpotlight } from './_spotlight.js';
 import { t } from './_i18n.js';
 import { initGeo } from './_geo.js';
+import { initHotspots, hotspots } from './_hotspots.js';   // Marker-Editor „Interaktives Bild“ (Feldtyp „hotspots“, Core\Hotspots)
 import { conditions } from './_conditions.js';
 import { initSecCount } from './_fsec.js';
 import { initExposure } from './_exposure.js';
@@ -1267,7 +1268,7 @@ function initDt(scope) {
 }
 if (IN_ADMIN) watchDatetime(d, dtOpts());
 onRoot(r => watchDatetime(r, dtOpts()));
-function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initHotspots(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 
@@ -1323,7 +1324,7 @@ function extData(name) {
   }
   return extCache[name];
 }
-window.CMSAdmin = { init, toast, toastNext, openMediaPicker, pickLink, openLinkPicker, openPagesPicker, esc, Rich, Markdown, openSpotlight, t, ico, bar: bar_, formFields,
+window.CMSAdmin = { init, hotspots, toast, toastNext, openMediaPicker, pickLink, openLinkPicker, openPagesPicker, esc, Rich, Markdown, openSpotlight, t, ico, bar: bar_, formFields,
   // Werkzeuge beim Bearbeiten und Ereignisse (stabile Schnittstelle, Technik → Erweiterungen): CMSAdmin.tools.register(id, { mount, unmount })
   tools: tools_, events: { emit, beforeSave },
   // Angaben einer Erweiterung für ihre Skripte (Extension::adminData → <script type="application/json" id="cms-ext-{name}">)

@@ -429,6 +429,13 @@ final class Links
             $anch = Pages::create(['slug' => 'anker', 'title' => 'Linkselbsttest Anker', 'parent_id' => $parent, 'sort' => 9, 'status' => 'published'] + $base,
                 [['type' => 'paragraph', 'data' => ['text' => 'x'], 'tunes' => ['section' => ['anchor' => 'lnk-sprung', 'navLabel' => 'Sprungmarke']]]]);
 
+            // Reine Anker im Link-Feld bleiben auf der aktuellen Seite (nicht „/#…“), auch wenn die Seite den Anker nicht als Sprungmarke führt
+            $prevCur = app()->currentPage;
+            app()->currentPage = Pages::find($anch);
+            $eq('Anker der Seite bleibt relativ', link_href('#lnk-sprung'), '#lnk-sprung');
+            $eq('Anker ohne Sprungmarke (Überschrift, Inhaltsverzeichnis) bleibt relativ', link_href('#lnk-nirgends-' . bin2hex(random_bytes(3)))[0], '#');
+            app()->currentPage = $prevCur;
+
             $tree = self::tree($lang);
             $find = function (array $nodes, int $id) use (&$find): ?array {
                 foreach ($nodes as $n) {

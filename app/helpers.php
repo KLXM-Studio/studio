@@ -234,7 +234,7 @@ function theme_asset(string $path): string
 
 /**
  * Link-Feld in eine href auflösen:
- *  "#anker"  → auf anderen Seiten als der Startseite: "/#anker" (falls Anker dort nicht existiert)
+ *  "#anker"  → bleibt "#anker" (diese Seite); nur wenn die Seite den Anker nicht hat, die Startseite aber schon: "/#anker"
  *  "/seite"  → url('/seite')
  *  "page:ID" → URL der Seite (auch page:ID#anker, entry:{tabelle}:{id}, media:{id}[:viewer] – Core\Links)
  */
@@ -258,7 +258,12 @@ function link_href(?string $link): string
                     if ((int) $root['id'] !== (int) ($cur['id'] ?? 0) && isset(Pages::anchors($root)[substr($link, 1)])) return url('/') . $link;
                     return ($home = Pages::home()) ? Pages::url($home) . $link : $link;
                 }
-                return url('/') . $link;
+                // Nur auf die Startseite umleiten, wenn der Anker dort wirklich existiert (Menü-Anker wie #kontakt) –
+                // sonst bleibt er auf dieser Seite (Überschriften-IDs, Inhaltsverzeichnis, IDs im Rich-Text)
+                static $homeAnchors = [];   // je Website einmal je Anfrage
+                $sk = site()->key;
+                if (!isset($homeAnchors[$sk])) $homeAnchors[$sk] = ($home = Pages::home()) ? Pages::anchors($home) : [];
+                if (isset($homeAnchors[$sk][substr($link, 1)])) return url('/') . $link;
             }
         }
         return $link;
