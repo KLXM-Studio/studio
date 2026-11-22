@@ -317,7 +317,7 @@ final class Kinds
         if ($kind === self::KNOWLEDGE) {
             return [
                 ['label' => 'Kapitel', 'name' => 'abschnitt_kapitel', 'type' => 'section'],
-                ...$pick('titel', 'bereich', 'oberkapitel', 'kapitelnummer', 'anreisser', 'bild', 'inhalt'),
+                ...array_map(fn($f) => $f['name'] === 'inhalt' ? $f + ['blocks' => Knowledge::contentBlocks()] : $f, $pick('titel', 'bereich', 'oberkapitel', 'kapitelnummer', 'anreisser', 'bild', 'inhalt')),
                 ['label' => 'Zuordnung', 'name' => 'abschnitt_zuordnung', 'type' => 'section', 'style' => 'collapsed'],
                 ...$pick('schlagworte', 'verwandt', 'begriffe', 'autor', 'geprueft_am', 'verweis'),
             ];

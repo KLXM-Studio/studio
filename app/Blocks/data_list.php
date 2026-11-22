@@ -19,6 +19,14 @@ if (!$t) {
     if (is_editing()) echo '<div class="' . e($wrap) . '"><p class="dl-empty">Bitte in der Seitenleiste eine Tabelle wählen.</p></div>';
     return;
 }
+// In den Inhaltsblöcken eines Eintrags (Core\Data\EntryBlocks): höchstens eine Ebene (keine Liste in den Einträgen einer Liste, auch
+// nicht über andere Tabellen), dieser Eintrag selbst nicht in der Liste, „aufgerufener Eintrag“ = dieser Eintrag, Links auf seine Seite
+$host = \Core\Data\EntryBlocks::current();
+$listGuard = \Core\Data\EntryBlocks::enterList();
+if (!$listGuard) {
+    if (is_editing()) echo '<div class="' . e($wrap) . '"><p class="dl-empty">' . e(__('Datenliste in einer Datenliste: wird nicht ausgegeben (höchstens eine Ebene).')) . '</p></div>';
+    return;
+}
 // Gewählte Felder dieser Tabelle (ohne Präfix); Standard: Titel, Bild, Beschreibung
 $fields = [];
 foreach ((array) ($d['fields'] ?? []) as $v) {
@@ -56,6 +64,7 @@ if (str_starts_with((string) ($d['filter_field'] ?? ''), $pfx)) {
     }
 }
 if (!empty($d['exclude_current']) && $ctx && $ctx['table']['handle'] === $t['handle']) $o['exclude'] = $ctx['entry']['id'];
+if ($host && $host['table']['handle'] === $t['handle']) $o['exclude'] = $host['entry']['id'];   // Liste im Eintrag: nie sich selbst
 if (str_starts_with((string) ($d['sort_field'] ?? ''), $pfx)) $o['sort'] = substr($d['sort_field'], strlen($pfx));
 if (!empty($d['sort_dir'])) $o['dir'] = $d['sort_dir'];
 // Geteilte Tabellen: Quelle (leer = wie für die Website eingestellt), hervorgehobene Einträge zuerst
@@ -151,7 +160,7 @@ $chips = function (array $e, string $f) use ($t, $tone): string {
 };
 // Adresse mit den aktiven Besucher-Filtern (Schaltflächen, Blättern); $set überschreibt, null entfernt
 $keep = array_filter(array_map(fn($v) => $v['sel'], $vfilters), fn($v) => $v !== null && $v !== []) + ($vq !== '' ? ['q' => $vq] : []);
-$here = app()->currentPage ? \Core\Pages::url(app()->currentPage) : url('/');
+$here = ($host ? Entries::url($host['table'], $host['entry']) : null) ?? (app()->currentPage ? \Core\Pages::url(app()->currentPage) : url('/'));
 $qs = function (array $set) use ($keep, $here, $b): string {
     $p = array_filter($set + $keep, fn($v) => $v !== null && $v !== '');
     return $here . ($p ? '?' . http_build_query($p) : '') . '#' . $b->domId();
@@ -182,7 +191,7 @@ $colLabel = fn(string $f) => match (true) {
 };
 ?>
 <?php // Filtern, Suche, Blättern ohne Seitenwechsel (Core\Live::region – Links/Formulare mit data-live-nav, ohne JS normale Links)
-$reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?>
+$reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : '';   // im Eintrag: normale Links (Block steht nicht auf der Seite) ?>
 <div class="<?= e($wrap) ?> dl dl--<?= e($layout) ?>"<?= $reload ?>>
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
   <header class="dl-head">
@@ -302,7 +311,7 @@ $reload = ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : ''; ?
   <?php endforeach; ?>
   <?php endif; ?>
 
-  <?php if ($pages > 1): $base = app()->currentPage ? \Core\Pages::url(app()->currentPage) : url('/'); ?>
+  <?php if ($pages > 1): $base = $here; ?>
   <nav class="dl-pager" aria-label="<?= e(lt('Seiten')) ?>">
     <?php if ($page > 1): ?><a href="<?= e($keep ? $qs(['seite' => $page > 2 ? $page - 1 : null]) : $base . ($page > 2 ? '?seite=' . ($page - 1) : '')) ?>" data-live-nav rel="prev">← <?= e(lt('Neuere')) ?></a><?php endif; ?>
     <span><?= e(lt('Seite {page} von {pages}', ['page' => $page, 'pages' => $pages])) ?></span>

@@ -66,7 +66,7 @@ final class KnowledgeImport
         $want = array_values(array_filter(array_map('trim', (array) ($o['blocks'] ?? [])), fn($x) => $x !== ''));
         if ($want && !$create) $notes[] = __('--blocks gilt nur beim Anlegen – die Tabelle „{h}“ behält ihre Auswahl (Blöcke der Seiten werden ergänzt).', ['h' => $handle]);
         foreach (array_diff($want, $choices) as $bad) $errors[] = __('--blocks: „{b}“ ist in Kapiteln nicht wählbar.', ['b' => $bad]);
-        $base = $t && ($f = Tables::field($t, 'inhalt')) ? EntryBlocks::allowed($f) : ($want && $create ? array_values(array_intersect($choices, $want)) : EntryBlocks::defaults());
+        $base = $t && ($f = Tables::field($t, 'inhalt')) ? EntryBlocks::allowed($f) : ($want && $create ? array_values(array_intersect($choices, $want)) : Knowledge::contentBlocks());
         // Verweis-Kapitel: Seiten, die Seiten bleiben (--keep=ID|Slug|Pfad)
         $keepRefs = array_values(array_filter(array_map(fn($x) => trim((string) $x, " /"), (array) ($o['keep'] ?? [])), fn($x) => $x !== ''));
         $isKept = fn(array $p) => in_array((string) $p['id'], $keepRefs, true) || in_array((string) $p['slug'], $keepRefs, true) || in_array(trim((string) ($p['path'] ?? ''), '/'), $keepRefs, true);

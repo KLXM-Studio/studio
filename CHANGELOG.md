@@ -57,6 +57,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   beim Anlegen fest. Seiten mit nicht übertragbaren Blöcken (Datenliste u. a.) schlägt der Plan für **`--keep=…`** vor: Sie bleiben
   Seiten und werden **Kapitel vom Typ „Verweis“** (Feld „Verweis auf Seite“, `page:ID`) – mit Nummer in Seitenleiste,
   Inhaltsverzeichnis, Suche und Vor/Zurück, Kapitel-Adresse per 301 auf die Seite. Das Bild des Seitenkopfs wird das Bild des Kapitels.
+- **Datenliste in Inhaltsblöcken** (`EntryBlocks::DATA_OK`): in Wissenstabellen vorbelegt (neue Tabellen und Umstieg; vorhandene
+  bleiben, bis man sie wählt), in anderen Tabellen per Feldeinstellung wählbar. „Aufgerufener Eintrag“ in Filtern = der Eintrag der
+  Blöcke (`EntryBlocks::within`, auch auf fremden Detailseiten), der Eintrag selbst erscheint nicht in seiner Liste, höchstens eine
+  Ebene (`EntryBlocks::enterList` – keine Liste in den Einträgen einer Liste, auch nicht über andere Tabellen). `data:import-pages`
+  übernimmt Datenlisten; `--keep` bleibt für andere nicht übertragbare Blöcke.
 - **Grundschema Version 2** (nur additiv): Felder „Bild“ und „Verweis auf Seite“; vorhandene Wissenstabellen bekommen sie leer beim
   nächsten Speichern des Schemas bzw. beim Umstieg (`Knowledge::upgrade`), Einträge bleiben unverändert.
 - Selbsttest `knowledge:selftest`; Handbuch → Wissensbereich & Handbuch, Entwicklerhandbuch → Wissensbereich.
@@ -67,7 +72,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
   data list block gains a “Chapters” layout, multi-select filters (state in the URL), search excerpts and glossary hits. The glossary
   stays site-wide (optional “Mentioned in” on term pages). `data:import-pages` converts a page branch with dry run and full revert; it unlocks block types used on the pages, takes
   `--blocks=…` for new tables and suggests `--keep=…` for pages with non-transferable blocks, which stay pages and become “link”
-  chapters (schema version 2 adds optional “Image” and “Link to page” fields, additive only).
+  chapters (schema version 2 adds optional “Image” and “Link to page” fields, additive only). Data lists can be used inside entry
+  content blocks (preset for knowledge tables): “current entry” filters refer to that entry, it is excluded from its own list, and
+  nesting is limited to one level (no lists inside listed entries, no chains across tables).
   Self-test `knowledge:selftest`.
 ### Interaktives Bild: Block, Feldtyp „Markierungen“, Vorlage „Interaktive Bilder“ (`Core\Hotspots`)
 - **Block „Interaktives Bild“** (Gruppe Medien, in Layout-Spalten erlaubt): Bild aus der Mediathek (auch SVG/Grafik) mit

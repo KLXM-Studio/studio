@@ -974,7 +974,7 @@ final class Entries
             // Interaktives Bild: Bild aus dem Bildfeld des Eintrags mit den Markierungen (Kurzfassung: Titel der Markierungen)
             \Core\Hotspots::TYPE => !\Core\Hotspots::normalize($v)['items'] ? '' : (!empty($o['plain']) ? e(implode(', ', array_filter(array_column(\Core\Hotspots::normalize($v)['items'], 'title'))))
                 : \Core\Hotspots::render(($img = \Core\Hotspots::imageField($table, $f)) ? (int) ($e[$img] ?? 0) : null, $v, ['label' => self::title($table, $e)])),
-            EntryBlocks::TYPE => !empty($o['plain']) ? e(EntryBlocks::summary($v)) : EntryBlocks::render(EntryBlocks::items($v)),
+            EntryBlocks::TYPE => !empty($o['plain']) ? e(EntryBlocks::summary($v)) : EntryBlocks::render(EntryBlocks::items($v), $table, $e),
             'person', 'faq', 'address', 'downloads', 'phones', 'emails', 'addresses', 'urls' => !empty($o['plain']) ? e(\Core\Combo::summary($f, $v)) : \Core\Combo::html($f, $v),
             // Funktionen je Person (Core\Data\Roles): aktuelle Funktionen mit Gremium und Verknüpfung
             Roles::TYPE => !empty($o['plain']) ? e(Roles::summary($v)) : Roles::html($table, $v, $o),
