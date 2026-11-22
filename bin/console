@@ -193,9 +193,15 @@
  *   calendar:selftest                                 Selbsttest Kalender: Index = Berechnung, Serien („nur dieser / folgende / alle“),
  *                                                     Einzeltermine, Ausfälle, ICS-Rundreise, data:convert --kind=calendar, Freigabe ics,
  *                                                     Termin-Aktionen (In den Kalender, Vorkommen, Fremd-Links)
+ *   data:import-pages <pfad|seiten-id> [--table=kurzname] [--apply] | --revert
+ *                                                     Seitenzweig in einen Wissensbereich umstellen (Tabellenart „Wissen“): Unterseiten →
+ *                                                     Kapitel mit Oberkapitel und Reihenfolge, Seiten offline ins Archiv, Links und 301-
+ *                                                     Weiterleitungen, Datenliste „Kapitel“ auf der Startseite (Standard: Probelauf)
+ *   knowledge:selftest                                Selbsttest Wissensbereich: Kapitelbaum, Nummern, Abschnitte, Ansicht (Layout-Modi), Suche mit
+ *                                                     Auszug, Glossar-Treffer, Mehrfach-Filter, Schlagworte, data:import-pages mit Zurückdrehen
  *   data:template <vorlage> [--handle=…] [--name="…"] [--slug=adresse] [--form=bewerbungen|new|none] [--with-detail-page]
  *                 [--with-list-page] [--dry-run]     Tabelle aus Vorlage anlegen bzw. ergänzen (wie „Neue Tabelle aus Vorlage“; wiederholbar):
- *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), jobs (Stellenangebote, Google for Jobs) + Eingang
+ *                                                     blog, team, contacts (Adressbuch), products, events, calendar (Kalender mit Serien), places (Orte), knowledge (Wissen), jobs (Stellenangebote, Google for Jobs) + Eingang
  *                                                     „Bewerbungen“, faq, inbox, applications
  *   jobs:from-page <seite-id|pfad> [--table=…] [--title="…"] [--slug=…] [--employment=vollzeit,teilzeit] [--posted=JJJJ-MM-TT]
  *                 [--no-redirect] [--no-links] [--dry-run]
@@ -1536,6 +1542,32 @@ switch ($cmd) {
         $res = Core\Data\CalendarSelfTest::run();
         $eva = Core\Data\EventActionsSelfTest::run();   // Termin-Aktionen (In den Kalender, Abonnieren, Fremd-Links, Vorkommen)
         $res = ['ok' => $res['ok'] + $eva['ok'], 'fails' => [...$res['fails'], ...$eva['fails']]];
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'data:import-pages':
+        // Seitenzweig → Wissensbereich (Core\Data\KnowledgeImport) – Standard: Probelauf mit Plan
+        $ref = (string) ($args[0] ?? '');
+        if ($ref === '' || str_starts_with($ref, '--')) { fwrite(STDERR, "Aufruf: data:import-pages <pfad|seiten-id> [--table=kurzname] [--apply] | --revert\n"); exit(1); }
+        $root = Core\Data\KnowledgeImport::root($ref) ?? (fwrite(STDERR, "Seite „{$ref}“ nicht gefunden.\n") && exit(1));
+        try {
+            if (in_array('--revert', $args, true)) { foreach (Core\Data\KnowledgeImport::revert($root) as $l) echo "$l\n"; break; }
+            $handle = '';
+            foreach ($args as $a) if (str_starts_with($a, '--table=')) $handle = substr($a, 8);
+            $plan = Core\Data\KnowledgeImport::plan($root, $handle);
+            foreach (Core\Data\KnowledgeImport::report($plan) as $l) echo "$l\n";
+            if (!$plan['ok']) exit(1);
+            if (!in_array('--apply', $args, true)) { echo "\nProbelauf – nichts geändert. Mit --apply übernehmen.\n"; break; }
+            echo "\n";
+            foreach (Core\Data\KnowledgeImport::apply($plan) as $l) echo "$l\n";
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        break;
+
+    case 'knowledge:selftest':
+        $res = Core\Data\Knowledge::selftest();
+        $db = Core\Data\KnowledgeSelfTest::run();   // mit vorübergehender Tabelle und Seiten
+        $res = ['ok' => $res['ok'] + $db['ok'], 'fails' => [...$res['fails'], ...$db['fails']]];
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);
