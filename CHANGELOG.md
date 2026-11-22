@@ -10,6 +10,25 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Kontakte und Termine: Austausch per vCard und ICS (`Core\Data\Exchange`, `VCards`, `IcsImport`)
+- **Importieren mit Vorschau:** vCard-Datei auf das Adressbuch bzw. ICS-Datei auf den Kalender ziehen (oder „Importieren“ öffnen) →
+  Probelauf mit neu/geändert/unverändert und Hinweisen → „Übernehmen“. Recht „Einträge bearbeiten“, neue Listen/Kategorien nur mit
+  „Tabellen und Felder ändern“, Veröffentlichen nur mit Freigaberecht; CSRF, Größenlimit (`import_max_mb`, Standard 10 MB), Rate-Limit.
+- **vCard:** Mehrfachfelder mit Beschriftung (TYPE, Apple-Beschriftung), Organisation, Funktion, Geburtstag, Notiz, eigene Felder
+  (`X-MYCMS-*`), CATEGORIES und Gruppen-Karten → Listen, eingebettete Fotos → Mediathek. Unbekannte Eigenschaften bleiben verlustfrei
+  in der neuen Spalte `_vcard_extra` und gehen bei Export und CardDAV wieder hinaus – nie auf die Website. Neue Angaben sind intern.
+- **ICS:** Serien (RRULE/EXDATE), geänderte und abgesagte Einzeltermine (RECURRENCE-ID), ganztägige Termine, Zeitzonen (TZID, UTC,
+  schwebend → Zeitzone der Website), Ort, Kartenpunkt, Kategorien. Einmalig auch von einer Adresse (nur http(s)/webcal, SSRF-Schutz
+  über `Core\Http\Fetch`).
+- **Abgleich per UID** (Spalte `_uid`, eigene Exporte werden erkannt): erneuter Import aktualisiert statt zu verdoppeln.
+- **Kalender-Abo:** Externe Quellen kennen das Format „iCalendar (ICS)“ – Abo-Adresse oder Datei-Upload, regelmäßiger Abruf über
+  den Cron-Auftrag `sources.sync`; in Kalender der Art „calendar“ mit fester Abbildung inkl. Einzelterminen, fehlende Termine werden
+  ausgeblendet, gelöscht oder behalten. In andere Tabellen als flache Einträge mit Zuordnung.
+- **Export:** Adressbuch auch „Ganzes Adressbuch als vCard“; Kalender „Alle Termine als ICS – alle Angaben“ (`kalender.ics?umfang=intern`).
+- Tabellen ohne Art (z. B. Inhaltstabellen mit „Als Adressbuch/Kalender nutzen“) bleiben unverändert; `exchange:selftest` und
+  `dav:selftest` (festgehaltene Ausgaben für Alt-Tabellen) prüfen das.
+- **dav 1.8.0:** CardDAV nutzt dieselbe Abbildung (`VCards::card/fields`), trägt `_vcard_extra` und die UID der App (`_uid`).
+
 ### Listen-Vorlagen für die Datenliste (Stufe 1)
 - **Vorlage statt zwanzig Einstellungen:** Eine Listen-Vorlage speichert die Darstellung einer Datenliste – Darstellung, angezeigte
   Felder, Spalten, Bildformat, Bilder, Textlänge, Sortierung, Filter für Besucher, Verlinkung. In der Seitenleiste wählt die Redaktion
