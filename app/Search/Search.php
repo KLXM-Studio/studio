@@ -224,6 +224,17 @@ final class Search
         }
     }
 
+    /**
+     * Inhalte einer Erweiterung haben sich geändert (eigene Dokumente, Text eines Blocks): Website zum Abgleich vormerken – der Abgleich
+     * läuft nach der Antwort bzw. mit dem nächsten Cron-Lauf (search:index) und holt alle Dokumente neu; geändert wird nur, was sich
+     * unterscheidet (Hash). $type/$id (z. B. 'ext:gebiete', '12') nur fürs Protokoll – der Index wird immer als Ganzes abgeglichen.
+     */
+    public static function invalidate(string $type = '', string|int $id = '', ?string $siteKey = null): void
+    {
+        if (($siteKey ?? site()->key) === site()->key && !self::enabled()) return;
+        self::changed($siteKey);
+    }
+
     public static function isDirty(): bool
     {
         return is_file(self::dir() . '/dirty');
@@ -393,7 +404,7 @@ final class Search
         // Arten für die Filter-Chips (über alle Treffer)
         foreach ($ranked as $id) {
             $d = $docs[$id];
-            $key = $d['type'] === 'entry' ? (string) $d['tbl'] : (string) $d['type'];
+            $key = in_array($d['type'], ['entry', 'ext'], true) ? (string) $d['tbl'] : (string) $d['type'];   // Tabelle bzw. Anbieter (ext-{schlüssel})
             $out['types'][$key] ??= ['label' => (string) $d['badge'], 'n' => 0];
             $out['types'][$key]['n']++;
         }

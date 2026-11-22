@@ -20,6 +20,8 @@ namespace Core;
  *    Mediathek create/edit/side in resources/js/_media.js) – Stellen, an denen z. B. ein Grafik-Editor andockt;
  *  - optionale Abhängigkeiten (Core\DependencyCheck, extensions:check) an einem Testpaket im temporären Ordner, dazu alle
  *    mitgelieferten Erweiterungen und Kits ohne Fehler;
+ *  - Website-Suche: eigene Dokumente (searchProvider – Rundlauf, nur öffentliche, Sprache, Adresse, HTML/Skripte raus, Fehler isoliert,
+ *    Reiter-Filter), Text eines Blocks (Blockdefinition search_text, Filter search.block, data-search-text), Search::invalidate;
  *  - Startfehler (Core\ExtensionError): Syntaxfehler im Manifest, fehlende Elternklasse und Ausnahme im boot → Fehler mit
  *    Erweiterung, Phase und Datei, nicht aktiv, andere starten, letzter Fehler gemerkt (eigenes Fehlerprotokoll im Testordner).
  * Rollen werden für die Prüfung vorübergehend gesetzt (Auth per Reflection) und danach zurückgestellt.
@@ -74,6 +76,7 @@ final class ExtensionsSelfTest
             self::push();
             self::blockHooks();
             self::filtersAndEvents();
+            self::searchIntegration();
             self::editorHooks();
             self::healthCategories();
             self::dependencyCheck();
@@ -196,6 +199,80 @@ final class ExtensionsSelfTest
     }
 
     private static int $qaPage = 0;
+
+    // ================================================================= Website-Suche (searchProvider, search_text, search.block, invalidate)
+
+    private static function searchIntegration(): void
+    {
+        $lang = Lang::default();
+        $x = new Extension('qa_selftest', __DIR__, ['label' => 'QA']);
+        $x->searchProvider('Ungültig', ['documents' => fn() => []]);   // Schlüssel nur a-z0-9_ → nicht angemeldet
+        $x->searchProvider('qa_probe', ['label' => 'Probe', 'documents' => fn(string $l) => [
+            ['id' => '1', 'url' => '/qa/eins', 'title' => 'Probe <b>Eins</b>', 'headings' => ['Kopfzeile Zaunkönig'], 'text' => '<p>Text mit Gimpelwort</p><script>geheimesSkript()</script>',
+                'date' => '2026-05-01', 'image' => '7', 'facets' => ['Bezirk' => ['Nord']], 'anchors' => [['id' => 'teil-2', 'label' => 'Zaunkönig am Teich']]],
+            ['id' => '2', 'url' => '/qa/zwei', 'title' => 'Nicht öffentlich', 'text' => 'Eisvogelwort', 'public' => false],
+            ['id' => '3', 'url' => 'javascript:alert(1)', 'title' => 'Böse Adresse'],
+            ['id' => '4', 'url' => '//fremd.example.org/x', 'title' => 'Fremde Domain ohne Schema'],
+            ['id' => '5', 'url' => '/qa/fuenf', 'title' => 'Andere Sprache', 'lang' => $l . 'x'],
+            ['id' => 'mit leerzeichen', 'url' => '/qa/sechs', 'title' => 'Ungültige ID'],
+            ['id' => '7', 'url' => '/qa/sieben', 'title' => ''],
+        ]]);
+        $x->searchProvider('qa_kaputt', ['label' => 'Kaputt', 'documents' => fn() => throw new \RuntimeException('Anbieter kaputt')]);
+        $off = array_search(false, Features::all(), true);   // eine Funktion, die auf dieser Website aus ist (unbekannte gelten als an)
+        $x->searchProvider('qa_aus', ['label' => 'Aus', 'feature' => is_string($off) ? $off : 'qa_unbekannt', 'documents' => fn() => [['id' => '1', 'url' => '/qa/aus', 'title' => 'Aus']]]);
+        $x->filter('search.document', fn(array $d, array $c) => ($c['provider'] ?? '') === 'qa_probe' ? ['summary' => 'gefiltert:' . ($c['id'] ?? '')] + $d : $d);
+        $x->filter('search.block', fn(array $p, array $c) => $c['type'] === 'qa_such_weg' ? false : ($c['type'] === 'qa_such_haken' ? ['head' => $p['head'], 'text' => [...$p['text'], 'Filterwort']] : $p));
+        app()->theme->addBlocks([
+            'qa_such_haken' => ['label' => 'QA', 'listed' => false, 'fields' => [['name' => 'title', 'type' => 'text']],
+                'search_text' => fn(array $d) => ['head' => ['Haken ' . ($d['title'] ?? '')], 'text' => ['Hakenwort <b>fett</b>']]],
+            'qa_such_nie' => ['label' => 'QA', 'listed' => false, 'fields' => [['name' => 'title', 'type' => 'text']], 'search_text' => false],
+            'qa_such_weg' => ['label' => 'QA', 'listed' => false, 'fields' => [['name' => 'title', 'type' => 'text']]],
+            'qa_such_std' => ['label' => 'QA', 'listed' => false, 'fields' => [['name' => 'title', 'type' => 'text'], ['name' => 'text', 'type' => 'richtext']]],
+            'qa_such_kaputt' => ['label' => 'QA', 'listed' => false, 'fields' => [['name' => 'title', 'type' => 'text']], 'search_text' => fn() => throw new \RuntimeException('kaputt')],
+        ], __DIR__, 'qa_selftest');
+        self::activate($x);
+        try {
+            self::eq('searchProvider: ungültiger Schlüssel nicht angemeldet', array_keys($x->searchProviders), ['qa_probe', 'qa_kaputt', 'qa_aus']);
+            $docs = array_filter(\Core\Search\Documents::build($lang), fn($d) => str_starts_with((string) $d['id'], 'x-qa_'));
+            self::eq('searchProvider: nur gültige, öffentliche Dokumente dieser Sprache; Funktion aus → keine', array_keys($docs), is_string($off) ? ['x-qa_probe-1'] : ['x-qa_probe-1', 'x-qa_aus-1']);
+            $d = $docs['x-qa_probe-1'] ?? [];
+            self::eq('searchProvider: Art/Reiter, Typ, Tabelle', [$d['badge'] ?? null, $d['type'] ?? null, $d['table'] ?? null], ['Probe', 'ext', 'ext-qa_probe']);
+            self::eq('searchProvider: Klartext ohne Skript, Überschriften, Datum, Bild', [$d['title'] ?? null, str_contains($d['text'] ?? '', 'Gimpelwort'),
+                str_contains(json_encode($d) ?: '', 'geheimesSkript'), $d['headings'] ?? null, $d['date'] ?? null, $d['image'] ?? null],
+                ['Probe Eins', true, false, 'Kopfzeile Zaunkönig', '2026-05-01', '7']);
+            self::eq('searchProvider: Facetten und Sprungmarken als JSON', [json_decode($d['facets'] ?? '', true), \Core\Search\Documents::anchorFor($d['anchors'] ?? '', \Core\Search\Text::words('Zaunkönig'))['id'] ?? null],
+                [['Bezirk' => ['Nord']], 'teil-2']);
+            self::eq('search.document: gilt auch für eigene Dokumente (provider, id)', $d['summary'] ?? null, 'gefiltert:1');
+            self::eq('searchProvider: Adresse geprüft', [\Core\Search\Providers::validUrl('/a'), \Core\Search\Providers::validUrl('https://example.org/a'),
+                \Core\Search\Providers::validUrl('//example.org'), \Core\Search\Providers::validUrl('javascript:x'), \Core\Search\Providers::validUrl('/a b')], [true, true, false, false, false]);
+            $b = fn(string $type, array $data) => ['id' => substr(md5($type), 0, 8), 'type' => $type, 'data' => $data, 'tunes' => []];
+            [$h, $t] = \Core\Search\Documents::blocksText([$b('qa_such_haken', ['title' => 'Eins']), $b('qa_such_nie', ['title' => 'Niewort']), $b('qa_such_weg', ['title' => 'Wegwort']),
+                $b('qa_such_std', ['title' => 'Standardkopf', 'text' => '<p>Standardwort</p>']), $b('qa_such_kaputt', ['title' => 'Rückfallkopf'])]);
+            self::eq('search_text: eigener Text, false, Filter search.block, Standard, Fehler → Standard', [$h, $t],
+                [['Haken Eins', 'Standardkopf', 'Rückfallkopf'], ['Hakenwort fett', 'Filterwort', 'Standardwort']]);
+            self::eq('data-search-text: Text von Skript-Inhalten, Skripte selbst nie', \Core\Search\Documents::htmlText('<div class="chart" data-search-text="Umsatz &amp; Mitglieder 2026"></div><script>nie()</script><p>Sichtbar</p>'),
+                'Sichtbar Umsatz & Mitglieder 2026');
+            if (app()->theme->block('live_text')) {
+                [$lh, $lt] = \Core\Search\Documents::blocksText([$b('live_text', ['title' => 'Ticker', 'source' => 'manual', 'items' => [['title' => 'Anpfiff', 'text' => '<p>Es geht los</p>']]])]);
+                self::eq('live_text: Momentaufnahme als Text, Meldungen keine Überschriften', [$lh, $lt], [['Ticker'], ['Anpfiff Es geht los']]);
+                [, $lt2] = \Core\Search\Documents::blocksText([$b('live_text', ['title' => 'Ticker', 'source' => 'table', 'table' => 'x', 'items' => [['title' => 'Alt']]])]);
+                self::eq('live_text: Quelle Datentabelle → keine Meldungen im Seitendokument', $lt2, []);
+            }
+            [$dh, $dt] = \Core\Search\Documents::blocksText([$b('data_list', ['title' => 'Liste']), $b('calendar', []), $b('upcoming', [])]);
+            self::eq('Datenliste/Kalender/Termine: nur Verweis auf ihre Einträge (nichts im Seitendokument)', [$dh, $dt], [[], []]);
+            // Invalidate: Website zum Abgleich vormerken
+            $dirty = \Core\Search\Search::dir() . '/dirty';
+            $was = is_file($dirty);
+            if (\Core\Search\Search::enabled()) {
+                \Core\Search\Search::invalidate('ext:qa_probe', '1');
+                self::eq('Search::invalidate merkt den Abgleich vor', is_file($dirty), true);
+                if (!$was) @unlink($dirty);
+            }
+        } finally {
+            self::activate(null);
+        }
+        self::eq('searchProvider: nach Abmelden keine Dokumente', count(array_filter(array_keys(\Core\Search\Documents::build($lang)), fn($k) => str_starts_with((string) $k, 'x-qa_'))), 0);
+    }
 
     // ================================================================= Andockstellen für Editoren (adminData, previewEditor, Filter, Mediathek-Haken)
 
