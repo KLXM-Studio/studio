@@ -3,13 +3,17 @@
 @import "../../vendor/ncss/components/scrolly.css" layer(components);
 /* Scrollytelling (<ncss-scrolly>): Bühne unter der festen Kopfleiste, Abschnitte als Karten im Design von fluid */
 @layer native {
-  .nv-scrolly ncss-scrolly { --ncss-scrolly-top: 4.5rem; margin-block-start: var(--f-s-l); }
+  .nv-scrolly ncss-scrolly { --ncss-scrolly-top: calc(var(--hdr-h, 4.25rem) + 1.25rem);   /* unter der Kopfleiste (Höhe aus dem Kit) mit Luft */ margin-block-start: var(--f-s-l); }
   .nv-scrolly .ncss-scrolly-steps { margin: 0; padding-inline: 0; list-style: none; }
   /* Karten in Seitenfarbe: auch in farbigen Abschnitten die Schrift der Seite (--f0-*, wie die Karten von fluid) – sonst
      Dachzeile, Titel und Links hell auf hell */
   .nv-scrolly .ncss-scrolly-step > * { background: var(--f-bg);
     --f-ink: var(--f0-ink); --f-text: var(--f0-text); --f-muted: var(--f0-muted); --f-link: var(--f0-link); --f-fg: var(--f0-ink); }
   /* Bildformat „auto“: jedes Bild ganz (Hochformat nicht höher als die Bühne) */
-  .nv-scrolly--auto .ncss-scrolly-figure img { inline-size: auto; max-inline-size: 100%; max-block-size: calc(100svh - 6rem); margin-inline: auto; }
+  .nv-scrolly--auto .ncss-scrolly-figure img { inline-size: auto; max-inline-size: 100%; max-block-size: calc(100svh - var(--ncss-scrolly-top) - 1.5rem); margin-inline: auto; }
+  /* Alle Formate: das Bild passt in die Bühne unter der Kopfleiste (sonst ragt ein hohes Bild mittig nach oben unter das Menü) */
+  .nv-scrolly .ncss-scrolly-figure { max-block-size: calc(100svh - var(--ncss-scrolly-top) - 1.5rem); }
+  .nv-scrolly .ncss-scrolly-figure img { max-block-size: calc(100svh - var(--ncss-scrolly-top) - 1.5rem); object-fit: cover; }
+  .nv-scrolly--auto .ncss-scrolly-figure img { object-fit: contain; }
   .nv-scrolly__title { margin: 0 0 var(--f-s-xs); color: var(--f-ink); font-size: var(--f-t1); }
 }
