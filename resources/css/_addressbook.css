@@ -161,8 +161,16 @@
 .ab-back .ico{width:16px;height:16px}
 .ab-back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}
 
+/* Bearbeiten/Neu in der Karte (data/_ab_edit.php): Listen-Spalte weg, mehr Platz fürs Formular; Sichtbarkeit als Hinweis über dem Formular */
+@media (min-width:901px){.ab.is-editing{grid-template-columns:minmax(240px,300px) minmax(0,1fr)}.ab.is-editing .ab-src{display:none}}
+.ab-edit .ab-edit__form.dt-entry{display:block}
+.ab-edit .ab-edit__title{margin:0 0 12px;font-size:18px}
+.ab-edit .f-pubsum{margin:0 0 16px}
+.ab-unlist{display:contents}
+
 @media (max-width:1180px){
   .ab{grid-template-columns:200px minmax(250px,300px) minmax(0,1fr)}
+  @media (min-width:901px){.ab.is-editing{grid-template-columns:minmax(220px,260px) minmax(0,1fr)}}
   .ab-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}
   .ab-row dt{grid-column:1/-1;text-align:left;font-size:12px}
 }

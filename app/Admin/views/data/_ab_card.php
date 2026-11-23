@@ -37,6 +37,12 @@ $badge = function (array $r) use ($tg): string {
   <a class="ab-back" href="<?= e(AddressBook::link($t, $s, ['k' => ''])) ?>" data-ab-pane="names"><?= icon('arrow-left') ?> <span><?= e($scopeLabel) ?></span></a>
   <span class="ab-chip<?= $online ? ' is-public' : '' ?>"><?= icon($online ? 'globe' : 'lock') ?> <?= e($online ? __('Auf der Website') : ($e['status'] !== 'published' ? __('Entwurf') : __('Nur intern'))) ?></span>
   <a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e(AddressBook::link($t, $s, ['bearbeiten' => '1'])) ?>"><?= icon('pencil-simple') ?> <?= e(__('Bearbeiten')) ?></a>
+  <?php if ($list !== '' && isset($lists[$list]) && in_array((string) $list, $mine, true) && can('data.edit', $t['handle'])): // geöffnete Liste: sichtbar entfernen, der Kontakt bleibt ?>
+  <form method="post" action="<?= e($base . '/listen') ?>" class="ab-unlist">
+    <?= csrf_field() ?><input type="hidden" name="ids[]" value="<?= $id ?>"><input type="hidden" name="liste" value="<?= e((string) $list) ?>"><input type="hidden" name="op" value="remove"><input type="hidden" name="zurueck" value="<?= e(AddressBook::link($t, $s, ['k' => ''])) ?>">
+    <button class="adm-btn adm-btn--small" type="submit" aria-label="<?= e(__('Aus „{list}“ entfernen', ['list' => $lists[$list]])) ?>" title="<?= e(__('Nur aus dieser Liste nehmen – der Kontakt bleibt im Adressbuch')) ?>"><?= icon('x') ?> <?= e(__('Aus Liste entfernen')) ?></button>
+  </form>
+  <?php endif; ?>
   <?php // Weitere Aktionen: Zeilenmenü wie in allen Listen (Core\RowMenu, AddressBook::menu) – ⋯, Rechtsklick auf die Karte, Umschalt+F10 ?>
   <?= \Core\RowMenu::render('ab-menu-' . $id, $name, AddressBook::menu($t, $s, $e), ['class' => 'ab-rowmenu']) ?>
 </div>

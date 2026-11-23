@@ -18,7 +18,7 @@ $canSchema = can('data.schema') && \Core\Data\Shared::canSchema($t);
 $back = AddressBook::link($t, $s);
 $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
 ?>
-<div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?>" data-imp-target="<?= e($base . '/import') ?>" data-imp-label="<?= e(__('vCard-Datei loslassen zum Importieren')) ?>" data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"<?= \Core\RowMenu::selectAttrs() ?>
+<div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?><?= !empty($edit) || !empty($new) ? ' is-editing' : '' ?>" data-imp-target="<?= e($base . '/import') ?>" data-imp-label="<?= e(__('vCard-Datei loslassen zum Importieren')) ?>" data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"<?= \Core\RowMenu::selectAttrs() ?>
   data-ab-t-none="<?= e(__('Bitte zuerst Kontakte auswählen.')) ?>">
   <nav class="ab-src" aria-label="<?= e(__('Adressbücher und Listen')) ?>">
     <ul>
