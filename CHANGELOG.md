@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Datenliste: Optionen aus dem Filter nehmen
+- „Filter für Besucher“ → „Im Filter nicht anbieten“: Optionen (Beschriftung oder Schlüssel, kommagetrennt) bekommen keine Schaltfläche;
+  die Einträge bleiben in der Liste.
+
 ### Wissensbereich: Unterkapitel in der Eintragsliste eingerückt
 - Daten → Wissen zeigt Unterkapitel nach ihrer Tiefe im Kapitelbaum eingerückt (wie die Kapitelnavigation der Website).
 

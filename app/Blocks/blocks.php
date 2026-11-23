@@ -60,6 +60,8 @@ return [
                 'help' => 'Ein Auswahl- oder Mehrfachauswahl-Feld, z. B. Kategorie.'],
             ['name' => 'visitor_filter2', 'label' => 'Zweite Filter-Reihe nach', 'type' => 'datafield', 'types' => ['select', 'multiselect'], 'width' => 'half', 'empty_label' => '– keine –',
                 'help' => 'Z. B. Region.'],
+            ['name' => 'visitor_filter_hide', 'label' => 'Im Filter nicht anbieten', 'type' => 'text', 'max' => 300, 'placeholder' => 'z. B. Tagung, Intern',
+                'help' => 'Optionen, die keine Schaltfläche bekommen – Beschriftungen kommagetrennt. Die Einträge selbst bleiben in der Liste.'],
             ['name' => 'visitor_search', 'label' => 'Suchfeld über der Liste', 'type' => 'bool', 'default' => false, 'width' => 'half',
                 'help' => 'Durchsucht die Textfelder der Tabelle.'],
             ['name' => 'visitor_multi', 'label' => 'Mehrere Optionen je Filter wählbar', 'type' => 'bool', 'default' => false, 'width' => 'half',

@@ -107,8 +107,11 @@ if ($vcands || !empty($d['visitor_search']) || $az) {
     $enough = \Core\Blocks\ListFilter::enough($d, $facets['total']);
     $vsearch = $enough && !empty($d['visitor_search']);
     $az = $az && $enough;
+    // „Im Filter nicht anbieten“: Optionen nach Beschriftung oder Schlüssel ausblenden (Einträge bleiben in der Liste)
+    $vhide = array_filter(array_map(fn($x) => mb_strtolower(trim($x)), explode(',', (string) ($d['visitor_filter_hide'] ?? ''))), fn($x) => $x !== '');
     foreach ($enough ? $vcands : [] as $vn => $vfd) {
         $vopts = (array) ($vfd['options'] ?? []);
+        if ($vhide) $vopts = array_filter($vopts, fn($label, $key) => !in_array(mb_strtolower((string) $key), $vhide, true) && !in_array(mb_strtolower(trim((string) $label)), $vhide, true), ARRAY_FILTER_USE_BOTH);
         // Mehrfach: ?feld[]=a&feld[]=b – innerhalb eines Feldes „eine davon“, über Felder hinweg „alle Bedingungen“
         $want = \Core\Blocks\ListFilter::selection($query[$vn] ?? null, $vopts, $multi);
         $buttons = \Core\Blocks\ListFilter::buttons($vopts, $facets['counts'][$vn] ?? [], $d, $want);
