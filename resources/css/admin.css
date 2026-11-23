@@ -892,6 +892,9 @@ img.media-vthumb{object-fit:cover}
 .dt-pager{display:inline-block}
 .dt-pager a{margin:0 6px}
 .dt-empty{display:grid;justify-items:center;gap:12px;padding:60px 20px;color:var(--adm-t3);text-align:center}
+/* Wissensbereich: Unterkapitel in der Eintragsliste eingerückt (data/entries.php, --dt-depth 1–4) */
+.dt-c-title__in.dt-knsub{padding-inline-start:calc(var(--dt-depth,1) * 1.5rem)}
+.dt-knsub__mark{flex:none;color:var(--adm-t2);font-size:15px}
 .dt-entry{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
 .dt-entry__side{display:grid;gap:12px;position:sticky;top:20px}
 .dt-statuspick{display:flex;gap:16px;border:0;padding:0;margin:0 0 14px}

@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Wissensbereich: Unterkapitel in der Eintragsliste eingerückt
+- Daten → Wissen zeigt Unterkapitel nach ihrer Tiefe im Kapitelbaum eingerückt (wie die Kapitelnavigation der Website).
+
 ### Adressbuch: Bearbeiten in der Karte, Löschen klar getrennt
 - „Bearbeiten“ und „neuer Kontakt“ öffnen das Formular in der rechten Spalte statt im klassischen Formular; Speichern führt zur Karte
   zurück (Liste, Filter, Suche bleiben). „Alle Optionen“ öffnet das vollständige Formular.

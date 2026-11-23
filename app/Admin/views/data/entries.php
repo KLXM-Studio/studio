@@ -152,11 +152,15 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <th scope="col" data-prio="5"><?= $sortLink('updated_at', 'Geändert') ?></th>
     </tr></thead>
     <tbody data-rows>
+    <?php // Wissensbereich (Core\Data\Knowledge): Unterkapitel nach ihrer Tiefe im Kapitelbaum einrücken
+    $knDepth = [];
+    if (\Core\Data\Knowledge::is($t)) foreach (\Core\Data\Knowledge::build($t, $rows)['nodes'] as $kid => $kn) if ($kn['depth'] > 0) $knDepth[$kid] = min(4, (int) $kn['depth']); ?>
     <?php foreach ($rows as $e): $url = Entries::url($t, $e); ?>
       <tr data-id="<?= (int) $e['id'] ?>"<?= \Core\RowMenu::host('dt-menu-' . (int) $e['id']) ?><?= $manual ? ' draggable="true"' : '' ?>>
         <td class="dt-c-check"><input type="checkbox" data-check data-rm-check value="<?= (int) $e['id'] ?>" aria-label="<?= e(Entries::title($t, $e)) ?> auswählen"></td>
         <?php if ($manual): ?><td class="dt-c-grip" aria-hidden="true">⋮⋮</td><?php endif; ?>
-        <td class="dt-c-title"><div class="dt-c-title__in" data-presence-slot>
+        <td class="dt-c-title"><div class="dt-c-title__in<?= isset($knDepth[(int) $e['id']]) ? ' dt-knsub' : '' ?>"<?= isset($knDepth[(int) $e['id']]) ? ' style="--dt-depth:' . $knDepth[(int) $e['id']] . '"' : '' ?> data-presence-slot>
+          <?php if (isset($knDepth[(int) $e['id']])): ?><span class="dt-knsub__mark" aria-hidden="true">↳</span><span class="sr-only"><?= e(__('Unterkapitel')) ?>: </span><?php endif; ?>
           <?php if ($img && !empty($e[$img]) && ($m = \Core\Media::find((int) $e[$img]))): ?><img src="<?= e(\Core\Media::url($m, 480)) ?>" alt="" class="dt-thumb<?= $listImg === 'large' ? ' dt-thumb--l' : '' ?>" loading="lazy"><?php elseif ($listImg !== 'none'): ?><span class="dt-thumb dt-thumb--ph<?= $listImg === 'large' ? ' dt-thumb--l' : '' ?>" aria-hidden="true"><?= icon($t['icon']) ?></span><?php endif; ?>
           <a href="<?= e(url($base . '/' . $e['id'])) ?>"><?= e(Entries::title($t, $e)) ?></a>
           <?php if (!empty($shared) && !empty($e['suggest'])): $sp = $ownerPicks[$e['id']] ?? null; ?><small class="sh-pick sh-pick--<?= e($sp ?? 'suggested') ?>"><?= e(match ($sp) { 'visible' => __('übernommen'), 'featured' => __('hervorgehoben'), 'rejected' => __('abgelehnt'), 'hidden' => __('ausgeblendet'), default => __('vorgeschlagen') }) ?></small><?php endif; ?>

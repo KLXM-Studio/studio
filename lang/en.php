@@ -10034,4 +10034,5 @@ return [
     '„{title}“ endgültig löschen? Der Kontakt verschwindet aus dem Adressbuch, aus allen Listen und von der Website. Nur aus einer Liste nehmen: „Aus Liste entfernen“.' => 'Permanently delete “{title}”? The contact disappears from the address book, from all lists and from the website. To take it out of one list only: “Remove from list”.',
     'Aus „{list}“ entfernen' => 'Remove from “{list}”',
     'Nur aus dieser Liste nehmen – der Kontakt bleibt im Adressbuch' => 'Only take out of this list – the contact stays in the address book',
+    'Unterkapitel' => 'Sub-chapter',
 ];
