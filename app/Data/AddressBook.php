@@ -184,6 +184,11 @@ final class AddressBook
         $roles = Roles::field($t);
         $cols = array_values(array_filter(['name', 'praefix', 'vorname', 'nachname', 'firma', 'ist_firma', 'position', 'abteilung', 'foto', 'listen', Kinds::PUBLIC_FIELD, ...($roles ? [(string) $roles['name']] : [])], fn($c) => self::has($t, $c)));
         $rows = Tables::db($t)->fetchAll('SELECT id, status, slug, published_at, ' . (isset($t['shared']) ? 'origin_site, ' : '') . implode(', ', $cols) . " FROM {$t['table']}" . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params);
+        // Geteilte Tabelle: gespeichert ist die Pool-ID des Fotos – wie Entries::decode auf die Medien-ID dieser Website abbilden
+        if (Tables::isShared($t) && in_array('foto', $cols, true)) {
+            foreach ($rows as &$fr) $fr['foto'] = Shared::fromPool($t, $fr['foto'] ?? null);
+            unset($fr);
+        }
         // Funktionen (Core\Data\Roles): in einer Liste nur, wer dort eine aktuelle Funktion hat oder von Hand zugeordnet ist – auch
         // bevor der Eintrag nach dem Ende einer Funktion neu gespeichert wurde; Hauptfunktion frisch
         if ($roles) {
