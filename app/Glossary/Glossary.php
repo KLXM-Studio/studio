@@ -350,14 +350,14 @@ final class Glossary
             'description' => 'Fachbegriffe mit kurzer Erklärung – erscheinen als Hinweis an der ersten Stelle im Text (Funktion „Glossar“).',
             'fields' => [
                 ['name' => 'begriff', 'label' => 'Begriff', 'type' => 'text', 'required' => true, 'in_list' => true, 'searchable' => true, 'width' => 'half',
-                    'help' => 'So, wie er im Glossar steht – z. B. „SPF“ oder „Barrierefreiheit“.'],
+                    'help' => 'So, wie er im Glossar steht – z. B. „DSGVO“ oder „Barrierefreiheit“.'],
                 ['name' => 'kategorie', 'label' => 'Kategorie', 'type' => 'text', 'in_list' => true, 'width' => 'half', 'help' => 'Optional, z. B. „E-Mail“ oder „Sicherheit“.'],
                 ['name' => 'varianten', 'label' => 'Varianten, Synonyme, Abkürzungen', 'type' => 'textarea', 'searchable' => true,
-                    'help' => 'Eine je Zeile oder mit Komma getrennt. Abkürzungen wie SPF zählen nur in genau dieser Schreibweise; "in Anführungszeichen" erzwingt sie auch für Wörter.'],
+                    'help' => 'Eine je Zeile oder mit Komma getrennt. Abkürzungen wie DSGVO zählen nur in genau dieser Schreibweise; "in Anführungszeichen" erzwingt sie auch für Wörter.'],
                 ['name' => 'kurz', 'label' => 'Kurz-Erklärung', 'type' => 'textarea', 'required' => true, 'in_list' => true,
                     'help' => 'Klartext, höchstens 240 Zeichen – erscheint im Hinweisfenster auf der Website.'],
                 ['name' => 'erklaerung', 'label' => 'Ausführliche Erklärung', 'type' => 'richtext', 'help' => 'Optional – erscheint auf der Detailseite des Begriffs.'],
-                ['name' => 'link', 'label' => 'Mehr erfahren (Webadresse)', 'type' => 'url', 'help' => 'Optional: weiterführende Quelle, z. B. RFC, BSI, MDN oder Wikipedia.'],
+                ['name' => 'link', 'label' => 'Mehr erfahren (Webadresse)', 'type' => 'url', 'help' => 'Optional: weiterführende Quelle, z. B. ein Gesetzestext, eine Fachseite oder Wikipedia.'],
             ],
             'settings' => [
                 'route' => self::HANDLE, 'title_field' => 'begriff', 'description_field' => 'kurz', 'sort_field' => 'begriff', 'sort_dir' => 'asc',

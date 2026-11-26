@@ -420,7 +420,7 @@ final class Roles
         ];
         if ($lists) $fields[] = ['name' => 'liste', 'label' => __('Gremium / Liste'), 'type' => 'select', 'options' => $lists, 'width' => 'half'];
         array_push($fields,
-            ['name' => 'ref', 'label' => __('Verknüpft mit (optional)'), 'type' => 'link', 'help' => __('Ein Eintrag einer beliebigen Tabelle, z. B. Arbeitskreis oder Regionalgruppe – auf dessen Detailseite erscheint diese Funktion.')],
+            ['name' => 'ref', 'label' => __('Verknüpft mit (optional)'), 'type' => 'link', 'help' => __('Ein Eintrag einer beliebigen Tabelle, z. B. Team oder Standort – auf dessen Detailseite erscheint diese Funktion.')],
             ['name' => 'seit', 'label' => __('Seit'), 'type' => 'date', 'width' => 'half'],
             ['name' => 'bis', 'label' => __('Bis'), 'type' => 'date', 'width' => 'half', 'help' => __('Nach diesem Tag erscheint die Funktion nicht mehr in Listen der Website.')],
             ['name' => 'reihenfolge', 'label' => __('Reihenfolge in der Liste'), 'type' => 'number', 'step' => '1', 'width' => 'half', 'help' => __('1 = zuerst; leer = danach.')],

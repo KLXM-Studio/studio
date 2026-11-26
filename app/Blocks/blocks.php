@@ -75,7 +75,7 @@ return [
                 'help' => 'Bei einer Suche stehen passende Begriffe aus dem Glossar der Website als eigene Gruppe über den Treffern (Funktion „Glossar“).'],
             ['name' => 'chapter_numbers', 'label' => 'Kapitelnummern zeigen', 'type' => 'select', 'default' => 'auto', 'width' => 'half',
                 'options' => ['auto' => 'Automatisch', 'on' => 'An', 'off' => 'Aus'],
-                'help' => 'Nur bei Wissensbereichen. „Automatisch“: an in der Darstellung „Kapitel“ und auf der Übersichtsseite des Wissensbereichs, sonst aus (z. B. „Im Fokus“ auf der Startseite).'],
+                'help' => 'Nur bei Wissensbereichen. „Automatisch“: an in der Darstellung „Kapitel“ und auf der Übersichtsseite des Wissensbereichs, sonst aus (z. B. in einer Auswahl auf der Startseite).'],
             ['name' => 'az_index', 'label' => 'A–Z-Sprungleiste (alphabetisch gruppiert)', 'type' => 'bool', 'default' => false, 'width' => 'half',
                 'help' => 'Sortiert nach dem Titel und gruppiert nach Anfangsbuchstaben – nur ohne seitenweises Blättern.'],
             ...\Core\Blocks\ListFilter::fields(),   // „Filter erst ab … Einträgen“, nur Optionen mit Treffern
@@ -569,7 +569,7 @@ return [
     'people' => [
         'label' => 'Personen', 'icon' => 'users', 'group' => 'Inhalt',
         'description' => 'Ausgewählte Personen aus der zentralen Personen-Tabelle mit Foto und Kontakt.',
-        'help' => 'Ausgewählte Personen aus einer zentral gepflegten Personen-Tabelle – Foto, Name, E-Mail und Telefon kommen aus dem Eintrag, Funktion, Text und Foto lassen sich hier für diese Stelle überschreiben (z. B. „Ansprechperson Regionalgruppe“). Mit Visitenkarte zum Speichern (vCard), wenn die Tabelle den Schema-Typ „Person“ hat.',
+        'help' => 'Ausgewählte Personen aus einer zentral gepflegten Personen-Tabelle – Foto, Name, E-Mail und Telefon kommen aus dem Eintrag, Funktion, Text und Foto lassen sich hier für diese Stelle überschreiben (z. B. „Ansprechperson Standort Nord“). Mit Visitenkarte zum Speichern (vCard), wenn die Tabelle den Schema-Typ „Person“ hat.',
         'fields' => [
             ...\Core\MediaBlocks::headFields(),
             ['type' => 'heading', 'label' => 'Personen'],

@@ -66,7 +66,7 @@
 
   <h3>Schlagworte, verwandte Kapitel und Begriffe</h3>
   <ul>
-    <li><b>Schlagworte</b> stehen unter jedem Kapitel als Links: Ein Klick zeigt die Übersicht gefiltert nach diesem Schlagwort. Lieber wenige, klare Schlagworte in einheitlicher Schreibweise (immer „Jagdrecht“, nicht mal „Jagd-Recht“).</li>
+    <li><b>Schlagworte</b> stehen unter jedem Kapitel als Links: Ein Klick zeigt die Übersicht gefiltert nach diesem Schlagwort. Lieber wenige, klare Schlagworte in einheitlicher Schreibweise (immer „Datenschutz“, nicht mal „Daten-Schutz“).</li>
     <li><b>Verwandte Kapitel</b> erscheinen am Ende des Kapitels: zuerst die, die Sie verknüpft haben, dann Kapitel mit gemeinsamen Schlagworten.</li>
     <li><b>Begriffe in diesem Kapitel:</b> verknüpfte Glossarbegriffe mit Kurz-Erklärung. Das Glossar bleibt das eine Glossar der Website – es markiert Begriffe überall, auch in Wissenskapiteln. Es gibt kein eigenes Glossar je Wissensbereich.</li>
   </ul>

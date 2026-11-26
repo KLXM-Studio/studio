@@ -77,7 +77,7 @@ endif; ?>
       <div class="adm-row sh-indent"><select form="sh-new" name="local" aria-label="<?= e(__('Tabelle')) ?>">
         <?php foreach ($localTables as $lt): ?><option value="<?= e($lt['handle']) ?>"><?= e($lt['name']) ?> (<?= e($lt['handle']) ?>)</option><?php endforeach; ?>
       </select></div>
-      <label class="f-check sh-indent"><input type="checkbox" form="sh-new" name="local_fields_all" value="1"> <span><?= e(__('Verknüpfungen auf Tabellen, die hier bleiben (z. B. Regionalgruppen), als Zusatzfelder dieser Website übernehmen – Werte bleiben erhalten')) ?></span></label>
+      <label class="f-check sh-indent"><input type="checkbox" form="sh-new" name="local_fields_all" value="1"> <span><?= e(__('Verknüpfungen auf Tabellen, die hier bleiben (z. B. Standorte), als Zusatzfelder dieser Website übernehmen – Werte bleiben erhalten')) ?></span></label>
       <?php endif; ?>
     </fieldset>
     <fieldset class="pl-sites"><legend><?= e(__('Beteiligte Websites')) ?></legend>

@@ -498,7 +498,7 @@ final class Entries
                 // Wissen (Core\Data\Knowledge::addOptions): neue Bereiche/Schlagworte direkt beim Eintrag anlegen – vorhandene sind Vorschläge
                 if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true)) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
                     'label' => $f['name'] === 'bereich' ? __('Neuer Bereich') : __('Neue Schlagworte'), 'width' => 'half', 'maxlength' => 300,
-                    'help' => $f['name'] === 'bereich' ? __('Nur ausfüllen, wenn der Bereich oben noch fehlt – er wird angelegt und gewählt.') : __('Durch Komma getrennt, z. B. „Wald, Jagdrecht“. Vorhandene Schlagworte oben ankreuzen.')];
+                    'help' => $f['name'] === 'bereich' ? __('Nur ausfüllen, wenn der Bereich oben noch fehlt – er wird angelegt und gewählt.') : __('Durch Komma getrennt, z. B. „Beratung, Veranstaltung“. Vorhandene Schlagworte oben ankreuzen.')];
             }
         }
         if ($web) $out = [...$out, ['type' => 'heading', 'label' => __('Für die Website'), 'help' => __('Erscheint nur auf der Website (je nach Freigabe des Kontakts) – nicht in Adressbuch-Apps, Visitenkarten oder Exporten.')], ...$web];

@@ -85,7 +85,7 @@ $custom = array_filter($placeholders, fn($p) => is_array($p) && ($p['step'] ?? '
           <span class="qc-preview__label"><?= e(__('Vorschau')) ?></span>
           <div class="qc-pv__head"><b><?= e((string) ($values['org.short'] ?? '') ?: __('Ihr Verein')) ?></b><span><?= e(__('Start')) ?> · <?= e(__('Termine')) ?> · <?= e(__('Kontakt')) ?></span></div>
           <div class="qc-pv__hero"><b><?= e(__('Gemeinsam unterwegs')) ?></b><span class="qc-preview__btn"><?= e(__('Mitglied werden')) ?></span></div>
-          <div class="qc-pv__card"><b><?= e(__('Nächster Termin')) ?></b><span><?= e(__('Treffen der Regionalgruppe')) ?></span><a class="qc-preview__link" href="#" tabindex="-1"><?= e(__('Mehr erfahren')) ?></a></div>
+          <div class="qc-pv__card"><b><?= e(__('Nächster Termin')) ?></b><span><?= e(__('Offenes Treffen im Gemeindesaal')) ?></span><a class="qc-preview__link" href="#" tabindex="-1"><?= e(__('Mehr erfahren')) ?></a></div>
           <div class="qc-pv__dark"><?= e(__('Dunkler Abschnitt mit weißer Schrift')) ?></div>
         </div>
         <?php else: ?>

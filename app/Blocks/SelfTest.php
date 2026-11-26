@@ -725,7 +725,7 @@ final class SelfTest
                 $render = function (array $data, array $query = []) use ($th, $h): string {
                     app()->request = new \Core\Http\Request('GET', '/qa', $query, [], [], []);
                     $blk = \Core\Pages::sanitizeBlocks([['id' => 'qalf', 'type' => 'data_list', 'data' => ['table' => $h, 'layout' => 'compact', 'limit' => 0,
-                        'visitor_filter' => "$h.kat", 'visitor_search' => true, 'link_detail' => false] + $data]]);
+                        'visitor_filter' => "$h.kat", 'visitor_search' => true, 'link_detail' => false] + $data + ['filter_style' => 'chips']]]);
                     return $blk ? (string) $th->renderInner($th->makeBlock($blk[0])) : '';
                 };
                 $few = $render([]);
@@ -735,6 +735,9 @@ final class SelfTest
                     && !str_contains($many, '>Gamma<') && !str_contains($many, 'Ohne Einträge'), 'ListFilter: Datenliste ab Mindestzahl – nur Kategorien mit Einträgen');
                 $sel = $render(['filter_min' => 2], ['kat' => 'leer']);
                 $this->assert(str_contains($sel, 'Ohne Einträge') && str_contains($sel, 'dl-empty') && !str_contains($sel, 'Anton'), 'ListFilter: gewählte leere Kategorie bleibt sichtbar, Liste meldet „keine Einträge“');
+                $bar = $render(['filter_min' => 2, 'filter_style' => 'bar'], ['kat' => 'a']);
+                $this->assert(str_contains($bar, 'class="dl-fbar"') && str_contains($bar, 'dl-fbar__dd') && str_contains($bar, 'dl-fbar__chip') && str_contains($bar, 'dl-fbar__q')
+                    && !str_contains($bar, 'dl-filter__list'), 'ListFilter: kompakte Leiste (Suche, Aufklapp-Filter, aktive Auswahl als Chip)');
                 $ign = $render([], ['kat' => 'b']);
                 $this->assert(str_contains($ign, 'Anton') && str_contains($ign, 'Cäsar') && !str_contains($ign, 'dl-filter'), 'ListFilter: ausgeblendeter Filter ignoriert die Auswahl aus der Adresse');
             }

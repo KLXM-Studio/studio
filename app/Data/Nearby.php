@@ -33,7 +33,7 @@ final class Nearby
     {
         return [
             ['name' => 'nearby', 'label' => '„In deiner Nähe“: Besucher geben PLZ oder Ort ein', 'type' => 'bool', 'default' => false,
-                'help' => 'Zuerst Einträge des zuständigen Gebiets (z. B. Regionalgruppe über die Gebietskarte), dann im Umkreis. Ohne Eingabe wie gewohnt. Orte unterhalb der Kreisebene (Gemeinden) findet die Gebietskarte erst mit geladenen Gemeindedaten (Gebietskarten → Kartendaten).'],
+                'help' => 'Zuerst Einträge des zuständigen Gebiets (z. B. ein Standort über die Gebietskarte), dann im Umkreis. Ohne Eingabe wie gewohnt. Orte unterhalb der Kreisebene (Gemeinden) findet die Gebietskarte erst mit geladenen Gemeindedaten (Gebietskarten → Kartendaten).'],
             ['name' => 'nearby_km', 'label' => 'Umkreis (km)', 'type' => 'number', 'default' => 50, 'width' => 'half'],
             ['name' => 'nearby_mode', 'label' => 'Bei einer Eingabe', 'type' => 'select', 'default' => 'order', 'width' => 'half',
                 'options' => ['order' => 'Zuständige zuerst, dann im Umkreis', 'site' => 'Nur Einträge der zuständigen Website (Netzwerk)']],

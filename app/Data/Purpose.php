@@ -41,7 +41,7 @@ final class Purpose
                 'examples' => __('Kontakt, Rückrufbitte')],
             'inbox' => ['label' => __('Anfragen sammeln & bearbeiten'), 'icon' => 'tray',
                 'lead' => __('Einsendungen landen Ende-zu-Ende verschlüsselt im Eingang „Anfragen“ – mit Status, Benachrichtigung ohne Inhalte und Löschfrist.'),
-                'examples' => __('Terminwunsch, Rezeptbestellung, Beratungsanfrage')],
+                'examples' => __('Terminwunsch, Bestellung, Beratungsanfrage')],
             'registration' => ['label' => __('Anmeldung oder Bewerbung'), 'icon' => 'clipboard-text',
                 'lead' => __('Formular und Teilnehmerliste in der Verwaltung, Bestätigung per E-Mail an die Absender – auf Wunsch mit Obergrenze.'),
                 'examples' => __('Kursanmeldung, Veranstaltung, Bewerbungen')],

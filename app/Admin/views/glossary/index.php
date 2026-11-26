@@ -145,7 +145,7 @@ $siteName = fn(string $k) => \Core\Data\Shared::siteInfo($k, 'glossar')['name'];
         <?= csrf_field() ?>
         <div class="f"><label for="gls-b"><?= e(__('Begriff')) ?></label><input id="gls-b" name="begriff" required maxlength="120" autocomplete="off"></div>
         <div class="f"><label for="gls-v"><?= e(__('Varianten (optional)')) ?></label><input id="gls-v" name="varianten" maxlength="400" autocomplete="off" aria-describedby="gls-v-h">
-          <p class="f-help" id="gls-v-h"><?= e(__('Mit Komma getrennt, z. B. „Sender Policy Framework, SPF-Eintrag“.')) ?></p></div>
+          <p class="f-help" id="gls-v-h"><?= e(__('Mit Komma getrennt, z. B. „Datenschutz-Grundverordnung, DS-GVO“.')) ?></p></div>
         <div class="f"><label for="gls-k"><?= e(__('Kurz-Erklärung')) ?></label><textarea id="gls-k" name="kurz" rows="3" maxlength="400" aria-describedby="gls-k-h"></textarea>
           <p class="f-help" id="gls-k-h"><?= e($ai ? __('Höchstens 240 Zeichen. Leer lassen und „Von der KI vorschlagen“ wählen: Die KI schreibt einen Entwurf, den Sie danach prüfen.') : __('Höchstens 240 Zeichen, Klartext.')) ?></p></div>
         <p class="adm-actions">
@@ -168,7 +168,7 @@ $siteName = fn(string $k) => \Core\Data\Shared::siteInfo($k, 'glossar')['name'];
       <form method="post" action="<?= e(url($base . '/import')) ?>" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="f"><label for="gls-file"><?= e(__('Datei (CSV)')) ?></label><input id="gls-file" type="file" name="file" accept=".csv,.txt,text/csv"></div>
-        <div class="f"><label for="gls-text"><?= e(__('… oder Zeilen einfügen')) ?></label><textarea id="gls-text" name="text" rows="3" spellcheck="false" data-kia-off placeholder="begriff;varianten;kurz&#10;SPF;Sender Policy Framework;…"></textarea></div>
+        <div class="f"><label for="gls-text"><?= e(__('… oder Zeilen einfügen')) ?></label><textarea id="gls-text" name="text" rows="3" spellcheck="false" data-kia-off placeholder="begriff;varianten;kurz&#10;DSGVO;Datenschutz-Grundverordnung;…"></textarea></div>
         <div class="adm-checks">
           <label class="rv-check"><input type="checkbox" name="overwrite" value="1"> <span><?= e(__('Vorhandene Begriffe überschreiben')) ?></span></label>
           <label class="rv-check"><input type="checkbox" name="dry" value="1"> <span><?= e(__('Nur prüfen (Probelauf)')) ?></span></label>

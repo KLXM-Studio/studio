@@ -123,7 +123,7 @@ $langs = array_diff_key(Lang::all(), [Lang::default() => 1]);
 
           <?php if ($selects): ?>
           <div class="f f--inline"><label for="t-dv-rf"><?= e(__('Weiterleitung nach Auswahlfeld (optional)')) ?></label>
-            <p class="f-help"><?= e(__('Je Auswahl eine eigene Adresse, z. B. „Rezept“ → rezept@…; leer = Empfänger oben.')) ?></p>
+            <p class="f-help"><?= e(__('Je Auswahl eine eigene Adresse, z. B. „Bewerbung“ → bewerbung@…; leer = Empfänger oben.')) ?></p>
             <select id="t-dv-rf" name="settings[inbox][delivery][route_field]" data-route-field>
               <option value=""><?= e(__('– keine: immer an die Empfänger oben –')) ?></option>
               <?php foreach ($selects as $f): ?><option value="<?= e($f['name']) ?>"<?= $dv['route_field'] === $f['name'] ? ' selected' : '' ?>><?= e($f['label']) ?></option><?php endforeach; ?>
@@ -139,7 +139,7 @@ $langs = array_diff_key(Lang::all(), [Lang::default() => 1]);
           <?php endif; ?>
 
           <div class="f f--inline"><label for="t-dv-subj"><?= e(__('Betreff')) ?></label>
-            <p class="f-help"><?= e(__('Platzhalter: {form} (Titel des Formulars), {table}, {ref} (Vorgangsnummer), {date}, {time} und {feldname} für ein Feld, z. B. „[Rezeptanfrage] {nachname} – {ref}“. Der Betreff wird auch mit S/MIME nicht verschlüsselt – deshalb stehen standardmäßig keine Inhalte darin.')) ?></p>
+            <p class="f-help"><?= e(__('Platzhalter: {form} (Titel des Formulars), {table}, {ref} (Vorgangsnummer), {date}, {time} und {feldname} für ein Feld, z. B. „[Anfrage] {nachname} – {ref}“. Der Betreff wird auch mit S/MIME nicht verschlüsselt – deshalb stehen standardmäßig keine Inhalte darin.')) ?></p>
             <input id="t-dv-subj" name="settings[inbox][delivery][subject]" value="<?= e($dv['subject']) ?>" placeholder="<?= e(Delivery::SUBJECT) ?>" maxlength="200"></div>
           <div class="f f--bool"><input type="hidden" name="settings[inbox][delivery][reply_to]" value="0">
             <label class="f-check"><input type="checkbox" name="settings[inbox][delivery][reply_to]" value="1"<?= $dv['reply_to'] ? ' checked' : '' ?>> <span><?= e(__('„Antworten“ geht an die E-Mail-Adresse aus der Anfrage (Reply-To), falls das Formular ein E-Mail-Feld hat')) ?></span></label></div>
