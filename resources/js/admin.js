@@ -1156,7 +1156,10 @@ function initRelations(scope = d) {
     const box = $('.f-multi', fs);
     const tools = d.createElement('div'); tools.className = 'f-reltools';
     tools.innerHTML = `<input type="search" placeholder="Filtern …" aria-label="Auswahl filtern"><button type="button" class="adm-btn adm-btn--small adm-btn--ghost">+ ${esc(fs.dataset.singular)} neu</button>`;
-    fs.insertBefore(tools, box);
+    // Lange Listen haben schon das Filterfeld des Kerns (data-multi-filter, mit „Auch vergangene zeigen“) – dann nur „+ neu“ dazu
+    const own = $('.f-multi__tools', fs);
+    if (own && $('[data-multi-filter]', own)) { tools.firstElementChild.hidden = true; own.append(tools); }
+    else fs.insertBefore(tools, box);
     const labels = () => $$('.f-check', box);
     $('input', tools).addEventListener('input', e => { const q = e.target.value.toLowerCase(); labels().forEach(l => { l.hidden = q && !l.textContent.toLowerCase().includes(q) && !$('input', l).checked; }); });
     $('button', tools).addEventListener('click', async () => {
@@ -1165,7 +1168,7 @@ function initRelations(scope = d) {
       if (!cb) { box.insertAdjacentHTML('beforeend', `<label class="f-check"><input type="checkbox" name="${esc(fs.dataset.name)}" value="${res.id}"> <span>${esc(res.title)}</span></label>`); cb = $(`input[value="${res.id}"]`, box); }
       cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    if (labels().length < 8) $('input', tools).hidden = true;
+    if (labels().length < 8 || own?.contains(tools)) $('input', tools).hidden = true;
   });
   $$('.f-relselect[data-relation]', scope).forEach(w => {
     if (w._init) return; w._init = true;
@@ -1253,7 +1256,7 @@ function initBlockFields(scope = d) {
         const filled = [...row.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), textarea, .rte-area, [contenteditable=true]')]
           .some(el => ('value' in el && el.tagName !== 'DIV' ? el.value : el.textContent).trim() !== '') || !!row.querySelector('.media-field input[type=hidden][value]:not([value=""])');
         if (!filled) { go(); return; }
-        bar_.ask({ title: t('Block mit Inhalt entfernen?'), ok: t('Entfernen') }).then(ok => { if (ok) go(); });
+        bar_.ask({ title: t('Block „{label}“ mit Inhalt entfernen?', { label: row.dataset.label || '' }), body: t('Der Inhalt geht beim Speichern verloren.'), ok: t('Block entfernen') }).then(ok => { if (ok) go(); });
         return;
       }
       a.focus(); changed();

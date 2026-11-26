@@ -173,7 +173,10 @@ final class EntryBlocks
         $types = self::allowed($f);
         $theme = app()->theme;
         $h = '<div class="f f--blocks" data-blocks data-name="' . e($name) . '"><span class="f-label">' . $label . '</span>'
-            . (!empty($f['help']) ? '<p class="f-help">' . e((string) $f['help']) . '</p>' : '') . '<div class="blk-items" data-blk-items>';
+            . (!empty($f['help']) ? '<p class="f-help">' . e((string) $f['help']) . '</p>' : '')
+            // Marker „Feld im Formular“: ohne ihn fehlte das Feld bei leerer Liste im POST, und Entries::save behielte die alten Blöcke
+            . '<input type="hidden" name="' . e($name) . '[_]" value="">'
+            . '<div class="blk-items" data-blk-items>';
         $list = self::items($value);
         foreach ($list as $i => $b) {
             // Mehrere Blöcke: zugeklappt mit Auszug im Titel (übersichtlich); mit Fehlern offen
@@ -215,7 +218,7 @@ final class EntryBlocks
                 . '<input type="hidden" name="' . e($n) . '[raw]" value="' . e((string) json_encode($b['data'] ?? new \stdClass(), JSON_UNESCAPED_UNICODE)) . '">';
         }
         $peek = self::peek($def['fields'] ?? [], $data);
-        return '<fieldset class="rep-item blk-item' . ($open ? '' : ' is-collapsed') . '" data-blk-item data-type="' . e($type) . '"><legend>'
+        return '<fieldset class="rep-item blk-item' . ($open ? '' : ' is-collapsed') . '" data-blk-item data-type="' . e($type) . '" data-label="' . e($label) . '"><legend>'
             . '<button type="button" class="rep-toggle" data-blk="toggle" aria-expanded="' . ($open ? 'true' : 'false') . '"><span class="rep-chev" aria-hidden="true"></span>'
             . '<span class="rep-title">' . \Core\Icons::render((string) ($def['icon'] ?? 'squares-four')) . ' ' . e($label)
             . ($peek !== '' ? ' <span class="blk-peek">– ' . e($peek) . '</span>' : '') . '</span></button></legend>'

@@ -985,7 +985,8 @@ final class Fields
                 . '<div class="rep-fields">' . self::renderForm($sub, $item, $errors, $inputName . '[' . $idx . ']', "$p.$idx") . '</div></fieldset>';
         };
 
-        $h = '<div class="f f--repeater"><div class="rep" data-name="' . e($inputName) . '">'
+        // Marker „Feld im Formular“ (wie bei Blöcken): leere Liste wird als leer gespeichert statt als „unverändert“
+        $h = '<div class="f f--repeater"><input type="hidden" name="' . e($inputName) . '[_]" value=""><div class="rep" data-name="' . e($inputName) . '">'
             . '<div class="rep-head"><span class="f-label">' . $label . '</span>'
             . (count($items) > 1 && empty($f['rows']) ? ' <button type="button" class="adm-link rep-all" data-rep="all">' . e(__('Alle aufklappen')) . '</button>' : '')
             . (!empty($f['help']) ? '<p class="f-help">' . e($f['help']) . '</p>' : '') . '</div><div class="rep-items">';

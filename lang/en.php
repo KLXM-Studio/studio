@@ -10038,6 +10038,8 @@ return [
     'Abhaken …' => 'Check off …',
     'Seitenleiste mit allen Angaben des Eintrags: Datum, Kategorie, Bild …' => 'Sidebar with all details of the entry: date, category, image …',
     'Block mit Inhalt entfernen?' => 'Remove block with content?',
+    'Block „{label}“ mit Inhalt entfernen?' => 'Remove block “{label}” with its content?',
+    'Der Inhalt geht beim Speichern verloren.' => 'The content will be lost when you save.',
     'Auch vergangene zeigen' => 'Also show past ones',
     '{label} filtern' => 'Filter {label}',
     // KLXM AI: Übersicht und MCP-Anleitung Claude Desktop
