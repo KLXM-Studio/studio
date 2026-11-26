@@ -59,6 +59,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
+### Versionen
+- Einträge gegenübergestellt: beide Spalten scrollen gemeinsam (Abgleich an derselben Feldzeile); beim Wechsel des Stands bleibt die Position.
+
 ### Karten (OpenFreeMap)
 - Proxy erlaubt auch die Ausweichquelle `backup_planet` von OpenFreeMap (Stil verweist zeitweise darauf) – sonst blieben Karten und Ortswahl ohne Kacheln.
 

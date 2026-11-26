@@ -202,6 +202,40 @@ export async function open({ endpoint, csrf = '', css: cssUrl = '' } = {}) {
       }, { passive: true });
     } catch { /* */ }
   };
+  // Einträge gegenübergestellt: beide Spalten scrollen gemeinsam – Abgleich an derselben Feldzeile (gleiche Beschriftung), sonst nach Anteil
+  let entryAc = null;   // Listener der vorigen Kopplung entfernen (Spalten werden je Stand neu gerendert)
+  const coupleEntries = () => {
+    entryAc?.abort();
+    if (!isEntry || !cmp) return;
+    entryAc = new AbortController();
+    const signal = entryAc.signal;
+    const a = winLive.querySelector('.vs-scroll'), b = win.querySelector('.vs-scroll');
+    if (!a || !b) return;
+    let lead = null, raf = 0;
+    const label = r => r.querySelector('dt')?.textContent || '';
+    const sync = (f, t) => {
+      const ft = f.getBoundingClientRect().top, tt = t.getBoundingClientRect().top;
+      const r = [...f.querySelectorAll('.vs-f')].find(x => x.getBoundingClientRect().bottom > ft + 1);
+      const twin = r && [...t.querySelectorAll('.vs-f')].find(x => label(x) === label(r));
+      let ty;
+      if (f.scrollTop <= 0) ty = 0;
+      else if (f.scrollTop >= f.scrollHeight - f.clientHeight - 1) ty = t.scrollHeight;
+      else if (twin) {
+        const rr = r.getBoundingClientRect(), tr = twin.getBoundingClientRect();
+        ty = t.scrollTop + (tr.top - tt) + ((ft - rr.top) / Math.max(1, rr.height)) * tr.height;
+      } else ty = f.scrollTop / Math.max(1, f.scrollHeight - f.clientHeight) * (t.scrollHeight - t.clientHeight);
+      t.scrollTop = Math.max(0, ty);
+    };
+    [[a, b], [b, a]].forEach(([f, t]) => {
+      const mine = () => { lead = f; };
+      ['wheel', 'touchstart', 'pointerdown', 'keydown', 'pointerenter'].forEach(ev => f.addEventListener(ev, mine, { passive: true, signal }));
+      f.addEventListener('scroll', () => {
+        if (lead !== f || raf) return;
+        raf = requestAnimationFrame(() => { raf = 0; sync(f, t); });
+      }, { passive: true, signal });
+    });
+    sync(b, a);
+  };
   function renderCompare() {
     frame.classList.toggle('is-cmp', cmp);
     paneLive.hidden = !cmp;
@@ -209,7 +243,7 @@ export async function open({ endpoint, csrf = '', css: cssUrl = '' } = {}) {
     if (!cmp) return;
     vs.querySelector('[data-live-h]').textContent = isEntry ? L('now') : (data.has_live ? L('live') : L('liveDraft'));
     vs.querySelector('[data-sel-h]').textContent = L('selected') + ' · ' + (V[cur].now ? L('now') : V[cur].at);
-    if (isEntry) { renderEntry(V[0], winLive, false); return; }
+    if (isEntry) { renderEntry(V[0], winLive, false); coupleEntries(); return; }
     if (!liveFrame) {
       liveFrame = document.createElement('iframe');
       liveFrame.title = L('live') + ' – ' + data.title;
@@ -306,7 +340,7 @@ export async function open({ endpoint, csrf = '', css: cssUrl = '' } = {}) {
     restoreBtn.disabled = !!v.now || !data.can_restore;
     restoreBtn.title = v.now ? L('isNow') : '';
     ask(false); msg('');
-    if (isEntry) renderEntry(v); else renderPage(v);
+    if (isEntry) { const keep = win.querySelector('.vs-scroll')?.scrollTop || 0; renderEntry(v); const sc = win.querySelector('.vs-scroll'); if (sc) sc.scrollTop = keep; coupleEntries(); } else renderPage(v);
     turnTo(v);
     diffLine(v);
     renderCompare();
