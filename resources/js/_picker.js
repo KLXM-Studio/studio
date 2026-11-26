@@ -25,24 +25,24 @@ function build() {
   const box = layerBox();
   dlg = box.querySelector('#cms-ep');
   if (dlg) return;
-  box.insertAdjacentHTML('beforeend', `<dialog id="cms-ep" class="adm-dialog lp ep" aria-labelledby="cms-ep-t">
+  box.insertAdjacentHTML('beforeend', `<dialog id="cms-ep" class="adm-dialog lp epk" aria-labelledby="cms-ep-t">
     <form method="dialog" class="lp__form" novalidate>
       <div class="adm-dialog__head"><h2 id="cms-ep-t"></h2>
         <button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-ep-cancel>${esc(t('Abbrechen'))}</button></div>
-      <div class="ep__bar">
-        <select class="ep__sel" data-ep-table aria-label="${esc(t('Tabelle'))}" hidden></select>
+      <div class="epk__bar">
+        <select class="epk__sel" data-ep-table aria-label="${esc(t('Tabelle'))}" hidden></select>
         <input type="search" class="lp__q" data-ep-q aria-controls="cms-ep-list" aria-label="${esc(t('Einträge suchen'))}" autocomplete="off" spellcheck="false">
       </div>
-      <div class="ep__filters" data-ep-filters></div>
-      <div class="ep__main">
-        <div class="ep__col">
-          <ul class="lp__list ep__list" id="cms-ep-list" role="listbox" tabindex="0" aria-labelledby="cms-ep-t" data-ep-list></ul>
-          <button type="button" class="adm-btn adm-btn--small adm-btn--ghost ep__more" data-ep-more hidden>${esc(t('Weitere laden'))}</button>
+      <div class="epk__filters" data-ep-filters></div>
+      <div class="epk__main">
+        <div class="epk__col">
+          <ul class="lp__list epk__list" id="cms-ep-list" role="listbox" tabindex="0" aria-labelledby="cms-ep-t" data-ep-list></ul>
+          <button type="button" class="adm-btn adm-btn--small adm-btn--ghost epk__more" data-ep-more hidden>${esc(t('Weitere laden'))}</button>
         </div>
-        <aside class="ep__prev" data-ep-prev aria-live="polite"><p class="lp__empty">${esc(t('Eintrag wählen, um die Vorschau zu sehen.'))}</p></aside>
+        <aside class="epk__prev" data-ep-prev aria-live="polite"><p class="lp__empty">${esc(t('Eintrag wählen, um die Vorschau zu sehen.'))}</p></aside>
       </div>
       <p class="lp__error" data-ep-error role="alert" hidden></p>
-      <div class="adm-row lp__actions ep__actions">
+      <div class="adm-row lp__actions epk__actions">
         <button type="submit" class="adm-btn adm-btn--primary" data-ep-ok>${esc(t('Übernehmen'))}</button>
         <button type="button" class="adm-btn adm-btn--ghost" data-ep-new hidden></button>
         <span class="pgp__count" data-ep-count aria-live="polite"></span>
@@ -114,7 +114,7 @@ function count() {
 function err(msg) { const p = q('[data-ep-error]'); p.textContent = msg || ''; p.hidden = !msg; }
 
 function filtersHtml(res) {
-  const sel = (k, label, options, cur) => `<label class="ep__f"><span>${esc(label)}</span><select data-k="${esc(k)}">`
+  const sel = (k, label, options, cur) => `<label class="epk__f"><span>${esc(label)}</span><select data-k="${esc(k)}">`
     + options.map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('') + '</select></label>';
   let h = '';
   if (res.calendar) {
@@ -127,8 +127,8 @@ function filtersHtml(res) {
 
 function rowHtml(it) {
   const k = key(it.table, it.id);
-  return `<li role="option" id="cms-ep-${esc(k.replace(':', '-'))}" class="lp__opt ep__opt${it.past ? ' is-past' : ''}" data-key="${esc(k)}" aria-selected="${st.sel.has(k) ? 'true' : 'false'}">`
-    + (st.multiple ? '<span class="pgp__cb ep__cb" aria-hidden="true"></span>' : '')
+  return `<li role="option" id="cms-ep-${esc(k.replace(':', '-'))}" class="lp__opt epk__opt${it.past ? ' is-past' : ''}" data-key="${esc(k)}" aria-selected="${st.sel.has(k) ? 'true' : 'false'}">`
+    + (st.multiple ? '<span class="pgp__cb epk__cb" aria-hidden="true"></span>' : '')
     + (it.thumb ? `<img class="lp__thumb" src="${esc(it.thumb)}" alt="" loading="lazy">` : '')
     + `<span class="lp__txt"><span class="lp__label">${esc(it.title)}</span>${it.sub ? `<span class="lp__meta">${esc(it.sub)}</span>` : ''}</span>`
     + (it.status === 'draft' ? `<span class="lp__badge lp__badge--draft">${esc(t('Entwurf'))}</span>` : '') + '</li>';
@@ -176,11 +176,11 @@ async function preview(o) {
     s.prev.set(o.dataset.key, p);
   }
   if (s.active && s.active !== o && s.hover !== o) return;
-  box.innerHTML = (p.image ? `<img class="ep__img" src="${esc(p.image)}" alt="">` : '')
-    + `<h3 class="ep__pt">${esc(p.title)}</h3>`
-    + `<p class="ep__pm">${esc([p.sub, p.status_label].filter(Boolean).join(' · '))}</p>`
-    + (p.text ? `<p class="ep__px">${esc(p.text)}</p>` : '')
-    + `<p class="ep__pl"><a href="${esc(p.edit)}" target="_blank" rel="noopener">${esc(t('Bearbeiten'))}</a>`
+  box.innerHTML = (p.image ? `<img class="epk__img" src="${esc(p.image)}" alt="">` : '')
+    + `<h3 class="epk__pt">${esc(p.title)}</h3>`
+    + `<p class="epk__pm">${esc([p.sub, p.status_label].filter(Boolean).join(' · '))}</p>`
+    + (p.text ? `<p class="epk__px">${esc(p.text)}</p>` : '')
+    + `<p class="epk__pl"><a href="${esc(p.edit)}" target="_blank" rel="noopener">${esc(t('Bearbeiten'))}</a>`
     + (p.view ? ` · <a href="${esc(p.view)}" target="_blank" rel="noopener">${esc(t('Ansehen'))}</a>` : '') + '</p>';
 }
 

@@ -105,6 +105,7 @@ const Panel = (() => {
       <div class="ep__content"></div></aside><datalist id="cms-links"></datalist>`;
     el = q('.ep');
     d.body.append(host);
+    resizable();
     el.addEventListener('click', e => {
       const b = e.target.closest('button');
       if (!b || busy) return;
@@ -121,6 +122,40 @@ const Panel = (() => {
     });
     // Stylesheets im Shadow DOM abwarten, bevor die Leiste erscheint
     return Promise.all([...root.querySelectorAll('link')].map(l => new Promise(r => { l.onload = l.onerror = r; })));
+  }
+
+  // Breite ziehen (Maus/Touch), Pfeiltasten, Doppelklick = Standard; gemerkt im Browser – wie die Block-Seitenleiste (editor.js)
+  function resizable() {
+    const KEY = 'cms:epanel-w', MIN = 380, MAX = 1100;
+    const set = w => {
+      if (!w) { host.style.removeProperty('--cms-epanel-w'); try { localStorage.removeItem(KEY); } catch { /* privat */ } return; }
+      w = Math.round(Math.max(MIN, Math.min(w, innerWidth - 240, MAX)));
+      host.style.setProperty('--cms-epanel-w', w + 'px');
+      try { localStorage.setItem(KEY, String(w)); } catch { /* privat */ }
+    };
+    try { const w = +localStorage.getItem(KEY); if (w) set(w); } catch { /* privat */ }
+    const tr = (window.CMSAdmin && CMSAdmin.t) || (x => x);
+    const grip = d.createElement('div');
+    grip.className = 'ep__grip'; grip.tabIndex = 0;
+    grip.setAttribute('role', 'separator'); grip.setAttribute('aria-orientation', 'vertical');
+    grip.setAttribute('aria-label', tr('Breite der Seitenleiste ändern (Pfeiltasten, Doppelklick = Standard)'));
+    grip.setAttribute('aria-valuemin', String(MIN)); grip.setAttribute('aria-valuemax', String(MAX));
+    grip.title = tr('Breite ziehen · Doppelklick = Standard');
+    const now = () => grip.setAttribute('aria-valuenow', String(Math.round(host.getBoundingClientRect().width) || 520));
+    new ResizeObserver(now).observe(host);
+    el.prepend(grip);
+    grip.addEventListener('pointerdown', e => {
+      e.preventDefault(); grip.setPointerCapture(e.pointerId); el.classList.add('is-resizing');
+      const move = ev => set(innerWidth - ev.clientX);
+      const up = () => { el.classList.remove('is-resizing'); grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); };
+      grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up);
+    });
+    grip.addEventListener('keydown', e => {
+      const k = { ArrowLeft: 40, ArrowRight: -40 }[e.key];
+      if (k) { e.preventDefault(); set(host.getBoundingClientRect().width + k); }
+    });
+    grip.addEventListener('dblclick', () => set(0));
+    addEventListener('resize', () => { const w = parseInt(host.style.getPropertyValue('--cms-epanel-w'), 10); if (w && w > innerWidth - 240) set(w); });
   }
 
   let linksLoaded = false;

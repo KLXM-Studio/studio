@@ -3,13 +3,13 @@
    damit Theme-CSS nicht hineinwirkt. Feld-Widgets: admin.shadow.css (= admin.css mit :root → :host, beim Build erzeugt).
    Hell/Dunkel folgt der Darstellung der Verwaltung (:host(.adm-ui[data-theme=…]) bzw. System).
    ========================================================================== */
-:host{all:initial;display:block;position:fixed;top:0;right:0;bottom:0;z-index:2147483100;width:min(520px,100vw);
+:host{all:initial;display:block;position:fixed;top:0;right:0;left:auto;bottom:0;z-index:2147483100;width:min(var(--cms-epanel-w,520px),100vw);max-width:100vw;
   color:var(--adm-ink);font:400 15px/1.5 var(--adm-font);-webkit-font-smoothing:antialiased;color-scheme:light}
 :host([hidden]){display:none}
 :host(.adm-ui[data-theme=dark]){color-scheme:dark}
 @media (prefers-color-scheme:dark){:host(.adm-ui:not([data-theme=light])){color-scheme:dark}}
 *,*::before,*::after{box-sizing:border-box}
-.ep{display:flex;flex-direction:column;height:100%;background:var(--adm-card);border-left:1px solid var(--adm-line);box-shadow:-20px 0 60px rgba(0,0,0,.18)}
+.ep{position:relative;container:ep/inline-size;display:flex;flex-direction:column;height:100%;background:var(--adm-card);border-left:1px solid var(--adm-line);box-shadow:-20px 0 60px rgba(0,0,0,.18)}
 .ep:focus{outline:none}
 .ep__head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 22px 12px;border-bottom:1px solid var(--adm-line)}
 .ep__titles{min-width:0}
@@ -71,3 +71,16 @@ a{color:var(--adm-a-ink)}
 .ff [data-ff-saved]:focus,.ff [data-ff-errors]:focus{outline:none}
 .cms-epanel__foot [data-ff-status]{font-size:13px;color:var(--adm-t2)}
 @media (max-width:420px){.ff .dt-field{grid-template-columns:1fr}.ff .dt-field__tools{flex-direction:row;justify-content:flex-end}.ff .dt-field__row{grid-template-columns:1fr}}
+
+/* Breite ziehen (resources/js/_entry_edit.js, gemerkt im Browser; Doppelklick = Standard) – wie die Block-Seitenleiste */
+.ep__grip{position:absolute;top:0;bottom:0;left:-5px;width:10px;z-index:5;cursor:ew-resize;touch-action:none}
+.ep__grip::after{content:"";position:absolute;left:4px;top:50%;width:2px;height:48px;margin-top:-24px;border-radius:2px;background:var(--adm-line);transition:background .15s,height .15s}
+.ep__grip:hover::after,.ep__grip:focus-visible::after,.ep.is-resizing .ep__grip::after{background:var(--adm-a);height:96px;margin-top:-48px}
+.ep__grip:focus-visible{outline:none}
+@media (max-width:600px){.ep__grip{display:none}}
+/* Inhalt nie breiter als die Leiste: Feldgruppen dürfen schrumpfen (Safari hält fieldset sonst auf Inhaltsbreite), schmale Leiste = eine Spalte */
+.ep fieldset{min-inline-size:0}
+@container ep (max-width:560px){
+  .adm-fields,.rep-fields{grid-template-columns:minmax(0,1fr)}
+  .adm-fields>.f--half,.rep-fields>.f--half,.adm-fields>.f-vis>.f--half,.rep-fields>.f-vis>.f--half,.adm-fields>.f-bindwrap--half{grid-column:1/-1}
+}
