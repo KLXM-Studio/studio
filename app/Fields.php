@@ -736,10 +736,18 @@ final class Fields
         if ($type === 'multiselect') {
             $sel = array_map('strval', is_array($value) ? $value : []);
             $rel = !empty($f['relation']) ? ' data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '" data-name="' . e($inputName) . '[]"' : '';
+            $opts = self::options($f);
+            $past = array_flip(array_map('strval', (array) ($f['past'] ?? [])));   // vergangene Termine (Entries::calendarChoices)
             $h = '<fieldset class="f f--multi' . ($rel ? ' f--relation' : '') . $width . ($err ? ' f--error' : '') . '"' . $rel . ($describedBy ? ' aria-describedby="' . $describedBy . '"' : '') . '><legend>' . $label . '</legend>'
-                . '<input type="hidden" name="' . $inputName . '[]" value=""><div class="f-multi">';
-            foreach (self::options($f) as $k => $l) {
-                $h .= '<label class="f-check"><input type="checkbox" name="' . $inputName . '[]" value="' . e((string) $k) . '"'
+                . '<input type="hidden" name="' . $inputName . '[]" value="">';
+            // Lange Listen: Filterfeld (resources/js/admin.js, data-multi-filter); Kalender-Ziele: „Auch vergangene zeigen“ (nur CSS)
+            if (count($opts) > 12 || $past) {
+                $h .= '<div class="f-multi__tools">' . (count($opts) > 12 ? '<input type="search" class="f-multi__q" data-multi-filter placeholder="' . e(__('Filtern …')) . '" aria-label="' . e(__('{label} filtern', ['label' => strip_tags($label)])) . '">' : '')
+                    . ($past ? '<label class="f-check f-multi__past"><input type="checkbox"> <span>' . e(__('Auch vergangene zeigen')) . '</span></label>' : '') . '</div>';
+            }
+            $h .= '<div class="f-multi">';
+            foreach ($opts as $k => $l) {
+                $h .= '<label class="f-check' . (isset($past[(string) $k]) ? ' f-check--past' : '') . '"><input type="checkbox" name="' . $inputName . '[]" value="' . e((string) $k) . '"'
                     . (in_array((string) $k, $sel, true) ? ' checked' : '') . '> <span>' . e((string) $l) . '</span></label>';
             }
             return $h . '</div>' . $help . $errHtml . '</fieldset>';

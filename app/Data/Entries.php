@@ -448,6 +448,8 @@ final class Entries
                 $target = Tables::findContent($f['target'] ?? '');
                 $def['type'] = $f['type'] === 'relation' ? 'select' : 'multiselect';
                 $def['options'] = $target ? self::titles($target) : [];
+                // Ziel mit Datum (Kalender): Datum in der Auswahl, kommende zuerst, vergangene erst auf Wunsch (Fields: 'past')
+                if ($target && Calendar::enabled($target)) [$def['options'], $def['past']] = self::calendarChoices($target);
                 if ($target) {
                     $def['relation'] = ['table' => $target['name'], 'singular' => $target['singular'], 'create' => url('/admin/data/' . $target['handle'] . '/quick')];
                 }
@@ -564,6 +566,28 @@ final class Entries
     }
 
     /** id → Titel aller Einträge (für Verknüpfungen) */
+    /**
+     * Auswahl aus einer Kalender-Tabelle: „Titel · Datum“, kommende Termine aufsteigend, danach vergangene absteigend.
+     * @return array{0: array<int, string>, 1: list<int>} Optionen, IDs vergangener Termine
+     */
+    public static function calendarChoices(array $table): array
+    {
+        $now = new \DateTimeImmutable('today');
+        $up = $down = [];
+        foreach (self::query($table, ['status' => 'all', 'limit' => 1000, 'source' => 'all']) as $e) {
+            $span = Calendar::span($table, $e);
+            $label = self::title($table, $e) . ($span ? ' · ' . fmt()->date($span['start']->format('Y-m-d')) : '');
+            $end = $span ? ($span['has_end'] ? $span['end'] : $span['start']->modify('+1 day')) : null;
+            $row = [(int) $e['id'], $label, $span ? $span['start']->getTimestamp() : 0];
+            if ($end === null || $end > $now) $up[] = $row; else $down[] = $row;
+        }
+        usort($up, fn($a, $b) => $a[2] <=> $b[2]);
+        usort($down, fn($a, $b) => $b[2] <=> $a[2]);
+        $opts = [];
+        foreach ([...$up, ...$down] as [$id, $label]) $opts[$id] = $label;
+        return [$opts, array_map(fn($r) => $r[0], $down)];
+    }
+
     public static function titles(array $table): array
     {
         $out = [];

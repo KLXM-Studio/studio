@@ -10038,4 +10038,6 @@ return [
     'Abhaken …' => 'Check off …',
     'Seitenleiste mit allen Angaben des Eintrags: Datum, Kategorie, Bild …' => 'Sidebar with all details of the entry: date, category, image …',
     'Block mit Inhalt entfernen?' => 'Remove block with content?',
+    'Auch vergangene zeigen' => 'Also show past ones',
+    '{label} filtern' => 'Filter {label}',
 ];

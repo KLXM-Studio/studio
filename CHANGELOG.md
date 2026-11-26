@@ -15,6 +15,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Wissensbereich: Inhalte nutzen die volle Breite der Kapitelspalte (Karten und Kacheln standen links, rechts blieb Platz).
 - Text + Bild: optionale Bildunterschrift, auf Wunsch aus dem Bildnachweis der Mediathek.
 - Blöcke im Eintragsformular: Entfernen fragt nach, wenn der Block Inhalt hat.
+- Verknüpfungen zu Kalender-Tabellen (z. B. „Zugehörige Termine“): Datum in der Auswahl, kommende zuerst, vergangene erst mit „Auch vergangene zeigen“; lange Auswahllisten mit Filterfeld.
 - Aufgaben: „Abhaken …“ statt „Erledigt“ bei offenen Aufgaben; „Aufgabe anlegen“ ohne Plus.
 - Bearbeiten auf der Website: „Weitere Angaben“ statt „Alle Felder“.
 - Suchvorschläge im farbigen bzw. dunklen Kopf lesbar.

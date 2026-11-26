@@ -1350,3 +1350,10 @@ window.CMSAdmin = { init, hotspots, toast, toastNext, openMediaPicker, pickLink,
 initEntryEdit();
 // Karten und Kacheln: Ziel (Seite/Eintrag) bearbeiten – mit Rückfrage der Werkzeugleiste bei ungespeicherten Änderungen
 initTargetEdit(bar_);
+
+// Mehrfachauswahl filtern (Core\Fields: input[data-multi-filter] über langen Listen, z. B. „Zugehörige Termine“)
+document.addEventListener('input', e => {
+  const q = e.target.closest?.('[data-multi-filter]'); if (!q) return;
+  const term = q.value.trim().toLowerCase();
+  q.closest('.f--multi')?.querySelectorAll('.f-multi > .f-check').forEach(l => l.classList.toggle('is-filtered', term !== '' && !l.textContent.toLowerCase().includes(term)));
+});

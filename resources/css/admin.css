@@ -3953,3 +3953,9 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .dt-expose__targets legend{font-size:12px;color:var(--adm-t2);padding:0;margin-bottom:4px}
 .dt-field__row.dt-field__expose>.f-help{flex:1 1 100%;margin:0;max-width:none}
 .dt-field__system{display:flex;gap:6px;align-items:center}
+/* Mehrfachauswahl: Filterfeld bei langen Listen, vergangene Termine erst mit „Auch vergangene zeigen“ (Core\Fields, Entries::calendarChoices) */
+.f-multi__tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 8px}
+.f-multi__q{flex:1 1 14rem;max-width:22rem}
+.f--multi .f-check--past{display:none}
+.f--multi:has(.f-multi__past input:checked) .f-check--past,.f--multi .f-check--past:has(input:checked){display:flex}
+.f--multi .f-check.is-filtered{display:none}
