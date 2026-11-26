@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Eingereicht: Vorschau und lesbare Gegenüberstellung
+- Änderungen an Einträgen (z. B. über MCP) zeigen „Vorschau“ – die Detailseite mit den vorgeschlagenen Werten, ohne zu speichern.
+- Formatierter Text erscheint so wie auf der Website (Unterschiede wortweise aufklappbar), Verknüpfungen und Auswahlfelder mit Titel bzw. Beschriftung statt IDs; Feldschlüssel ausgeblendet.
+
 ### Glossar: Stand und Erklärung in den Einstellungen
 - „So markiert das Glossar“: veröffentlichte Begriffe und Entwürfe, Übersichtsseite (veröffentlicht oder Entwurf, mit „Jetzt veröffentlichen“), Regeln der Markierung.
 - Beim Einrichten wird die Übersichtsseite /glossar gleich veröffentlicht (Konsole: `--draft` für Entwurf).

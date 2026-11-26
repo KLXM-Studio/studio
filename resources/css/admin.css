@@ -3968,3 +3968,8 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .gls-state__list .is-ok>.ico{color:var(--adm-ok)}
 .gls-state__list .is-warn>.ico{color:var(--adm-warn,#b45309)}
 .gls-state__act{margin:0}
+/* Eingereicht: Rich-Text formatiert gegenübergestellt (review/_diff.php) */
+.rv-diff__val--rich{font-size:14px;line-height:1.55}
+.rv-diff__val--rich>:first-child{margin-top:0}.rv-diff__val--rich>:last-child{margin-bottom:0}
+.rv-diff__words{margin:6px 0 0;font-size:13px}
+.rv-diff__words summary{cursor:pointer;color:var(--adm-t2)}

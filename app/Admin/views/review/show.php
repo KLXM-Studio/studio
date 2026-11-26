@@ -71,7 +71,8 @@ if (($target['type'] ?? '') === 'design') $link = [url('/admin/design'), __('Des
   <section class="adm-card rv-changes" aria-labelledby="rv-diff-h">
     <div class="rv-changes__head">
       <h2 id="rv-diff-h"><?= e($pending ? __('Vorgeschlagene Änderungen') : __('Änderungen')) ?></h2>
-      <?php if ($isPageBlocks && $pending): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/ai/eingereicht/' . $id . '/vorschau')) ?>" target="_blank" rel="noopener"><?= e(__('Vorschau des Vorschlags')) ?> <span aria-hidden="true">↗</span><span class="sr-only"><?= e(__('(neues Fenster)')) ?></span></a><?php endif; ?>
+      <?php $isEntryPrev = ($target['type'] ?? '') === 'entry' && is_array($row['after'] ?? null) && ($pt = \Core\Data\Tables::find((string) ($target['table'] ?? ''))) && !empty($pt['settings']['detail_page_id']) && $method === 'dataSave'; ?>
+      <?php if ($isPageBlocks || $isEntryPrev): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/ai/eingereicht/' . $id . '/vorschau')) ?>" target="_blank" rel="noopener"><?= e($pending ? __('Vorschau des Vorschlags') : __('Vorschau ansehen')) ?> <span aria-hidden="true">↗</span><span class="sr-only"><?= e(__('(neues Fenster)')) ?></span></a><?php endif; ?>
     </div>
     <?php if (in_array($method, ['pageDelete', 'dataDelete', 'mediaDelete'], true)): ?>
     <p class="rv-alert rv-alert--danger"><?= e(__('Diese Aktion löscht den Gegenstand endgültig.')) ?></p>
@@ -79,7 +80,7 @@ if (($target['type'] ?? '') === 'design') $link = [url('/admin/design'), __('Des
     <?php if (!$diff): ?>
     <p class="adm-muted"><?= e(__('Keine inhaltlichen Unterschiede (z. B. Veröffentlichen ohne Änderungen oder bereits gleicher Stand).')) ?></p>
     <?php endif; ?>
-    <?= \Core\Theme::capture(__DIR__ . '/_diff.php', ['diff' => $diff, 'newLabel' => $newLabel]) ?>
+    <?= \Core\Theme::capture(__DIR__ . '/_diff.php', ['diff' => $diff, 'newLabel' => $newLabel, 'table' => ($target['type'] ?? '') === 'entry' ? \Core\Data\Tables::find((string) ($target['table'] ?? '')) : null]) ?>
   </section>
 
   <aside class="rv-side">

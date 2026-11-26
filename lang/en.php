@@ -10088,4 +10088,7 @@ return [
     '{n} Entwürfe sehen nur angemeldete Redakteure.' => '{n} drafts are visible to signed-in editors only.',
     '{n} veröffentlichte Begriffe werden auf allen Seiten markiert – auch im Wissensbereich und auf Detailseiten.' => '{n} published terms are marked on all pages – including the knowledge area and detail pages.',
     'Übersichtsseite des Glossars ist veröffentlicht.' => 'The glossary overview page is published.',
+    'Diese Tabelle hat keine Detailseite – die Vorschau zeigt Einträge nur mit Detailseite.' => 'This table has no detail page – the preview shows entries only with a detail page.',
+    'Unterschiede wortweise' => 'Differences word by word',
+    'Vorschau ansehen' => 'View preview',
 ];

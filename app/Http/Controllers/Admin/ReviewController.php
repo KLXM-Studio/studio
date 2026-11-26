@@ -138,6 +138,17 @@ final class ReviewController extends AdminController
         $this->guard($r);
         $row = Queue::find((int) $id) ?? throw new HttpException(404);
         $d = Queue::decode($row);
+        // Eintrag: Detailseite mit den vorgeschlagenen Werten (Vorlage wie auf der Website, nichts wird gespeichert)
+        if (($d['target']['type'] ?? '') === 'entry' && is_array($d['after'] ?? null)) {
+            $t = \Core\Data\Tables::find((string) ($d['target']['table'] ?? '')) ?? throw new HttpException(404);
+            $cur = !empty($d['target']['id']) ? \Core\Data\Entries::find($t, (int) $d['target']['id']) : null;
+            $e = array_merge($cur ?? ['id' => 0, 'slug' => 'vorschau', 'status' => 'draft', 'lang' => null, 'created_at' => now(), 'updated_at' => now(), 'published_at' => now()], (array) $d['after']);
+            $tpl = \Core\Data\DetailTemplates::resolve($t, $e) ?? (!empty($t['settings']['detail_page_id']) ? Pages::find((int) $t['settings']['detail_page_id']) : null);
+            if (!$tpl) throw new HttpException(404, __('Diese Tabelle hat keine Detailseite – die Vorschau zeigt Einträge nur mit Detailseite.'));
+            app()->entry = ['table' => $t, 'entry' => $e];
+            $site = new \Core\Http\Controllers\SiteController();
+            return $site->respond($site->previewHtml($tpl), true)->header('X-Robots-Tag', 'noindex, nofollow');
+        }
         if (($d['target']['type'] ?? '') !== 'page' || !is_array($d['after']['blocks'] ?? null)) throw new HttpException(404);
         $page = Pages::find((int) ($d['target']['id'] ?? 0)) ?? ['id' => 0, 'slug' => 'vorschau', 'path' => 'vorschau', 'parent_id' => null, 'is_home' => 0,
             'meta_description' => '', 'noindex' => 1, 'status' => 'draft', 'type' => 'page', 'lang' => null, 'og_image' => null, 'menu' => 0, 'nav_title' => '',

@@ -10,8 +10,17 @@ $oldLabel ??= __('Vorher');
 $removedLabel ??= __('Vorher (wird entfernt)');
 $blockOps = ['added' => __('neu'), 'removed' => __('entfernt'), 'changed' => __('geändert'), 'moved' => __('verschoben')];
 
-/** Feldwert vorher/nachher nebeneinander (wortweise markiert) */
-$pair = function (mixed $before, mixed $after) use ($newLabel, $oldLabel, $removedLabel): string {
+/** Formatierter Text (Rich-Text): so dargestellt, wie er auf der Website erscheint – Unterschiede wortweise aufklappbar */
+$isHtml = fn(mixed $v): bool => is_string($v) && preg_match('~<(p|ul|ol|h[2-6]|strong|em|b|i|a|blockquote|br)\b~i', $v) === 1;
+$pair = function (mixed $before, mixed $after) use ($newLabel, $oldLabel, $removedLabel, $isHtml, &$pair): string {
+    if ($isHtml($before) || $isHtml($after)) {
+        $col = fn(mixed $v, string $label, string $cls) => '<div class="rv-diff__col rv-diff__col--' . $cls . '"><span class="rv-diff__lbl">' . e($label) . '</span>'
+            . (trim(strip_tags((string) $v)) !== '' ? '<div class="rv-diff__val rv-diff__val--rich prose">' . rich((string) $v) . '</div>' : '<div class="rv-diff__val rv-diff__val--empty">' . e(__('(leer)')) . '</div>') . '</div>';
+        [$a, $b] = Diff::words(Diff::text($before), Diff::text($after));
+        $cols = trim(strip_tags((string) $before)) === '' ? $col($after, $newLabel, 'new') : $col($before, $oldLabel, 'old') . $col($after, $newLabel, 'new');
+        return '<div class="rv-diff__pair' . (trim(strip_tags((string) $before)) === '' ? ' rv-diff__pair--one' : '') . '">' . $cols . '</div>'
+            . ($a !== '' && $b !== '' ? '<details class="rv-diff__words"><summary>' . e(__('Unterschiede wortweise')) . '</summary><div class="rv-diff__pair"><div class="rv-diff__col rv-diff__col--old"><div class="rv-diff__val">' . $a . '</div></div><div class="rv-diff__col rv-diff__col--new"><div class="rv-diff__val">' . $b . '</div></div></div></details>' : '');
+    }
     [$a, $b] = Diff::words(Diff::text($before), Diff::text($after));
     $cell = fn(string $h, string $label, string $cls) => '<div class="rv-diff__col rv-diff__col--' . $cls . '"><span class="rv-diff__lbl">' . e($label) . '</span>'
         . ($h !== '' ? '<div class="rv-diff__val">' . $h . '</div>' : '<div class="rv-diff__val rv-diff__val--empty">' . e(__('(leer)')) . '</div>') . '</div>';
@@ -19,6 +28,20 @@ $pair = function (mixed $before, mixed $after) use ($newLabel, $oldLabel, $remov
     if ($a === '' && $b !== '') return '<div class="rv-diff__pair rv-diff__pair--one">' . $cell($b, $newLabel, 'new') . '</div>';
     if ($b === '' && $a !== '') return '<div class="rv-diff__pair rv-diff__pair--one">' . $cell($a, $removedLabel, 'old') . '</div>';
     return '<div class="rv-diff__pair">' . $cell($a, $oldLabel, 'old') . $cell($b, $newLabel, 'new') . '</div>';
+};
+?>
+<?php
+// Verknüpfungen (Relation, Relationen): Titel statt IDs; Auswahlfelder: Beschriftung statt Schlüssel
+$table ??= null;
+$readable = function (string $path, mixed $v) use ($table): mixed {
+    $f = $table ? \Core\Data\Tables::field($table, $path) : null;
+    if (!$f || $v === null || $v === '' || $v === []) return $v;
+    $vals = is_array($v) ? $v : (is_string($v) && str_starts_with(trim($v), '[') ? (json_decode($v, true) ?? [$v]) : [$v]);
+    if (in_array($f['type'] ?? '', ['relation', 'relations'], true) && ($tt = \Core\Data\Tables::findContent((string) ($f['target'] ?? '')))) {
+        return implode(', ', array_map(fn($id) => ($e = \Core\Data\Entries::find($tt, (int) $id)) ? \Core\Data\Entries::title($tt, $e) : '#' . $id, $vals));
+    }
+    if (in_array($f['type'] ?? '', ['select', 'multiselect'], true)) return implode(', ', array_map(fn($k) => \Core\Data\Tables::optionLabel($f, (string) $k), $vals));
+    return $v;
 };
 ?>
 <?php foreach ($diff as $d): ?>
@@ -48,8 +71,8 @@ $pair = function (mixed $before, mixed $after) use ($newLabel, $oldLabel, $remov
   </div>
   <?php else: ?>
   <div class="rv-diff">
-    <h3 class="rv-diff__field"><?= e($d['label']) ?> <code class="rv-diff__key"><?= e($d['path']) ?></code></h3>
-    <?= $pair($d['before'], $d['after']) ?>
+    <h3 class="rv-diff__field"><?= e($d['label']) ?></h3>
+    <?= $pair($readable((string) $d['path'], $d['before']), $readable((string) $d['path'], $d['after'])) ?>
   </div>
   <?php endif; ?>
 <?php endforeach; ?>
