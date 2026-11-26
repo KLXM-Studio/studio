@@ -432,11 +432,23 @@ const Rich = {
    * Markdown an der Schreibmarke einfügen (_markdown.js → nur Tags der Whitelist). Über execCommand('insertHTML'), damit
    * ⌘/Strg+Z es rückgängig macht. mode: 'rich' | 'inline' (nur fett/kursiv/Link/Umbruch).
    */
-  insertMarkdown(area, text, mode = area._rteMode || 'rich') {
+  insertMarkdown(area, text, mode = area._rteMode || 'rich', range = null) {
     const { html } = toHtml(text, { mode });
     if (!html) return false;
     if (!rangeIn(area)) { const r = d.createRange(); r.selectNodeContents(area); r.collapse(false); const s = selOf(area); s.removeAllRanges(); s.addRange(r); }
-    d.execCommand('insertHTML', false, html);
+    range ??= rangeIn(area)?.cloneRange() || null;
+    const before = area.innerHTML;
+    const ok = d.execCommand('insertHTML', false, html);
+    // Safari: im Shadow DOM (Seitenleiste „Eintrag bearbeiten“) greift execCommand oft nicht – dann direkt an der gemerkten
+    // Schreibmarke einfügen (sonst am Ende), damit der Text nicht verloren geht (ohne Rückgängig über ⌘/Strg+Z)
+    if (!ok || area.innerHTML === before) {
+      const r = range && area.contains(range.startContainer) ? range : (() => { const x = d.createRange(); x.selectNodeContents(area); x.collapse(false); return x; })();
+      const frag = r.createContextualFragment(html);
+      // Block-Inhalt (Überschrift, Liste) nicht in einen Absatz schachteln: nach dem Absatz der Schreibmarke einsetzen
+      const block = r.startContainer.nodeType === 1 && r.startContainer === area ? null : (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement)?.closest('p,h2,h3,h4,li,blockquote');
+      if (block && block !== area && area.contains(block) && /<(h\d|ul|ol|p|blockquote)\b/.test(html)) block.after(frag);
+      else { r.deleteContents(); r.insertNode(frag); }
+    }
     // Browser übertragen beim Einfügen teils berechnete Stile (<span style>, <font>) – nie Teil des Rich-Texts
     $$('[style]', area).forEach(el => el.removeAttribute('style'));
     $$('span:not([class]),font', area).forEach(unwrap);
@@ -453,7 +465,7 @@ const Rich = {
     area.focus();
     if (range) { const s = selOf(area); s.removeAllRanges(); s.addRange(range); }
     area._rteRange = null;
-    if (res) Rich.insertMarkdown(area, res.text, mode);
+    if (res) Rich.insertMarkdown(area, res.text, mode, range);
   },
   /** Formatierungsbefehl auf ein bearbeitbares Element anwenden */
   async exec(area, cmd) {
