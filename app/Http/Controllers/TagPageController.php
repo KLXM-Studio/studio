@@ -40,6 +40,7 @@ final class TagPageController
         $seo['title'] = $title . (($s = (string) site_name()) !== '' ? ' | ' . $s : '');
         $seo['description'] = lt('Alles zum Thema „{tag}“', ['tag' => $label]);
         $seo['canonical'] = absolute_url(Tags::url($label));
+        if (array_sum(array_map(fn($g) => count($g['items']), $groups)) < 2) $seo['noindex'] = true;   // einzelne Treffer nicht indexieren
         $html = $theme->render('layout', ['page' => $pseudo, 'content' => $content, 'seo' => $seo, 'editor' => null, 'toolbar' => null,
             'extraCss' => [$theme->hasAsset('css/data.css') ? $theme->asset('css/data.css') : asset('css/data.css'), $theme->coreCss('highlights.css')], 'extraJs' => []]);
         return $site->respond(\Core\Icons::siteSprite($html), $app->auth->check(), 200);

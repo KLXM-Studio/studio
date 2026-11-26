@@ -108,6 +108,39 @@ final class Tags
         return self::$memo[$vocab] = $n;
     }
 
+    /**
+     * Schlagworte mit veröffentlichten Einträgen in Tabellen mit Detailseiten (alle Vokabulare, Schreibweise des ersten Treffers) – für
+     * /schlagwort und die Sitemap. @return array<string, int> Schlagwort => Anzahl, alphabetisch
+     */
+    public static function publicCounts(): array
+    {
+        $n = [];
+        $label = [];
+        foreach (self::members() as $fields) {
+            foreach ($fields as $m) {
+                $t = Tables::findContent($m['handle']);
+                if (!$t || empty($t['settings']['detail_page_id']) || trim((string) ($t['settings']['route'] ?? ''), '/') === '' || !empty($t['settings']['noindex'])) continue;
+                try {
+                    $rows = app()->db->fetchAll("SELECT {$m['field']} AS v FROM {$m['table']} WHERE status = 'published' AND {$m['field']} IS NOT NULL AND {$m['field']} != '[]'");
+                } catch (\Throwable) {
+                    continue;
+                }
+                foreach ($rows as $r) {
+                    foreach (array_unique(array_map('strval', (array) (json_decode((string) $r['v'], true) ?: []))) as $tag) {
+                        if ($tag === '') continue;
+                        $k = mb_strtolower($tag);
+                        $label[$k] ??= $tag;
+                        $n[$k] = ($n[$k] ?? 0) + 1;
+                    }
+                }
+            }
+        }
+        $out = [];
+        foreach ($n as $k => $c) $out[$label[$k]] = $c;
+        uksort($out, fn($a, $b) => strnatcasecmp($a, $b));
+        return $out;
+    }
+
     /** Adresse der Seite eines Schlagworts (TagPageController) */
     public static function url(string $tag): string
     {

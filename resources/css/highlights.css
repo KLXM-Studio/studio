@@ -16,3 +16,8 @@
 /* Schlagworte/Kategorien als Links (Entries::optionLink) */
 a.dl-chip.opt-link{text-decoration:none}
 a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}
+/* Übersicht der Schlagworte (app/Views/tag-index.php) */
+.tagidx__az{display:flex;flex-wrap:wrap;gap:.4rem .8rem;margin:0 0 1rem}
+.tagidx__list{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;margin:0 0 1rem;padding:0}
+.tagidx__list small{opacity:.7}
+.tagidx__s2{font-size:1.08em}.tagidx__s3{font-size:1.18em}.tagidx__s4{font-size:1.3em;font-weight:700}

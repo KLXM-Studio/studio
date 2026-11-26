@@ -516,4 +516,9 @@ return [
     'Alles zum Thema „{tag}“' => 'Everything about “{tag}”',
     'Schlagwort' => 'Tag',
     'Schlagwort: {tag}' => 'Tag: {tag}',
+    '1 Eintrag' => '1 entry',
+    'Alle Schlagworte von A bis Z' => 'All tags from A to Z',
+    'Anfangsbuchstaben' => 'Initial letters',
+    'Noch keine Einträge.' => 'No entries yet.',
+    '{n} Einträge' => '{n} entries',
 ];

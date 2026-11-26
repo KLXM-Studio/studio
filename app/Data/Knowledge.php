@@ -536,6 +536,12 @@ final class Knowledge
         if (trim((string) ($e['autor'] ?? '')) !== '') $meta[] = e(lt('Von {name}', ['name' => trim((string) $e['autor'])]));
         if (preg_match('~^\d{4}-\d{2}-\d{2}~', (string) ($e['geprueft_am'] ?? ''))) $meta[] = e(lt('Zuletzt geprüft: {date}', ['date' => fmt()->date((string) $e['geprueft_am'])]));
         if ($meta) $h .= '<p class="kn-meta">' . implode('<span aria-hidden="true"> · </span>', $meta) . '</p>';
+        // Thema aus einer Auswahlliste mit Themenseiten (Core\Data\OptionSource): Link auf /{Adresse der Liste}/{thema}
+        $af = Tables::field($t, 'bereich');
+        if ($af && !empty($af['options_from']) && (string) ($e['bereich'] ?? '') !== '' && ($au = Entries::listHref((string) $af['options_from'], (string) $e['bereich']))) {
+            $h .= '<div class="kn-tags kn-topic"><h2 class="kn-foot__h" data-kn-skip>' . e((string) $af['label']) . '</h2><ul class="kn-chips" role="list"><li><a class="kn-chip" href="' . e($au) . '">'
+                . e(Tables::optionLabel($af, (string) $e['bereich'])) . '</a></li></ul></div>';
+        }
         // Schlagworte als Links zur gefilterten Übersicht
         $tf = Tables::field($t, 'schlagworte');
         $tags = $tf ? array_values(array_filter(array_map('strval', (array) ($e['schlagworte'] ?? [])), fn($k) => isset($tf['options'][$k]))) : [];

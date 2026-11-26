@@ -65,6 +65,10 @@ final class SiteController
                 return $this->render($r, $tpl);
             }
         }
+        // Übersicht einer Auswahlliste mit Themenseiten (/{Adresse der Liste}), solange dort keine Seite liegt (TopicIndexController)
+        if (!str_contains($path, '/') && ($lt = Tables::byRoute($path)) && !empty($lt['settings']['detail_page_id']) && \Core\Data\OptionSource::isList($lt)) {
+            return (new TopicIndexController())->listIndex($r, $lt);
+        }
         // Seitenvorlage (Core\PageTemplates): nur angemeldet mit „system.manage“, nie für Besucher
         if (preg_match('~^' . \Core\PageTemplates::PATH . '/(\d+)$~', $path, $m)) {
             $tpl = Pages::find((int) $m[1]);
@@ -453,6 +457,15 @@ final class SiteController
                 $urls[] = ['loc' => $loc, 'lastmod' => $mod($e['updated_at'] ?? $e['published_at']),
                     'images' => self::sitemapImages(array_map(fn($f) => (int) ($e[$f] ?? 0), $mediaFields))];
             }
+        }
+        // Übersichten der Auswahllisten (/thema …) ohne eigene Seite und Seiten je Schlagwort mit mindestens zwei Einträgen
+        foreach (Tables::content() as $t) {
+            $route = trim((string) ($t['settings']['route'] ?? ''), '/');
+            if ($route === '' || empty($t['settings']['detail_page_id']) || !empty($t['settings']['noindex']) || Pages::byPath($route) || !\Core\Data\OptionSource::isList($t)) continue;
+            $urls[] = ['loc' => site_url() . url('/' . $route)];
+        }
+        if (!Pages::byPath('schlagwort')) {
+            foreach (\Core\Data\Tags::publicCounts() as $tag => $n) if ($n >= 2) $urls[] = ['loc' => site_url() . \Core\Data\Tags::url((string) $tag)];
         }
         return $this->sitemapXml($urls);
     }

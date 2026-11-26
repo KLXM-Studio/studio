@@ -191,6 +191,23 @@ final class OptionSource
         return $n;
     }
 
+    /** Wie oft wird jeder Kurzname in veröffentlichten Einträgen mit Detailseiten benutzt? (Übersicht /{route} der Liste) @return array<string, int> */
+    public static function publishedCounts(array $source): array
+    {
+        $n = [];
+        foreach (self::usedBy($source) as [$t, $f]) {
+            if (empty($t['settings']['detail_page_id']) || trim((string) ($t['settings']['route'] ?? ''), '/') === '') continue;
+            $p = [];
+            $w = self::own($t, $p);
+            $col = $f['name'];
+            foreach (Tables::db($t)->fetchAll("SELECT {$col} AS v FROM {$t['table']} WHERE status = 'published' AND {$col} IS NOT NULL AND {$col} != ''" . $w, $p) as $r) {
+                $vals = $f['type'] === 'select' ? [(string) $r['v']] : array_map('strval', (array) (json_decode((string) $r['v'], true) ?: []));
+                foreach (array_unique($vals) as $v) if ($v !== '') $n[$v] = ($n[$v] ?? 0) + 1;
+            }
+        }
+        return $n;
+    }
+
     /** SQL-Bedingung „Wert enthält slug“ für ein Feld */
     public static function cond(array $f, string $slug, array &$params): string
     {

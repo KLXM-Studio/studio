@@ -840,6 +840,7 @@ return function (Router $r): void {
     $r->get(\Core\Search\Search::routePattern(true), [\Core\Http\Controllers\SearchPageController::class, 'suggest']);
     $r->get(\Core\Search\Search::routePattern(), [\Core\Http\Controllers\SearchPageController::class, 'show']);
     // Seite je Schlagwort (Core\Data\Tags) – Seiten mit gleichem Pfad haben Vorrang
+    $r->get('/schlagwort', [\Core\Http\Controllers\TopicIndexController::class, 'tagIndex']);
     $r->get('/schlagwort/{tag}', [\Core\Http\Controllers\TagPageController::class, 'show']);
     // Routen aktiver Erweiterungen (vor den Seiten-Routen)
     \Core\Extensions::routes($r);
