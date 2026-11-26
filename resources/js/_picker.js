@@ -78,7 +78,7 @@ function wire() {
   list.addEventListener('click', e => { const o = e.target.closest('[role=option]'); if (o) { activate(o); toggle(o); } });
   // Vorschau beim Darüberfahren erst nach kurzer Ruhe (150 ms) – sonst flackert sie beim Überstreichen der Liste
   let hoverT = 0;
-  list.addEventListener('mouseover', e => { const o = e.target.closest('[role=option]'); if (o && o !== st.hover) { st.hover = o; clearTimeout(hoverT); hoverT = setTimeout(() => { if (st.hover === o) preview(o); }, 150); } });
+  list.addEventListener('mouseover', e => { const o = e.target.closest('[role=option]'); if (o && o !== st.hover) { st.hover = o; clearTimeout(hoverT); hoverT = setTimeout(() => { if (st.hover === o) preview(o); }, 200); } });
   list.addEventListener('mouseleave', () => { clearTimeout(hoverT); st.hover = null; });
   list.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); move(e.key === 'ArrowDown' ? 1 : -1); }
