@@ -178,6 +178,7 @@ final class DataController extends AdminController
                 'data/foreign' => 'src-' . ($vars['src'] ?? ''),
                 'data/foreign_entry' => 'src-' . ($vars['src'] ?? 'owner'),
                 'data/display' => 'display',
+                'data/tags' => 'tags',
                 'data/external_entry' => 'entry',
                 default => '',
             };
@@ -484,8 +485,15 @@ final class DataController extends AdminController
             $errors['_opts'] = \Core\Data\OptionRemap::message($removed);
             return [$def, $errors, false, $removed];
         }
+        // Mehrfachauswahl → Schlagworte: gespeicherte Schlüssel werden zu den bisherigen Beschriftungen (Core\Data\Tags)
+        $toTags = [];
+        foreach ($def['fields'] as $nf) {
+            $of = array_values(array_filter($t['fields'], fn($x) => ($x['id'] ?? '') !== '' && ($x['id'] ?? '') === ($nf['id'] ?? '-')))[0] ?? null;
+            if ($of && !empty($nf['free']) && empty($of['free']) && ($of['type'] ?? '') === 'multiselect') $toTags[] = $of;
+        }
         Tables::update($t, $def);
         if ($removed) \Core\Data\OptionRemap::apply(Tables::findContent($t['handle']) ?? $t, $removed, (array) $optMap);
+        foreach ($toTags as $of) \Core\Data\Tags::keysToLabels($t, $of);
         return [$def, [], false, []];
     }
 
@@ -949,6 +957,47 @@ final class DataController extends AdminController
             if (preg_match('~^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$~', (string) $k) && (int) $v > 0) $out[(string) $k] = (int) $v;
         }
         return $out;
+    }
+
+    /** Schlagworte verwalten (Core\Data\Tags): je freiem Feld der Tabelle alle Schlagworte mit Anzahl, Dubletten, Aktionen */
+    public function tags(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        if (!can('data.edit', $handle)) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+        $t = $this->table($handle);
+        $vocabs = [];
+        foreach ($t['fields'] as $f) {
+            if (!\Core\Data\Tags::isFree($f)) continue;
+            $v = \Core\Data\Tags::vocab($t['handle'], $f);
+            $vocabs[$v] ??= ['key' => $v, 'fields' => \Core\Data\Tags::fieldsOf($v), 'label' => (string) $f['label'], 'values' => \Core\Data\Tags::values($v), 'dups' => \Core\Data\Tags::duplicates($v)];
+        }
+        if (!$vocabs) throw new HttpException(404);
+        return $this->view('data/tags', ['t' => $t, 'vocabs' => array_values($vocabs), 'canManage' => can('data.publish', $handle)]);
+    }
+
+    /** Schlagwort umbenennen, zusammenführen oder entfernen – in allen Einträgen aller Felder des Vokabulars */
+    public function tagsSave(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        if (!can('data.publish', $handle)) throw new HttpException(403, __('Schlagworte umbenennen, zusammenführen und löschen darf Ihre Rolle nicht.'));
+        $t = $this->table($handle);
+        $vocab = $r->str('vocab');
+        $own = array_filter($t['fields'], fn($f) => \Core\Data\Tags::isFree($f) && \Core\Data\Tags::vocab($t['handle'], $f) === $vocab);
+        if (!$own) throw new HttpException(404);
+        $tag = $r->str('tag');
+        $back = '/admin/data/' . $handle . '/schlagworte';
+        if (in_array($r->str('action'), ['rename', 'merge'], true) && trim($r->str('action') === 'rename' ? $r->str('to') : $r->str('into')) === '') {
+            return $this->back($back, 'error', __('Bitte ein Ziel angeben.'));
+        }
+        $res = match ($r->str('action')) {
+            'rename' => \Core\Data\Tags::rename($vocab, $tag, $r->str('to')),
+            'merge' => \Core\Data\Tags::merge($vocab, [$tag], $r->str('into')),
+            'delete' => \Core\Data\Tags::remove($vocab, $tag),
+            default => throw new HttpException(422, 'Unbekannte Aktion.'),
+        };
+        $this->changed();
+        if ($res['errors']) return $this->back($back, 'error', implode(' ', $res['errors']));
+        return $this->back($back, 'success', $res['changed'] === 1 ? __('1 Eintrag geändert.') : __('{n} Einträge geändert.', ['n' => $res['changed']]));
     }
 
     /** Auswahlliste (Core\Data\OptionSource): aktuelle Möglichkeiten [[kurzname, titel], …] für resources/js/_optsrc.js */

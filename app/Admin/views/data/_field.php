@@ -76,14 +76,14 @@ $type = $f['type'] ?? 'text';
     </div>
     <div class="dt-field__extra" data-show-for="select multiselect">
       <?php // Optionen aus einer Tabelle (Core\Data\OptionSource): Kategorien/Themen pflegt die Redaktion als eigene kleine Tabelle
-      $from = (string) ($f['options_from'] ?? ''); $self = (string) ($handle ?? ''); ?>
+      $from = (string) ($f['options_from'] ?? ''); $self = (string) ($handle ?? ''); $isFree = $type === 'multiselect' && !empty($f['free']) && $f['free'] !== '0'; ?>
       <?php if (!$inbox): ?>
-      <label class="dt-in"><span><?= e(__('Auswahlmöglichkeiten kommen aus')) ?></span><select name="<?= $n ?>[options_from]" data-options-from>
+      <label class="dt-in"<?= $isFree ? ' hidden' : '' ?>><span><?= e(__('Auswahlmöglichkeiten kommen aus')) ?></span><select name="<?= $n ?>[options_from]" data-options-from>
         <option value=""><?= e(__('dieser Liste (unten eintragen)')) ?></option>
         <?php foreach ($tables as $h => $l): if ($h === $self) continue; ?><option value="<?= e($h) ?>"<?= $from === $h ? ' selected' : '' ?>><?= e(__('Tabelle „{name}“', ['name' => $l])) ?></option><?php endforeach; ?>
       </select></label>
       <?php endif; ?>
-      <label class="dt-in" data-options-own<?= $from !== '' ? ' hidden' : '' ?>><span>Auswahlmöglichkeiten (eine pro Zeile)</span><textarea name="<?= $n ?>[options]" rows="3" placeholder="Neuigkeiten&#10;Hinweise&#10;Veranstaltungen"><?= e($from !== '' ? '' : $opts) ?></textarea></label>
+      <label class="dt-in" data-options-own<?= $from !== '' || $isFree ? ' hidden' : '' ?>><span>Auswahlmöglichkeiten (eine pro Zeile)</span><textarea name="<?= $n ?>[options]" rows="3" placeholder="Neuigkeiten&#10;Hinweise&#10;Veranstaltungen"><?= e($from !== '' ? '' : $opts) ?></textarea></label>
       <?php if ($from === '' && empty($f['id']) && !$inbox): // neues Feld: Möglichkeiten gleich als eigene Liste (Tabelle) anlegen ?>
       <label class="f-check" data-options-own-flag><input type="checkbox" name="<?= $n ?>[options_new_table]" value="1"<?= !empty($f['options_new_table']) ? ' checked' : '' ?>> <span><?= e(__('Als eigene Liste anlegen – die Redaktion ergänzt und benennt die Möglichkeiten dann selbst')) ?></span></label>
       <?php endif; ?>
@@ -95,6 +95,19 @@ $type = $f['type'] ?? 'text';
 " . __('Es entsteht eine Tabelle „{name}“ mit einem Eintrag je Möglichkeit; die Redaktion kann sie dann selbst ergänzen und umbenennen. Gespeicherte Werte bleiben gültig. Ungespeicherte Änderungen an den Feldern gehen verloren.', ['name' => (string) ($f['label'] ?? '')])) ?>"><?= icon('table') ?> <?= e(__('In eine eigene Tabelle auslagern')) ?></button></p>
       <?php endif; ?>
     </div>
+    <?php if (!$inbox): // Schlagworte (Core\Data\Tags): Mehrfachauswahl mit freier Eingabe, optional gemeinsames Vokabular
+    $free = !empty($f['free']) && $f['free'] !== '0'; $vocabs = array_diff(array_keys(\Core\Data\Tags::vocabularies()), [($handle ?? '') . '.' . ($f['name'] ?? '')]); ?>
+    <div class="dt-field__extra" data-show-for="multiselect"<?= $type === 'multiselect' ? '' : ' hidden' ?>>
+      <input type="hidden" name="<?= $n ?>[free]" value="0"><label class="f-check"><input type="checkbox" name="<?= $n ?>[free]" value="1"<?= $free ? ' checked' : '' ?> data-tags-free> <span><b><?= e(__('Freie Schlagworte')) ?></b> – <?= e(__('Redaktion tippt Schlagworte frei ein, Vorschläge aus den vorhandenen; keine Liste zu pflegen')) ?></span></label>
+      <?php if ($vocabs): ?>
+      <label class="dt-in" data-tags-vocab<?= $free ? '' : ' hidden' ?>><span><?= e(__('Schlagworte teilen mit')) ?></span><select name="<?= $n ?>[vocab]">
+        <option value=""><?= e(__('eigene Schlagworte dieses Feldes')) ?></option>
+        <?php foreach ($vocabs as $vk): [$vh, $vf] = explode('.', $vk, 2); ?><option value="<?= e($vk) ?>"<?= ($f['vocab'] ?? '') === $vk ? ' selected' : '' ?>><?= e(($tables[$vh] ?? $vh) . ' · ' . $vf) ?></option><?php endforeach; ?>
+      </select></label>
+      <?php endif; ?>
+      <?php if ($type === 'multiselect' && !$free && !empty($f['id'])): ?><p class="f-help"><?= e(__('Beim Umstellen werden aus den gespeicherten Auswahlen Schlagworte mit den bisherigen Beschriftungen.')) ?></p><?php endif; ?>
+    </div>
+    <?php endif; ?>
     <div class="dt-field__extra" data-show-for="relation relations">
       <?php // Adressbücher (Core\Data\Kinds) zuerst: eine Verknüpfung dorthin ist ein Kontakt-Feld (Auswahl mit Funktion/Organisation, Website zeigt nur freigegebene Kontakte)
       $books = array_filter($tables, fn($h) => ($bt = Tables::findContent((string) $h)) && \Core\Data\Kinds::isContacts($bt), ARRAY_FILTER_USE_KEY); ?>

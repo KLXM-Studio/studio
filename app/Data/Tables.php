@@ -93,6 +93,7 @@ final class Tables
         self::$cache = [];
         self::$shared = null;
         OptionSource::flush();
+        Tags::flush();
         Shared::flush();
         MenuEntries::flush();   // Einträge im Menü: Tabellen je Adresse neu lesen
     }
@@ -228,7 +229,10 @@ final class Tables
         // fields = nur Datenfelder (eine Spalte je Feld); fields_all = Reihenfolge samt Abschnitten und Freitext (allFields)
         $row['fields_all'] = array_values(json_decode((string) $row['fields_json'], true) ?: []);
         // Auswahl-Optionen aus einer Tabelle (Core\Data\OptionSource): options zur Laufzeit füllen
-        foreach ($row['fields_all'] as &$of) if (!empty($of['options_from'])) $of = OptionSource::fill($of);
+        foreach ($row['fields_all'] as &$of) {
+            if (!empty($of['options_from'])) $of = OptionSource::fill($of);
+            elseif (!empty($of['free'])) $of = Tags::fill((string) $row['handle'], $of);   // Schlagworte: vorhandene Werte (Core\Data\Tags)
+        }
         unset($of);
         $row['fields'] = self::dataFields($row['fields_all']);
         $row['settings'] = (json_decode((string) $row['settings_json'], true) ?: []) + [
@@ -446,6 +450,12 @@ final class Tables
             } elseif ($from !== '') {
                 $def['options_from'] = $from;
                 $def['options'] = [];
+            } elseif ($type === 'multiselect' && !$inbox && !empty($f['free'])) {
+                // Schlagworte (Core\Data\Tags): freie Eingabe, Möglichkeiten = vorhandene Werte; optional geteiltes Vokabular
+                $def['free'] = true;
+                $def['options'] = [];
+                $voc = (string) ($f['vocab'] ?? '');
+                if ($voc !== '' && preg_match('~^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$~', $voc) && $voc !== $handle . '.' . $fname) $def['vocab'] = $voc;
             } elseif (in_array($type, ['select', 'multiselect'], true)) {
                 $opts = [];
                 foreach (preg_split('~\R~', (string) ($f['options'] ?? '')) as $line) {
@@ -659,7 +669,7 @@ final class Tables
     /** Ein gespeichertes Feld im Eingabeformat von validate(): Auswahlmöglichkeiten als Zeilen „kurzname=Text“ */
     public static function fieldInput(array $f): array
     {
-        if (!empty($f['options_from'])) { unset($f['options_i18n']); $f['options'] = ''; return $f; }
+        if (!empty($f['options_from']) || !empty($f['free'])) { unset($f['options_i18n']); $f['options'] = ''; return $f; }
         if (is_array($f['options'] ?? null)) {
             $f['options'] = implode("\n", array_map(fn($k, $v) => "$k=$v", array_keys($f['options']), $f['options']));
         }

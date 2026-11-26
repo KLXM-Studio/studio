@@ -250,6 +250,7 @@
  *                                                     Folien aus hervorgehobenen Einträgen, Bearbeiten-Modus, Dateien nur bei Bedarf
  *   footer:selftest                                   Selbsttest „Weitere Links im Fußbereich“: Standard leer (byte-gleich), Liste, Seitenschalter,
  *                                                     Reihenfolge, Doppelte, aria-current, Ausgabe aller Fuß-Varianten (fluid/native)
+ *   tags:selftest                                     Selbsttest Schlagworte (Core\Data\Tags): freie Eingabe, Dubletten, Umbenennen/Zusammenführen, Vokabular, Umstellung
  *   reassign:selftest                                 Selbsttest Neuzuordnung (Core\Data\Reassign, OptionRemap): Löschen, Auswahl-Optionen, Filter/Menü nach Verknüpfungen
  *   backlinks:selftest                                Selbsttest Rückverknüpfungen (Core\Data\Backlinks): Gruppen, abschaltbar, Verknüpfen/Lösen, Filter
  *   highlights:selftest                               Selbsttest „Auf der Startseite hervorheben“ + Block „Highlights“: Schalter (Standard aus),
@@ -1905,6 +1906,13 @@ switch ($cmd) {
     case 'footer:selftest':
         // Weitere Links im Fußbereich (Core\FooterLinks) – vorübergehende Seiten, zurückgerollt
         $res = Core\FooterLinksSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'tags:selftest':
+        // Schlagworte (Core\Data\Tags) – vorübergehende Tabellen
+        $res = Core\Data\TagsSelfTest::run();
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

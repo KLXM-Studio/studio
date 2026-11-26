@@ -61,6 +61,7 @@ import { pickLink, openLinkPicker, initLinkFields } from './_links.js';   // Lin
 import { initPagesFields, openPagesPicker } from './_pages.js';
 import { openEntryPicker, entryInfo, initEntryPickFields } from './_picker.js';   // Auswahlfenster für Einträge (Core\Data\Picker)
 import { askDelete } from './_reassign.js';   // Löschen mit Neuzuordnung (Core\Data\Reassign)
+import { initTags } from './_tags.js';   // Schlagworte: Chips, Vorschläge, „Meinten Sie …?“ (Core\Data\Tags)
 import { initOptSrc } from './_optsrc.js';   // Auswahl aus einer Liste: „+ neu“, „Liste bearbeiten“ (Core\Data\OptionSource)
 import { initAssistant } from './_assistant.js';
 import { esc, csrf } from './_html.js';
@@ -91,7 +92,7 @@ if (IN_ADMIN) initAssistant();
 
 // ------------------------------------------------------------ Administration: aufklappbare Gruppen „Einstellungen“, „Werkzeuge“ (_navgroups.js)
 initNavGroups();
-initBacklinks(o => bar_.ask(o), toast); initOptSrc();
+initBacklinks(o => bar_.ask(o), toast); initOptSrc(); initTags();
 initSideMini();
 // ------------------------------------------------------------ Bereichsnavigation (Daten): serverseitig in der Seitenleiste
 {
@@ -614,6 +615,13 @@ listen('submit', e => {   // „submit“ verlässt keine Schatten-Wurzel: liste
     delete form.dataset.confirmed;
   });
 });
+// Schlagworte verwalten (Core\Data\Tags): Zeilen filtern
+d.addEventListener('input', e => {
+  const f = e.target.closest?.('[data-tags-filter]');
+  if (!f) return;
+  const q = f.value.trim().toLowerCase();
+  f.closest('.tg-vocab')?.querySelectorAll('[data-tag-row]').forEach(tr => { tr.hidden = q !== '' && !tr.dataset.tagRow.includes(q); });
+});
 // Hilfe → KI-Agenten (MCP): Aufgaben durchsuchen (Core\Api\AgentGuide, help/agent.php)
 d.addEventListener('input', e => {
   const f = e.target.closest?.('[data-agent-filter]');
@@ -635,6 +643,16 @@ d.addEventListener('change', e => {
   if (own) own.hidden = s.value !== '';
   const flag = s?.closest('.dt-field__extra')?.querySelector('[data-options-own-flag]');
   if (flag) flag.hidden = s.value !== '';
+  // Freie Schlagworte (Core\Data\Tags): keine eigene Liste, keine Quelle – dafür „teilen mit“
+  const fr = e.target.closest?.('[data-tags-free]');
+  const li = fr?.closest('[data-field]');
+  if (li) {
+    const on = fr.checked;
+    li.querySelectorAll('[data-options-own], [data-options-own-flag]').forEach(x => { x.hidden = on; });
+    const from = li.querySelector('[data-options-from]')?.closest('label');
+    if (from) from.hidden = on;
+    li.querySelectorAll('[data-tags-vocab]').forEach(x => { x.hidden = !on; });
+  }
 });
 d.addEventListener('click', e => {
   const c = e.target.closest('[data-copy]');

@@ -26,7 +26,8 @@ final class OptionRemap
         foreach ($t['fields'] as $old) {
             if (!in_array($old['type'], ['select', 'multiselect'], true) || empty($old['options'])) continue;
             $nf = $new[(string) ($old['id'] ?? '')] ?? null;
-            if (!$nf || ($nf['type'] ?? '') !== $old['type']) continue;   // Feld weg oder andere Art: eigene Rückfrage bzw. Umwandlung
+            if (!$nf || ($nf['type'] ?? '') !== $old['type']) continue;
+            if (!empty($nf['free']) || !empty($old['free'])) continue;   // Schlagworte: Werte bleiben, Umstellung über Tags::keysToLabels   // Feld weg oder andere Art: eigene Rückfrage bzw. Umwandlung
             // Optionen aus einer Tabelle (Core\Data\OptionSource): deren Kurznamen gelten
             $newOpts = !empty($nf['options_from']) ? OptionSource::load((string) $nf['options_from'])[0] : (array) ($nf['options'] ?? []);
             if (!empty($nf['options_from']) && ($old['options_from'] ?? '') === $nf['options_from']) continue;

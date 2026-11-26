@@ -312,6 +312,8 @@ final class Fields
             case 'entrypick':
                 return [\Core\Data\EntryPick::clean($f, $raw), null];
             case 'multiselect':
+                // Schlagworte (Core\Data\Tags): freie Eingabe, vorhandene Schreibweise, ohne Dubletten
+                if (!empty($f['free'])) return [\Core\Data\Tags::canon((string) ($f['vocab_key'] ?? ''), is_array($raw) ? array_map('strval', $raw) : [$s]), null];
                 $opts = self::options($f);
                 $vals = array_values(array_unique(array_filter(array_map('strval', is_array($raw) ? $raw : ($s === '' ? [] : explode(',', $s))), fn($v) => $v !== '' && array_key_exists($v, $opts))));
                 return [$vals, null];
@@ -741,6 +743,22 @@ final class Fields
                 }
             }
             return $h . '</div>' . $help . $errHtml . '</fieldset>';
+        }
+
+        if ($type === 'multiselect' && !empty($f['free'])) {
+            // Schlagworte (Core\Data\Tags): Chips mit Vorschlägen und „Meinten Sie …?“ (resources/js/_tags.js); ohne JavaScript
+            // Ankreuzfelder der vorhandenen Schlagworte plus Textfeld für neue (kommagetrennt)
+            $sel = array_values(array_filter(array_map('strval', is_array($value) ? $value : [])));
+            $opts = array_keys(self::options($f));
+            $all = array_values(array_unique(array_merge($sel, $opts)));
+            $h = '<fieldset class="f f--multi f--tags' . $width . ($err ? ' f--error' : '') . '" data-tags' . ($describedBy ? ' aria-describedby="' . $describedBy . '"' : '') . '><legend>' . $label . '</legend>'
+                . '<input type="hidden" name="' . $inputName . '[]" value="">'
+                . '<div class="f-multi f-tags__list" data-tags-list>';
+            foreach ($all as $k) {
+                $h .= '<label class="f-check"><input type="checkbox" name="' . $inputName . '[]" value="' . e($k) . '"' . (in_array($k, $sel, true) ? ' checked' : '') . '> <span>' . e($k) . '</span></label>';
+            }
+            return $h . '</div><label class="f-tags__new"><span>' . e(__('Neue Schlagworte (durch Komma getrennt)')) . '</span><input type="text" name="' . $inputName . '[]" value="" autocomplete="off" data-tags-new></label>'
+                . $help . $errHtml . '</fieldset>';
         }
 
         if ($type === 'multiselect') {

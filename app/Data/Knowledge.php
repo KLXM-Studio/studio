@@ -805,6 +805,7 @@ final class Knowledge
         $labels = array_values(array_unique(array_filter(array_map(fn($l) => mb_substr(trim((string) preg_replace('~[\r\n=,;]+~', ' ', (string) $l)), 0, 60), $labels), fn($l) => $l !== '')));
         $f = Tables::field($t, $field);
         if (!$labels || !$f || !in_array($f['type'], ['select', 'multiselect'], true)) return ['keys' => []];
+        if (Tags::isFree($f)) return ['keys' => Tags::canon(Tags::vocab($t['handle'], $f), $labels)];   // Schlagworte: frei, kein Schema ändern
         $have = [];
         foreach ((array) ($f['options'] ?? []) as $k => $l) $have[mb_strtolower((string) $l)] = (string) $k;
         $new = array_values(array_filter($labels, fn($l) => !isset($have[mb_strtolower($l)])));

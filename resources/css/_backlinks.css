@@ -68,3 +68,29 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 /* Auswahl aus einer Liste: „+ neu“ und „Liste bearbeiten“ am Feld (resources/js/_optsrc.js) */
 .f-optsrc{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .f-optsrc .adm-btn{font-size:13px}
+
+/* Schlagworte (resources/js/_tags.js, Core\Data\Tags) */
+.f-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1px solid var(--adm-line);border-radius:8px;padding:6px 8px;background:var(--adm-bg,#fff)}
+.f-tags:focus-within{outline:2px solid var(--adm-accent,#2a78d6);outline-offset:1px}
+.f-tags__chips{display:contents;list-style:none;margin:0;padding:0}
+.f-tags__chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 10px;border-radius:999px;background:var(--adm-soft,#eef2f0);font-size:14px}
+.f-tags__chip button{border:0;background:none;cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:999px;color:var(--adm-t2)}
+.f-tags__chip button:hover{background:rgba(0,0,0,.08)}
+.f-tags__in{flex:1 1 12rem;min-width:8rem;border:0!important;outline:0;box-shadow:none!important;padding:4px!important;background:transparent}
+.f-tags__hint{flex:1 0 100%;margin:2px 0 0;font-size:13px;color:var(--adm-t2)}
+.f-tags__sugg{border:0;background:none;padding:0;color:var(--adm-accent,#2a78d6);text-decoration:underline;cursor:pointer;font:inherit}
+.f-tags__new{display:grid;gap:4px;margin-top:8px}
+
+/* Schlagworte verwalten (app/Admin/views/data/tags.php) */
+.tg-vocab{margin-bottom:18px}
+.tg-vocab h2{margin:0 0 6px}
+.tg-dupnote{display:flex;gap:6px;align-items:center;color:var(--adm-warn-ink,#8a5a00)}
+.tg-table tr.is-dup td{background:color-mix(in srgb,var(--adm-warn,#eda100) 10%,transparent)}
+.tg-dup{display:inline-block;margin-left:6px;font-size:12px;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--adm-warn,#eda100) 22%,transparent)}
+.tg-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.tg-acts form{margin:0}
+.tg-more>summary{list-style:none;cursor:pointer}
+.tg-more>summary::-webkit-details-marker{display:none}
+.tg-form{display:flex;flex-wrap:wrap;gap:6px;align-items:end;margin-top:8px!important}
+.tg-form label{display:grid;gap:2px;font-size:13px}
+.tg-filter{width:min(100%,20rem)}

@@ -88,6 +88,7 @@ final class Entries
         \Core\Live::touch('data:' . $table['handle']);   // Live-Blöcke (Core\Live)
         // Options-Tabelle (Core\Data\OptionSource): Optionen der nutzenden Tabellen neu lesen
         if (OptionSource::isSource($table)) Tables::flush();
+        Tags::flush();   // Schlagworte: vorhandene Werte neu zählen
         if (Tables::isShared($table)) {
             Shared::clearCaches($table['shared']['key']);
             Shared::touch($table);
@@ -472,6 +473,7 @@ final class Entries
             if (in_array($f['type'], ['select', 'multiselect'], true)) {
                 $def['options'] = $f['options'] ?? [];
                 if (!empty($f['options_from'])) $def['options_from'] = (string) $f['options_from'];   // Liste: „+ neu“, „Liste bearbeiten“ (Core\Fields)
+                if (Tags::isFree($f)) { $def['free'] = true; $def['vocab_key'] = Tags::vocab($table['handle'], $f); }   // Schlagworte (Core\Data\Tags)
             }
             if ($f['type'] === 'group') {
                 $def = self::groupSchema($f) + $def;
@@ -554,7 +556,7 @@ final class Entries
             elseif (isset($f['name'], $data[$f['name']])) {
                 $out[] = $data[$f['name']];
                 // Wissen (Core\Data\Knowledge::addOptions): neue Bereiche/Schlagworte direkt beim Eintrag anlegen – vorhandene sind Vorschläge
-                if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true) && empty($f['options_from'])) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
+                if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true) && empty($f['options_from']) && empty($f['free'])) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
                     'label' => $f['name'] === 'bereich' ? __('Neuer Bereich') : __('Neue Schlagworte'), 'width' => 'half', 'maxlength' => 300,
                     'help' => $f['name'] === 'bereich' ? __('Nur ausfüllen, wenn der Bereich oben noch fehlt – er wird angelegt und gewählt.') : __('Durch Komma getrennt, z. B. „Beratung, Veranstaltung“. Vorhandene Schlagworte oben ankreuzen.')];
             }

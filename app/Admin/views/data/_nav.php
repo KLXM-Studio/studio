@@ -53,6 +53,8 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
               }
               $subs[] = [url($base . '/display'), __('Anzeige auf dieser Website'), $cur === 'display'];
           }
+          // Schlagworte (Core\Data\Tags): Verwaltung, sobald die Tabelle ein Feld mit freien Schlagworten hat
+          if ($edit && array_filter($t['fields'], [\Core\Data\Tags::class, 'isFree'])) $subs[] = [url($base . '/schlagworte'), __('Schlagworte'), $cur === 'tags'];
           if ($schema && \Core\Data\Shared::canSchema($t)) $subs[] = [url($base . '/schema'), __('Felder & Einstellungen'), $cur === 'schema'];
           // Einsetzen: Block auf einer Seite, Seite anlegen, Verwendungen (Core\Data\Placement) – nicht für interne Listen
           if ($schema && \Core\Data\Placement::blockType($t) !== null) $subs[] = [url($base . '/einsetzen'), __('Einsetzen'), $cur === 'place'];

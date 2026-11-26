@@ -324,6 +324,8 @@ return function (Router $r): void {
     $r->get('/admin/data/{handle}/vorlagen/neu', [Admin\ListTemplateController::class, 'editNew']);
     $r->post('/admin/data/{handle}/vorlagen/aktion', [Admin\ListTemplateController::class, 'action']);
     $r->get('/admin/data/{handle}/vorlagen/{key}', [Admin\ListTemplateController::class, 'edit']);
+    $r->get('/admin/data/{handle}/schlagworte', [Admin\DataController::class, 'tags']);   // Schlagworte verwalten (Core\Data\Tags)
+    $r->post('/admin/data/{handle}/schlagworte', [Admin\DataController::class, 'tagsSave']);
     $r->get('/admin/data/{handle}/new', [Admin\DataController::class, 'entryNew']);
     $r->post('/admin/data/{handle}/new', [Admin\DataController::class, 'entrySave']);
     $r->post('/admin/data/{handle}/{id}/delete', [Admin\DataController::class, 'entryDelete']);
