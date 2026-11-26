@@ -10232,4 +10232,5 @@ return [
     '„{v}“ ist keine Zahl.' => '“{v}” is not a number.',
     'Spalte „{label}“: Felder mit mehreren Angaben werden nicht importiert – bitte im Eintrag pflegen.' => 'Column “{label}”: fields with several values are not imported – please maintain them in the entry.',
     'Importieren darf nur, wer das Recht „Einträge importieren“ hat (Standard: Administration).' => 'Only roles with the permission “Import entries” may import (default: administrators).',
+    'Als Tabelle (CSV, Excel) …' => 'As spreadsheet (CSV, Excel) …',
 ];

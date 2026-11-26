@@ -88,6 +88,7 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
               <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q]))) ?>" download><?= e(__('Diese Kontakte als vCard – alle Angaben')) ?></a>
               <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q, 'umfang' => 'oeffentlich']))) ?>" download><?= e(__('Diese Kontakte als vCard – nur öffentliche Angaben')) ?></a>
               <?php if ($list !== '' || $filter !== '' || $q !== ''): ?><a href="<?= e($base . '/vcard') ?>" download><?= e(__('Ganzes Adressbuch als vCard')) ?></a><?php endif; ?>
+              <a href="<?= e($base . '/export' . ($q !== '' ? '?' . http_build_query(['q' => $q]) : '')) ?>"><?= icon('file-csv') ?> <?= e(__('Als Tabelle (CSV, Excel) …')) ?></a>
               <?php endif; ?>
               <?php if ($subs && can('data.edit', $t['handle'])): ?><a href="<?= e($base . '/abonnieren') ?>"><?= icon('rss') ?> <?= e(__('In Apps abonnieren …')) ?></a><?php endif; ?>
             </div>
