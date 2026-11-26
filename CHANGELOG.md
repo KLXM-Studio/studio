@@ -11,7 +11,8 @@ oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
 ### Varianten mit Schemabild
-- Die Auswahl „Variante“ in der Seitenleiste erscheint als Kacheln mit kleiner Strichzeichnung des Aufbaus (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
+- Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
+- Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
 ### Auswahlfenster für Einträge
 - Seitenleiste „Eintrag bearbeiten“ auf der Website: Breite per Ziehen am linken Rand (Pfeiltasten, Doppelklick = Standard, gemerkt), Inhalt passt sich der Breite an.

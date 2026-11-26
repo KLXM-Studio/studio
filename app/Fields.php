@@ -958,7 +958,15 @@ final class Fields
             $h .= '<button type="button" class="f-tile" data-value="' . e($k) . '" aria-pressed="' . ($k === $v ? 'true' : 'false') . '" title="' . e((string) $l) . '">'
                 . $pic . '<span class="f-tile__label">' . e((string) $l) . '</span></button>';
         }
-        return $h . '</div><div class="f-tiles__select">' . self::renderSelect($id, $name, $opts, $v, $aria, false) . '</div>';
+        $h .= '</div>';
+        // Schemabilder: zugeklappt nur die gewählte Variante als Zeile („Ändern“ klappt die Kacheln auf) – spart Platz in der Seitenleiste
+        if ($previews) {
+            $cur = isset($opts[$v]) ? $v : (string) array_key_first($opts);
+            $h = '<details class="f-vpick"><summary class="f-vpick__sum"><span class="f-vpick__cur">'
+                . (isset($previews[$cur]) ? \Core\Blocks\VariantPreview::svg((string) $previews[$cur]) : '')
+                . '<span class="f-vpick__lbl">' . e((string) ($opts[$cur] ?? '')) . '</span></span><span class="f-vpick__chg">' . e(__('Ändern')) . '</span></summary>' . $h . '</details>';
+        }
+        return $h . '<div class="f-tiles__select">' . self::renderSelect($id, $name, $opts, $v, $aria, false) . '</div>';
     }
 
     private static function renderSelect(string $id, string $name, array $opts, string $v, string $aria, bool $empty): string

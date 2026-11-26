@@ -64,6 +64,18 @@ layerBox().append(drawer);
   });
   grip.addEventListener('dblclick', () => set(0));
 })();
+// Hintergrundvideos (data-hero-video, alle Kits): Im Bearbeiten-Modus lädt hero.mjs nicht – ohne Standbild bliebe die Fläche leer.
+// Darum ein angehaltenes Bild aus dem Video zeigen (Metadaten laden, kurz hinter den Anfang springen); abgespielt wird nichts.
+function stillFrames(scope = d) {
+  scope.querySelectorAll('video[data-hero-video]').forEach(v => {
+    if (v._still) return; v._still = true;
+    // Safari malt bei preload="metadata" kein Bild – darum laden und nach den ersten Daten kurz hinter den Anfang springen
+    v.preload = 'auto';
+    v.addEventListener('loadeddata', () => { try { if (v.currentTime < .1) v.currentTime = Math.min(0.5, (v.duration || 1) / 2); } catch { /* ohne Bild */ } }, { once: true });
+    v.load();
+  });
+}
+stillFrames();
 const initial = JSON.parse($('#cms-editor-data').textContent);
 const previews = initial.previews || {};
 const tools = new Map();      // blockId → Tool-Instanz
@@ -823,6 +835,7 @@ function makeTool(type, def) {
       this.paintExt();
       const pv = this.el.querySelector('.cms-block__preview');
       pv.innerHTML = html;
+      stillFrames(pv);
       // Skripte der Vorschau (z. B. Karte, Slider: <script type="module" src>) laufen per innerHTML nicht – einmal je Datei nachladen;
       // danach reagieren die Module auf cms:block-preview
       pv.querySelectorAll('script[type="module"][src]').forEach(sc => {
