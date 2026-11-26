@@ -899,7 +899,8 @@ img.media-vthumb{object-fit:cover}
 .dt-knsub__mark{flex:none;color:var(--adm-t2);font-size:15px}
 .dt-entry{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
 .dt-entry__side{display:grid;gap:12px;position:sticky;top:20px}
-.dt-statuspick{display:flex;gap:16px;border:0;padding:0;margin:0 0 14px}
+.dt-statuspick{display:flex;flex-wrap:wrap;gap:8px 16px;border:0;padding:0;margin:0 0 14px}
+.dt-statuspick>.f-help{flex:1 0 100%;margin:0}   /* Hinweis unter den Knöpfen, nicht als schmale Spalte daneben */
 .dt-statuspick legend{font-weight:600;margin-bottom:8px}
 .dt-statuspick label{display:flex;align-items:center;gap:6px;cursor:pointer}
 .dt-planhint{display:inline-flex;vertical-align:middle;color:var(--adm-warn)}

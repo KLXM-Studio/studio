@@ -395,14 +395,14 @@ final class Fields
             $attrs .= ' data-web="' . (in_array('web', $r['targets'], true) ? '1' : '0') . '"';
             if ($all && $multi) return '<div class="' . $cls . ' f-exp--fixed is-public"' . $attrs . '>' . $field . '</div>';   // Zeilen entscheiden
             $why = $r['mode'] === 'never' ? ($multi ? __('Festgelegt in den Feldern der Tabelle: nie öffentlich – auch freigegebene Angaben nicht.') : __('Festgelegt in den Feldern der Tabelle: nie öffentlich.'))
-                : ($on ? __('Festgelegt in den Feldern der Tabelle: immer öffentlich.') : __('Festgelegt in den Feldern der Tabelle: nicht auf der Website.'));
+                : __('Festgelegt in den Feldern der Tabelle: nicht auf der Website.');
             // öffentlich: kein Merkmal – das Normale braucht keinen Hinweis; die Zusammenfassung „Auf der Website: …“
             // über den Feldern nennt diese Felder. Merkmale nur für Abweichungen („Intern“, weniger Ziele) bzw. wo die Redaktion entscheidet.
             if ($on) return '<div class="' . $cls . ' f-exp--fixed is-public"' . $attrs . '>' . $field . '</div>';   // öffentlich (auch nur einzelne Ziele): ohne Merkmal
-            $text = $multi && $on ? __('Ziele: {targets}', ['targets' => $shorts($r['targets'])]) : \Core\Data\Exposure::reachText($r, $tg);
-            $mark = '<span class="f-exp__mark"><span class="f-exp__tag" title="' . e($why) . '">' . icon($on ? 'globe' : 'lock') . $sr
+            $text = \Core\Data\Exposure::reachText($r, $tg);
+            $mark = '<span class="f-exp__mark"><span class="f-exp__tag" title="' . e($why) . '">' . icon('lock') . $sr
                 . '<span>' . e($text) . '</span><span class="adm-sr"> – ' . e($why) . '</span></span></span>';
-            return '<div class="' . $cls . ' f-exp--fixed ' . ($on ? 'is-public' : 'is-internal') . '"' . $attrs . ' data-exp-w="' . self::exposeWidth($text) . '">' . self::exposeInHead($field, $mark) . '</div>';
+            return '<div class="' . $cls . ' f-exp--fixed is-internal"' . $attrs . ' data-exp-w="' . self::exposeWidth($text) . '">' . self::exposeInHead($field, $mark) . '</div>';
         }
         $boxes = '';
         foreach ($tg as $k) {
