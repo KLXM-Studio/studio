@@ -596,8 +596,8 @@ return [
             ...array_map(fn($f) => $f + ['show_if' => ['source' => ['filter']]], \Core\Data\Nearby::blockFields()),
             ['name' => 'items', 'label' => 'Personen', 'type' => 'repeater', 'item_label' => 'Person', 'title_field' => 'person', 'max_items' => 30,
                 'show_if' => ['source' => ['manual']], 'fields' => [
-                ['name' => 'person', 'label' => 'Person', 'type' => 'link', 'required' => true,
-                    'help' => 'Eintrag der Personen-Tabelle wählen (Struktur-Browser → Datentabellen).'],
+                ['name' => 'person', 'label' => 'Person', 'type' => 'link', 'required' => true, 'pick' => 'entry', 'table_from' => 'table', 'pick_label' => 'Person wählen …',
+                    'help' => 'Aus der oben gewählten Personen-Tabelle – mit Suche und Vorschau.'],
                 ['name' => 'role', 'label' => 'Funktion an dieser Stelle (optional)', 'type' => 'text', 'max' => 120, 'width' => 'half',
                     'help' => 'Leer = Funktion aus dem Eintrag.'],
                 ['name' => 'image', 'label' => 'Anderes Foto an dieser Stelle (optional)', 'type' => 'media', 'width' => 'half'],

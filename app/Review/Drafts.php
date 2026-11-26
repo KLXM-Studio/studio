@@ -169,6 +169,18 @@ final class Drafts
     }
 
     /** Anzahl für die Seitenleiste (einmal je Aufruf, ohne Herkunft und Notizen – nur zählen) */
+    /** Entwürfe „Zur Prüfung“ (mit Notiz oder Zuständigkeit) – Zähler im Menü; alle offenen Entwürfe zählt count() */
+    public static function reviewCount(): int
+    {
+        try {
+            $c = [];
+            self::filter(self::items(), 'review', $c);
+            return (int) ($c['review'] ?? 0);
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
     public static function count(): int
     {
         if (self::$count !== null) return self::$count;
@@ -255,7 +267,7 @@ final class Drafts
 
     public static function stateLabel(string $state): string
     {
-        return match ($state) { 'new' => __('neu'), 'changed' => __('geändert'), 'offline' => __('offline'), default => $state };
+        return match ($state) { 'new' => __('neu'), 'changed' => __('Änderungen nicht veröffentlicht'), 'offline' => __('offline'), default => $state };
     }
 
     // ================================================================= Notizen & Zuständigkeit

@@ -309,7 +309,7 @@ final class PageController extends AdminController
         $msg = __('Seiteneinstellungen gespeichert.') . (\Core\Schedule::pending($fresh) ? ' ' . __('Geht automatisch online: {date}.', ['date' => fmt()->datetime($fresh['online_from'])]) : '');
         if ($moved) $msg .= ' ' . ($out['autoRedirect'] && ($fresh['status'] === 'published' || $fresh['published_at'] !== null) ? __('Die alte Adresse leitet auf die neue weiter.') : __('Neue Adresse: {url}', ['url' => $out['url']]));
         return Response::json(['ok' => true, 'message' => $msg, 'warning' => $warn, 'moved' => $moved,
-            'state' => Pages::state($fresh), 'drafts' => \Core\Review\Drafts::count()] + $out);
+            'state' => Pages::state($fresh), 'drafts' => \Core\Review\Drafts::reviewCount()] + $out);
     }
 
     private function validate(Request $r, ?array $page): array
@@ -388,7 +388,7 @@ final class PageController extends AdminController
         // „Online ab“ in der Zukunft (Core\Schedule): Fassung übernommen, online erst zum geplanten Zeitpunkt
         $msg = $p && \Core\Schedule::pending($p) ? __('„{title}“ geht automatisch online: {date}.', ['title' => (string) $p['title'], 'date' => fmt()->datetime($p['online_from'])]) : null;
         if ($r->wantsJson()) {
-            return Response::json(['ok' => true, 'state' => $p ? Pages::state($p) : 'online', 'drafts' => \Core\Review\Drafts::count(), 'message' => $msg ?? __('„{title}“ ist online.', ['title' => (string) ($p['title'] ?? '')])]);
+            return Response::json(['ok' => true, 'state' => $p ? Pages::state($p) : 'online', 'drafts' => \Core\Review\Drafts::reviewCount(), 'message' => $msg ?? __('„{title}“ ist online.', ['title' => (string) ($p['title'] ?? '')])]);
         }
         return $this->back('/admin/pages', 'success', $msg ?? 'Seite veröffentlicht.');
     }
@@ -408,7 +408,7 @@ final class PageController extends AdminController
         }
         $msg = __('„{title}“ ist offline. Besucher sehen die Seite nicht mehr.', ['title' => $page['title']]);
         if ($r->wantsJson()) {
-            return Response::json(['ok' => true, 'state' => Pages::state(Pages::find((int) $id)), 'drafts' => \Core\Review\Drafts::count(), 'message' => $msg]);
+            return Response::json(['ok' => true, 'state' => Pages::state(Pages::find((int) $id)), 'drafts' => \Core\Review\Drafts::reviewCount(), 'message' => $msg]);
         }
         return $this->back('/admin/pages', 'success', $msg);
     }

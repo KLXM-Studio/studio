@@ -17,7 +17,7 @@ use Core\Pages;
  *      ['rules' => [['entry' => 12, 'page' => 40], ['field' => 'bereich', 'value' => 'satzung', 'page' => 41]]]
  *    Reihenfolge der Auswahl (resolve): Eintrag selbst → nächster Vorfahr über ein Feld „Oberkapitel“ (Verknüpfung auf die eigene
  *    Tabelle, vererbt an Unterkapitel) → Feldwert (Auswahl/Mehrfachauswahl) → Standard. Regeln auf gelöschte Vorlagen zählen nicht.
- *  - Redaktion: ?vorlage={id} an einer Detailseite zeigt bzw. bearbeitet (?edit=1) eine bestimmte Vorlage (nur angemeldet mit pages.edit).
+ *  - Redaktion: ?vorlage={id} an einer Detailseite zeigt bzw. bearbeitet (?edit=vorlage) eine bestimmte Vorlage (nur angemeldet mit pages.edit).
  *  - Verwaltung: Daten → Tabelle → Detailseiten-Vorlagen (/admin/data/{tabelle}/vorlagen-detail, Recht data.schema).
  */
 final class DetailTemplates

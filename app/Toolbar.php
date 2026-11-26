@@ -15,7 +15,7 @@ use Core\Data\Shared;
  *   rechts  Aktionen des Modus (Bearbeiten | Abbrechen · Speichern · Veröffentlichen) + Suche + Menü „⋯“
  *
  * Arten: page (Seite), entry (Detailseite eines Eintrags, Bearbeiten direkt im Text ohne Neuladen),
- * template (Detailseiten-Vorlage im Seiten-Editor, ?edit=1 auf einer Detailseite).
+ * template (Detailseiten-Vorlage im Seiten-Editor, ?edit=vorlage auf einer Detailseite – ?edit=1 bearbeitet dort den Eintrag).
  * Kern-Fragment „toolbar“ (nur Kern, app/Views/fragments/toolbar.php): Kits rufen im Layout $theme->partial('toolbar', $toolbar)
  * auf; eigene Kit-Dateien dafür werden ignoriert (Core\Fragments). Verhalten: resources/js/_bar.js, Aussehen: editor.shadow.css.
  */
@@ -111,7 +111,7 @@ final class Toolbar
             if ($kind === 'template') {
                 foreach (Entries::query($t, ['status' => 'all', 'limit' => 50]) as $o) {
                     if ($u = Entries::url($t, $o)) {
-                        $b['others'][] = ['url' => $u . '?edit=1', 'title' => Entries::title($t, $o), 'current' => (int) $o['id'] === (int) $e['id']];
+                        $b['others'][] = ['url' => $u . '?edit=vorlage', 'title' => Entries::title($t, $o), 'current' => (int) $o['id'] === (int) $e['id']];
                     }
                 }
             }
@@ -124,7 +124,7 @@ final class Toolbar
         $qs = fn(bool $edit) => ($q = http_build_query($keep + ($edit ? ['edit' => 1] : []))) !== '' ? '?' . $q : '';
         $viewUrl = $ctx ? $b['entryUrl'] : $pageUrl;
         $b['viewUrl'] = $viewUrl;
-        $b['pageEditUrl'] = $viewUrl . '?edit=1';
+        $b['pageEditUrl'] = $viewUrl . ($ctx ? '?edit=vorlage' : '?edit=1');
         $b['canDiscard'] = $hasPage && ($page['content_published'] ?? null) !== null;
 
         // Modus und EIN Status
@@ -161,7 +161,7 @@ final class Toolbar
             $withBlocks = !$live && $b['entryEditable'] && \Core\Data\EntryBlocks::fieldsOf($t);
             $modes[] = ['view', __('Ansehen'), 'eye', $kind === 'entry' ? null : $viewUrl, $kind === 'entry', __('Detailseite so ansehen, wie Besucher sie sehen')];
             if ($b['entryEditable']) $modes[] = ['edit', __('Bearbeiten'), 'pencil-simple', $withBlocks ? $viewUrl . '?edit=inhalt' : ($kind === 'entry' ? null : $viewUrl . '#cms-bearbeiten'), $kind === 'content', __('Diesen Eintrag bearbeiten – Titel, Felder und Inhalt direkt auf der Seite')];
-            if ($b['canEditPages'] && !$live) $modes[] = ['template', __('Vorlage'), 'squares-four', $viewUrl . '?edit=1', $kind === 'template', $tbl !== '' ? __('Aussehen aller Detailseiten von „{table}“ gestalten – gilt für jeden Eintrag', ['table' => $tbl]) : __('Aussehen aller Detailseiten dieser Tabelle gestalten – gilt für jeden Eintrag')];
+            if ($b['canEditPages'] && !$live) $modes[] = ['template', __('Vorlage'), 'squares-four', $viewUrl . '?edit=vorlage', $kind === 'template', $tbl !== '' ? __('Aussehen aller Detailseiten von „{table}“ gestalten – gilt für jeden Eintrag', ['table' => $tbl]) : __('Aussehen aller Detailseiten dieser Tabelle gestalten – gilt für jeden Eintrag')];
         }
         $b['modes'] = count($modes) > 1 ? $modes : [];
 
@@ -198,13 +198,13 @@ final class Toolbar
         $entry = $kind === 'entry';
         return [
             'chip' => [
-                'published' => [__('Veröffentlicht'), $entry
+                'published' => [__('Online'), $entry
                     ? __('Besucher sehen diesen Eintrag genau so. Änderungen sind nach dem Speichern sofort online.')
                     : __('Besucher sehen genau diesen Stand. Neue Änderungen werden erst mit „Veröffentlichen“ sichtbar.')],
-                'draft' => [__('Entwurf'), $entry
+                'draft' => [__('Offline · neu'), $entry
                     ? __('Nur für die angemeldete Redaktion sichtbar. Besucher sehen diesen Eintrag erst nach dem Veröffentlichen.')
                     : __('Nur für die angemeldete Redaktion sichtbar. Besucher sehen diese Seite erst nach dem Veröffentlichen.')],
-                'changed' => [__('Geändert – nicht veröffentlicht'),
+                'changed' => [__('Änderungen nicht veröffentlicht'),
                     __('Es gibt einen gespeicherten Entwurf mit Änderungen. Besucher sehen noch die zuletzt veröffentlichte Fassung – „Veröffentlichen“ bringt die Änderungen online.')],
                 'offline' => [__('Offline'), $entry
                     ? __('War schon online und ist derzeit offline: Besucher sehen diesen Eintrag nicht – nur die angemeldete Redaktion.')

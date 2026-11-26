@@ -211,7 +211,16 @@ function fieldValue(n, rich) {
 // Werkzeugleiste (_bar.js): EIN Status-Chip, „Gespeichert ✓“, Live-Region, Abbrechen
 const Bar = CMSAdmin.bar;
 const BT = k => Bar?.texts?.[k] || { close: 'Schließen', cancel: 'Abbrechen', done: 'Fertig' }[k] || k;
-const markDirty = () => { const was = dirty; dirty = true; if (!was) Bar?.state('dirty'); requestAnimationFrame(blankState); History?.touch(); };
+const markDirty = () => { const was = dirty; dirty = true; if (!was) Bar?.state('dirty'); requestAnimationFrame(blankState); History?.touch(); syncPublish(); };
+// „Veröffentlichen“ nur aktiv, wenn etwas offen ist: ungespeicherte Änderungen oder Status neu/offline/„Änderungen nicht veröffentlicht“
+function syncPublish() {
+  const st = S.ui('[data-bar-chip]')?.dataset.state || '';
+  const open = dirty || !!CMSAdmin.entryInline?.dirty() || ['draft', 'offline', 'changed', 'unsaved'].includes(st);
+  S.uiAll('[data-editor-publish]').forEach(b => {
+    b.setAttribute('aria-disabled', String(!open));
+    b.title = open ? '' : CMSAdmin.t('Nichts zu veröffentlichen – diese Fassung ist schon online.');
+  });
+}
 
 /*
  * Leere Seite: Editor.js braucht immer einen Block und legt dafür einen leeren Standardblock (Text) an – auch nach dem
@@ -1088,7 +1097,7 @@ function makeTool(type, def) {
               <button type="button" class="cms-iconbtn" data-act="left" aria-label="${E(T('In die Spalte links'))}" title="${E(T('In die Spalte links'))}">←</button>
               <button type="button" class="cms-iconbtn" data-act="right" aria-label="${E(T('In die Spalte rechts'))}" title="${E(T('In die Spalte rechts'))}">→</button>
               <button type="button" class="cms-lay-bar__edit" data-act="edit" aria-label="${E(T('„{label}“ bearbeiten', { label: cdef.label }))}">${E(T('Bearbeiten'))}</button>
-              <button type="button" class="cms-iconbtn cms-iconbtn--danger" data-act="del" aria-label="${E(T('„{label}“ löschen', { label: cdef.label }))}" title="${E(T('Löschen'))}">✕</button>
+              <button type="button" class="cms-iconbtn cms-iconbtn--danger" data-act="del" aria-label="${E(T('„{label}“ löschen', { label: cdef.label }))}" title="${E(T('Löschen'))}">${E(T('Löschen …'))}</button>
             </span>`);
           const cg = guardOf(child.type, child.lock) || (layLocked ? 'lock' : null);
           const dis = { up: bi === 0, down: bi === list.length - 1, left: layLocked || ci === 0, right: layLocked || ci === cols.length - 1, del: !!cg };   // gesperrtes Layout: nur innerhalb der Spalte
@@ -1943,7 +1952,7 @@ editor = new EditorJS({
     blankState();
     dirty = false;
     Bar?.state('clean');
-    requestAnimationFrame(() => jumpToBlock());
+    requestAnimationFrame(() => { jumpToBlock(); syncPublish(); });
     // Ereignis für Werkzeuge/Erweiterungen: Seiten-Editor ist bereit
     CMSAdmin.events?.emit('cms:editor-ready', { kind: 'page', page: cfg.page, template: !!cfg.entry, entry: cfg.entry || null });
   },
@@ -2205,7 +2214,11 @@ History = (() => {
 S.ui('[data-editor-preview]')?.addEventListener('click', async e => {
   e.preventDefault();
   const href = e.currentTarget.href;
-  if (dirty && !(await save(false))) return;
+  // Ungespeicherte Änderungen: fragen statt still zu speichern („Vorschau“ speichert nicht ungefragt)
+  if (dirty) {
+    if (!(await Bar.ask({ title: CMSAdmin.t('Erst speichern?'), body: CMSAdmin.t('Die Vorschau zeigt den gespeicherten Stand. Ihre Änderungen jetzt als Entwurf speichern? Online geht dadurch nichts.'), ok: CMSAdmin.t('Speichern und Vorschau'), danger: false }))) return;
+    if (!(await save(false))) return;
+  }
   location.href = href;
 });
 // Kompaktansicht: alle Blöcke als schmale Zeilen – ideal zum Umsortieren
@@ -2259,6 +2272,7 @@ S.ui('[data-editor-discard]')?.addEventListener('click', async () => {
 });
 // Alle „Veröffentlichen“-Knöpfe (Desktop-Leiste und Aktionsleiste unten auf Telefonen)
 S.uiAll('[data-editor-publish]').forEach(b => b.addEventListener('click', async () => {
+  if (b.getAttribute('aria-disabled') === 'true') return;
   if (await Bar.ask({ title: BT('publishTitle'), body: BT('publishBody'), ok: BT('publishOk'), danger: false })) save(true);
 }));
 // ⌘/Strg+S: Erfassungsphase – Textfelder im Block halten Tasten sonst von Editor.js (und damit auch von hier) fern

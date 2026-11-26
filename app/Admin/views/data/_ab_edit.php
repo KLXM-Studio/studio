@@ -34,7 +34,7 @@ $name = $isNew ? '' : Entries::title($t, $e);
     <?php if ($t['settings']['workflow'] && can('data.publish', $t['handle'])): ?>
     <fieldset class="dt-statuspick"><legend><?= e(__('Status')) ?></legend>
       <label><input type="radio" name="status" value="published"<?= $status === 'published' ? ' checked' : '' ?>> <span class="dt-status dt-status--published"><?= e(__('Online')) ?></span></label>
-      <label><input type="radio" name="status" value="draft"<?= $status === 'draft' ? ' checked' : '' ?>> <span class="dt-status dt-status--draft"><?= e(__('Entwurf')) ?></span></label>
+      <label><input type="radio" name="status" value="draft"<?= $status === 'draft' ? ' checked' : '' ?>> <span class="dt-status dt-status--draft"><?= e(__('Offline')) ?></span></label>
     </fieldset>
     <?php else: ?><input type="hidden" name="status" value="<?= e($status) ?>"><?php endif; ?>
     <div class="adm-row ab-edit__actions">

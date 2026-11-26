@@ -826,7 +826,7 @@ final class Fields
                 . '<div class="media-field-preview">' . self::mediaPreview($v === '' ? null : (int) $v) . '</div>'
                 . '<button type="button" class="btn btn--small" data-media-pick>Auswählen …</button> '
                 . '<button type="button" class="btn btn--small btn--ghost" data-media-clear>Entfernen</button></div>',
-            'link' => self::renderLink($id, $inputName, $v, $aria . $ph),
+            'link' => !empty($f['pick']) && $f['pick'] === 'entry' ? self::renderEntryLink($f, $id, $inputName, $v) : self::renderLink($id, $inputName, $v, $aria . $ph),
             'secret' => '<input type="password" id="' . $id . '" name="' . $inputName . '" value="" autocomplete="new-password"'
                 . ' placeholder="' . ($v !== '' ? '•••••••• (gespeichert – leer lassen = unverändert)' : '') . '"' . $aria . '>',
             default => '<input type="' . match ($type) {
@@ -862,6 +862,20 @@ final class Fields
             . '<input type="text" id="' . $id . '" name="' . $name . '" value="' . e($v) . '" list="cms-links" autocomplete="off" spellcheck="false"' . $attrs . '>'
             . '<button type="button" class="btn btn--small" data-link-pick aria-haspopup="dialog">' . e(__('Auswählen …')) . '</button></div>'
             . self::linkChip($v) . '</div>';
+    }
+
+    /**
+     * Link-Feld als Eintragsauswahl ('pick' => 'entry'): kein Link-Dialog und kein Rohwert, sondern das Auswahlfenster für Einträge
+     * (resources/js/_picker.js) – Tabelle aus einem Nachbarfeld ('table_from', z. B. 'table' des Blocks) bzw. fest ('table').
+     * Wert bleibt „entry:tabelle:id“ (wie beim Link-Feld), angezeigt wird der Titel des Eintrags.
+     */
+    private static function renderEntryLink(array $f, string $id, string $name, string $v): string
+    {
+        return '<div class="f-link f-link--entry" data-entry-link data-table-from="' . e((string) ($f['table_from'] ?? '')) . '" data-table="' . e((string) ($f['table'] ?? '')) . '"'
+            . ' data-picker-base="' . e(url('/admin/api/picker/')) . '">'
+            . '<input type="hidden" id="' . $id . '" name="' . $name . '" value="' . e($v) . '">'
+            . self::linkChip($v)
+            . '<button type="button" class="btn btn--small" data-entry-link-pick aria-haspopup="dialog">' . e((string) ($f['pick_label'] ?? __('Eintrag wählen …'))) . '</button></div>';
     }
 
     /** Anzeige des gewählten Linkziels (Art · Titel · Adresse) mit Entfernen-Knopf */

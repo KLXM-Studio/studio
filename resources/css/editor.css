@@ -415,3 +415,6 @@ td>.cms-entry-pencil .cms-entry-pencil__t{display:none}
 .cms-feat__b:disabled{opacity:.5}
 .cms-feat-hint{margin:0 0 1rem;padding:.5rem .8rem;border-radius:8px;background:#EEF1F8;color:#1d2433;font:500 13.5px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 .hl-item{position:relative}
+/* Gesperrte Blöcke (Core\BlockGuard, .cms-block.is-locked): keine Handlungsaufforderungen in der Vorschau – z. B. „Einträge auslassen …“ in
+   Highlights, Hinweise und Knöpfe zum Hervorheben; die Rolle kann den Block ohnehin nicht ändern */
+.cms-block.is-locked :is(.hl-note,.cms-feat,.cms-feat-hint,.cms-empty__btn){display:none!important}

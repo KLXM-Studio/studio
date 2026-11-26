@@ -64,7 +64,7 @@ $manual = $sort === 'sort' && $q === '' && $status === 'all' && !$featView;
 $ownerPicks = \Core\Data\Tables::isShared($t) && !\Core\Data\Shared::isOwner($t) ? \Core\Data\Shared::picks($t, array_column($rows, 'id'), $t['shared']['owner']) : [];
 // Externe Quellen (Core\Sources): Einträge aus einem Feed/einer API – nur lesbar, Badge mit Name der Quelle
 $extOrigin = \Core\Sources\Sources::originMap($t, array_column($rows, 'id'));
-// Status je Zeile: Online | Offline (war schon online) | Entwurf (nie veröffentlicht); mit data.publish ein Knopf (admin.js → Einträge)
+// Status je Zeile: Online | Offline (war schon online) | Offline · neu (nie veröffentlicht); mit data.publish ein Knopf (admin.js → Einträge)
 $canPub = $t['settings']['workflow'] && can('data.publish', $t['handle']) && !Tables::isInbox($t);
 // Zeitplan (Core\Schedule): Uhr mit „Online ab …“ / „Offline ab …“ neben dem Status
 $statusCell = function (array $e) use (&$statusBtn): string {
@@ -73,7 +73,7 @@ $statusCell = function (array $e) use (&$statusBtn): string {
 };
 $statusBtn = function (array $e) use ($t, $canPub, $extOrigin): string {
     $st = $e['status'] === 'published' ? 'online' : (!empty($e['published_at']) ? 'offline' : 'draft');
-    $label = ['online' => __('Online'), 'offline' => __('Offline'), 'draft' => __('Entwurf')][$st];
+    $label = ['online' => __('Online'), 'offline' => __('Offline'), 'draft' => __('Offline · neu')][$st];
     $cls = 'dt-status dt-status--' . ['online' => 'published', 'offline' => 'offline', 'draft' => 'draft'][$st];
     // Nur eigene Einträge: nicht aus externen Quellen (nur lesbar), bei geteilten Tabellen nicht von anderen Websites
     if (!$canPub || isset($extOrigin[$e['id']]) || (Tables::isShared($t) && \Core\Data\Shared::isForeign($t, $e))) {
@@ -112,7 +112,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
   <div class="dt-bar">
     <?php if ($multi): ?><nav class="fx-seg dt-seg" aria-label="Sprache"><?php foreach (\Core\Lang::all() as $code => $label): ?><a href="<?= e(url($base) . '?lang=' . $code) ?>"<?= $code === $lang ? ' aria-current="true"' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav><?php endif; ?>
     <nav class="fx-seg dt-seg" aria-label="Status">
-      <?php foreach (['all' => 'Alle', 'published' => 'Online', 'draft' => 'Entwurf'] as $k => $l): if ($k !== 'all' && !$t['settings']['workflow']) continue; ?>
+      <?php foreach (['all' => __('Alle'), 'published' => __('Online'), 'draft' => __('Offline')] as $k => $l): if ($k !== 'all' && !$t['settings']['workflow']) continue; ?>
       <a href="<?= e($qs(['status' => $k === 'all' ? '' : $k, 'seite' => null])) ?>"<?= $status === $k ? ' aria-current="true"' : '' ?>><?= $l ?> <small data-count="<?= $k ?>"><?= $counts[$k] ?></small></a>
       <?php endforeach; ?>
     </nav>

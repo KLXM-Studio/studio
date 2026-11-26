@@ -46,7 +46,7 @@ $status = $values['status'] ?? ($e['status'] ?? ($t['settings']['workflow'] ? 'd
       <?php elseif ($t['settings']['workflow']): ?>
       <fieldset class="dt-statuspick"><legend>Status</legend>
         <label><input type="radio" name="status" value="published"<?= $status === 'published' ? ' checked' : '' ?>> <span class="dt-status dt-status--published">Online</span></label>
-        <label><input type="radio" name="status" value="draft"<?= $status === 'draft' ? ' checked' : '' ?>> <span class="dt-status dt-status--draft">Entwurf</span></label>
+        <label><input type="radio" name="status" value="draft"<?= $status === 'draft' ? ' checked' : '' ?>> <span class="dt-status dt-status--draft"><?= e(__('Offline')) ?></span></label>
       </fieldset>
       <?php // Zeitplan (Core\Schedule): „Online ab“ hält den Eintrag bis dahin offline, „Offline ab“ nimmt ihn automatisch heraus
         $sFrom = \Core\Schedule::input(\Core\Schedule::norm($values['online_from'] ?? '') ?? ''); $sUntil = \Core\Schedule::input(\Core\Schedule::norm($values['online_until'] ?? '') ?? '');

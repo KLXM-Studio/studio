@@ -4016,3 +4016,11 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .dt-star[aria-busy=true]{opacity:.5}
 .dt-forder{width:4.5rem;min-height:32px;margin-left:4px;padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
 .dt-c-nowrap,.dt-c-date{white-space:nowrap}   /* kurze Werte (Datum, Zahl) nie mitten im Wert umbrechen */
+/* Telefon/schmal: „Speichern“ (und „Veröffentlichen“) des Eintragsformulars als feste Leiste unten – nicht erst nach dem ganzen Formular */
+@media (max-width:760px){
+  .dt-entry .dt-save{position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--adm-card);border-top:1px solid var(--adm-line);box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+  .dt-entry .dt-save > .adm-btn{flex:1 1 0;width:auto}
+  .dt-entry .dt-save > .adm-row{display:none}
+  .dt-entry{padding-bottom:84px}
+}
+.doc-locked small{color:var(--adm-t3);font-weight:500}   /* Verweis auf einen Bereich ohne Recht (Core\AdminAccess::markLinks) */

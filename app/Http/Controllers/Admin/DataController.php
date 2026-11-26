@@ -519,7 +519,7 @@ final class DataController extends AdminController
         if (!$first) {
             return $this->back('/admin/data/' . $handle . '/new', 'success', 'Vorlage angelegt. Legen Sie einen ersten Eintrag an – dann können Sie die Detailseite mit echten Inhalten gestalten.');
         }
-        return Response::redirect((string) Entries::url($t, $first) . '?edit=1' . ($want && $want !== $tplId ? '&vorlage=' . $want : ''));
+        return Response::redirect((string) Entries::url($t, $first) . '?edit=vorlage' . ($want && $want !== $tplId ? '&vorlage=' . $want : ''));
     }
 
     /** Detailseiten-Vorlagen der Tabelle: Liste, Standard, neue Vorlage (leer, Kopie, mitgeliefert), Zuordnung (Core\Data\DetailTemplates) */
@@ -1060,7 +1060,7 @@ final class DataController extends AdminController
         };
         // drafts: Zähler „Entwürfe“ der Seitenleiste (Status-Knopf der Eintragsliste aktualisiert ihn ohne Neuladen)
         $wait = $waiting ? __('Geplant – geht automatisch online: {date}.', ['date' => fmt()->datetime($waiting[0]['online_from'])]) : null;
-        return $r->wantsJson() ? Response::json(['ok' => true, 'drafts' => \Core\Review\Drafts::count()] + ($wait ? ['waiting' => count($waiting), 'message' => $wait] : []))
+        return $r->wantsJson() ? Response::json(['ok' => true, 'drafts' => \Core\Review\Drafts::reviewCount()] + ($wait ? ['waiting' => count($waiting), 'message' => $wait] : []))
             : $this->back("/admin/data/$handle", 'success', __('Erledigt.') . ($wait ? ' ' . $wait : ''));
     }
 

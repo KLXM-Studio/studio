@@ -164,7 +164,8 @@ final class Guide
     /** HTML eines Hinweises (Bilder aus dem guide-Ordner über die Verwaltung) */
     public static function html(array $note): string
     {
-        return self::render((string) $note['body'], fn(string $f) => self::image($f) !== null ? url('/admin/hilfe/projekt/bild/' . rawurlencode($f)) : null);
+        // Verweise auf Bereiche, die die Rolle nicht öffnen kann: „(nur Administration)“ statt Link (Core\AdminAccess)
+        return \Core\AdminAccess::markLinks(self::render((string) $note['body'], fn(string $f) => self::image($f) !== null ? url('/admin/hilfe/projekt/bild/' . rawurlencode($f)) : null));
     }
 
     /**

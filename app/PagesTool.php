@@ -38,7 +38,7 @@ final class PagesTool
                 'menuOn' => __('Im Menü – klicken zum Entfernen: {title}'), 'menuOff' => __('Nicht im Menü – klicken zum Aufnehmen: {title}'),
                 'online' => __('Online – klicken zum Offline nehmen: {title}'), 'offline' => __('Offline – klicken zum Online stellen: {title}'),
                 'draft' => __('Entwurf – klicken zum Veröffentlichen: {title}'), 'homeOnline' => __('Die Startseite ist immer online.'),
-                'add' => __('Unterseite anlegen unter „{title}“'), 'addTop' => __('Neue Seite (oberste Ebene)'), 'del' => __('„{title}“ löschen'),
+                'add' => __('Unterseite anlegen unter „{title}“'), 'addTop' => __('Neue Seite (oberste Ebene)'), 'del' => __('„{title}“ löschen'), 'more' => __('Weitere Aktionen für „{title}“'), 'delMenu' => __('Löschen …'),
                 'newTitle' => __('Titel der neuen Seite'), 'newMenu' => __('Im Menü zeigen'), 'create' => __('Anlegen'), 'cancel' => __('Abbrechen'),
                 'created' => __('„{title}“ angelegt (Entwurf).'), 'open' => __('Öffnen'), 'moved' => __('Verschoben.'),
                 'delTitle' => __('„{title}“ löschen?'), 'delBody' => __('Die Seite wird gelöscht. Unterseiten rücken eine Ebene nach oben. Die Versionen der Seite gehen verloren.'),

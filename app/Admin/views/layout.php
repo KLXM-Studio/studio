@@ -84,11 +84,11 @@ if ($user && can('system.manage')) {
 [$chatN, $chatAt] = $user ? \Core\Chat\Chat::navCount() : [0, 0];   // Chat: ungelesen + Erwähnungen (live: resources/js/userchat.js)
 $supportN = $user ? \Core\Support\Support::navCount() : 0;   // ungelesene Antworten bzw. (Team) neue Meldungen
 $reviewN = $user && \Core\Review\Queue::canReview() ? \Core\Review\Queue::pendingCount() : 0;   // offene Einreichungen (API, MCP, KI)
-$draftsN = $user && in_array('drafts', array_column($nav, 2), true) ? \Core\Review\Drafts::count() : 0;   // offene Entwürfe (Seiten, Einträge)
+$draftsN = $user && in_array('drafts', array_column($nav, 2), true) ? \Core\Review\Drafts::reviewCount() : 0;   // Entwürfe „Zur Prüfung“ (Notiz/Zuständigkeit) – nicht jeder offene Entwurf
 // Favoriten (Core\Favorites): Liste + Vorschlag für den Stern dieser Seite (Adresse, Titel, Symbol) – resources/js/_favorites.js
 $favs = $user ? \Core\Favorites::all((int) $user['id']) : [];
 $favHere = $favTitle = $favIcon = '';
-if ($user && ($req = app()->request)) {
+if ($user && ($req = app()->request) && $view !== 'error') {   // Fehlerseiten (Admin\ErrorController): kein Favoriten-Stern
     $favQ = $req->query;
     $favT = isset($t) && is_array($t) ? $t : (isset($table) && is_array($table) ? $table : null);
     // Kalender-Tabellen merken die Ansicht in der Sitzung – im Favoriten steht sie ausdrücklich

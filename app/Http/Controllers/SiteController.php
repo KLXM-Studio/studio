@@ -197,7 +197,10 @@ final class SiteController
         \Core\StructuredData::reset();
         // Modus „Inhalt“ (?edit=inhalt): Inhaltsblöcke des Eintrags im Seiten-Editor – Recht am Eintrag statt pages.edit
         $app->contentEdit = $loggedIn && $ctx && ($r->query['edit'] ?? '') === 'inhalt' ? \Core\Data\EntryBlocks::contentEdit($ctx, Pages::blocks($page, true)) : null;
-        $app->editing = $app->contentEdit !== null || ($loggedIn && isset($r->query['edit']) && ($r->query['edit'] ?? '') !== 'inhalt' && can('pages.edit'));
+        // Detailseite eines Eintrags: die Vorlage (gilt für alle Einträge) nur ausdrücklich mit ?edit=vorlage – ?edit=1 (alte Links,
+        // Lesezeichen) öffnet nie unbemerkt die Vorlage, sondern den Eintrag (Bearbeiten direkt auf der Seite, app()->entryEdit)
+        $app->editing = $app->contentEdit !== null || ($loggedIn && isset($r->query['edit']) && ($r->query['edit'] ?? '') !== 'inhalt' && can('pages.edit')
+            && ($ctx === null || ($r->query['edit'] ?? '') === 'vorlage'));
         // Bearbeitungssperre (Core\EditLock): bearbeitet jemand anderes diese Seite, nur Ansehen (Hinweis und „Übernehmen“ in der Leiste)
         if ($app->editing && $app->contentEdit === null && !empty($page['id']) && \Core\EditLock::blockedFor('page', (string) (int) $page['id'])) $app->editing = false;
         // Eingeloggte sehen den Arbeitsstand (Entwurf) – mit ?live=1 die veröffentlichte Fassung wie Besucher

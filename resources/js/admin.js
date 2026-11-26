@@ -826,7 +826,7 @@ const setDraftsBadge = n => {
   if (!b || typeof n !== 'number') return;
   b.hidden = !n; $('[data-n]', b).textContent = n;
 };
-const STATUS = { online: ['Online', 'published'], offline: ['Offline', 'offline'], draft: ['Entwurf', 'draft'] };
+const STATUS = { online: ['Online', 'published'], offline: ['Offline', 'offline'], draft: ['Offline · neu', 'draft'] };
 const STATUS_ACT = { online: 'Offline nehmen', offline: 'Online stellen', draft: 'Veröffentlichen' };
 /** Status-Knopf auf neuen Zustand setzen (Text, Farbe, Beschriftung für Screenreader) */
 const paintStatus = (btn, st, title) => {
@@ -1468,7 +1468,7 @@ function extData(name) {
   }
   return extCache[name];
 }
-window.CMSAdmin = { init, hotspots, toast, toastNext, openMediaPicker, pickLink, openLinkPicker, openPagesPicker, esc, Rich, Markdown, openSpotlight, t, ico, bar: bar_, formFields,
+window.CMSAdmin = { init, openMenu, hotspots, toast, toastNext, openMediaPicker, pickLink, openLinkPicker, openPagesPicker, esc, Rich, Markdown, openSpotlight, t, ico, bar: bar_, formFields,
   // Werkzeuge beim Bearbeiten und Ereignisse (stabile Schnittstelle, Technik → Erweiterungen): CMSAdmin.tools.register(id, { mount, unmount })
   tools: tools_, events: { emit, beforeSave },
   // Angaben einer Erweiterung für ihre Skripte (Extension::adminData → <script type="application/json" id="cms-ext-{name}">)
@@ -1480,6 +1480,36 @@ initEntryEdit();
 // Karten und Kacheln: Ziel (Seite/Eintrag) bearbeiten – mit Rückfrage der Werkzeugleiste bei ungespeicherten Änderungen
 initTargetEdit(bar_);
 
+// Link-Feld als Eintragsauswahl (Core\Fields 'pick' => 'entry', z. B. Person im Block „Personen“): Auswahlfenster statt Link-Dialog
+d.addEventListener('click', async e => {
+  const tgt = e.composedPath?.()[0] || e.target;   // auch in der Seitenleiste (Shadow DOM)
+  const clear = tgt.closest?.('[data-entry-link] [data-link-clear]');
+  const btn = tgt.closest?.('[data-entry-link-pick]');
+  const box = (clear || btn)?.closest('[data-entry-link]'); if (!box) return;
+  e.preventDefault();
+  const input = $('input[type=hidden]', box), chip = $('[data-link-chip]', box);
+  const fire = () => { input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); };
+  if (clear) { input.value = ''; if (chip) chip.hidden = true; fire(); return; }
+  let handle = box.dataset.table, tname = '';
+  if (!handle && box.dataset.tableFrom) {
+    // nächstes Feld „…[table]“ von innen nach außen (Block in Inhaltsblöcken, Seitenleiste)
+    let sel = null;
+    for (let a = box.parentElement; a && !sel; a = a.parentElement) sel = a.querySelector(`select[name$="[${CSS.escape(box.dataset.tableFrom)}]"]`);
+    handle = sel?.value || ''; tname = sel?.selectedOptions?.[0]?.text || '';
+  }
+  if (!handle) { alert(t('Bitte zuerst oben die Tabelle wählen.')); return; }
+  const m = /^entry:([a-z][a-z0-9_]*):(\d+)$/.exec(input.value.trim());
+  const r = await openEntryPicker({ tables: [{ handle, name: tname || handle, singular: tname || handle, url: box.dataset.pickerBase + handle }], multiple: false,
+    selected: m && m[1] === handle ? [{ table: handle, id: m[2], title: $('.f-link__label', box)?.textContent || '' }] : [], title: btn?.textContent.replace('…', '').trim() });
+  btn?.focus();
+  if (!r?.length) return;
+  input.value = `entry:${handle}:${r[0].id}`;
+  if (chip) {
+    chip.hidden = false; chip.classList.remove('is-missing');
+    chip.innerHTML = `<span class="f-link__type">${esc(tname || t('Eintrag'))}</span> <span class="f-link__label">${esc(r[0].title)}</span> <button type="button" class="f-link__clear" data-link-clear aria-label="${esc(t('Link entfernen'))}" title="${esc(t('Link entfernen'))}">×</button>`;
+  }
+  fire();
+});
 // Fehlerseite der Verwaltung: „Zurück“
 d.addEventListener('click', e => { if (e.target.closest?.('[data-history-back]')) { e.preventDefault(); history.length > 1 ? history.back() : (location.href = d.querySelector('.adm-errorpage a')?.href || '/admin'); } });
 // Eintragsformular: „Auf der Startseite hervorheben“ – Reihenfolge und „bis“ erst nach dem Einschalten

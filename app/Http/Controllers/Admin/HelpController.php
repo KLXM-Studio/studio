@@ -28,7 +28,10 @@ final class HelpController extends AdminController
             }
             $vars['themeDoc'] = $def + ['dir' => dirname($file)];
         }
-        return $this->view('help/manual', $vars);
+        $res = $this->view('help/manual', $vars);
+        // Verweise auf Bereiche, die die Rolle nicht öffnen kann: Text mit „(nur Administration)“ statt Link (Core\AdminAccess)
+        $res->body = \Core\AdminAccess::markLinks($res->body);
+        return $res;
     }
 
     /** Übersicht aller Symbole nach Themen (Core\Icons) – für die Symbolauswahl und Themes */

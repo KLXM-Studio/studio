@@ -34,7 +34,8 @@ $anyDiscard = (bool) array_filter($items, fn($i) => $i['can_discard']);
 ?>
 <header class="adm-head">
   <div><p class="adm-eyebrow"><?= e(__('Inhalte')) ?></p><h1><?= e(__('Entwürfe')) ?></h1>
-    <p class="adm-muted"><?= e(__('Alles, was noch nicht (oder nicht in dieser Fassung) online ist: neue Seiten, veröffentlichte Seiten mit unveröffentlichten Änderungen und Einträge im Entwurf. Prüfen, veröffentlichen oder verwerfen – vergessene Zwischenstände fallen nach {n} Tagen ohne Änderung auf.', ['n' => Drafts::STALE_DAYS])) ?></p></div>
+    <p class="adm-muted"><?= e(__('Alles, was noch nicht (oder nicht in dieser Fassung) online ist. Prüfen, veröffentlichen oder verwerfen – vergessene Zwischenstände fallen unter „Vergessen?“ auf.')) ?></p>
+    <p class="adm-muted dr-legend"><?= e(__('„Neu“ = noch nie veröffentlicht (offline). „Offline“ = war schon online und ist es gerade nicht. „Änderungen nicht veröffentlicht“ = online, aber die neue Fassung wartet noch. Die Zahl im Menü zählt nur „Zur Prüfung“ – Entwürfe mit Notiz oder Zuständigkeit.')) ?></p></div>
 </header>
 
 <?php if ($submitted): ?>

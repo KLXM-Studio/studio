@@ -52,7 +52,7 @@ function row(ctx, p, i) {
       + `</span></span>`)
     + `<button type="button" class="pp-dot pp-dot--${esc(p.home ? 'online' : p.state)}" data-pp="status" aria-label="${esc(stateLbl)}" title="${esc(stateLbl)}"${p.home ? ' disabled' : ''}></button>`
     + btn('menu', '≡', T(p.menu ? 'menuOn' : 'menuOff', t), !p.home, ` aria-pressed="${p.menu}"`)
-    + btn('add', '+', T('add', t)) + btn('del', '×', T('del', t), !p.home)
+    + btn('add', '+', T('add', t)) + btn('more', '⋯', T('more', t), !p.home, ' aria-haspopup="menu"')
     + '</li>';
   for (const e of p.entries || []) {
     const k = p.id + ':' + e.admin, open = S.open.has(k);
@@ -96,6 +96,7 @@ async function move(ctx, p, parent, ref = {}) {
   if (p.id === ctx.tool.data.current && res.url) S.moved = res.url;
 }
 
+const act_ = (...a) => act(...a);
 async function act(ctx, act, p, focusSel) {
   const T = ctx.t, base = ctx.tool.endpoints.base, t = { title: p?.title };
   try {
@@ -122,6 +123,13 @@ async function act(ctx, act, p, focusSel) {
         if (r.message) ctx.toast(r.message);
       }
       S.changed = true;
+    } else if (act === 'more') {
+      // Weitere Aktionen der Zeile – Löschen nur hier, mit Rückfrage (nie als einzelnes ×)
+      const anchor = ctx.panel.body.querySelector(`[data-id="${p.id}"] [data-pp="more"]`);
+      window.CMSAdmin.openMenu?.({ title: p.title, anchor, root: ctx.panel.body, items: [
+        { key: 'delete', icon: 'trash', label: T('delMenu'), run: () => act_(ctx, 'del', p) },
+      ] });
+      return;
     } else if (act === 'del') {
       if (!(await window.CMSAdmin.bar.ask({ title: T('delTitle', t), body: T('delBody'), ok: T('delOk'), danger: true }))) return;
       await ctx.fetch(`${base}/${p.id}/delete`, { method: 'POST' });

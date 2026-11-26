@@ -10,6 +10,15 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Verwaltung aus Sicht der Redaktion (Prüfbericht, Teil 2)
+- Status einheitlich: Sichtbarkeit „Online / Offline“ (nie veröffentlicht: „Offline · neu“), getrennt davon „Änderungen nicht veröffentlicht“ – Eintragsliste, Formular, Werkzeugleiste, Entwürfe-Seite (mit Erklärung). Der Zähler im Menü zählt nur „Zur Prüfung“.
+- „Veröffentlichen“ ist nur aktiv, wenn etwas offen ist; „Vorschau“ fragt vor dem Speichern.
+- Detailseiten: `?edit=1` bearbeitet den Eintrag; die Vorlage für alle Einträge öffnet nur `?edit=vorlage` (Werkzeugleiste „Vorlage“).
+- Löschen nie als einzelnes ×: Seiten-Panel auf der Website über „⋯ → Löschen …“ mit Rückfrage, Blöcke in Spalten mit beschriftetem Knopf.
+- Block „Personen“: Person über das Auswahlfenster wählen (Suche, Vorschau) statt Link-Dialog und Rohwert (`Fields` Link-Feld mit `'pick' => 'entry'`).
+- Telefon: „Speichern“ und „Veröffentlichen“ im Eintragsformular als feste Leiste unten.
+- Gesperrte Blöcke zeigen keine Handlungsaufforderungen; Handbuch und Projekt-Hinweise kennzeichnen Bereiche ohne Recht mit „(nur Administration)“ (`Core\AdminAccess`).
+
 ### Verwaltung aus Sicht der Redaktion (Prüfbericht, Teil 1)
 - Termine: Liste standardmäßig „Kommende“ nach Beginn, Reiter „Vergangene“ (neueste zuerst) und „Alle“ (`Entries` Option `when` upcoming|past).
 - Neue Einträge starten als Entwurf; „Speichern“ legt offline an, „Veröffentlichen“ stellt direkt online.
