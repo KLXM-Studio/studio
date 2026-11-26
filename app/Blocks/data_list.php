@@ -122,9 +122,15 @@ if ($vcands || !empty($d['visitor_search']) || $az) {
         if ($chosen) $o['where'] = array_merge((array) ($o['where'] ?? []), [$multi ? [$vn, 'in', $chosen] : [$vn, '=', $chosen[0]]]);
     }
 }
+// Menüpunkt aus Feldwerten (Core\Data\MenuEntries, Quelle „Werte von …“): ?feld=wert filtert die Übersicht auch ohne Filter-Schaltflächen
+$menuSrc = \Core\Data\MenuEntries::config($t)['source'] ?? '';
+if ($menuSrc !== '' && !isset($vfilters[$menuSrc]) && is_string($query[$menuSrc] ?? null) && ($msf = Tables::field($t, $menuSrc)) && isset(((array) ($msf['options'] ?? []))[$query[$menuSrc]])) {
+    $o['where'] = array_merge((array) ($o['where'] ?? []), [[$menuSrc, '=', (string) $query[$menuSrc]]]);
+    $menuFilter = Tables::optionLabel($msf, (string) $query[$menuSrc]);
+}
 $vq = $vsearch && is_string($query['q'] ?? null) ? trim(mb_substr($query['q'], 0, 80)) : '';
 if ($vq !== '') { $o['q'] = $vq; $o['q_public'] = true; }   // Besucher-Suche: nie in „Nie öffentlich“-Feldern
-$filtering = $vq !== '' || array_filter(array_column($vfilters, 'sel'), fn($v) => $v !== null && $v !== []);
+$filtering = $vq !== '' || !empty($menuFilter) || array_filter(array_column($vfilters, 'sel'), fn($v) => $v !== null && $v !== []);
 if ($az && ($tf = (string) ($t['settings']['title_field'] ?? '')) !== '') { $o['sort'] = $tf; $o['dir'] = 'asc'; }
 $o = \Core\Data\Roles::listQuery($t, $d, $extend($o));   // Adressbuch: beendete Funktionen schon in der Abfrage (Blättern, Anzahl)
 // „In deiner Nähe“ (Core\Data\Nearby): mit Eingabe des Besuchers zuerst das zuständige Gebiet, dann im Umkreis – ohne Blättern

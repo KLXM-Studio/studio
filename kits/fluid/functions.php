@@ -281,7 +281,8 @@ function fluid_nav_fit(array $menu, ?array $cta, array $langs, bool $search, str
 /** Seiten-ID für Menü-Vergleiche */
 function fluid_is_current(array $m): bool
 {
-    return is_int($m['id']) && $m['id'] === (int) (app()->currentPage['id'] ?? 0);
+    // Seiten: aktuelle Seite; Punkte aus Datentabellen (Core\Data\MenuEntries: Eintrag „e-…“, Feldwert „v-…“): ihr Merkmal „active“
+    return is_int($m['id']) ? $m['id'] === (int) (app()->currentPage['id'] ?? 0) : !empty($m['active']);
 }
 
 /** Menüpunkte mit Unterseiten: „split“ (Link + Pfeil, Standard), „hover“ (dazu Öffnen beim Überfahren), „overview“ (Klick öffnet, mit „Übersicht“) */

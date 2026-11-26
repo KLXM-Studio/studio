@@ -291,7 +291,7 @@ function nature_nav_fit(array $menu, ?array $cta, array $langs, bool $search, st
 /** Seiten-ID für Menü-Vergleiche */
 function nature_is_current(array $m): bool
 {
-    return is_int($m['id']) && $m['id'] === (int) (app()->currentPage['id'] ?? 0);
+    return is_int($m['id']) ? $m['id'] === (int) (app()->currentPage['id'] ?? 0) : !empty($m['active']);   // Datentabellen-Punkte (Core\Data\MenuEntries)
 }
 
 /** Menüpunkte mit Unterseiten: „split“ (Link + Pfeil, Standard), „hover“ (dazu Öffnen beim Überfahren), „overview“ (Klick öffnet, mit „Übersicht“) */

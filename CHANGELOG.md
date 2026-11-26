@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Menü aus Feldwerten
+- Tabellen-Einstellung „Einträge im Menü zeigen“ → „Menüpunkte sind“: Einträge (wie bisher) oder die Werte eines Auswahlfeldes, z. B. Bereich/Thema, Kategorie oder Format. Ein Punkt öffnet die Übersicht mit diesem Filter und ist dort aktiv; „Zwei Ebenen“ zeigt die Einträge darunter. Gilt für alle Datentabellen und Kits.
+
 ### Schnell-Glossar: Erklärung mit Formatierung
 - Im Werkzeug „Glossar“ auf der Website ist die ausführliche Erklärung ein kleiner Editor (fett, kursiv, Aufzählung, Link; Rich-Text-Filter des Kerns); nach dem Anlegen führt „Im Formular weiter bearbeiten“ zum vollständigen Eintrag.
 

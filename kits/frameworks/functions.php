@@ -155,7 +155,7 @@ function frameworks_menu(): array
 
 function frameworks_is_current(array $m): bool
 {
-    return is_int($m['id']) && $m['id'] === (int) (app()->currentPage['id'] ?? 0);
+    return is_int($m['id']) ? $m['id'] === (int) (app()->currentPage['id'] ?? 0) : !empty($m['active']);   // Datentabellen-Punkte (Core\Data\MenuEntries)
 }
 
 // ------------------------------------------------------------------ Bausteine für Vorlagen

@@ -96,7 +96,7 @@ function starter_menu(): array
 /** Ist der Menüpunkt die aufgerufene Seite? (für aria-current="page") */
 function starter_is_current(array $m): bool
 {
-    return is_int($m['id']) && $m['id'] === (int) (app()->currentPage['id'] ?? 0);
+    return is_int($m['id']) ? $m['id'] === (int) (app()->currentPage['id'] ?? 0) : !empty($m['active']);   // Datentabellen-Punkte (Core\Data\MenuEntries)
 }
 
 // ------------------------------------------------------------------ Bausteine für Blöcke

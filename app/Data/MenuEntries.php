@@ -29,8 +29,19 @@ final class MenuEntries
     public static function validate(array $in): array
     {
         $mode = (string) ($in['mode'] ?? '');
+        $src = (string) ($in['source'] ?? '');
         return ['mode' => isset(self::MODES[$mode]) ? $mode : '', 'limit' => max(1, min(50, (int) ($in['limit'] ?? self::DEFAULTS['limit']) ?: self::DEFAULTS['limit'])),
-            'numbers' => !empty($in['numbers'])];
+            'numbers' => !empty($in['numbers'])] + (preg_match('~^[a-z][a-z0-9_]{0,40}$~', $src) ? ['source' => $src] : []);   // source nur, wenn gesetzt (Bestand unverändert)
+    }
+
+    /** Felder, deren Werte als Menüpunkte taugen (Auswahl, Mehrfachauswahl – z. B. Bereich/Thema, Kategorie, Schlagworte) */
+    public static function sourceFields(array $t): array
+    {
+        $out = [];
+        foreach ((array) ($t['fields'] ?? []) as $f) {
+            if (in_array($f['type'] ?? '', ['select', 'multiselect'], true) && !empty($f['options'])) $out[(string) $f['name']] = (string) ($f['label'] ?? $f['name']);
+        }
+        return $out;
     }
 
     public static function config(array $t): array
@@ -82,6 +93,7 @@ final class MenuEntries
     {
         $cfg = self::config($t);
         if ($cfg['mode'] === '') return [];
+        if (($cfg['source'] ?? '') !== '' && isset(self::sourceFields($t)[$cfg['source']])) return self::valueItems($t, $cfg);
         $ctx = app()->entry;
         $curId = $ctx && ($ctx['table']['handle'] ?? '') === $t['handle'] ? (int) $ctx['entry']['id'] : 0;
         $skip = function (array $e) use ($t, $menuPageIds): bool {
@@ -117,6 +129,44 @@ final class MenuEntries
             $href = Entries::href($t, $e);
             if (!$href) continue;
             $out[] = ['id' => 'e-' . (int) $e['id'], 'label' => Entries::title($t, $e), 'href' => $href, 'active' => (int) $e['id'] === $curId, 'children' => [], 'draft' => false];
+        }
+        return $out;
+    }
+
+    /**
+     * Menüpunkte aus den Werten eines Feldes: je Option, die in veröffentlichten Einträgen vorkommt (Reihenfolge wie im Feld), ein Link
+     * auf die Übersichtsseite mit vorbelegtem Filter – derselbe Parameter wie die Filter-Schaltflächen der Datenliste (?feld=wert).
+     * „Zwei Ebenen“: darunter die Einträge mit diesem Wert. Aktiv: Übersicht mit diesem Filter bzw. Detailseite eines Eintrags mit dem Wert.
+     */
+    private static function valueItems(array $t, array $cfg): array
+    {
+        $field = $cfg['source'];
+        $fd = Tables::field($t, $field);
+        $page = self::overviewPage($t);
+        if (!$fd || !$page) return [];
+        $base = Pages::url($page);
+        $o = ['status' => 'published'];
+        $counts = (array) (Entries::facets($t, [$field], $o)['counts'][$field] ?? []);
+        $req = app()->request;
+        $onOverview = $req && rtrim((string) $req->path, '/') === rtrim((string) parse_url($base, PHP_URL_PATH), '/');
+        $sel = $onOverview ? (array) ($req->query[$field] ?? []) : [];
+        $ctx = app()->entry;
+        $entryVals = $ctx && ($ctx['table']['handle'] ?? '') === $t['handle'] ? array_map('strval', (array) (is_array($ctx['entry'][$field] ?? null) ? $ctx['entry'][$field] : (json_decode((string) ($ctx['entry'][$field] ?? ''), true) ?? [$ctx['entry'][$field] ?? '']))) : [];
+        $curId = $entryVals ? (int) $ctx['entry']['id'] : 0;
+        $out = [];
+        foreach ((array) $fd['options'] as $key => $label) {
+            $key = (string) $key;
+            if ((int) ($counts[$key] ?? 0) < 1) continue;
+            if (count($out) >= $cfg['limit']) break;
+            $kids = [];
+            if ($cfg['mode'] === 'two') {
+                foreach (Exposure::publicRows($t, Entries::query($t, $o + ['where' => [[$field, '=', $key]], 'limit' => $cfg['limit']])) as $e) {
+                    if (!($href = Entries::href($t, $e))) continue;
+                    $kids[] = ['id' => 'e-' . (int) $e['id'], 'label' => Entries::title($t, $e), 'href' => $href, 'active' => (int) $e['id'] === $curId, 'children' => [], 'draft' => false];
+                }
+            }
+            $out[] = ['id' => 'v-' . $field . '-' . $key, 'label' => Tables::optionLabel($fd, $key), 'href' => $base . '?' . http_build_query([$field => $key]),
+                'active' => in_array($key, array_map('strval', $sel), true) || in_array($key, $entryVals, true), 'children' => $kids, 'draft' => false];
         }
         return $out;
     }

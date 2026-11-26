@@ -10074,4 +10074,7 @@ return [
     'Fett' => 'Bold',
     'Im Formular weiter bearbeiten' => 'Continue in the form',
     'Kursiv' => 'Italic',
+    'Menüpunkte sind' => 'Menu items are',
+    'Werte von „{field}“' => 'Values of “{field}”',
+    '„Werte von …“: je vorkommender Option ein Punkt (z. B. Bereiche, Kategorien, Formate), der die Übersicht mit diesem Filter öffnet – wie ein Klick auf die Filter-Schaltfläche. „Zwei Ebenen“ zeigt die Einträge darunter.' => '“Values of …”: one item per option in use (e.g. areas, categories, formats) that opens the overview with this filter – like clicking the filter button. “Two levels” shows the entries below.',
 ];

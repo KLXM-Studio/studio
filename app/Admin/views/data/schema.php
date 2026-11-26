@@ -235,6 +235,14 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
           <select id="t-menu-entries" name="settings[menu_entries][mode]">
             <?php foreach (\Core\Data\MenuEntries::MODES as $mk => $ml): ?><option value="<?= e($mk) ?>"<?= $me['mode'] === $mk ? ' selected' : '' ?>><?= e(__($ml)) ?></option><?php endforeach; ?>
           </select></div>
+        <?php if ($table && ($srcF = \Core\Data\MenuEntries::sourceFields($table))): // Quelle: Einträge oder Werte eines Auswahlfeldes ?>
+        <div class="f f--inline"><label for="t-menu-source"><?= e(__('Menüpunkte sind')) ?></label>
+          <p class="f-help"><?= e(__('„Werte von …“: je vorkommender Option ein Punkt (z. B. Bereiche, Kategorien, Formate), der die Übersicht mit diesem Filter öffnet – wie ein Klick auf die Filter-Schaltfläche. „Zwei Ebenen“ zeigt die Einträge darunter.')) ?></p>
+          <select id="t-menu-source" name="settings[menu_entries][source]">
+            <option value=""><?= e(__('Einträge')) ?></option>
+            <?php foreach ($srcF as $fk => $fl): ?><option value="<?= e($fk) ?>"<?= ($me['source'] ?? '') === $fk ? ' selected' : '' ?>><?= e(__('Werte von „{field}“', ['field' => $fl])) ?></option><?php endforeach; ?>
+          </select></div>
+        <?php endif; ?>
         <div class="f f--inline"><label for="t-menu-limit"><?= e(__('Höchstens … Einträge je Ebene')) ?></label>
           <input type="number" id="t-menu-limit" name="settings[menu_entries][limit]" min="1" max="50" value="<?= (int) $me['limit'] ?>"></div>
         <?= $sw('settings[menu_entries][numbers]', $me['numbers'], __('Kapitelnummer vor dem Menüpunkt (Wissen)')) ?>
