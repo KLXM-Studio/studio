@@ -373,11 +373,14 @@ final class McpController
         $add('restore_revision', 'Version wiederherstellen', 'Eine frühere Version als Entwurf wiederherstellen.',
             $schema(['page' => $page, 'revision_id' => $int('Versions-ID aus list_revisions')], ['page', 'revision_id']), $rw, true,
             fn($a) => $s->restore($a['page'], (int) $a['revision_id']));
-        $add('upload_media', 'Datei hochladen', 'Bild (JPG/PNG/WebP/GIF), PDF, Video (MP4) oder Audio (MP3/M4A) per Base64 hochladen. Bilder brauchen einen aussagekräftigen Alt-Text (Pflicht, mind. 3 Zeichen) – nur rein schmückende Bilder mit decorative = true.',
-            $schema(['filename' => $str('Dateiname mit Endung'), 'base64' => $str('Dateiinhalt Base64'), 'alt' => $str('Alt-Text (Bildbeschreibung) – Pflicht bei Bildern'),
+        $add('upload_media', 'Datei hochladen', 'Bild (JPG/PNG/WebP/GIF), PDF, Video (MP4) oder Audio (MP3/M4A) hochladen – per Base64 oder als Adresse (url, Bilder und PDF; der Server lädt die Datei selbst). Bilder brauchen einen aussagekräftigen Alt-Text (Pflicht, mind. 3 Zeichen) – nur rein schmückende Bilder mit decorative = true. Titel und Fotonachweis (credit) werden mit übernommen.',
+            $schema(['filename' => $str('Dateiname mit Endung (bei url optional)'), 'base64' => $str('Dateiinhalt Base64 – oder url angeben'), 'url' => $str('Öffentliche Adresse der Datei (https://…) statt base64'),
+                'alt' => $str('Alt-Text (Bildbeschreibung) – Pflicht bei Bildern'), 'credit' => $str('Fotonachweis, z. B. „Foto: Erika Musterfrau / Pixabay“'),
                 'decorative' => ['type' => 'boolean', 'description' => 'Rein dekorativ: Bild ohne Aussage (dann ohne Alt-Text) bzw. Hintergrund-/Stimmungsvideo ohne Informationsgehalt (braucht keine Untertitel, wird für Screenreader ausgeblendet)'], 'title' => $str('Anzeigename, z. B. für Downloads'),
-                'tags' => $str('Tags, mit Komma getrennt'), 'collection' => $int('in diese Sammlung legen (ID)')], ['filename', 'base64']),
-            $rw, true, fn($a) => $s->mediaUploadBase64($a['filename'], $a['base64'], (string) ($a['alt'] ?? ''), $a));
+                'tags' => $str('Tags, mit Komma getrennt'), 'collection' => $int('in diese Sammlung legen (ID)')], []),
+            $rw, true, fn($a) => trim((string) ($a['url'] ?? '')) !== ''
+                ? $s->mediaUploadUrl(trim((string) $a['url']), (string) ($a['filename'] ?? ''), (string) ($a['alt'] ?? ''), $a)
+                : $s->mediaUploadBase64((string) ($a['filename'] ?? '') ?: throw new \Core\Api\ApiError(422, 'filename fehlt.'), (string) ($a['base64'] ?? '') ?: throw new \Core\Api\ApiError(422, 'base64 oder url angeben.'), (string) ($a['alt'] ?? ''), $a));
         $add('update_media', 'Medien-Infos ändern', 'Alt-Text, Titel, Fotonachweis, Tags, Sammlungen, Fokuspunkt oder Bildanpassung einer Datei ändern.',
             $schema(['id' => $int('Medien-ID'), 'alt' => $str('Alt-Text'), 'decorative' => ['type' => 'boolean', 'description' => 'Rein dekorativ: Bild ohne Aussage (dann ohne Alt-Text) bzw. Hintergrund-/Stimmungsvideo ohne Informationsgehalt (braucht keine Untertitel, wird für Screenreader ausgeblendet)'], 'title' => $str('Anzeigename'), 'credit' => $str('Fotonachweis'),
                 'tags' => $str('Tags, mit Komma getrennt (ersetzt alle)'), 'collections' => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Sammlungs-IDs (ersetzt alle)'],

@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### MCP: Bilder per Adresse hochladen
+- `upload_media` nimmt statt Base64 auch eine öffentliche Adresse (`url`, Bilder und PDF) und übernimmt neben Alt-Text und Titel jetzt auch den Fotonachweis (`credit`).
+
 ### Rückmeldungen aus dem Testsystem (Kennzahlen, Pakete, Text + Bild, Blöcke, Aufgaben, Suche)
 - Kennzahlen: „Höchstens nebeneinander“ (2–5); Werte brechen nicht mehr mitten im Wert um, Karten mit etwas breiterer Mindestbreite.
 - Wissensbereich: Inhalte nutzen die volle Breite der Kapitelspalte (Karten und Kacheln standen links, rechts blieb Platz).

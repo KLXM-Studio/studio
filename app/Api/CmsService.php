@@ -956,6 +956,26 @@ final class CmsService
         return Media::toJson($m);
     }
 
+    /**
+     * Datei von einer Adresse holen und in die Mediathek legen (MCP upload_media mit url statt base64) – öffentliche https-Adressen,
+     * Bilder und PDF, höchstens die Upload-Grenze der Website; Abruf über Core\Http\Fetch (keine internen Adressen).
+     */
+    public function mediaUploadUrl(string $url, string $filename = '', string $alt = '', array $opt = []): array
+    {
+        if (!preg_match('~^https?://~i', $url)) throw new ApiError(422, 'Bitte eine vollständige Adresse (https://…) angeben.');
+        try {
+            $r = \Core\Http\Fetch::get($url, ['timeout' => 30, 'max' => Media::maxBytes(), 'kind' => 'file']);
+        } catch (\Throwable $e) {
+            throw new ApiError(422, 'Datei nicht abrufbar: ' . mb_strimwidth($e->getMessage(), 0, 160, '…'));
+        }
+        if ($filename === '') $filename = basename((string) parse_url((string) ($r['url'] ?? $url), PHP_URL_PATH)) ?: 'datei';
+        if (!str_contains($filename, '.')) {
+            $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif', 'application/pdf' => 'pdf'][strtolower(trim(explode(';', (string) ($r['type'] ?? ''))[0]))] ?? '';
+            if ($ext !== '') $filename .= '.' . $ext;
+        }
+        return $this->mediaUploadBase64($filename, base64_encode((string) $r['body']), $alt, $opt);
+    }
+
     /** Uploads gelten sofort (auch im Modus „zur Freigabe“) – protokolliert werden sie trotzdem */
     private function logUpload(array $m): void
     {
@@ -978,6 +998,7 @@ final class CmsService
         return [
             'decorative' => !empty($o['decorative']) && $o['decorative'] !== 'false',
             'title' => (string) ($o['title'] ?? ''), 'tags' => $o['tags'] ?? '', 'collection' => (int) ($o['collection'] ?? 0),
+            'credit' => (string) ($o['credit'] ?? ''),   // Fotonachweis (z. B. „Foto: Erika Musterfrau / Pixabay“)
         ];
     }
 
