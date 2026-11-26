@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Varianten mit Schemabild
+- Die Auswahl „Variante“ in der Seitenleiste erscheint als Kacheln mit kleiner Strichzeichnung des Aufbaus (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
+
 ### Auswahlfenster für Einträge
 - Seitenleiste „Eintrag bearbeiten“ auf der Website: Breite per Ziehen am linken Rand (Pfeiltasten, Doppelklick = Standard, gemerkt), Inhalt passt sich der Breite an.
 - Verknüpfungsfelder zeigen gewählte Einträge als Liste mit Datum bzw. Kategorie; Reihenfolge per Ziehen (Alt+Pfeil), sie wird gespeichert.

@@ -120,7 +120,7 @@ final class EditorController extends AdminController
             $variants = $def['variants'];
             if (!empty($r->post['nested']) && is_array($nv = app()->theme->nestableVariants($type))) $variants = array_intersect_key($variants, array_flip($nv));
             $html .= \Core\Fields::renderField(['name' => 'variant', 'label' => 'Variante', 'type' => 'select', 'required' => true,
-                'options' => $variants], isset($variants[$data['variant'] ?? '']) ? $data['variant'] : array_key_first($variants), [], 'f');
+                'options' => $variants, 'previews' => \Core\Blocks\VariantPreview::map($def, $variants)], isset($variants[$data['variant'] ?? '']) ? $data['variant'] : array_key_first($variants), [], 'f');
         }
         // Detailseiten-Vorlage: Felder lassen sich an den Datensatz binden
         if ($ctx) {

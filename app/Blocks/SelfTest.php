@@ -49,6 +49,7 @@ final class SelfTest
             $t->dataClamp();
             $t->firstBlock();
             $t->picker();
+            $t->variantPreviews();
             $t->peopleSource();
             $t->subpages();
             $t->listFilter();
@@ -1098,6 +1099,20 @@ Zeilen*", '*Wort *', '***'];
     }
 
     /** Blockauswahl (Core\Blocks\Picker): Beschreibung mit Rückfall, Vorschauen mit Rückfall und Aliasen, optional für Kits */
+    /** Schemabilder der Varianten (Core\Blocks\VariantPreview): nur wenn jede Variante eines hat, Kit-Zuordnung geht vor */
+    private function variantPreviews(): void
+    {
+        $m = VariantPreview::map([], ['split' => 'A', 'left' => 'B', 'fullbleed' => 'C']);
+        $this->assert($m === ['split' => 'split', 'left' => 'split_rev', 'fullbleed' => 'cover'], 'Varianten-Bilder: Zuordnung nach Schlüssel');
+        $this->assert(VariantPreview::map([], ['split' => 'A', 'xyz_unbekannt' => 'B']) === null, 'Varianten-Bilder: eine unbekannte Variante → Liste');
+        $this->assert(VariantPreview::map(['variant_previews' => ['xyz_unbekannt' => 'grid']], ['split' => 'A', 'xyz_unbekannt' => 'B']) === ['split' => 'split', 'xyz_unbekannt' => 'grid'], 'Varianten-Bilder: Kit ordnet zu');
+        $this->assert(VariantPreview::map([], ['grid' => 'A', 'icons' => 'B']) === null, 'Varianten-Bilder: alle gleich → Liste');
+        $svg = VariantPreview::svg('split');
+        $this->assert(str_starts_with($svg, '<svg') && str_contains($svg, 'aria-hidden="true"') && !str_contains($svg, 'style='), 'Varianten-Bilder: SVG dekorativ, ohne style-Attribut (CSP)');
+        $html = \Core\Fields::renderField(['name' => 'variant', 'label' => 'Variante', 'type' => 'select', 'required' => true, 'options' => ['split' => 'A', 'left' => 'B'], 'previews' => $m], 'left', [], 'f');
+        $this->assert(str_contains($html, 'f-tiles--previews') && str_contains($html, 'data-value="left" aria-pressed="true"') && str_contains($html, '<select'), 'Varianten-Bilder: Kacheln + Auswahlliste als Rückfall');
+    }
+
     private function picker(): void
     {
         $this->assert(Picker::description(['description' => 'Kurz.', 'help' => 'Lang. Mehr.']) === 'Kurz.', 'Beschreibung: description vor help');

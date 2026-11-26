@@ -3395,6 +3395,22 @@ html.adm-ui[data-theme=dark] :is(.us-tile,.us-role-card){box-shadow:0 0 0 .5px r
 .f-tile[aria-pressed=true] .f-tile__c{background:var(--adm-a);box-shadow:none}
 .f-tile__c--w2{flex-grow:2}.f-tile__c--w3{flex-grow:3}.f-tile__c--w4{flex-grow:4}
 .f-tile__label{font-variant-numeric:tabular-nums}
+.f-tiles--previews.is-ready{grid-template-columns:repeat(auto-fill,minmax(min(100%,8.5rem),1fr))}
+.f-tiles--previews .f-tile{align-content:start;padding:8px 8px 7px}
+.f-tiles--previews .f-tile__label{text-align:center;line-height:1.25;text-wrap:balance}
+.f-tile__svg{display:block;width:100%;height:auto;aspect-ratio:64/40;border-radius:5px;background:var(--adm-fill,#F2F2F4)}
+.f-tile__svg .vp-img{fill:color-mix(in srgb,var(--adm-a) 26%,var(--adm-surface))}
+.f-tile__svg .vp-img2{fill:color-mix(in srgb,var(--adm-a) 48%,var(--adm-surface))}
+.f-tile__svg .vp-card{fill:var(--adm-surface);stroke:color-mix(in srgb,var(--adm-a) 40%,transparent);stroke-width:.8}
+.f-tile__svg .vp-head{fill:color-mix(in srgb,var(--adm-ink) 70%,transparent)}
+.f-tile__svg .vp-text{fill:color-mix(in srgb,var(--adm-ink) 32%,transparent)}
+.f-tile__svg .vp-btn{fill:var(--adm-a)}
+.f-tile__svg .vp-on{fill:#fff}
+.f-tile__svg .vp-dot{fill:color-mix(in srgb,var(--adm-a) 30%,var(--adm-surface));stroke:var(--adm-a);stroke-width:.8}
+.f-tile__svg .vp-line{stroke:color-mix(in srgb,var(--adm-ink) 35%,transparent);stroke-width:.8}
+.f-tile__svg .vp-knob{fill:#fff;stroke:var(--adm-a);stroke-width:1}
+.f-tile[aria-pressed=true] .f-tile__svg{background:color-mix(in srgb,var(--adm-a) 10%,var(--adm-surface))}
+@media (forced-colors:active){.f-tile__svg :is(rect,circle){forced-color-adjust:auto;stroke:CanvasText;stroke-width:.6}}
 @media (forced-colors:active){.f-tile__c{border:1px solid CanvasText}.f-tile[aria-pressed=true]{outline:2px solid Highlight}}
 
 /* Mediathek: Papierkorb, doppelte/große Dateien, Bildrechte (resources/js/_media.js singleExtras), ZIP, Upload mit Pflichtangaben */

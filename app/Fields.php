@@ -802,7 +802,7 @@ final class Fields
                 . '<input type="hidden" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '"></div>',
             'select' => !empty($f['relation'])
                 ? '<span class="f-relselect" data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '"' . self::pickerAttrs($f['relation']) . '>' . self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req) . '</span>'
-                : (!empty($f['tiles']) ? self::renderTiles($id, $inputName, self::options($f), (array) $f['tiles'], $v, $aria) : self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req)),
+                : (!empty($f['tiles']) || !empty($f['previews']) ? self::renderTiles($id, $inputName, self::options($f), (array) ($f['tiles'] ?? []), $v, $aria, (array) ($f['previews'] ?? [])) : self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req)),
             'color' => !empty($f['transparent'])
                 ? '<span class="f-color' . ($v === 'transparent' ? ' is-transparent' : '') . '"><input type="color" value="' . e($v && $v !== 'transparent' ? $v : '#FFFFFF') . '" aria-hidden="true" tabindex="-1" data-color-for="' . $id . '">'
                     . '<input type="text" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '" maxlength="11" pattern="#[0-9A-Fa-f]{6}|transparent" spellcheck="false"' . $aria . '>'
@@ -942,15 +942,21 @@ final class Fields
      * Auswahl als Kacheln mit Mini-Raster ('tiles' => [Wert => [Gewichte je Spalte]], z. B. Layout-Raster): Schaltflächen setzen das
      * (ausgeblendete) Auswahlfeld, das weiter gesendet wird – resources/js/_tiles.js. Ohne JavaScript bleibt das Auswahlfeld sichtbar.
      */
-    private static function renderTiles(string $id, string $name, array $opts, array $tiles, string $v, string $aria): string
+    /** Auswahl als Kacheln: 'tiles' (Spalten-Raster, z. B. Layout) oder 'previews' (Schemabild je Wert, Core\Blocks\VariantPreview) */
+    private static function renderTiles(string $id, string $name, array $opts, array $tiles, string $v, string $aria, array $previews = []): string
     {
-        $h = '<div class="f-tiles" data-tiles="' . $id . '" role="group">';
+        $h = '<div class="f-tiles' . ($previews ? ' f-tiles--previews' : '') . '" data-tiles="' . $id . '" role="group">';
         foreach ($opts as $k => $l) {
             $k = (string) $k;
-            $cols = '';
-            foreach ((array) ($tiles[$k] ?? [1]) as $w) $cols .= '<span class="f-tile__c f-tile__c--w' . max(1, min(4, (int) $w)) . '"></span>';
+            if (isset($previews[$k])) {
+                $pic = \Core\Blocks\VariantPreview::svg((string) $previews[$k]);
+            } else {
+                $cols = '';
+                foreach ((array) ($tiles[$k] ?? [1]) as $w) $cols .= '<span class="f-tile__c f-tile__c--w' . max(1, min(4, (int) $w)) . '"></span>';
+                $pic = '<span class="f-tile__grid" aria-hidden="true">' . $cols . '</span>';
+            }
             $h .= '<button type="button" class="f-tile" data-value="' . e($k) . '" aria-pressed="' . ($k === $v ? 'true' : 'false') . '" title="' . e((string) $l) . '">'
-                . '<span class="f-tile__grid" aria-hidden="true">' . $cols . '</span><span class="f-tile__label">' . e((string) $l) . '</span></button>';
+                . $pic . '<span class="f-tile__label">' . e((string) $l) . '</span></button>';
         }
         return $h . '</div><div class="f-tiles__select">' . self::renderSelect($id, $name, $opts, $v, $aria, false) . '</div>';
     }

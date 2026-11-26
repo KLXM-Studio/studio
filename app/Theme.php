@@ -155,7 +155,7 @@ final class Theme
             if (!is_array($add) || !isset($def['blocks'][$type]) || !is_array($def['blocks'][$type])) continue;
             $b = $def['blocks'][$type];
             foreach ($add as $k => $v) {
-                if (in_array($k, ['variants', 'variant_help', 'uses', 'assets'], true)) {
+                if (in_array($k, ['variants', 'variant_help', 'variant_previews', 'uses', 'assets'], true)) {
                     $b[$k] = array_replace((array) ($b[$k] ?? []), (array) $v);
                 } elseif ($k === 'fields') {
                     $fields = (array) ($b['fields'] ?? []);
