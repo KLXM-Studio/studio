@@ -603,6 +603,8 @@ final class Tables
         // Version des Grundschemas (nur additiv; data:convert/Upgrade ergänzen neue Grundfelder) und Stand einer Umwandlung
         if (Kinds::isSpecial($kind)) $settings['kind_version'] = $kindVersion;
         // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
+        // KI-Vorschläge für Schlagworte/Kategorien (Core\AI\Classify): Standard an – nur „aus“ wird gespeichert
+        if (array_key_exists('ai_classify', $s) ? empty($s['ai_classify']) : (($existing['settings']['ai_classify'] ?? null) === false)) $settings['ai_classify'] = false;
         // Auswahlliste (Core\Data\OptionSource): nur über „Felder & Einstellungen“ pflegbar – nur gespeichert, wenn gesetzt
         if (!empty($s['list_locked'])) $settings['list_locked'] = true;
         // Einträge im Menü unter der Übersichtsseite (Core\Data\MenuEntries) – nur gespeichert, wenn gesetzt (Bestand bleibt unverändert)

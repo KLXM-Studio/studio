@@ -239,3 +239,16 @@ html.adm-ui .kia-chk__i{color:var(--adm-on-ink,#fff)}
 .kia-tile--off .kia-tile__st{background:var(--adm-fill-2,var(--adm-fill));color:var(--adm-t2)}
 .kia-tile--off .kia-tile__ico{background:var(--adm-fill);color:var(--adm-t2)}
 .kia-tile--hot .kia-tile__st{background:var(--adm-warn-bg,#fff4d6);color:var(--adm-warn,#8a5a00)}
+
+/* Schlagworte & Kategorien vorschlagen (Core\AI\Classify): Chips je Feld – Formular und Prüfliste */
+.kia-cls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}
+.kia-cls__l{flex:1 0 100%;font-size:12px;font-weight:700;color:var(--adm-t2)}
+.kia-chip{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:2px 12px;border-radius:999px;border:1px solid var(--kia-line);background:var(--adm-card);color:var(--adm-ink);font:600 13px/1.2 var(--adm-font);cursor:pointer}
+.kia-chip:hover{background:var(--kia-bg)}
+.kia-chip.is-on,.kia-chip[aria-pressed=true]{background:var(--kia-bg);border-color:var(--kia);color:var(--kia)}
+.kia-chip.is-on::before{content:"✓";font-weight:700}
+.kia-chip small{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--kia)}
+.kia-chip--check input{margin:0}
+.kia-chip--check:has(input:checked){background:var(--kia-bg);border-color:var(--kia)}
+.kia-cls-table td{vertical-align:top}
+.kia-cls-table td:first-child{width:38%}

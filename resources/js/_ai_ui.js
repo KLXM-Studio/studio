@@ -539,6 +539,27 @@ function initPanels(scope) {
       } catch (err) { if (!isAbort(err)) errorBox(out, err.message); }
       finally { B.done(); b.disabled = false; }
     });
+    // Schlagworte & Kategorien (Core\AI\Classify): Chips je Feld – Klick übernimmt ins Formular, nichts automatisch
+    $('[data-kia-classify]', card)?.addEventListener('click', async e => {
+      const b = e.currentTarget; b.disabled = true; out.innerHTML = '';
+      const B = busy(out);
+      try {
+        const r = await api('/classify', { entry: { table: c.table, id: c.id }, text: formText(''), lang: c.lang }, B.signal);
+        out.innerHTML = `<h3 class="kia-h3">${esc(t('Schlagworte & Kategorien'))} <span class="kia-badge">${esc(t('KI-Vorschlag – bitte prüfen'))}</span></h3>`
+          + r.fields.map(f => `<div class="kia-cls" data-field="${esc(f.name)}" data-kind="${esc(f.kind)}"><span class="kia-cls__l">${esc(f.label)}</span>`
+            + (f.suggestions.length ? f.suggestions.map(s => `<button type="button" class="kia-chip${s.set ? ' is-on' : ''}" aria-pressed="${s.set}" data-v="${esc(s.value)}">${esc(s.label)}${s.new ? ` <small>${esc(t('neu'))}</small>` : ''}</button>`).join('') : `<span class="adm-muted">${esc(t('kein Vorschlag'))}</span>`)
+            + '</div>').join('')
+          + `<p class="adm-muted kia-small">${esc(t('Klick übernimmt ins Formular – erst „Speichern“ macht es wirksam.'))}</p>`;
+      } catch (err) { if (!isAbort(err)) errorBox(out, err.message); }
+      finally { B.done(); b.disabled = false; }
+    });
+    out?.addEventListener('click', ev => {
+      const chip = ev.target.closest('.kia-cls .kia-chip'); if (!chip || chip.tagName !== 'BUTTON' || chip.getAttribute('aria-pressed') === 'true') return;
+      const row = chip.closest('.kia-cls'), name = `f[${row.dataset.field}]`, v = chip.dataset.v;
+      if (!applyChoice(form, name, row.dataset.kind, v)) return;
+      if (row.dataset.kind === 'one') row.querySelectorAll('.kia-chip').forEach(x => { x.setAttribute('aria-pressed', 'false'); x.classList.remove('is-on'); });
+      chip.setAttribute('aria-pressed', 'true'); chip.classList.add('is-on');
+    });
     $('[data-kia-seo]', card)?.addEventListener('click', async e => {
       const b = e.currentTarget; b.disabled = true; out.innerHTML = '';
       const B = busy(out);
@@ -561,9 +582,61 @@ function initPanels(scope) {
 
   $$('[data-kia-translate-form]', scope).forEach(b => { if (b._kia) return; b._kia = true; b.addEventListener('click', () => translateForm(b)); });
   $$('[data-kia-seo-overview]', scope).forEach(initOverview);
+  $$('[data-kia-cls-review]', scope).forEach(initClassifyReview);
   initArea(scope);
   initSupport(scope);
   initSchema(scope);
+}
+
+/** Wert ins Formular übernehmen: Auswahl setzen, Ankreuzfeld anhaken, Schlagwort hinzufügen (Feld _tags.js) – true = geklappt */
+function applyChoice(form, name, kind, v) {
+  if (!form) return false;
+  if (kind === 'one') {
+    const sel = form.querySelector(`select[name="${CSS.escape(name)}"]`);
+    if (!sel) return false;
+    sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return sel.value === v;
+  }
+  const boxes = [...form.querySelectorAll(`input[type=checkbox][name="${CSS.escape(name + '[]')}"]`)];
+  const hit = boxes.find(x => x.value.toLowerCase() === v.toLowerCase());
+  const tags = form.querySelector(`[data-tags]:has(input[name="${CSS.escape(name + '[]')}"])`);
+  if (hit) { hit.checked = true; hit.dispatchEvent(new Event('change', { bubbles: true })); }
+  else if (kind === 'tags' && tags) {
+    const inp = tags.querySelector('.f-tags__in');
+    if (!inp) return false;
+    inp.value = v; inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  } else return false;
+  tags?.querySelector('[data-tags-list]')?.dispatchEvent(new Event('tags:repaint'));
+  return true;
+}
+
+/** Prüfliste für den Bestand (ai/classify.php): Vorschläge nacheinander holen, Chips als Ankreuzfelder, gesammelt übernehmen */
+function initClassifyReview(sec) {
+  if (sec._kia) return; sec._kia = true;
+  const go = $('[data-kia-cls-go]', sec), take = $('[data-kia-cls-take]', sec), st = $('[data-kia-cls-status]', sec);
+  const upd = () => { const n = $$('input[name^="pick["]:checked', sec).length; take.disabled = !n; take.textContent = t('Ausgewählte übernehmen') + (n ? ` (${n})` : ''); };
+  sec.addEventListener('change', upd);
+  go?.addEventListener('click', async () => {
+    go.disabled = true;
+    const rows = $$('[data-kia-cls-row]', sec);
+    let i = 0;
+    for (const row of rows) {
+      st.textContent = t('Vorschläge {i} von {n} …', { i: ++i, n: rows.length });
+      const cell = $('[data-kia-cls-out]', row);
+      try {
+        const r = await api('/classify', { entry: { table: sec.dataset.table, id: +row.dataset.id } });
+        cell.innerHTML = r.fields.filter(f => f.suggestions.some(s => !s.set)).map(f => `<div class="kia-cls"><span class="kia-cls__l">${esc(f.label)}</span>`
+          + f.suggestions.filter(s => !s.set).map(s => `<label class="kia-chip kia-chip--check"><input type="${f.kind === 'one' ? 'radio' : 'checkbox'}" name="pick[${row.dataset.id}][${esc(f.name)}][]" value="${esc(s.value)}"> ${esc(s.label)}${s.new ? ` <small>${esc(t('neu'))}</small>` : ''}</label>`).join('') + '</div>').join('')
+          || `<span class="adm-muted">${esc(t('kein weiterer Vorschlag'))}</span>`;
+      } catch (err) {
+        cell.innerHTML = `<span class="adm-error">${esc(err.message)}</span>`;
+        if (/Tageslimit|nicht verfügbar/.test(err.message)) break;
+      }
+    }
+    st.textContent = t('Fertig – bitte prüfen, anhaken und übernehmen.');
+    go.disabled = false;
+    upd();
+  });
 }
 
 /** SEO-Übersicht: Vorschläge für ausgewählte Zeilen erzeugen, prüfen, übernehmen */

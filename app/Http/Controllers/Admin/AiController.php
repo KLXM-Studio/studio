@@ -693,6 +693,58 @@ final class AiController extends AdminController
         }, 'summary');
     }
 
+    /** Schlagworte und Kategorien vorschlagen (Core\AI\Classify): POST {entry: {table, id}, text?, title?} */
+    public function classify(Request $r): Response
+    {
+        return $this->run($r, 'text', null, function () use ($r) {
+            $entry = (array) ($r->post['entry'] ?? []);
+            $t = Tables::findContent((string) ($entry['table'] ?? '')) ?? throw new HttpException(404);
+            if (!can('data.edit', $t['handle'])) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+            $e = isset($entry['id']) ? Entries::find($t, (int) $entry['id']) : null;
+            $text = mb_substr((string) ($r->post['text'] ?? ''), 0, 20000) ?: ($e ? Assist::entryText($t, $e) : '');
+            $title = $r->str('title') ?: ($e ? Entries::title($t, $e) : '');
+            $lang = Lang::valid($r->str('lang')) ? $r->str('lang') : Lang::norm($e['lang'] ?? null);
+            return \Core\AI\Classify::suggest($t, $title, $text, $lang, $e);
+        }, 'classify');
+    }
+
+    /** Prüfliste für den Bestand: Einträge einer Tabelle (ohne Zuordnung zuerst), Vorschläge holen, ausgewählte übernehmen */
+    public function classifyReview(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        $t = Tables::findContent($handle) ?? throw new HttpException(404);
+        if (!can('data.edit', $t['handle'])) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+        $fields = \Core\AI\Classify::fields($t);
+        if (!$fields || !Assist::available('text')) throw new HttpException(404);
+        $all = $r->str('alle') === '1';
+        $rows = [];
+        foreach (Entries::query($t, ['status' => 'all', 'limit' => 300]) as $e) {
+            if (\Core\Data\Shared::isForeign($t, $e)) continue;
+            // ohne „alle“: Einträge, bei denen mindestens ein Feld (Kategorie, Schlagworte …) noch leer ist
+            $gap = false;
+            foreach ($fields as $f) { $v = $e[$f['name']] ?? null; if (is_array($v) ? $v === [] : (string) $v === '') { $gap = true; break; } }
+            if ($all || $gap) $rows[] = $e;
+            if (count($rows) >= 25) break;
+        }
+        return $this->view('ai/classify', ['t' => $t, 'fields' => $fields, 'rows' => $rows, 'all' => $all]);
+    }
+
+    public function classifyApply(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        $t = Tables::findContent($handle) ?? throw new HttpException(404);
+        if (!can('data.edit', $t['handle'])) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+        $n = 0;
+        $errs = [];
+        foreach ((array) ($r->post['pick'] ?? []) as $id => $fields) {
+            if (!is_array($fields)) continue;
+            if (($err = \Core\AI\Classify::apply($t, (int) $id, $fields)) !== null) $errs[] = '#' . (int) $id . ': ' . $err; else $n++;
+        }
+        if ($n) Assist::log('classify', 'apply', __('Tabelle') . ' ' . $t['handle'], 'applied');
+        $back = '/admin/data/' . $t['handle'] . '/ki-vorschlaege' . ($r->str('alle') === '1' ? '?alle=1' : '');
+        return $errs ? $this->back($back, 'error', implode(' ', $errs)) : $this->back($back, 'success', $n === 1 ? __('1 Eintrag aktualisiert.') : __('{n} Einträge aktualisiert.', ['n' => $n]));
+    }
+
     public function supportReply(Request $r): Response
     {
         return $this->run($r, 'text', null, function () use ($r) {

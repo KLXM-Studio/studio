@@ -175,6 +175,28 @@ TXT;
         return ['system' => $system, 'user' => 'Titel: ' . $title . "\n\nText:\n" . $text, 'json' => false, 'max_tokens' => 300, 'temperature' => 0.3];
     }
 
+    /**
+     * Schlagworte und Kategorien vorschlagen (Core\AI\Classify): $fields = [['name', 'label', 'kind' => one|many|tags, 'options' => [key => label]]].
+     * Antwort JSON: {feldname: [Werte]} – bei one/many nur Schlüssel aus options, bei tags bevorzugt vorhandene, höchstens zwei neue.
+     */
+    public static function classify(string $title, string $text, array $fields, array $ctx): array
+    {
+        $system = self::head('Du ordnest Beiträge einer Website Kategorien und Schlagworten zu – wie eine sorgfältige Redaktion.', self::language($ctx['language'] ?? 'de'), $ctx) . "\n\n"
+            . "Regeln:\n- Nur zuordnen, was der Text eindeutig hergibt; lieber weniger als falsch.\n"
+            . "- one: der am besten passende Schlüssel aus der Liste (leer nur, wenn wirklich keiner passt). many: ein bis drei passende Schlüssel.\n"
+            . "- tags: drei bis sechs Schlagworte zu den Hauptthemen des Textes; vorhandene bevorzugen (genau so geschrieben), höchstens zwei neue, kurz (ein bis drei Wörter), Substantive, keine Wiederholung der Kategorie.\n"
+            . 'Antworte nur mit einem JSON-Objekt: Schlüssel = Feldname, Wert = Liste von Strings.';
+        $desc = [];
+        foreach ($fields as $f) {
+            $opts = array_slice((array) $f['options'], 0, 150, true);
+            $desc[] = '- ' . $f['name'] . ' (' . $f['label'] . ', ' . $f['kind'] . '): ' . ($f['kind'] === 'tags'
+                ? ($opts ? 'vorhandene Schlagworte: ' . implode(', ', array_values($opts)) : 'noch keine vorhandenen Schlagworte')
+                : implode('; ', array_map(fn($k, $v) => $k . ' = ' . $v, array_keys($opts), $opts)));
+        }
+        $user = "Felder:\n" . implode("\n", $desc) . "\n\nTitel: " . $title . "\n\nText:\n" . ($text !== '' ? $text : '(kein Text)');
+        return ['system' => $system, 'user' => $user, 'json' => true, 'max_tokens' => 500, 'temperature' => 0.2];
+    }
+
     /** Support: Antwortvorschlag für das Support-Team ($kb: [['title','body'], …] aus der Wissensdatenbank) */
     public static function supportReply(string $conversation, array $kb, array $ctx): array
     {

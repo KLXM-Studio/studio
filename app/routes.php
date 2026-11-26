@@ -324,6 +324,8 @@ return function (Router $r): void {
     $r->get('/admin/data/{handle}/vorlagen/neu', [Admin\ListTemplateController::class, 'editNew']);
     $r->post('/admin/data/{handle}/vorlagen/aktion', [Admin\ListTemplateController::class, 'action']);
     $r->get('/admin/data/{handle}/vorlagen/{key}', [Admin\ListTemplateController::class, 'edit']);
+    $r->get('/admin/data/{handle}/ki-vorschlaege', [Admin\AiController::class, 'classifyReview']);   // KI-Vorschläge für den Bestand (Core\AI\Classify)
+    $r->post('/admin/data/{handle}/ki-vorschlaege', [Admin\AiController::class, 'classifyApply']);
     $r->get('/admin/data/{handle}/schlagworte', [Admin\DataController::class, 'tags']);   // Schlagworte verwalten (Core\Data\Tags)
     $r->post('/admin/data/{handle}/schlagworte', [Admin\DataController::class, 'tagsSave']);
     $r->get('/admin/data/{handle}/new', [Admin\DataController::class, 'entryNew']);
@@ -448,6 +450,7 @@ return function (Router $r): void {
     $r->post('/admin/api/ai/alt', [$ai, 'alt']);
     $r->post('/admin/api/ai/alt-apply', [$ai, 'altApply']);
     $r->post('/admin/api/ai/summary', [$ai, 'summary']);
+    $r->post('/admin/api/ai/classify', [$ai, 'classify']);   // Schlagworte/Kategorien vorschlagen (Core\AI\Classify)
     $r->post('/admin/api/ai/support-reply', [$ai, 'supportReply']);
     $r->post('/admin/api/ai/kb-polish', [$ai, 'kbPolish']);
     $r->post('/admin/api/ai/schema', [$ai, 'schema']);

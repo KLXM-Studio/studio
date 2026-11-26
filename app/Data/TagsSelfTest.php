@@ -66,6 +66,11 @@ final class TagsSelfTest
             $r3 = Tags::remove($va, 'Wald');
             $ck($r3['changed'] === 2 && Entries::find($a, (int) $e2)['tags'] === ['Reh', 'Jagd'], 'Entfernen in allen Einträgen');
 
+            // KI-Vorschläge (Core\AI\Classify): passende Felder, Arten, vorhandene Schlagworte als Vorschlagsbasis
+            $cf = array_column(\Core\AI\Classify::fields(Tables::find($a['handle'])), 'kind', 'name');
+            $ck(($cf['tags'] ?? '') === 'tags' && ($cf['format'] ?? '') === 'many', 'KI-Vorschläge: Schlagworte und Mehrfachauswahl erkannt');
+            $ck(\Core\AI\Classify::apply(Tables::find($a['handle']), (int) $e1, ['tags' => ['Neu-KI'], 'unbekannt' => ['x']]) === null && in_array('Neu-KI', Entries::find($a, (int) $e1)['tags'], true), 'KI-Vorschlag übernehmen: ergänzt, unbekannte Felder fallen weg');
+
             // Mehrfachauswahl → Schlagworte (Werte = bisherige Beschriftungen)
             [$e4] = Entries::save($a, null, ['titel' => 'A4', 'format' => ['video', 'vortrag'], 'status' => 'published']);
             $in = Tables::toInput($a);

@@ -38,6 +38,7 @@ $cfg = [
   <p class="adm-muted"><?= e(__('Vorschläge füllen nur das Formular – bitte prüfen und dann speichern.')) ?></p>
   <div class="kia-actions">
     <?php if ($teaser): ?><button type="button" class="adm-btn adm-btn--small kia-btn" data-kia-teaser><span class="kia-spark" aria-hidden="true">✦</span> <?= e(__('„{field}“ vorschlagen', ['field' => $teaser['label']])) ?></button><?php endif; ?>
+    <?php if (\Core\AI\Classify::fields($t)): // Schlagworte und Kategorien (Core\AI\Classify) ?><button type="button" class="adm-btn adm-btn--small kia-btn" data-kia-classify><span class="kia-spark" aria-hidden="true">✦</span> <?= e(__('Schlagworte & Kategorien vorschlagen')) ?></button><?php endif; ?>
     <?php if ($cfg['route']): ?><button type="button" class="adm-btn adm-btn--small kia-btn" data-kia-seo><span class="kia-spark" aria-hidden="true">✦</span> <?= e(__('SEO-Vorschläge')) ?></button><?php endif; ?>
     <?php if ($translate): ?><button type="button" class="adm-btn adm-btn--small kia-btn" data-kia-translate-form="<?= e(json_encode($translate, JSON_UNESCAPED_UNICODE)) ?>"><span class="kia-spark" aria-hidden="true">✦</span> <?= e(__('Aus {lang} übersetzen', ['lang' => $translate['fromLabel']])) ?></button><?php endif; ?>
   </div>

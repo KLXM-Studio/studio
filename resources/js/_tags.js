@@ -80,6 +80,7 @@ function setup(fs) {
     const u = e.target.closest('[data-tag-use]');
     if (u) { add(u.dataset.tagUse); input.value = ''; hint.hidden = true; input.focus(); }
   });
+  list.addEventListener('tags:repaint', paint);   // von außen angehakt (KI-Vorschläge, _ai_ui.js)
   paint();
 }
 

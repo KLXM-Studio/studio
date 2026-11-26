@@ -53,6 +53,8 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
               }
               $subs[] = [url($base . '/display'), __('Anzeige auf dieser Website'), $cur === 'display'];
           }
+          // KI-Vorschläge für Schlagworte/Kategorien im Bestand (Core\AI\Classify)
+          if ($edit && \Core\AI\Classify::enabled($t)) $subs[] = [url($base . '/ki-vorschlaege'), __('KI: Schlagworte vorschlagen'), $cur === 'classify'];
           // Schlagworte (Core\Data\Tags): Verwaltung, sobald die Tabelle ein Feld mit freien Schlagworten hat
           if ($edit && array_filter($t['fields'], [\Core\Data\Tags::class, 'isFree'])) $subs[] = [url($base . '/schlagworte'), __('Schlagworte'), $cur === 'tags'];
           if ($schema && \Core\Data\Shared::canSchema($t)) $subs[] = [url($base . '/schema'), __('Felder & Einstellungen'), $cur === 'schema'];
