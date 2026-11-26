@@ -123,6 +123,7 @@
     <li><b>Ohne Bild</b> im Eintrag erscheint automatisch die schlichte Variante „kompakt“ – keine leere Bildfläche. Fehlt ein Feld (leer, gelöscht), bleibt die Stelle einfach leer.</li>
     <li>Der Fokuspunkt des Bildes aus der Mediathek gilt wie überall.</li>
     <li>Titel und Text lassen sich auf der Detailseite direkt im Einstieg ändern (wie andere Felder des Eintrags), dazu „Eintrag bearbeiten“ in der Leiste.</li>
+    <li>Die Seitenleiste <b>Eintrag bearbeiten</b> auf der Website bietet dieselben Felder und Funktionen wie die Verwaltung – Verknüpfungen suchen oder neu anlegen, Bildwerkzeuge, Wiederholungen, <b>Zeitplan</b> (Online ab / Offline ab) und <b>Auf der Startseite hervorheben</b>, auch beim Anlegen.</li>
     <li>Neue Tabellen: Im Assistenten bzw. beim Anlegen „<b>Detailseiten mit Kopf wie Seiten</b>“ einschalten – die Vorlage beginnt dann gleich mit diesem Einstieg. Bestehende Vorlagen bleiben, wie sie sind.</li>
   </ul>
   <ul>

@@ -86,6 +86,11 @@ final class EntryEditController extends AdminController
             $in[\Core\Data\Network::COL] = $r->str('share_level');
             $in[\Core\Data\Network::COL_SITES] = array_map('strval', (array) ($r->post['share_sites'] ?? []));
         }
+        // Zeitplan „Online ab“ / „Offline ab“ (Core\Schedule, Teil data/_schedule.php) – wie DataController::save
+        if (!$partial && $t['settings']['workflow'] && can('data.publish', $handle) && array_key_exists('online_from', $r->post)) {
+            $in['online_from'] = $r->str('online_from');
+            $in['online_until'] = $r->str('online_until');
+        }
         // „Auf der Startseite hervorheben“ (Core\Data\Featured, Teil data/_featured.php): nur mit Veröffentlichungsrecht
         if (!$partial && \Core\Data\Featured::enabled($t) && can('data.publish', $handle) && array_key_exists('_featured_form', $r->post)) {
             $in[\Core\Data\Featured::COL] = $r->str(\Core\Data\Featured::COL);
