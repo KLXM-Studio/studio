@@ -48,7 +48,13 @@ function view(ctx) {
       <div class="f"><label for="qg-short">${esc(T('short'))}</label><textarea id="qg-short" name="short" rows="3" required maxlength="${(D.shortMax || 240) + 40}" aria-describedby="qg-short-h qg-short-c qg-short-e"></textarea>
         <p class="f-help" id="qg-short-h">${esc(T('shortHelp', { n: D.shortMax || 240 }))}</p><p class="f-help qg-count" id="qg-short-c" data-qg-count aria-live="polite"></p><p class="f-error" id="qg-short-e" data-qg-err="short" hidden></p></div>
       <div class="f"><label for="qg-var">${esc(T('variants'))}</label><input id="qg-var" name="variants" maxlength="400" autocomplete="off" aria-describedby="qg-var-h"><p class="f-help" id="qg-var-h">${esc(T('variantsHelp'))}</p></div>
-      <details class="qg-more"><summary>${esc(T('long'))}</summary><div class="f"><label class="sr-only" for="qg-long">${esc(T('long'))}</label><textarea id="qg-long" name="long" rows="4"></textarea></div></details>
+      <details class="qg-more"><summary id="qg-long-l">${esc(T('long'))}</summary><div class="f qg-rte">
+        <div class="qg-rte__bar" role="toolbar" aria-label="${esc(T('format'))}">
+          <button type="button" data-qg-cmd="bold" aria-label="${esc(T('bold'))}" title="${esc(T('bold'))}"><b>F</b></button>
+          <button type="button" data-qg-cmd="italic" aria-label="${esc(T('italic'))}" title="${esc(T('italic'))}"><i>K</i></button>
+          <button type="button" data-qg-cmd="insertUnorderedList" aria-label="${esc(T('list'))}" title="${esc(T('list'))}">${ico('list-bullets')}</button>
+          <button type="button" data-qg-cmd="createLink" aria-label="${esc(T('link'))}" title="${esc(T('link'))}">${ico('link-simple')}</button></div>
+        <div id="qg-long" class="qg-rte__area" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="qg-long-l"></div></div></details>
       ${pub ? '' : `<p class="qg-note">${esc(T('draftOnly'))}</p>`}
       <p class="qg-auto" data-qg-auto hidden>${esc(D.mode === 'off' ? T('autoOff') : T('autoHint') + (D.workflow !== false ? ' ' + T('autoDraft') : ''))}</p>
       <p class="qg-actions">
@@ -57,6 +63,7 @@ function view(ctx) {
       </p>
       <p class="f-error" data-qg-err="_" role="alert" hidden></p>
       <div class="qg-done" data-qg-done hidden></div>
+      <p class="qg-editlink"><a data-qg-editlink hidden href="#" target="_blank" rel="noopener">${esc(T('editForm'))}</a></p>
     </form>
   </div>
   <div class="qg-panel" role="tabpanel" id="qg-p-page" aria-labelledby="qg-tab-page" hidden>
@@ -317,7 +324,9 @@ export default {
           actions = `<button type="button" class="adm-btn adm-btn--small" data-qg-topage>${esc(T('showOnPage'))}</button>`
             + `<button type="button" class="adm-btn adm-btn--small adm-btn--primary" data-qg-insnew>${ico('link')} ${esc(T('insertNew'))}</button>`;
         }
-        form.reset(); counter();
+        form.reset(); counter(); if (area) area.innerHTML = '';
+        // Weiter im vollständigen Formular (Kategorie, Mehr erfahren, längere Texte)
+        const more = $('[data-qg-editlink]'); if (more && res.item?.edit) { more.href = res.item.edit; more.hidden = false; }
         st.prefilled = ''; st.picked = '';
         $('[data-qg-dupe]').textContent = '';
         addTo.hidden = true; addTo.open = false; vq.value = ''; $('[data-qg-vlist]').innerHTML = ''; $('[data-qg-vstatus]').textContent = '';
@@ -359,6 +368,18 @@ export default {
       const inp = field === 'term' ? $('#qg-term') : field === 'short' ? $('#qg-short') : null;
       if (inp) { inp.setAttribute('aria-invalid', 'true'); inp.focus(); }
     };
+    // Mini-Editor der ausführlichen Erklärung: Auswahl behalten (mousedown), Befehl auf den Textbereich anwenden
+    form.addEventListener('mousedown', e => { if (e.target.closest('[data-qg-cmd]')) e.preventDefault(); });
+    form.addEventListener('click', e => {
+      const b = e.target.closest('[data-qg-cmd]'); if (!b) return;
+      const area = $('#qg-long'); area.focus();
+      if (b.dataset.qgCmd === 'createLink') {
+        const url = (prompt(T('linkPrompt')) || '').trim();
+        if (url && /^(https?:\/\/|\/|mailto:|tel:)/i.test(url)) document.execCommand('createLink', false, url);
+        return;
+      }
+      document.execCommand(b.dataset.qgCmd, false);
+    });
     let saveMode = 'draft';
     form.addEventListener('click', e => { const b = e.target.closest('[data-qg-save]'); if (b) saveMode = b.dataset.qgSave; });
     form.addEventListener('submit', async e => {
@@ -371,7 +392,8 @@ export default {
       const btns = $$('[data-qg-save]');
       btns.forEach(b => b.setAttribute('aria-busy', 'true'));
       try {
-        const res = await ctx.fetch(ctx.tool.endpoints.create, { json: { term, short, variants: f.get('variants') || '', long: f.get('long') || '', publish: saveMode === 'publish', lang: D.lang || ctx.lang } });
+        const area = $('#qg-long'), longHtml = area && area.textContent.trim() !== '' ? area.innerHTML : '';
+        const res = await ctx.fetch(ctx.tool.endpoints.create, { json: { term, short, variants: f.get('variants') || '', long_html: longHtml, publish: saveMode === 'publish', lang: D.lang || ctx.lang } });
         st.created = res.item;
         const msg = (res.published ? T('createdPub') : T('createdDraft')).replace('{term}', res.item.term);
         ctx.toast(msg); ctx.announce(msg);

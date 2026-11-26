@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Schnell-Glossar: Erklärung mit Formatierung
+- Im Werkzeug „Glossar“ auf der Website ist die ausführliche Erklärung ein kleiner Editor (fett, kursiv, Aufzählung, Link; Rich-Text-Filter des Kerns); nach dem Anlegen führt „Im Formular weiter bearbeiten“ zum vollständigen Eintrag.
+
 ### Medien-Pools lösen: pool:detach, pool:retire
 - `pool:detach <key> --site=…` übernimmt die Pool-Dateien einer Website in ihre eigene Mediathek (IDs, Verwendungen, Alt-Text, Titel, Nachweis bleiben); `pool:retire` legt einen Pool still, auf den keine Website mehr verweist (verschoben, nicht gelöscht).
 

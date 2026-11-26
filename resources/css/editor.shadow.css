@@ -949,3 +949,11 @@ button.pp-fold:focus-visible{outline:2px solid var(--adm-a,#314164);outline-offs
 .cms-bar[data-bar] .cms-btn--fields{gap:6px}
 .cms-bar[data-bar] .cms-btn--fields svg{width:16px;height:16px;flex:none}
 @media (max-width:600px){.cms-bar[data-bar] .cms-btn--fields span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.cms-bar[data-bar] .cms-btn--fields{padding:0 10px}}
+/* Schnell-Glossar: Mini-Editor der ausführlichen Erklärung (fett, kursiv, Liste, Link) */
+.qg-rte__bar{display:flex;gap:4px;margin:0 0 6px}
+.qg-rte__bar button{display:inline-grid;place-items:center;min-width:32px;height:30px;padding:0 6px;border:1px solid var(--adm-line);border-radius:6px;background:var(--adm-card);color:var(--adm-ink);font:inherit;cursor:pointer}
+.qg-rte__bar button:hover{border-color:var(--adm-accent)}
+.qg-rte__area{min-height:6em;max-height:16em;overflow:auto;padding:8px 10px;border:1px solid var(--adm-line-strong,var(--adm-line));border-radius:8px;background:var(--adm-card);line-height:1.5}
+.qg-rte__area:focus{outline:2px solid var(--adm-accent);outline-offset:1px}
+.qg-rte__area :is(p,ul,ol){margin:0 0 .5em}
+.qg-editlink{margin:6px 0 0;font-size:13px}

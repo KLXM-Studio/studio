@@ -10070,4 +10070,8 @@ return [
     '{n} Zugangs-Tokens' => '{n} access tokens',
     'Übersicht der aktiven Funktionen rund um KI und Schnittstellen – die KI macht Vorschläge, Sie prüfen und entscheiden.' => 'Overview of active AI and interface features – the AI makes suggestions, you review and decide.',
     '1 Zugangs-Token' => '1 access token',
+    'Adresse des Links (https://… oder /seite)' => 'Link address (https://… or /page)',
+    'Fett' => 'Bold',
+    'Im Formular weiter bearbeiten' => 'Continue in the form',
+    'Kursiv' => 'Italic',
 ];

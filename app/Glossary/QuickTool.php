@@ -75,7 +75,7 @@ final class QuickTool
             'more' => __('Weitere Treffer – Suche verfeinern.'), 'draft' => __('Entwurf'), 'draftLink' => __('Entwurf – der Link wirkt erst nach dem Veröffentlichen.'),
             'newFrom' => __('„{term}“ als neuen Begriff anlegen'),
             'term' => __('Begriff'), 'short' => __('Kurz-Erklärung'), 'shortHelp' => __('Klartext, höchstens {n} Zeichen – erscheint im Hinweisfenster.'),
-            'long' => __('Ausführliche Erklärung (optional)'), 'variants' => __('Varianten (optional)'), 'variantsHelp' => __('Mit Komma getrennt, z. B. Mehrzahl oder Abkürzung.'),
+            'long' => __('Ausführliche Erklärung (optional)'), 'format' => __('Formatierung'), 'bold' => __('Fett'), 'italic' => __('Kursiv'), 'list' => __('Aufzählung'), 'link' => __('Link'), 'linkPrompt' => __('Adresse des Links (https://… oder /seite)'), 'editForm' => __('Im Formular weiter bearbeiten'), 'variants' => __('Varianten (optional)'), 'variantsHelp' => __('Mit Komma getrennt, z. B. Mehrzahl oder Abkürzung.'),
             'saveDraft' => __('Als Entwurf anlegen'), 'savePublish' => __('Anlegen & veröffentlichen'), 'saveOnly' => __('Anlegen'),
             'createdDraft' => __('„{term}“ als Entwurf angelegt.'), 'createdPub' => __('„{term}“ angelegt und veröffentlicht.'),
             'insertNew' => __('Jetzt im Text verlinken'), 'exists' => __('„{term}“ gibt es schon.'), 'showExisting' => __('Vorhandenen Begriff zeigen'),
@@ -229,6 +229,13 @@ final class QuickTool
         foreach (preg_split('~\R{2,}~u', mb_substr($long, 0, 20000)) ?: [] as $para) {
             $para = trim($para);
             if ($para !== '') $html .= '<p>' . nl2br(e($para), false) . '</p>';
+        }
+        // Mini-Editor im Werkzeug (fett, kursiv, Liste, Link): HTML über den Rich-Text-Filter des Kerns
+        $rich = trim((string) ($in['long_html'] ?? ''));
+        if ($rich !== '') {
+            $clean = \Core\Sanitizer::block(mb_substr($rich, 0, 40000));
+            if (!preg_match('~^\s*<(p|ul|ol|h[2-4]|blockquote)\b~i', $clean)) $clean = '<p>' . $clean . '</p>';
+            if (trim(strip_tags($clean)) !== '') $html = $clean;
         }
         $variants = Glossary::splitVariants((string) ($in['variants'] ?? ''));
         $row = ['begriff' => $term, 'kurz' => $shortRaw, 'varianten' => implode("\n", $variants), 'status' => $publish ? 'published' : 'draft'];
