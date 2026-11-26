@@ -51,7 +51,7 @@ final class FormFieldsController extends AdminController
         $res = SchemaPanel::save($t, $r->post);
         if (!$res['ok']) {
             // 200 statt 422: Prüfhinweise sind kein Fehler der Anfrage (wie EntryEditController)
-            return $this->payload($t, $res['input']['fields'], (array) ($res['input']['settings']['form'] ?? []), $res['errors'], $res['askDrop']);
+            return $this->payload($t, $res['input']['fields'], (array) ($res['input']['settings']['form'] ?? []), $res['errors'], $res['askDrop'], false, $res['askOpts']);
         }
         $this->changed();
         $t = Tables::find($handle);
@@ -66,12 +66,12 @@ final class FormFieldsController extends AdminController
     }
 
     /** Seitenleiste: Felder (Eingabeformat von Tables::validate), Formular-Einstellungen, Fehler */
-    private function payload(array $t, array $fields, array $form, array $errors, bool $askDrop, bool $saved = false): Response
+    private function payload(array $t, array $fields, array $form, array $errors, bool $askDrop, bool $saved = false, array $askOpts = []): Response
     {
         $inbox = Tables::isInbox($t);
         $count = $inbox ? 0 : (int) Tables::db($t)->fetchValue("SELECT COUNT(*) FROM {$t['table']}");
         $html = Theme::capture(ROOT . '/app/Views/formfields-panel.php', [
-            't' => $t, 'fields' => $fields, 'form' => (array) $form + \Core\Data\DataForms::DEFAULTS, 'errors' => $errors, 'askDrop' => $askDrop,
+            't' => $t, 'fields' => $fields, 'form' => (array) $form + \Core\Data\DataForms::DEFAULTS, 'errors' => $errors, 'askDrop' => $askDrop, 'askOpts' => $askOpts,
             'count' => $count, 'saved' => $saved,
         ]);
         return Response::json([

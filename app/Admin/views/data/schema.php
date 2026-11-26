@@ -5,7 +5,7 @@
  * erscheinen, bestimmt der Zweck der Tabelle (Core\Data\Purpose::sections) – die übrigen stehen unter „Weitere Bereiche“.
  * Alle Feldnamen wie bisher (Tables::validate, SchemaPanel, Packen großer Formulare über _pack.js); ein Formular, ein „Speichern“.
  * Bereich „Einsetzen“: Wie kommt die Tabelle auf die Website (Block, Seiten, die sie verwenden) – Aktionen unter /einsetzen.
- * @var ?array $table  @var array $def  @var array $errors  @var bool $askDrop
+ * @var ?array $table  @var array $def  @var array $errors  @var bool $askDrop  @var list<array> $askOpts (optional)
  */
 use Core\Data\Placement;
 use Core\Data\Purpose;
@@ -46,7 +46,7 @@ $errSec = [];
 foreach (array_keys($errors) as $k) {
     $k = (string) $k;
     $sec = match (true) {
-        str_starts_with($k, 'fields') || $k === '_drop' => ['felder'],
+        str_starts_with($k, 'fields') || $k === '_drop' || $k === '_opts' => ['felder'],
         $k === 'settings.route' => ['website'],
         $k === 'settings.calendar' => ['kalender'],
         $k === 'settings.kind' || $k === 'settings.delivery.smime' => ['verschluesselung'],
@@ -169,6 +169,7 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
       <p><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/data/' . $table['handle'] . '/schema#felder')) ?>"><?= e(__('Änderungen verwerfen')) ?></a> <span class="adm-muted"><?= e(__('lädt die gespeicherten Felder neu – nichts wird gelöscht')) ?></span></p>
     </div>
     <?php endif; ?>
+    <?php require __DIR__ . '/_optremap.php'; ?>
     <div class="dt-fieldsbox">
       <?php // Kompaktansicht: je Feld eine Zeile, Einstellungen erst beim Bearbeiten (admin.js, gemerkt im Browser) ?>
       <p class="dt-fieldsbar"><button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-add-after data-add-first aria-haspopup="menu" aria-expanded="false"><?= icon('plus') ?> <span><?= e(__('Feld am Anfang')) ?></span></button> <button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-fields-compact aria-pressed="false"><?= icon('list') ?> <span><?= e(__('Kompaktansicht')) ?></span></button></p>
@@ -237,11 +238,19 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
           </select></div>
         <?php if ($table && ($srcF = \Core\Data\MenuEntries::sourceFields($table))): // Quelle: Einträge oder Werte eines Auswahlfeldes ?>
         <div class="f f--inline"><label for="t-menu-source"><?= e(__('Menüpunkte sind')) ?></label>
-          <p class="f-help"><?= e(__('„Werte von …“: je vorkommender Option ein Punkt (z. B. Bereiche, Kategorien, Formate), der die Übersicht mit diesem Filter öffnet – wie ein Klick auf die Filter-Schaltfläche. „Zwei Ebenen“ zeigt die Einträge darunter.')) ?></p>
+          <p class="f-help"><?= e(__('„Werte von …“: je vorkommender Option ein Punkt (z. B. Bereiche, Kategorien, Formate), der die Übersicht mit diesem Filter öffnet – wie ein Klick auf die Filter-Schaltfläche. Bei einer Verknüpfung (z. B. mit einer Tabelle „Themen“) sind es die verknüpften Einträge. „Zwei Ebenen“ zeigt die Einträge darunter.')) ?></p>
           <select id="t-menu-source" name="settings[menu_entries][source]">
             <option value=""><?= e(__('Einträge')) ?></option>
             <?php foreach ($srcF as $fk => $fl): ?><option value="<?= e($fk) ?>"<?= ($me['source'] ?? '') === $fk ? ' selected' : '' ?>><?= e(__('Werte von „{field}“', ['field' => $fl])) ?></option><?php endforeach; ?>
           </select></div>
+        <?php if (\Core\Data\MenuEntries::detailCapable($table)): ?>
+        <div class="f f--inline"><label for="t-menu-link"><?= e(__('Menüpunkte einer Verknüpfung führen')) ?></label>
+          <p class="f-help"><?= e(__('Gilt nur für „Werte von …“ einer Verknüpfung, deren Tabelle eigene Detailseiten hat.')) ?></p>
+          <select id="t-menu-link" name="settings[menu_entries][link]">
+            <option value=""><?= e(__('zur Übersicht mit Filter')) ?></option>
+            <option value="detail"<?= ($me['link'] ?? '') === 'detail' ? ' selected' : '' ?>><?= e(__('zur Detailseite des verknüpften Eintrags')) ?></option>
+          </select></div>
+        <?php endif; ?>
         <?php endif; ?>
         <div class="f f--inline"><label for="t-menu-limit"><?= e(__('Höchstens … Einträge je Ebene')) ?></label>
           <input type="number" id="t-menu-limit" name="settings[menu_entries][limit]" min="1" max="50" value="<?= (int) $me['limit'] ?>"></div>

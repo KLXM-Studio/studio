@@ -82,7 +82,7 @@ final class Entries
     }
 
     /** Nach Änderungen: Seiten-Cache dieser Website bzw. aller Websites einer geteilten Tabelle leeren */
-    private static function changed(array $table): void
+    public static function changed(array $table): void
     {
         PageCache::clear();
         \Core\Live::touch('data:' . $table['handle']);   // Live-Blöcke (Core\Live)
@@ -133,7 +133,7 @@ final class Entries
         $extra = [];
         foreach ($fields as $n) {
             $f = Tables::field($table, (string) $n);
-            if ($f && in_array($f['type'], ['select', 'multiselect'], true)) $cols[$f['name']] = $f['type'];
+            if ($f && in_array($f['type'], ['select', 'multiselect', 'relation', 'relations'], true)) $cols[$f['name']] = $f['type'];
             // Netzwerk: Auswahl-Zusatzfelder dieser Website (Werte in share_extra)
             elseif (!$f && ($sf = Network::siteField($table, (string) $n)) && in_array($sf['type'], ['select', 'multiselect'], true)) { $cols[$sf['name']] = $sf['type']; $extra[] = $sf['name']; }
         }
@@ -144,12 +144,27 @@ final class Entries
             $rows = self::query($table, $o);   // geschützte Tabelle: nur, was dieser Besucher sieht (bereits dekodiert)
         } else {
             [$where, $params] = self::where($table, $o);
-            $rows = Tables::db($table)->fetchAll('SELECT ' . implode(', ', ['id', ...array_diff(array_keys($cols), $extra)]) . " FROM {$table['table']}"
+            $rows = Tables::db($table)->fetchAll('SELECT ' . implode(', ', ['id', ...array_diff(array_keys(array_filter($cols, fn($ty) => $ty !== 'relations')), $extra)]) . " FROM {$table['table']}"
                 . ($where ? ' WHERE ' . implode(' AND ', $where) : ''), $params);
             if ($extra) $rows = Network::withExtras($table, $rows, $extra);
         }
+        // Mehrfach-Verknüpfungen: Werte aus der Zwischentabelle (eine Abfrage je Feld)
+        $piv = [];
+        foreach (array_keys(array_filter($cols, fn($ty) => $ty === 'relations')) as $n) {
+            $piv[$n] = [];
+            $ids = array_map('intval', array_column($rows, 'id'));
+            foreach (array_chunk($ids, 500) as $chunk) {
+                foreach (Tables::db($table)->fetchAll('SELECT entry_id, target_id FROM ' . Tables::pivot($table, $n) . ' WHERE entry_id IN (' . implode(',', $chunk) . ')') as $pr) {
+                    $piv[$n][(int) $pr['entry_id']][] = (int) $pr['target_id'];
+                }
+            }
+        }
         foreach ($rows as $r) {
             foreach ($cols as $n => $type) {
+                if ($type === 'relations') {
+                    foreach (array_unique($piv[$n][(int) $r['id']] ?? []) as $k) $counts[$n][(string) $k] = ($counts[$n][(string) $k] ?? 0) + 1;
+                    continue;
+                }
                 $v = $r[$n] ?? null;
                 $vals = $type === 'multiselect' ? (is_array($v) ? $v : (json_decode((string) $v, true) ?: [])) : [$v];
                 foreach (array_unique(array_map('strval', array_filter((array) $vals, fn($x) => $x !== null && $x !== ''))) as $k) {
@@ -158,6 +173,23 @@ final class Entries
             }
         }
         return ['total' => count($rows), 'counts' => $counts];
+    }
+
+    /**
+     * Auswahl aus den Einträgen der Zieltabelle eines Verknüpfungsfeldes (relation, relations) – für Besucher-Filter und Menüpunkte:
+     * [id => Titel], veröffentlicht, in der Sortierung der Zieltabelle. Eine Kategorie-Tabelle („Themen“) wirkt so wie eine Auswahlliste.
+     * @return array<int, string>
+     */
+    public static function relationOptions(array $f, int $limit = 200): array
+    {
+        static $memo = [];
+        $target = Tables::findContent((string) ($f['target'] ?? ''));
+        if (!$target) return [];
+        $key = $target['handle'] . ':' . $limit . ':' . \Core\Lang::current();
+        if (isset($memo[$key])) return $memo[$key];
+        $out = [];
+        foreach (self::query($target, ['status' => 'published', 'limit' => $limit]) as $e) $out[(int) $e['id']] = self::title($target, $e);
+        return $memo[$key] = $out;
     }
 
     private static function where(array $table, array $o): array
@@ -316,6 +348,10 @@ final class Entries
                 if (($field['type'] ?? '') === 'multiselect') {
                     $where[] = '(' . implode(' OR ', array_fill(0, count($vals), "$f LIKE ?")) . ')';
                     foreach ($vals as $x) $params[] = '%' . json_encode($x, JSON_UNESCAPED_UNICODE) . '%';
+                } elseif (($field['type'] ?? '') === 'relations') {
+                    // Mehrfach-Verknüpfung: verknüpft mit einem der Einträge (IDs)
+                    $where[] = 'id IN (SELECT entry_id FROM ' . Tables::pivot($table, $f) . ' WHERE target_id IN (' . implode(',', array_fill(0, count($vals), '?')) . '))';
+                    array_push($params, ...array_map('intval', $vals));
                 } else {
                     $where[] = "$f IN (" . implode(',', array_fill(0, count($vals), '?')) . ')';
                     array_push($params, ...$vals);

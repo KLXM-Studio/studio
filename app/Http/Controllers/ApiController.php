@@ -429,7 +429,7 @@ final class ApiController
 
     public function dataDelete(Request $r, string $table, string $id): Response
     {
-        return $this->run($r, true, fn(CmsService $s) => $s->dataDelete($table, (int) $id));
+        return $this->run($r, true, fn(CmsService $s) => $s->dataDelete($table, (int) $id, (int) ($r->query['reassign'] ?? 0)));
     }
 
     // ------------------------------------------------------------------ Eingereichte Änderungen (Prüf-Ebene)

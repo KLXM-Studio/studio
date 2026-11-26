@@ -114,6 +114,7 @@ $eligible = array_filter(Tables::dataFields($fields), fn($f) => (string) ($f['id
     </div>
     <?php if ($inbox && !Delivery::mails($t)): ?><p class="f-help"><?= e(__('Dateifelder gibt es in Eingängen nur mit Zustellung per E-Mail – einstellbar unter „Alle Einstellungen der Tabelle“.')) ?></p><?php endif; ?>
     <?php if (isset($errors['fields'])): ?><p class="f-error"><?= e($errors['fields']) ?></p><?php endif; ?>
+    <?php $askOpts ??= []; require ROOT . '/app/Admin/views/data/_optremap.php'; ?>
     <?php if ($askDrop): ?>
     <label class="f-check dt-confirmdrop"><input type="checkbox" name="confirm_drop" value="1" data-ff-confirmdrop> <span><b><?= e(__('Felder wirklich löschen')) ?></b> (<?= e(__('Inhalte gehen verloren')) ?>)</span></label>
     <?php endif; ?>

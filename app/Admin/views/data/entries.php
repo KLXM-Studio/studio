@@ -110,7 +110,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
   </div>
 </header>
 
-<div class="dt-list" data-entries="<?= e(url($base . '/bulk')) ?>"<?= \Core\RowMenu::selectAttrs() ?><?= ($pl = \Core\Http\Controllers\Admin\PresenceController::listAttrs('entry', $t['handle'] . ':')) ? ' data-presence-list' . $pl : '' ?>>
+<div class="dt-list" data-entries="<?= e(url($base . '/bulk')) ?>" data-reassign="<?= e(url('/admin/api/neuzuordnung/')) ?>" data-handle="<?= e($t['handle']) ?>"<?= \Core\RowMenu::selectAttrs() ?><?= ($pl = \Core\Http\Controllers\Admin\PresenceController::listAttrs('entry', $t['handle'] . ':')) ? ' data-presence-list' . $pl : '' ?>>
   <div class="dt-bar">
     <?php if ($multi): ?><nav class="fx-seg dt-seg" aria-label="Sprache"><?php foreach (\Core\Lang::all() as $code => $label): ?><a href="<?= e(url($base) . '?lang=' . $code) ?>"<?= $code === $lang ? ' aria-current="true"' : '' ?>><?= e($label) ?></a><?php endforeach; ?></nav><?php endif; ?>
     <nav class="fx-seg dt-seg" aria-label="Status">

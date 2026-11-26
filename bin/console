@@ -208,6 +208,7 @@
  *   pool:detach <key> [--dry-run]                     Pool-Dateien in die Mediathek der Website übernehmen (IDs bleiben)
  *   pool:retire <key>                                 Pool ohne Verweise nach storage/pools/_removed verschieben
  *   pool:list                                         Pools und nutzende Websites
+ *   data:delete <tabelle> <id[,id…]> [--reassign=ID] [--dry-run]   Einträge löschen, Verweise vorher umhängen
  *   data:share <handle> --members=a,b [--see-members] [--merge]
  *                                                     Tabelle dieser Website teilen (diese Website = Eigentümer, --site=…); Verknüpfungen
  *                                                     auf lokale Tabellen mit --local-fields=a,b als Zusatzfelder dieser Website, --dry-run = Plan
@@ -248,6 +249,7 @@
  *                                                     Folien aus hervorgehobenen Einträgen, Bearbeiten-Modus, Dateien nur bei Bedarf
  *   footer:selftest                                   Selbsttest „Weitere Links im Fußbereich“: Standard leer (byte-gleich), Liste, Seitenschalter,
  *                                                     Reihenfolge, Doppelte, aria-current, Ausgabe aller Fuß-Varianten (fluid/native)
+ *   reassign:selftest                                 Selbsttest Neuzuordnung (Core\Data\Reassign, OptionRemap): Löschen, Auswahl-Optionen, Filter/Menü nach Verknüpfungen
  *   backlinks:selftest                                Selbsttest Rückverknüpfungen (Core\Data\Backlinks): Gruppen, abschaltbar, Verknüpfen/Lösen, Filter
  *   highlights:selftest                               Selbsttest „Auf der Startseite hervorheben“ + Block „Highlights“: Schalter (Standard aus),
  *                                                     Reihenfolge, „bis“-Datum, Mischung mehrerer Tabellen, Sortierung, Karten/Teaser, Bestand
@@ -1645,6 +1647,22 @@ switch ($cmd) {
         if (!Core\MediaPools::all()) echo "Keine Pools. Anlegen: php bin/console pool:create marke \"Markenbilder\"\n";
         break;
 
+    case 'data:delete':
+        // Einträge löschen; --reassign=ID hängt Verweise anderer Einträge vorher auf diesen Eintrag derselben Tabelle um (Core\Data\Reassign)
+        $dt = Core\Data\Tables::findContent((string) ($args[0] ?? ''));
+        $dids = array_values(array_filter(array_map('intval', explode(',', (string) ($args[1] ?? '')))));
+        if (!$dt || !$dids) { fwrite(STDERR, "Aufruf: data:delete <tabelle> <id[,id…]> [--reassign=ID] [--dry-run] [--site=key]\n"); exit(1); }
+        $to = (int) Core\Cli::opt($args, 'reassign');
+        if ($to > 0 && ($err = Core\Data\Reassign::checkTarget($dt, $dids, $to)) !== null) { fwrite(STDERR, $err . "\n"); exit(1); }
+        $refs = Core\Data\Reassign::refs($dt, $dids);
+        foreach ($refs as $g) echo '  ' . $g['label'] . ($to > 0 ? " → #$to" : ' → leer') . "\n";
+        if (!$refs) echo "  Keine Verweise anderer Einträge.\n";
+        if (in_array('--dry-run', $args, true)) { echo "Probelauf – nichts geändert.\n"; break; }
+        $res = Core\Data\Reassign::delete($dt, $dids, $to > 0 ? ['*' => $to] : []);
+        if ($res['errors']) { fwrite(STDERR, "Nicht gelöscht:\n  " . implode("\n  ", $res['errors']) . "\n"); exit(1); }
+        echo "Gelöscht: {$res['deleted']}, neu zugeordnet: {$res['moved']}.\n";
+        break;
+
     case 'data:share':
         // Lokale Tabelle dieser Website (--site=…) teilen: diese Website wird Eigentümer, Einträge behalten ihre IDs (origin = Eigentümer),
         // Bilder wandern in den Pool data-…; mit --merge in eine bestehende geteilte Tabelle gleichen Kurznamens (neue IDs, Verweise werden umgeschrieben)
@@ -1875,6 +1893,13 @@ switch ($cmd) {
     case 'footer:selftest':
         // Weitere Links im Fußbereich (Core\FooterLinks) – vorübergehende Seiten, zurückgerollt
         $res = Core\FooterLinksSelfTest::run();
+        foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
+        echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
+        exit($res['fails'] ? 1 : 0);
+
+    case 'reassign:selftest':
+        // Kategorien als Tabelle: Löschen mit Neuzuordnung, Auswahl-Optionen neu zuordnen, Filter/Menü nach Verknüpfungen – vorübergehende Tabellen
+        $res = Core\Data\ReassignSelfTest::run();
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);

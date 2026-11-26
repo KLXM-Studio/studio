@@ -59,7 +59,8 @@ import { Rich } from './_rte.js';   // Formatierungsleiste: Stile, Farben, Marke
 import * as Markdown from './_markdown.js';   // Markdown einfügen/importieren (Rich-Text-Felder, Seiten-Editor)
 import { pickLink, openLinkPicker, initLinkFields } from './_links.js';   // Linkauswahl (Rich-Text und Feldtyp „link“)
 import { initPagesFields, openPagesPicker } from './_pages.js';
-import { openEntryPicker, entryInfo, initEntryPickFields } from './_picker.js';   // Auswahlfenster für Einträge (Core\Data\Picker)   // Seitenauswahl (Feldtyp „pages“, Core\PagePicker)
+import { openEntryPicker, entryInfo, initEntryPickFields } from './_picker.js';
+import { askDelete } from './_reassign.js';   // Löschen mit Neuzuordnung (Core\Data\Reassign)   // Auswahlfenster für Einträge (Core\Data\Picker)   // Seitenauswahl (Feldtyp „pages“, Core\PagePicker)
 import { initAssistant } from './_assistant.js';
 import { esc, csrf } from './_html.js';
 import { initPush } from './_push.js';   // Push-Benachrichtigungen: Konto → Benachrichtigungen, Abo auffrischen (Core\Push)
@@ -592,6 +593,19 @@ listen('submit', e => {   // „submit“ verlässt keine Schatten-Wurzel: liste
   const src = e.submitter || f;
   const label = (src?.dataset.confirmOk || f?.dataset.confirmOk || e.submitter?.getAttribute('aria-label') || e.submitter?.textContent || '').replace(/[…\s]+$/, '').replace(/\s+/g, ' ').trim();
   const form = e.target, by = e.submitter;
+  // Löschen eines Eintrags: verweisen andere Einträge darauf, vorher neu zuordnen (Core\Data\Reassign)
+  if (form.dataset.reassign) {
+    const i = msg.indexOf('\n');
+    askDelete({ handle: form.dataset.handle, ids: [+form.dataset.id], title: i < 0 ? msg : msg.slice(0, i), body: i < 0 ? '' : msg.slice(i + 1).trim(), ask: o => bar_.ask(o), api: form.dataset.reassign }).then(map => {
+      if (!map) return;
+      form.querySelectorAll('[data-ra-in]').forEach(x => x.remove());
+      for (const [k, v] of Object.entries(map)) form.insertAdjacentHTML('beforeend', `<input type="hidden" name="reassign[${esc(k)}]" value="${+v}" data-ra-in>`);
+      form.dataset.confirmed = '1';
+      try { form.requestSubmit(); } catch { form.submit(); }
+      delete form.dataset.confirmed;
+    });
+    return;
+  }
   bar_.ask({ title: msg, ok: label.length && label.length < 40 ? label : undefined }).then(ok => {
     if (!ok) return;
     form.dataset.confirmed = '1';
@@ -936,7 +950,13 @@ if (entries) {
   entries.addEventListener('click', async e => {
     const b = e.target.closest('[data-bulk-action]'); if (!b) return;
     const ids = checked();
-    if (b.dataset.bulkAction === 'delete' && !(await bar_.ask({ title: t('{n} Einträge endgültig löschen?', { n: ids.length }), ok: t('Löschen') }))) return;
+    if (b.dataset.bulkAction === 'delete') {
+      const reassign = await askDelete({ handle: entries.dataset.handle, ids, title: t('{n} Einträge endgültig löschen?', { n: ids.length }), ask: o => bar_.ask(o), api: entries.dataset.reassign });
+      if (!reassign) return;
+      const res = await post({ action: 'delete', ids, reassign });
+      if (!res?.ok) { statusFlash(entries, 'error', res?.error || t('Das hat nicht geklappt.')); return; }
+      location.reload(); return;
+    }
     if (b.dataset.bulkAction === 'draft' && !(await bar_.ask({ title: t('{n} Einträge offline nehmen?', { n: ids.length }), body: t('Besucher sehen sie dann nicht mehr; der Inhalt bleibt erhalten.'), ok: t('Offline nehmen'), danger: true }))) return;
     await post({ action: b.dataset.bulkAction, ids }); location.reload();
   });

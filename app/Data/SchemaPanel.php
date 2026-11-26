@@ -88,13 +88,13 @@ final class SchemaPanel
 
     /**
      * Prüfen und speichern (gleicher Weg wie der Tabellen-Designer).
-     * @return array{ok: bool, errors: array, askDrop: bool, input: array}
+     * @return array{ok: bool, errors: array, askDrop: bool, askOpts: list<array>, input: array}
      */
     public static function save(array $t, array $post): array
     {
         $in = self::input($t, $post);
-        [, $errors, $askDrop] = DataController::saveSchema($t, $in, !empty($post['confirm_drop']));
-        return ['ok' => !$errors, 'errors' => $errors, 'askDrop' => $askDrop, 'input' => $in];
+        [, $errors, $askDrop, $askOpts] = DataController::saveSchema($t, $in, !empty($post['confirm_drop']), DataController::optMap($post));
+        return ['ok' => !$errors, 'errors' => $errors, 'askDrop' => $askDrop, 'askOpts' => $askOpts, 'input' => $in];
     }
 
     // ================================================================= Selbsttest (php bin/console data:selftest)

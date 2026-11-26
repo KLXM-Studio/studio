@@ -436,9 +436,9 @@ final class DataController extends AdminController
         $this->auth($r, 'data.schema');
         $t = $this->table($handle);
         $this->schemaGuard($t);
-        [$def, $errors, $askDrop] = self::saveSchema($t, $r->post, $r->str('confirm_drop') === '1');
+        [$def, $errors, $askDrop, $askOpts] = self::saveSchema($t, $r->post, $r->str('confirm_drop') === '1', self::optMap($r->post));
         if ($errors) {
-            return $this->view('data/schema', ['table' => $t, 'def' => $def + ['handle' => $t['handle']], 'errors' => $errors, 'askDrop' => $askDrop], 422);
+            return $this->view('data/schema', ['table' => $t, 'def' => $def + ['handle' => $t['handle']], 'errors' => $errors, 'askDrop' => $askDrop, 'askOpts' => $askOpts], 422);
         }
         $t = $this->table($handle);
         if (\Core\Data\Jobs::is($t) && \Core\Data\Jobs::config($t)['form'] === '_new') {
@@ -454,20 +454,41 @@ final class DataController extends AdminController
      * Felder und Einstellungen einer bestehenden Tabelle prüfen und speichern – gemeinsamer Weg des Tabellen-Designers und der
      * Seitenleiste „Felder bearbeiten“ im Seiten-Editor (FormFieldsController). Fallen Felder samt Inhalten weg, wird erst mit
      * $confirmDrop gespeichert (sonst Fehler „_drop“ und $askDrop = true).
-     * @return array{0: array, 1: array, 2: bool} [def, errors, askDrop]
+     * Entfernte Auswahl-Optionen, die Einträge noch haben (Core\Data\OptionRemap): erst mit $optMap (optmap[feld-id][schlüssel] = neuer
+     * Schlüssel bzw. '' = leer lassen) gespeichert, sonst Fehler „_opts“ und $askOpts.
+     * @return array{0: array, 1: array, 2: bool, 3: list<array>} [def, errors, askDrop, askOpts]
      */
-    public static function saveSchema(array $t, array $in, bool $confirmDrop): array
+    public static function saveSchema(array $t, array $in, bool $confirmDrop, ?array $optMap = null): array
     {
         [$def, $errors] = Tables::validate($in, $t);
-        if ($errors) return [$def, $errors, false];
+        if ($errors) return [$def, $errors, false, []];
         $dropped = Tables::droppedFields($t, $def);
         if ($dropped && !$confirmDrop) {
             $errors['_drop'] = __('Beim Speichern werden diese Felder samt Inhalten gelöscht: {fields}. Zum Bestätigen „Felder wirklich löschen“ anhaken.',
                 ['fields' => implode(', ', array_column($dropped, 'label'))]);
-            return [$def, $errors, true];
+            return [$def, $errors, true, []];
+        }
+        $removed = \Core\Data\OptionRemap::removed($t, $def);
+        // Rückfrage nur, wenn für jede benutzte, entfernte Option eine Antwort vorliegt (sonst z. B. neu hinzugekommene Option übersehen)
+        $answered = $optMap !== null && !array_filter($removed, fn($x) => !isset($optMap[$x['id']]) || !is_array($optMap[$x['id']]) || !array_key_exists($x['key'], $optMap[$x['id']]));
+        if ($removed && !$answered) {
+            $errors['_opts'] = \Core\Data\OptionRemap::message($removed);
+            return [$def, $errors, false, $removed];
         }
         Tables::update($t, $def);
-        return [$def, [], false];
+        if ($removed) \Core\Data\OptionRemap::apply(Tables::findContent($t['handle']) ?? $t, $removed, (array) $optMap);
+        return [$def, [], false, []];
+    }
+
+    /** optmap aus dem Formular (nur, wenn die Rückfrage beantwortet wurde) */
+    public static function optMap(array $post): ?array
+    {
+        if (($post['opt_confirm'] ?? '') !== '1') return null;
+        $out = [];
+        foreach ((array) ($post['optmap'] ?? []) as $fid => $keys) {
+            foreach ((array) $keys as $k => $v) $out[(string) $fid][(string) $k] = (string) $v;
+        }
+        return $out;
     }
 
     /** Eingang → Zustellung: Testmail mit erfundener Anfrage an die gespeicherten Empfänger (Core\Data\Delivery::test) */
@@ -886,8 +907,31 @@ final class DataController extends AdminController
         if (($e = Entries::find($t, (int) $id)) && Shared::isForeign($t, $e)) {
             throw new HttpException(403, __('Dieser Eintrag gehört zu einer anderen Website und lässt sich hier nicht ändern.'));
         }
-        Entries::delete($t, (int) $id);
-        return $this->back("/admin/data/$handle", 'success', 'Eintrag gelöscht.');
+        // Verweise anderer Einträge vorher neu zuordnen (Core\Data\Reassign, Rückfrage in resources/js/_reassign.js)
+        $res = \Core\Data\Reassign::delete($t, [(int) $id], self::reassignMap($r));
+        if ($res['errors']) return $this->back("/admin/data/$handle/$id", 'error', __('Nicht gelöscht – die Neuzuordnung hat nicht geklappt: {errors}', ['errors' => implode(' ', $res['errors'])]));
+        return $this->back("/admin/data/$handle", 'success', match ($res['moved']) { 0 => __('Eintrag gelöscht.'), 1 => __('Eintrag gelöscht, 1 Verweis neu zugeordnet.'), default => __('Eintrag gelöscht, {n} Verweise neu zugeordnet.', ['n' => $res['moved']]) });
+    }
+
+    /** Neuzuordnung aus dem Formular: reassign[tabelle.feld] = Ziel-ID */
+    private static function reassignMap(Request $r): array
+    {
+        $out = [];
+        foreach ((array) ($r->post['reassign'] ?? []) as $k => $v) {
+            if (preg_match('~^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$~', (string) $k) && (int) $v > 0) $out[(string) $k] = (int) $v;
+        }
+        return $out;
+    }
+
+    /** Wer verweist auf diese Einträge? (JSON für die Rückfrage beim Löschen) ?ids=1,2 */
+    public function reassignInfo(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        if (!can('data.delete', $handle)) return Response::fail(__('Löschen ist Ihrer Rolle nicht erlaubt.'), 403);
+        $t = $this->table($handle);
+        $ids = array_slice(array_filter(array_map('intval', explode(',', $r->str('ids')))), 0, 500);
+        return Response::json(['ok' => true, 'groups' => \Core\Data\Reassign::payload($t, $ids),
+            'table' => ['handle' => $t['handle'], 'name' => $t['name'], 'singular' => $t['singular'] ?? $t['name'], 'url' => url('/admin/api/picker/' . $t['handle'])]]);
     }
 
     /**
@@ -1085,13 +1129,16 @@ final class DataController extends AdminController
         $ids = array_map('intval', (array) ($r->post['ids'] ?? []));
         // „Online ab“ in der Zukunft (Core\Schedule): bleiben offline – Hinweis statt „ist online“
         $waiting = ($r->post['action'] ?? '') === 'publish' ? array_values(array_filter(array_map(fn($id) => Entries::find($t, $id), $ids), fn($e) => $e && \Core\Schedule::pending($e))) : [];
+        $res = [];
         match ($r->post['action'] ?? '') {
             'publish' => Entries::setStatus($t, $ids, 'published'),
             'draft' => Entries::setStatus($t, $ids, 'draft'),
-            'delete' => array_map(fn($id) => Entries::delete($t, $id), $ids),
+            'delete' => $res = \Core\Data\Reassign::delete($t, $ids, self::reassignMap($r)),
             'reorder' => Entries::reorder($t, $ids),
             default => throw new HttpException(422, 'Unbekannte Aktion.'),
         };
+        if (!empty($res['errors'])) return $r->wantsJson() ? Response::fail(__('Nicht gelöscht – die Neuzuordnung hat nicht geklappt: {errors}', ['errors' => implode(' ', $res['errors'])]), 422)
+            : $this->back("/admin/data/$handle", 'error', implode(' ', $res['errors']));
         // drafts: Zähler „Entwürfe“ der Seitenleiste (Status-Knopf der Eintragsliste aktualisiert ihn ohne Neuladen)
         $wait = $waiting ? __('Geplant – geht automatisch online: {date}.', ['date' => fmt()->datetime($waiting[0]['online_from'])]) : null;
         return $r->wantsJson() ? Response::json(['ok' => true, 'drafts' => \Core\Review\Drafts::reviewCount()] + ($wait ? ['waiting' => count($waiting), 'message' => $wait] : []))

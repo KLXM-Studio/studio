@@ -17,6 +17,8 @@ use Core\Pages;
  *  - limit: höchstens so viele Punkte je Ebene (1–50, Standard 12).
  *  - Verweis-Kapitel (Feld verweis), deren Zielseite selbst im Menü steht, erscheinen nicht doppelt.
  *  - Auf der Detailseite eines Eintrags sind Übersichtsseite und Eintrag „aktiv“.
+ *  - source: Werte eines Feldes statt der Einträge – Auswahl/Mehrfachauswahl oder Verknüpfung (Einträge der Zieltabelle, z. B. „Themen“);
+ *    link = 'detail': Punkte einer Verknüpfung führen zur Detailseite des verknüpften Eintrags statt zur gefilterten Übersicht.
  */
 final class MenuEntries
 {
@@ -31,15 +33,32 @@ final class MenuEntries
         $mode = (string) ($in['mode'] ?? '');
         $src = (string) ($in['source'] ?? '');
         return ['mode' => isset(self::MODES[$mode]) ? $mode : '', 'limit' => max(1, min(50, (int) ($in['limit'] ?? self::DEFAULTS['limit']) ?: self::DEFAULTS['limit'])),
-            'numbers' => !empty($in['numbers'])] + (preg_match('~^[a-z][a-z0-9_]{0,40}$~', $src) ? ['source' => $src] : []);   // source nur, wenn gesetzt (Bestand unverändert)
+            'numbers' => !empty($in['numbers'])] + (preg_match('~^[a-z][a-z0-9_]{0,40}$~', $src) ? ['source' => $src] : [])   // source nur, wenn gesetzt (Bestand unverändert)
+            + (($in['link'] ?? '') === 'detail' ? ['link' => 'detail'] : []);   // Verknüpfung: Menüpunkt führt zur Detailseite des verknüpften Eintrags
     }
 
-    /** Felder, deren Werte als Menüpunkte taugen (Auswahl, Mehrfachauswahl – z. B. Bereich/Thema, Kategorie, Schlagworte) */
+    /**
+     * Felder, deren Werte als Menüpunkte taugen: Auswahl, Mehrfachauswahl (z. B. Bereich, Kategorie, Schlagworte) und Verknüpfungen
+     * (relation, relations) auf eine andere Tabelle – z. B. eine Tabelle „Themen“, die die Redaktion selbst pflegt.
+     */
     public static function sourceFields(array $t): array
     {
         $out = [];
         foreach ((array) ($t['fields'] ?? []) as $f) {
-            if (in_array($f['type'] ?? '', ['select', 'multiselect'], true) && !empty($f['options'])) $out[(string) $f['name']] = (string) ($f['label'] ?? $f['name']);
+            $rel = in_array($f['type'] ?? '', ['relation', 'relations'], true) && Tables::findContent((string) ($f['target'] ?? '')) !== null;
+            if ($rel || (in_array($f['type'] ?? '', ['select', 'multiselect'], true) && !empty($f['options']))) $out[(string) $f['name']] = (string) ($f['label'] ?? $f['name']);
+        }
+        return $out;
+    }
+
+    /** Verknüpfungsfelder unter sourceFields(), deren Zieltabelle Detailseiten hat (Auswahl „zur Detailseite“) */
+    public static function detailCapable(array $t): array
+    {
+        $out = [];
+        foreach ((array) ($t['fields'] ?? []) as $f) {
+            if (!in_array($f['type'] ?? '', ['relation', 'relations'], true)) continue;
+            $tt = Tables::findContent((string) ($f['target'] ?? ''));
+            if ($tt && !empty($tt['settings']['detail_page_id']) && trim((string) ($tt['settings']['route'] ?? ''), '/') !== '') $out[] = (string) $f['name'];
         }
         return $out;
     }
@@ -148,14 +167,22 @@ final class MenuEntries
         $anchor = self::listAnchor($page, $t);
         $o = ['status' => 'published'];
         $counts = (array) (Entries::facets($t, [$field], $o)['counts'][$field] ?? []);
+        // Verknüpfung: Einträge der Zieltabelle (veröffentlicht, ihre Sortierung) statt fester Optionen; wahlweise Link zur Detailseite
+        $rel = in_array($fd['type'], ['relation', 'relations'], true);
+        $options = $rel ? Entries::relationOptions($fd) : (array) $fd['options'];
+        $target = $rel ? Tables::findContent((string) $fd['target']) : null;
+        $toDetail = $target && ($cfg['link'] ?? '') === 'detail' && in_array($field, self::detailCapable($t), true);
+        $ctxT = app()->entry;
+        $curTarget = $toDetail && $ctxT && ($ctxT['table']['handle'] ?? '') === $target['handle'] ? (string) (int) $ctxT['entry']['id'] : '';
         $req = app()->request;
         $onOverview = $req && rtrim((string) $req->path, '/') === rtrim((string) parse_url($base, PHP_URL_PATH), '/');
         $sel = $onOverview ? (array) ($req->query[$field] ?? []) : [];
         $ctx = app()->entry;
         $entryVals = $ctx && ($ctx['table']['handle'] ?? '') === $t['handle'] ? array_map('strval', (array) (is_array($ctx['entry'][$field] ?? null) ? $ctx['entry'][$field] : (json_decode((string) ($ctx['entry'][$field] ?? ''), true) ?? [$ctx['entry'][$field] ?? '']))) : [];
+        if ($rel && $entryVals) $entryVals = array_map(fn($v) => (string) (int) (is_array($v) ? ($v['id'] ?? 0) : $v), $entryVals);
         $curId = $entryVals ? (int) $ctx['entry']['id'] : 0;
         $out = [];
-        foreach ((array) $fd['options'] as $key => $label) {
+        foreach ($options as $key => $label) {
             $key = (string) $key;
             if ((int) ($counts[$key] ?? 0) < 1) continue;
             if (count($out) >= $cfg['limit']) break;
@@ -166,8 +193,10 @@ final class MenuEntries
                     $kids[] = ['id' => 'e-' . (int) $e['id'], 'label' => Entries::title($t, $e), 'href' => $href, 'active' => (int) $e['id'] === $curId, 'children' => [], 'draft' => false];
                 }
             }
-            $out[] = ['id' => 'v-' . $field . '-' . $key, 'label' => Tables::optionLabel($fd, $key), 'href' => $base . '?' . http_build_query([$field => $key]) . $anchor,
-                'active' => in_array($key, array_map('strval', $sel), true) || in_array($key, $entryVals, true), 'children' => $kids, 'draft' => false];
+            $href = $base . '?' . http_build_query([$field => $key]) . $anchor;
+            if ($toDetail && ($te = Entries::find($target, (int) $key)) && ($dh = Entries::href($target, $te))) $href = $dh;
+            $out[] = ['id' => 'v-' . $field . '-' . $key, 'label' => $rel ? (string) $label : Tables::optionLabel($fd, $key), 'href' => $href,
+                'active' => in_array($key, array_map('strval', $sel), true) || in_array($key, $entryVals, true) || $key === $curTarget, 'children' => $kids, 'draft' => false];
         }
         return $out;
     }
@@ -206,6 +235,7 @@ final class MenuEntries
         $eq('Standard aus', self::validate([]), self::DEFAULTS);
         $eq('Bereinigung', self::validate(['mode' => 'quatsch', 'limit' => 999, 'numbers' => '1']), ['mode' => '', 'limit' => 50, 'numbers' => true]);
         $eq('Zwei Ebenen', self::validate(['mode' => 'two', 'limit' => '5'])['mode'] . self::validate(['mode' => 'two', 'limit' => '5'])['limit'], 'two5');
+        $eq('Link zur Detailseite nur, wenn gesetzt', [isset(self::validate(['mode' => 'top'])['link']), self::validate(['mode' => 'top', 'link' => 'detail'])['link'] ?? ''], [false, 'detail']);
         return ['ok' => $ok, 'fails' => $fails];
     }
 }

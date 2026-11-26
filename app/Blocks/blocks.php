@@ -59,9 +59,9 @@ return [
             ...\Core\Data\Shared::blockFields(true),   // geteilte Tabellen: welche Einträge
             ...\Core\Data\Nearby::blockFields(),         // „In deiner Nähe“ (PLZ oder Ort des Besuchers)
             ['type' => 'heading', 'label' => 'Filter für Besucher', 'collapse' => true, 'summary' => 'Schaltflächen, Suchfeld, A–Z', 'help' => 'Für Verzeichnisse mit vielen Einträgen (Mitglieder, Partner, Angebote). Funktioniert ohne JavaScript; die Auswahl steht in der Adresse und lässt sich teilen.'],
-            ['name' => 'visitor_filter', 'label' => 'Filter-Schaltflächen nach', 'type' => 'datafield', 'types' => ['select', 'multiselect'], 'width' => 'half', 'empty_label' => '– keine –',
-                'help' => 'Ein Auswahl- oder Mehrfachauswahl-Feld, z. B. Kategorie.'],
-            ['name' => 'visitor_filter2', 'label' => 'Zweite Filter-Reihe nach', 'type' => 'datafield', 'types' => ['select', 'multiselect'], 'width' => 'half', 'empty_label' => '– keine –',
+            ['name' => 'visitor_filter', 'label' => 'Filter-Schaltflächen nach', 'type' => 'datafield', 'types' => ['select', 'multiselect', 'relation', 'relations'], 'width' => 'half', 'empty_label' => '– keine –',
+                'help' => 'Ein Auswahlfeld oder eine Verknüpfung, z. B. Kategorie oder Thema.'],
+            ['name' => 'visitor_filter2', 'label' => 'Zweite Filter-Reihe nach', 'type' => 'datafield', 'types' => ['select', 'multiselect', 'relation', 'relations'], 'width' => 'half', 'empty_label' => '– keine –',
                 'help' => 'Z. B. Region.'],
             ['name' => 'visitor_filter_hide', 'label' => 'Im Filter nicht anbieten', 'type' => 'text', 'max' => 300, 'placeholder' => 'z. B. Tagung, Intern',
                 'help' => 'Optionen, die keine Schaltfläche bekommen – Beschriftungen kommagetrennt. Die Einträge selbst bleiben in der Liste.'],

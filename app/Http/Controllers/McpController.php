@@ -280,9 +280,9 @@ final class McpController
                     'state' => $str('visible|featured|hidden|rejected|reset', ['enum' => ['visible', 'featured', 'hidden', 'rejected', 'reset']])], ['table', 'ids', 'state']), $rw + ['idempotentHint' => true], true,
                 fn($a) => $s->dataPick((string) $a['table'], (array) $a['ids'], (string) $a['state']));
         }
-        $add('delete_entry', 'Eintrag löschen', 'Einen Eintrag endgültig löschen.',
-            $schema(['table' => $str('Kurzname der Tabelle'), 'id' => $int('Eintrags-ID')], ['table', 'id']), $del, true,
-            fn($a) => $s->dataDelete((string) $a['table'], (int) $a['id']));
+        $add('delete_entry', 'Eintrag löschen', 'Einen Eintrag endgültig löschen. Verweisen andere Einträge darauf (Verknüpfungsfelder), werden die Verweise geleert – mit reassign (ID eines anderen Eintrags derselben Tabelle) stattdessen vorher dorthin umgehängt.',
+            $schema(['table' => $str('Kurzname der Tabelle'), 'id' => $int('Eintrags-ID'), 'reassign' => $int('optional: Verweise vorher auf diesen Eintrag derselben Tabelle umhängen')], ['table', 'id']), $del, true,
+            fn($a) => $s->dataDelete((string) $a['table'], (int) $a['id'], (int) ($a['reassign'] ?? 0)));
         if (\Core\Search\Search::enabled()) {
             $add('search_site', 'Website durchsuchen', 'Sucht wie Besucher auf der Website (tippfehlertolerant, bei eingeschalteter KI auch semantisch): veröffentlichte Seiten, Einträge mit Detailseite (inkl. geteilter), ggf. PDF-Dokumente. Liefert Titel, Art, URL, Datum und Auszug – gut, um vor dem Schreiben vorhandene Inhalte zu finden.',
                 $schema(['q' => $str('Suchbegriff(e), z. B. „Öffnungszeiten“'), 'type' => $str('Nur diese Art: page, file oder Kurzname einer Datentabelle'),

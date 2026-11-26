@@ -59,6 +59,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
+### Kategorien als eigene Tabelle
+- Löschen mit Neuzuordnung: Verweisen andere Einträge auf einen Eintrag, der gelöscht wird (einzeln oder mehrere), fragt die Verwaltung je Feld nach – „Leer lassen“ oder „Einem anderen Eintrag zuordnen“ (Auswahlfenster); Versionsnotiz an den umgehängten Einträgen. Auch per CLI `data:delete … --reassign=ID`, REST `?reassign=ID` und MCP `delete_entry` (`reassign`) (`Core\Data\Reassign`).
+- Auswahllisten: Entfernte Optionen, die Einträge noch haben, werden beim Speichern des Schemas nicht mehr verwaist – Rückfrage „N Einträge haben ‚X‘: neu zuordnen zu … / leer lassen“ (select und multiselect, Tabellen-Designer und Seitenleiste „Felder bearbeiten“; `Core\Data\OptionRemap`).
+- Verknüpfungen wie Auswahllisten: Filter-Schaltflächen der Datenliste und „Einträge im Menü“ (Werte von …) nehmen auch Verknüpfungsfelder – die Einträge der Zieltabelle in deren Reihenfolge; Menüpunkte wahlweise zur Detailseite des verknüpften Eintrags. Selbsttest `reassign:selftest`.
+
 ### Rückverknüpfungen
 - Verknüpfungen in beide Richtungen bearbeiten: Im Formular eines Eintrags zeigt **Verknüpft mit diesem Eintrag** je Verknüpfungsfeld anderer Tabellen die Gegenrichtung (z. B. Termine eines Workshops) – verknüpfen (Auswahlfenster), neu anlegen (Formular im Dialog, Feld vorbelegt), lösen. Kalender nach Datum (kommende zuerst, vergangene eingeklappt), höchstens 5 sichtbar, „Alle … anzeigen“, gefilterte Liste. Je Feld abschaltbar und beschriftbar (`backlink`, `backlink_label`); Seitenleiste „Verknüpft mit“ als Kurzfassung mit Zählern (`Core\Data\Backlinks`, Selbsttest `backlinks:selftest`).
 - Listen: `?f[feld]=ID` filtert Verknüpfungsfelder auch ohne eingerichteten Listenfilter, mit Hinweis „Gefiltert: …“.

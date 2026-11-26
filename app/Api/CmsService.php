@@ -1322,15 +1322,18 @@ final class CmsService
         return array_map(fn($r) => $r + ['value' => Maps::format([$r['lat'], $r['lng']])], Maps::geocode($q));
     }
 
-    public function dataDelete(string $handle, int $id): array
+    /** Löschen; $reassign = ID eines anderen Eintrags derselben Tabelle: Verweise anderer Einträge vorher dorthin umhängen (Core\Data\Reassign) */
+    public function dataDelete(string $handle, int $id, int $reassign = 0): array
     {
         $t = $this->dataTable($handle);
         $this->noInboxWrite($t);
         \Core\Data\Entries::find($t, $id) ?? throw new ApiError(404, 'Eintrag nicht gefunden.');
         $this->ownEntry($t, $id);
-        if (($g = $this->gate(__FUNCTION__, [$handle, $id], ['type' => 'entry', 'table' => $t['handle'], 'id' => $id], fn() => null)) !== null) return $g['__gate'];
-        \Core\Data\Entries::delete($t, $id);
-        return ['deleted' => $id];
+        if ($reassign > 0 && ($err = \Core\Data\Reassign::checkTarget($t, [$id], $reassign)) !== null) throw new ApiError(422, $err);
+        if (($g = $this->gate(__FUNCTION__, [$handle, $id, $reassign], ['type' => 'entry', 'table' => $t['handle'], 'id' => $id], fn() => null)) !== null) return $g['__gate'];
+        $res = \Core\Data\Reassign::delete($t, [$id], $reassign > 0 ? ['*' => $reassign] : []);
+        if ($res['errors']) throw new ApiError(422, 'Nicht gelöscht – Neuzuordnung fehlgeschlagen: ' . implode(' ', $res['errors']));
+        return ['deleted' => $id] + ($reassign > 0 ? ['reassigned' => $res['moved'], 'to' => $reassign] : []);
     }
 
     // ================================================================= Anfragen = Eingangs-Tabellen (nur Metadaten)

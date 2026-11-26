@@ -91,7 +91,9 @@ foreach (['visitor_filter', 'visitor_filter2'] as $k) {
     if (!str_starts_with((string) ($d[$k] ?? ''), $pfx)) continue;
     $vn = substr($d[$k], strlen($pfx));
     $vfd = \Core\Data\Network::anyField($t, $vn);
-    if (!$vfd || !in_array($vfd['type'], ['select', 'multiselect'], true) || isset($vcands[$vn]) || in_array($vn, ['q', 'seite'], true)) continue;
+    if (!$vfd || !in_array($vfd['type'], ['select', 'multiselect', 'relation', 'relations'], true) || isset($vcands[$vn]) || in_array($vn, ['q', 'seite'], true)) continue;
+    // Verknüpfung (z. B. Tabelle „Themen“): Einträge der Zieltabelle als Optionen (Schlüssel = ID)
+    if (in_array($vfd['type'], ['relation', 'relations'], true)) $vfd['options'] = Entries::relationOptions($vfd);
     $vcands[$vn] = $vfd;
 }
 // Erweiterungen (Extension::filter 'data_list.query'): Abfrage ändern, z. B. zusätzliche Bedingung
@@ -125,9 +127,13 @@ if ($vcands || !empty($d['visitor_search']) || $az) {
 }
 // Menüpunkt aus Feldwerten (Core\Data\MenuEntries, Quelle „Werte von …“): ?feld=wert filtert die Übersicht auch ohne Filter-Schaltflächen
 $menuSrc = \Core\Data\MenuEntries::config($t)['source'] ?? '';
-if ($menuSrc !== '' && !isset($vfilters[$menuSrc]) && is_string($query[$menuSrc] ?? null) && ($msf = Tables::field($t, $menuSrc)) && isset(((array) ($msf['options'] ?? []))[$query[$menuSrc]])) {
-    $o['where'] = array_merge((array) ($o['where'] ?? []), [[$menuSrc, '=', (string) $query[$menuSrc]]]);
-    $menuFilter = Tables::optionLabel($msf, (string) $query[$menuSrc]);
+if ($menuSrc !== '' && !isset($vfilters[$menuSrc]) && is_string($query[$menuSrc] ?? null) && ($msf = Tables::field($t, $menuSrc))) {
+    $mrel = in_array($msf['type'], ['relation', 'relations'], true);
+    $mopts = $mrel ? Entries::relationOptions($msf) : (array) ($msf['options'] ?? []);
+    if (isset($mopts[$query[$menuSrc]])) {
+        $o['where'] = array_merge((array) ($o['where'] ?? []), [[$menuSrc, '=', (string) $query[$menuSrc]]]);
+        $menuFilter = $mrel ? (string) $mopts[$query[$menuSrc]] : Tables::optionLabel($msf, (string) $query[$menuSrc]);
+    }
 }
 $vq = $vsearch && is_string($query['q'] ?? null) ? trim(mb_substr($query['q'], 0, 80)) : '';
 if ($vq !== '') { $o['q'] = $vq; $o['q_public'] = true; }   // Besucher-Suche: nie in „Nie öffentlich“-Feldern
