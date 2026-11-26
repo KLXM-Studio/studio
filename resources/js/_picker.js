@@ -76,7 +76,10 @@ function wire() {
   q('[data-ep-more]').addEventListener('click', () => { st.page++; load(false); });
   const list = q('[data-ep-list]');
   list.addEventListener('click', e => { const o = e.target.closest('[role=option]'); if (o) { activate(o); toggle(o); } });
-  list.addEventListener('mouseover', e => { const o = e.target.closest('[role=option]'); if (o && o !== st.hover) { st.hover = o; preview(o); } });
+  // Vorschau beim Darüberfahren erst nach kurzer Ruhe (150 ms) – sonst flackert sie beim Überstreichen der Liste
+  let hoverT = 0;
+  list.addEventListener('mouseover', e => { const o = e.target.closest('[role=option]'); if (o && o !== st.hover) { st.hover = o; clearTimeout(hoverT); hoverT = setTimeout(() => { if (st.hover === o) preview(o); }, 150); } });
+  list.addEventListener('mouseleave', () => { clearTimeout(hoverT); st.hover = null; });
   list.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); move(e.key === 'ArrowDown' ? 1 : -1); }
     else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); const all = opts(); if (all.length) activate(e.key === 'Home' ? all[0] : all[all.length - 1]); }
