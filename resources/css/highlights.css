@@ -21,3 +21,6 @@ a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}
 .tagidx__list{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;margin:0 0 1rem;padding:0}
 .tagidx__list small{opacity:.7}
 .tagidx__s2{font-size:1.08em}.tagidx__s3{font-size:1.18em}.tagidx__s4{font-size:1.3em;font-weight:700}
+/* Automatische Übersichten (Blöcke list_index, tag_index, tag_page): Abstand zwischen Kopf und Inhalt */
+.dl--listindex,.tagidx{margin-top:clamp(1rem,2.5vw,2rem)}
+.dl--tagpage .tagpage__h:first-child{margin-top:clamp(1rem,2.5vw,1.6rem)}

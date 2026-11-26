@@ -17,56 +17,44 @@ use Core\Seo;
 
 /**
  * Übersichten ohne Einrichtung:
- *  - /{Adresse einer Auswahlliste} (z. B. /thema): alle veröffentlichten Listen-Einträge in Tabellen-Reihenfolge als Karten mit Anzahl
- *    zugeordneter Einträge, Link zur Themenseite; leere nur für die Redaktion. Kit: templates/list-index.php, sonst app/Views/list-index.php.
- *  - /schlagwort: alle Schlagworte mit veröffentlichten Einträgen (alle Vokabulare) A–Z mit Anzahl. Kit: templates/tag-index.php.
+ *  - /{Adresse einer Auswahlliste} (z. B. /thema): Block list_index – Listen-Einträge als Karten mit Anzahl zugeordneter Einträge.
+ *  - /schlagwort: Block tag_index – alle Schlagworte mit veröffentlichten Einträgen A–Z.
+ * Gerendert als Abschnitte wie jede Seite (Kopf und Abstände des Kits); Kits überschreiben blocks/list_index.php, tag_index.php, tag_page.php.
  * Eine Seite mit derselben Adresse hat jeweils Vorrang (SiteController::page bzw. Pages::byPath).
  */
 final class TopicIndexController
 {
     public function listIndex(Request $r, array $t): Response
     {
-        $counts = OptionSource::publishedCounts($t);
-        $editor = app()->auth->check();
-        $items = [];
-        foreach (Exposure::publicRows($t, Entries::query($t, ['status' => 'published', 'limit' => 500] + (Lang::multi() ? ['lang' => Lang::current()] : []))) as $e) {
-            $n = (int) ($counts[(string) ($e['slug'] ?? '')] ?? 0);
-            if ($n === 0 && !$editor) continue;
-            $href = Entries::href($t, $e);
-            if ($href) $items[] = ['entry' => $e, 'href' => $href, 'count' => $n];
-        }
-        return $this->page($r, 'list-index', ['table' => $t, 'items' => $items], (string) $t['name'], (string) ($t['description'] ?? ''));
+        return $this->page($r, [['id' => 'auto-list', 'type' => 'list_index', 'data' => ['table' => $t['handle']]]], (string) $t['name'], (string) ($t['description'] ?? ''));
     }
 
     public function tagIndex(Request $r): Response
     {
         $site = new SiteController();
-        if (Pages::byPath('schlagwort')) return $site->page($r, 'schlagwort');
-        $tags = Tags::publicCounts();
-        if (!$tags) return $site->page($r, 'schlagwort');   // keine Schlagworte: 404 der Website
-        $groups = [];
-        foreach ($tags as $tag => $n) {
-            $first = mb_strtoupper(mb_substr(strtr((string) $tag, ['Ä' => 'A', 'Ö' => 'O', 'Ü' => 'U', 'ä' => 'a', 'ö' => 'o', 'ü' => 'u']), 0, 1));
-            $groups[preg_match('~^[A-Z]$~', $first) ? $first : '#'][] = ['tag' => (string) $tag, 'count' => $n, 'href' => Tags::url((string) $tag)];
-        }
-        ksort($groups);
-        return $this->page($r, 'tag-index', ['groups' => $groups, 'max' => max($tags)], lt('Schlagworte'), lt('Alle Schlagworte von A bis Z'));
+        if (Pages::byPath('schlagwort') || !Tags::publicCounts()) return $site->page($r, 'schlagwort');   // Seite gleichen Pfads bzw. keine Schlagworte
+        return $this->page($r, [['id' => 'auto-tags', 'type' => 'tag_index', 'data' => []]], lt('Schlagworte'), lt('Alle Schlagworte von A bis Z'));
     }
 
-    private function page(Request $r, string $view, array $vars, string $title, string $desc): Response
+    /**
+     * Seite aus Blöcken rendern wie jede Seite (Abschnitte, Abstände, Hintergründe des Kits): $blocks = interne Blöcke list_index,
+     * tag_index, tag_page. $o: noindex, canonical.
+     */
+    public function page(Request $r, array $blocks, string $title, string $desc, array $o = []): Response
     {
         $app = app();
         $site = new SiteController();
         if ($app->settings->get('sys.maintenance') && !$app->auth->check()) return $site->home($r);
         $theme = $app->theme;
-        $content = $theme->file('templates/' . $view . '.php') !== null ? $theme->render($view, $vars) : \Core\Theme::capture(ROOT . '/app/Views/' . $view . '.php', $vars);
-        $pseudo = ['id' => 0, 'title' => $title, 'slug' => trim($r->path, '/'), 'is_home' => 0, 'meta_description' => $desc, 'noindex' => 0, 'status' => 'published',
-            'lang' => Lang::current() === Lang::default() ? null : Lang::current(), 'type' => $view];
+        $pseudo = ['id' => 0, 'title' => $title, 'slug' => trim($r->path, '/'), 'is_home' => 0, 'meta_description' => $desc, 'noindex' => empty($o['noindex']) ? 0 : 1,
+            'status' => 'published', 'lang' => Lang::current() === Lang::default() ? null : Lang::current(), 'type' => 'auto'];
+        $app->currentPage = $pseudo;
+        $content = $theme->renderBlocks($blocks);
         $seo = Seo::forError(200);
         $seo['title'] = $title . (($s = (string) site_name()) !== '' ? ' | ' . $s : '');
         $seo['description'] = $desc;
-        $seo['canonical'] = absolute_url('/' . trim($r->path, '/'));
-        $seo['noindex'] = false;
+        $seo['canonical'] = (string) ($o['canonical'] ?? absolute_url('/' . trim($r->path, '/')));
+        $seo['noindex'] = !empty($o['noindex']);
         $html = $theme->render('layout', ['page' => $pseudo, 'content' => $content, 'seo' => $seo, 'editor' => null, 'toolbar' => null,
             'extraCss' => [$theme->hasAsset('css/data.css') ? $theme->asset('css/data.css') : asset('css/data.css'), $theme->coreCss('highlights.css')], 'extraJs' => []]);
         return $site->respond(\Core\Icons::siteSprite($html), $app->auth->check(), 200);

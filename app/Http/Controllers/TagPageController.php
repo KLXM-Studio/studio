@@ -15,7 +15,7 @@ use Core\Seo;
 /**
  * Seite je Schlagwort (Core\Data\Tags): /schlagwort/{schlagwort} – alle veröffentlichten Einträge mit diesem Schlagwort aus allen Tabellen
  * mit freien Schlagworten (über Vokabulare hinweg), je Tabelle gruppiert, ohne Einrichtung. Eine Seite mit derselben Adresse hat Vorrang.
- * Ansicht: Kit templates/tag.php, sonst app/Views/tag.php (Karten wie Datenliste/Highlights – jedes Kit gestaltet sie).
+ * Gerendert über den internen Block tag_page wie jede Seite (Kopf und Abstände des Kits); Kit-Override blocks/tag_page.php.
  */
 final class TagPageController
 {
@@ -30,19 +30,8 @@ final class TagPageController
         $groups = $tag !== '' ? Tags::entries($tag) : [];
         if (!$groups) return $site->page($r, $path);   // unbekanntes Schlagwort: 404 der Website
         $label = $groups[0]['tag'];
-        $theme = $app->theme;
-        $vars = ['tag' => $label, 'groups' => $groups];
-        $content = $theme->file('templates/tag.php') !== null ? $theme->render('tag', $vars) : \Core\Theme::capture(ROOT . '/app/Views/tag.php', $vars);
-        $title = lt('Schlagwort: {tag}', ['tag' => $label]);
-        $pseudo = ['id' => 0, 'title' => $title, 'slug' => 'schlagwort', 'is_home' => 0, 'meta_description' => '', 'noindex' => 0, 'status' => 'published',
-            'lang' => Lang::current() === Lang::default() ? null : Lang::current(), 'type' => 'tag'];
-        $seo = Seo::forError(200);
-        $seo['title'] = $title . (($s = (string) site_name()) !== '' ? ' | ' . $s : '');
-        $seo['description'] = lt('Alles zum Thema „{tag}“', ['tag' => $label]);
-        $seo['canonical'] = absolute_url(Tags::url($label));
-        if (array_sum(array_map(fn($g) => count($g['items']), $groups)) < 2) $seo['noindex'] = true;   // einzelne Treffer nicht indexieren
-        $html = $theme->render('layout', ['page' => $pseudo, 'content' => $content, 'seo' => $seo, 'editor' => null, 'toolbar' => null,
-            'extraCss' => [$theme->hasAsset('css/data.css') ? $theme->asset('css/data.css') : asset('css/data.css'), $theme->coreCss('highlights.css')], 'extraJs' => []]);
-        return $site->respond(\Core\Icons::siteSprite($html), $app->auth->check(), 200);
+        $one = array_sum(array_map(fn($g) => count($g['items']), $groups)) < 2;   // einzelne Treffer nicht indexieren
+        return (new TopicIndexController())->page($r, [['id' => 'auto-tag', 'type' => 'tag_page', 'data' => ['tag' => $label]]], lt('Schlagwort: {tag}', ['tag' => $label]),
+            lt('Alles zum Thema „{tag}“', ['tag' => $label]), ['noindex' => $one, 'canonical' => absolute_url(Tags::url($label))]);
     }
 }

@@ -300,6 +300,13 @@ return [
     ],
     // Highlights (Core\Data\Featured): hervorgehobene Einträge mehrerer Tabellen gemischt – Kartenausgabe wie „Datenliste“ (dl-items),
     // damit Kits sie gestalten; Renderer app/Blocks/highlights.php, Zusatz-CSS css/highlights.css (Kit kann es ersetzen)
+    // Automatische Übersichten (TopicIndexController, TagPageController): als Abschnitte gerendert wie jede Seite – Abstände, Hintergründe
+    // und Kopf des Kits gelten; Kits überschreiben mit blocks/{typ}.php. Nicht in der Blockauswahl (context 'auto').
+    'list_index' => ['label' => 'Übersicht einer Auswahlliste', 'icon' => 'tag', 'group' => 'Daten', 'context' => 'auto',
+        'fields' => [['name' => 'table', 'label' => 'Tabelle', 'type' => 'text']]],
+    'tag_index' => ['label' => 'Alle Schlagworte', 'icon' => 'hash', 'group' => 'Daten', 'context' => 'auto', 'fields' => []],
+    'tag_page' => ['label' => 'Seite eines Schlagworts', 'icon' => 'hash', 'group' => 'Daten', 'context' => 'auto',
+        'fields' => [['name' => 'tag', 'label' => 'Schlagwort', 'type' => 'text']]],
     // „Zum Thema“ (Core\Data\OptionSource::topic): auf der Detailseite eines Listen-Eintrags (Thema, Kategorie) alle Einträge, die ihn
     // verwenden – je Tabelle (Termine kommende, sonst neueste); Karten wie Highlights, Renderer app/Blocks/topic.php
     'topic' => [
