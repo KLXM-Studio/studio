@@ -69,6 +69,9 @@ final class TagsSelfTest
             $rel = Related::items($a, Entries::find($a, (int) $e1));
             $ck(count($rel) === 2 && (int) $rel[0]['entry']['id'] === (int) $e2 && $rel[0]['score'] === 2.0 && (int) $rel[1]['entry']['id'] === (int) $e3 && $rel[1]['score'] === 1.0, 'Passend dazu: beide Tabellen, nach gemeinsamen Schlagworten gewichtet');
             $ck(count(Related::items($a, Entries::find($a, (int) $e1), [['table' => $b['handle'], 'limit' => 1]])) === 1, 'Passend dazu: nur gewählte Tabellen');
+            $tg = Tags::entries('wald');
+            $ck(count($tg) === 1 && count($tg[0]['items']) === 2 && $tg[0]['tag'] === 'Wald' && str_contains(Tags::url('Wald'), '/schlagwort/Wald'), 'Seite je Schlagwort: Einträge gefunden (Groß/klein egal), Adresse');
+            $ck(str_contains(Entries::html($a, Entries::find($a, (int) $e1), 'tags', ['link' => true]), 'href=') && !str_contains(Entries::html($a, Entries::find($a, (int) $e1), 'tags'), 'href='), 'Schlagworte als Links nur auf Wunsch bzw. auf der eigenen Detailseite');
             $r2 = Tags::rename($va, 'Rehwild', 'Reh');
             $ck($r2['changed'] === 3 && Entries::find($a, (int) $e1)['tags'] === ['Reh', 'Wald'], 'Umbenennen in allen Einträgen');
             $r3 = Tags::remove($va, 'Wald');

@@ -542,7 +542,7 @@ final class Knowledge
         if ($tags) {
             $h .= '<div class="kn-tags"><h2 class="kn-foot__h" data-kn-skip>' . e(lt('Schlagworte')) . '</h2><ul class="kn-chips" role="list">';
             foreach ($tags as $k) {
-                $u = self::tagHref($t, $k);
+                $u = Tags::isFree($tf) ? Tags::url($k) : self::tagHref($t, $k);   // freie Schlagworte: Seite je Schlagwort über alle Tabellen
                 $l = e(Tables::optionLabel($tf, $k));
                 $h .= '<li>' . ($u ? '<a class="kn-chip" href="' . e($u) . '">' . $l . '</a>' : '<span class="kn-chip">' . $l . '</span>') . '</li>';
             }

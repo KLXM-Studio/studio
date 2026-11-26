@@ -945,6 +945,49 @@ if (entries) {
     checked().forEach(id => u.searchParams.append('ids[]', id));
     location.href = u.href;
   });
+  // Zuordnen (Sammelaktion): Kategorie setzen bzw. Schlagworte/Auswahlen hinzufügen oder entfernen – DataController::bulkAssign
+  entries.addEventListener('click', e => {
+    const b = e.target.closest('[data-bulk-assign]'); if (!b) return;
+    const ids = checked(); if (!ids.length) return;
+    const fields = JSON.parse(b.dataset.bulkAssign || '[]');
+    const dlg = d.createElement('dialog');
+    dlg.className = 'adm-dialog adm-dialog--small dt-assign';
+    dlg.setAttribute('aria-labelledby', 'dt-assign-h');
+    dlg.innerHTML = `<form method="dialog"><h2 id="dt-assign-h">${esc(ids.length === 1 ? t('1 Eintrag zuordnen') : t('{n} Einträge zuordnen', { n: ids.length }))}</h2>
+      <label class="f"><span>${esc(t('Feld'))}</span><select data-af>${fields.map((f, i) => `<option value="${i}">${esc(f.label)}</option>`).join('')}</select></label>
+      <fieldset class="f dt-assign__mode"><legend>${esc(t('Aktion'))}</legend><div data-am></div></fieldset>
+      <div class="f" data-av></div>
+      <p class="lp__error" data-aerr hidden></p>
+      <div class="adm-row dt-assign__foot"><button type="button" class="adm-btn" data-cancel>${esc(t('Abbrechen'))}</button><button type="submit" class="adm-btn adm-btn--primary">${esc(t('Übernehmen'))}</button></div></form>`;
+    d.body.append(dlg);
+    const sel = $('[data-af]', dlg), modes = $('[data-am]', dlg), val = $('[data-av]', dlg);
+    const paint = () => {
+      const f = fields[+sel.value];
+      const ms = f.kind === 'one' ? [['set', t('Setzen')], ['remove', t('Leeren, wenn gleich')]] : [['add', t('Hinzufügen')], ['remove', t('Entfernen')], ['set', t('Ersetzen')]];
+      modes.innerHTML = ms.map(([k, l], i) => `<label class="f-check"><input type="radio" name="am" value="${k}"${i ? '' : ' checked'}> <span>${esc(l)}</span></label>`).join('');
+      val.innerHTML = f.kind === 'tags'
+        ? `<label><span>${esc(t('Schlagworte (durch Komma getrennt)'))}</span><input type="text" data-avv list="dt-assign-dl" autocomplete="off"></label><datalist id="dt-assign-dl">${f.options.map(([k]) => `<option value="${esc(k)}">`).join('')}</datalist>`
+        : `<label><span>${esc(t('Wert'))}</span><select data-avv${f.kind === 'one' ? '' : ' multiple size="6"'}>${f.options.map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join('')}</select></label>`;
+    };
+    sel.addEventListener('change', paint);
+    paint();
+    $('[data-cancel]', dlg).onclick = () => dlg.close();
+    dlg.addEventListener('close', () => dlg.remove());
+    $('form', dlg).addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const f = fields[+sel.value], v = $('[data-avv]', dlg);
+      const values = f.kind === 'tags' ? v.value.split(/[,;]/).map(s => s.trim()).filter(Boolean) : [...v.selectedOptions].map(o => o.value);
+      const mode = $('input[name=am]:checked', dlg)?.value || 'add';
+      const err = $('[data-aerr]', dlg);
+      if (!values.length && mode !== 'set') { err.textContent = t('Bitte einen Wert wählen.'); err.hidden = false; return; }
+      const res = await post({ action: 'assign', ids, field: f.name, mode, values }).catch(() => null);
+      if (!res?.ok) { err.textContent = res?.error || t('Das hat nicht geklappt.'); err.hidden = false; return; }
+      dlg.close();
+      location.reload();
+    });
+    dlg.showModal();
+    sel.focus();
+  });
   // Status je Zeile: Online ⇄ Offline (Recht data.publish; Rückfrage nur beim Offline-Nehmen)
   const live = $('[data-entries-msg]', entries);
   const say = m => { if (!live) return; live.textContent = m; clearTimeout(live._t); live._t = setTimeout(() => (live.textContent = ''), 4000); };

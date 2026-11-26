@@ -124,6 +124,14 @@ final class ReassignSelfTest
             $ck(!\Core\Permissions::allows($role, 'data.edit', $kt['handle']), 'Feste Liste: kein geerbtes Recht');
             app()->db->query('UPDATE data_tables SET settings_json = json_remove(settings_json, \'$.list_locked\') WHERE handle = ?', [$kt['handle']]);
             Tables::flush();
+            // Themenseite („Zum Thema“): Einträge, die den Listen-Eintrag verwenden – nur Tabellen mit Detailseiten
+            $pid = (int) app()->db->fetchValue('SELECT id FROM pages ORDER BY id LIMIT 1');
+            app()->db->query("UPDATE data_tables SET settings_json = json_set(settings_json, '$.route', ?, '$.detail_page_id', ?) WHERE handle = ?", [str_replace('_', '-', $wi['handle']), $pid, $wi['handle']]);
+            Tables::flush();
+            $kt = Tables::find($kt['handle']);
+            $walde = Entries::bySlug($kt, 'wald', false);
+            $tp = $walde ? OptionSource::topic($kt, $walde) : [];
+            $ck(count($tp) === 1 && (int) $tp[0]['items'][0]['entry']['id'] === (int) $o2, 'Zum Thema: zugeordnete Einträge der nutzenden Tabelle');
             [$neu] = Entries::save($kt, null, ['titel' => 'Neu dazu', 'status' => 'published']);
             $ck(in_array('Neu dazu', Tables::field(Tables::find($wi['handle']), 'kat')['options'], true), 'Neuer Eintrag = neue Option');
             $wid = (int) app()->db->fetchValue("SELECT id FROM {$kt['table']} WHERE slug = 'wald'");

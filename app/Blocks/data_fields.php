@@ -80,7 +80,7 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
           if ($tp === 'media') { $img ??= $f; continue; }
           if (in_array($tp, ['select', 'multiselect'], true)) {
               $fd = \Core\Data\Network::anyField($t, $f);
-              foreach (array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null) as $k) $chips[] = '<span class="dl-chip ' . $toneP($fd, (string) $k) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</span>';
+              foreach (array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null) as $k) $chips[] = ($ch = \Core\Data\Entries::optionLink($fd, (string) $k)) ? '<a class="dl-chip opt-link ' . $toneP($fd, (string) $k) . '" href="' . e($ch) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</a>' : '<span class="dl-chip ' . $toneP($fd, (string) $k) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</span>';
               continue;
           }
           if (in_array($tp, ['email', 'tel', 'url'], true)) {
@@ -132,7 +132,7 @@ if ($layout === 'dl' && !is_editing() && !array_filter($fields, fn($f) => $f ===
       if ($tp === 'media') { $img ??= $f; continue; }
       if (in_array($tp, ['select', 'multiselect'], true)) {
           $fd = \Core\Data\Network::anyField($t, $f);
-          foreach (array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null) as $k) $chips[] = '<span class="dl-chip ' . $tone($fd, (string) $k) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</span>';
+          foreach (array_filter((array) ($e[$f] ?? []), fn($v) => $v !== '' && $v !== null) as $k) $chips[] = ($ch = \Core\Data\Entries::optionLink($fd, (string) $k)) ? '<a class="dl-chip opt-link ' . $tone($fd, (string) $k) . '" href="' . e($ch) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</a>' : '<span class="dl-chip ' . $tone($fd, (string) $k) . '">' . e(Tables::optionLabel($fd, (string) $k)) . '</span>';
           continue;
       }
       // Kontaktfelder als Knöpfe (E-Mail, Telefon, Website) statt als Fließtext

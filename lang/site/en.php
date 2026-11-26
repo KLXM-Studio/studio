@@ -513,4 +513,7 @@ return [
     'Filter „{label}“ entfernen' => 'Remove filter “{label}”',
     'Suche „{label}“ entfernen' => 'Remove search “{label}”',
     'gewählt' => 'selected',
+    'Alles zum Thema „{tag}“' => 'Everything about “{tag}”',
+    'Schlagwort' => 'Tag',
+    'Schlagwort: {tag}' => 'Tag: {tag}',
 ];

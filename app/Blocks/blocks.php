@@ -300,6 +300,20 @@ return [
     ],
     // Highlights (Core\Data\Featured): hervorgehobene Einträge mehrerer Tabellen gemischt – Kartenausgabe wie „Datenliste“ (dl-items),
     // damit Kits sie gestalten; Renderer app/Blocks/highlights.php, Zusatz-CSS css/highlights.css (Kit kann es ersetzen)
+    // „Zum Thema“ (Core\Data\OptionSource::topic): auf der Detailseite eines Listen-Eintrags (Thema, Kategorie) alle Einträge, die ihn
+    // verwenden – je Tabelle (Termine kommende, sonst neueste); Karten wie Highlights, Renderer app/Blocks/topic.php
+    'topic' => [
+        'label' => 'Zum Thema', 'icon' => 'tag', 'group' => 'Daten',
+        'description' => 'Auf der Detailseite eines Themas bzw. einer Kategorie: alle zugeordneten Einträge, je Bereich.',
+        'help' => 'Für Tabellen, die als Auswahlliste dienen (z. B. „Themen“): Auf der Detailseite eines Themas erscheinen die Termine (nur kommende), Neuigkeiten und Artikel, die diesem Thema zugeordnet sind – ohne Pflege. Wird beim Gestalten der Detailseite einer solchen Liste automatisch eingesetzt.',
+        'fields' => [
+            ['name' => 'title', 'label' => 'Überschrift (optional)', 'type' => 'text', 'width' => 'half'],
+            ['name' => 'limit', 'label' => 'Höchstens je Bereich', 'type' => 'number', 'default' => 6, 'min' => 1, 'max' => 24, 'width' => 'half'],
+            ['name' => 'columns', 'label' => 'Spalten (höchstens)', 'type' => 'select', 'required' => true, 'default' => '3', 'width' => 'half', 'options' => ['2' => '2', '3' => '3', '4' => '4']],
+            ['name' => 'past', 'label' => 'Bei Terminen auch vergangene zeigen', 'type' => 'bool', 'default' => false, 'width' => 'half'],
+            ['name' => 'show_date', 'label' => 'Datum zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+        ],
+    ],
     // „Passend dazu“ (Core\Data\Related): Einträge anderer Tabellen mit gemeinsamen Schlagworten bzw. derselben Kategorie – für Detailseiten;
     // Karten wie Highlights/Datenliste (Kits gestalten sie mit), Renderer app/Blocks/related.php
     'related' => [

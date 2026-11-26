@@ -896,7 +896,7 @@ final class Theme
         // Live-Galerie nutzt das Markup der Bildergalerie (cms-gallery) – gleiche Stile (Kern und Kit)
         if ($types !== null && in_array('live_gallery', $types, true)) $types[] = 'gallery';
         // Highlights (Core\Data\Featured) nutzen die Karten der Datenliste – gleiche Stile (Kern und Kit), dazu css/highlights.css
-        $highlights = $types === null || in_array('highlights', $types, true) || in_array('related', $types, true);   // „Passend dazu“ wie Highlights
+        $highlights = $types === null || in_array('highlights', $types, true) || in_array('related', $types, true) || in_array('topic', $types, true);   // „Passend dazu“, „Zum Thema“ wie Highlights
         if ($types !== null && $highlights) $types[] = 'data_list';
         if ($types !== null && $this->embedCss) $types[] = 'video';
         $out = [];
@@ -1022,7 +1022,7 @@ final class Theme
     }
 
     /** Kern-Stylesheet – oder die gleichnamige Datei des Kits (public/assets/kits/{name}/css/…), falls vorhanden */
-    private function coreCss(string $file): string
+    public function coreCss(string $file): string
     {
         return $this->hasAsset('css/' . $file) ? $this->asset('css/' . $file) : asset('css/' . $file);
     }

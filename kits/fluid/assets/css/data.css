@@ -193,3 +193,7 @@ html.is-dark :is(.dl-img--contain,.df-img--contain){--tile:#F3F2EF}
 .df-portrait__facts a{color:var(--f-link)}
 .df-portrait__text{max-width:42rem;margin-top:var(--f-s-s);color:var(--f-text)}
 .df-portrait__text>:first-child{margin-top:0}
+
+/* Schlagworte/Kategorien als Links (Core\Data\Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}

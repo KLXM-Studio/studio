@@ -885,6 +885,38 @@ final class Entries
         \Core\Extensions::emit(new \Core\Events\EntryDeleted($table, $id, $before));   // Erweiterungen (Extension::on)
     }
 
+    /**
+     * Beschriftung einer Auswahl – auf der Website als Link, wenn es ein Ziel gibt: freie Schlagworte → /schlagwort/…, Liste mit Detailseiten
+     * (Core\Data\OptionSource) → Detailseite des Listen-Eintrags. Ohne Link in der Verwaltung, mit $o['link'] = false und in reinem Text.
+     */
+    private static function optionHtml(array $f, string $key, array $o): string
+    {
+        $label = e(Tables::optionLabel($f, $key));
+        if (empty($o['_opt_link']) || !empty($o['plain']) || (app()->request?->isAdminPath() ?? false)) return $label;
+        $href = self::optionLink($f, $key);
+        return $href ? '<a class="opt-link" href="' . e($href) . '">' . $label . '</a>' : $label;
+    }
+
+    /** Ziel einer Auswahl: Seite des Schlagworts bzw. Detailseite des Listen-Eintrags (null = keins) */
+    public static function optionLink(array $f, string $key): ?string
+    {
+        if (Tags::isFree($f)) return Tags::url($key);
+        if (!empty($f['options_from'])) return self::listHref((string) $f['options_from'], $key);
+        return null;
+    }
+
+    /** Detailseite eines Listen-Eintrags (Kurzname) – null ohne Detailseiten */
+    public static function listHref(string $handle, string $slug): ?string
+    {
+        static $memo = [];
+        $k = $handle . ':' . $slug . ':' . \Core\Lang::current();
+        if (array_key_exists($k, $memo)) return $memo[$k];
+        $t = Tables::findContent($handle);
+        if (!$t || empty($t['settings']['detail_page_id']) || trim((string) ($t['settings']['route'] ?? ''), '/') === '') return $memo[$k] = null;
+        $e = self::bySlug($t, $slug, true, \Core\Lang::multi() ? \Core\Lang::current() : null);
+        return $memo[$k] = $e ? self::href($t, $e) : null;
+    }
+
     /** Wer verweist auf diesen Eintrag? [['table' => …, 'field' => …, 'entries' => […]], …] */
     public static function backlinks(array $table, int $id): array
     {
@@ -1128,6 +1160,9 @@ final class Entries
         if (!$f) return '';
         $v = $e[$name] ?? null;
         if ($v === null || $v === '' || $v === []) return '';
+        // Auswahl als Link (optionHtml): ausdrücklich ($o['link'] = true) oder auf der Detailseite dieses Eintrags – nie in Karten/Listen (Links in Links)
+        $ctx = in_array($f['type'], ['select', 'multiselect'], true) ? app()->entry : null;
+        $o['_opt_link'] = ($o['link'] ?? null) === true || (($o['link'] ?? null) !== false && $ctx && ($ctx['table']['handle'] ?? '') === $table['handle'] && (int) ($ctx['entry']['id'] ?? 0) === (int) ($e['id'] ?? -1));
         return match ($f['type']) {
             'richtext' => empty($o['plain']) ? emphasis_rich(Sanitizer::block((string) $v)) : Sanitizer::block((string) $v),   // *Wort* → <em class="hl"> (nur Besucher)
             'textarea' => nl2br(e((string) $v), false),
@@ -1138,8 +1173,9 @@ final class Entries
             'datetime' => ($ts = strtotime((string) $v)) ? e((isset($o['date_format']) ? date($o['date_format'], $ts) : date_local($ts, $o['date_style'] ?? 'short')) . ', ' . lt('{time} Uhr', ['time' => date('H:i', $ts)])) : e((string) $v),
             'recurrence' => e(Calendar::describe((string) $v)),
             EventRef::TYPE => EventRef::html($f, $v, $o),
-            'select' => e(Tables::optionLabel($f, (string) $v)),
-            'multiselect' => e(implode(', ', array_map(fn($k) => Tables::optionLabel($f, (string) $k), (array) $v))),
+            // Schlagworte und Kategorien aus einer Liste: auf der Website als Links (Seite je Schlagwort, Detailseite des Listen-Eintrags)
+            'select' => self::optionHtml($f, (string) $v, $o),
+            'multiselect' => implode(', ', array_map(fn($k) => self::optionHtml($f, (string) $k, $o), (array) $v)),
             'media' => Media::visual((int) $v, $o['sizes'] ?? '(min-width: 1080px) 800px, 100vw', array_filter(['ratio' => $o['ratio'] ?? null])),
             // Video/Audio: Player mit Untertiteln und Transkript (Core\MediaTracks), sonst Download-Link
             'file' => ($m = Media::find((int) $v)) && empty($o['plain']) && \Core\MediaTracks::supports($m) ? \Core\MediaTracks::player($m, ['class' => 'dt-media'])

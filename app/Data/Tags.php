@@ -108,6 +108,58 @@ final class Tags
         return self::$memo[$vocab] = $n;
     }
 
+    /** Adresse der Seite eines Schlagworts (TagPageController) */
+    public static function url(string $tag): string
+    {
+        return url('/schlagwort/' . rawurlencode(self::norm($tag)));
+    }
+
+    /**
+     * Veröffentlichte, öffentliche Einträge mit diesem Schlagwort – alle Tabellen mit freien Schlagworten und Detailseiten, je Tabelle
+     * (Termine: kommende zuerst, dann vergangene; sonst neueste). @return list<array{table: array, items: list<array{entry: array, href: string}>, tag: string}>
+     */
+    public static function entries(string $tag, int $perTable = 24): array
+    {
+        $low = mb_strtolower(self::norm($tag));
+        if ($low === '') return [];
+        $out = [];
+        $seen = [];
+        foreach (self::members() as $fields) {
+            foreach ($fields as $m) {
+                $t = Tables::findContent($m['handle']);
+                if (!$t || empty($t['settings']['detail_page_id']) || trim((string) ($t['settings']['route'] ?? ''), '/') === '') continue;
+                $ids = array_map('intval', array_column(Tables::db($t)->fetchAll("SELECT id, {$m['field']} AS v FROM {$t['table']} WHERE status = 'published' AND {$m['field']} LIKE ?",
+                    ['%' . trim((string) json_encode(self::norm($tag), JSON_UNESCAPED_UNICODE), '"') . '%']), 'id'));
+                if (!$ids) continue;
+                $label = null;
+                $items = [];
+                foreach (Exposure::publicRows($t, Entries::query($t, ['status' => 'published', 'ids' => $ids, 'limit' => 200] + (\Core\Lang::multi() ? ['lang' => \Core\Lang::current()] : []))) as $e) {
+                    $hit = array_values(array_filter(array_map('strval', (array) ($e[$m['field']] ?? [])), fn($v) => mb_strtolower($v) === $low));
+                    if (!$hit || isset($seen[$t['handle'] . ':' . $e['id']]) || !($href = Entries::href($t, $e))) continue;
+                    $label ??= $hit[0];
+                    $seen[$t['handle'] . ':' . $e['id']] = true;
+                    $items[] = ['entry' => $e, 'href' => $href];
+                }
+                if (!$items) continue;
+                $now = time();
+                $cal = Calendar::enabled($t);
+                usort($items, function ($a, $b) use ($t, $cal, $now) {
+                    if ($cal) {
+                        $sa = Calendar::span($t, $a['entry']); $sb = Calendar::span($t, $b['entry']);
+                        $ta = $sa ? $sa['start']->getTimestamp() : 0; $tb = $sb ? $sb['start']->getTimestamp() : 0;
+                        $fa = $ta >= $now; $fb = $tb >= $now;
+                        return $fa !== $fb ? ($fa ? -1 : 1) : ($fa ? $ta <=> $tb : $tb <=> $ta);
+                    }
+                    return strcmp((string) ($b['entry']['published_at'] ?? $b['entry']['created_at'] ?? ''), (string) ($a['entry']['published_at'] ?? $a['entry']['created_at'] ?? ''));
+                });
+                $key = $t['handle'];
+                if (isset($out[$key])) $out[$key]['items'] = array_slice([...$out[$key]['items'], ...$items], 0, $perTable);
+                else $out[$key] = ['table' => $t, 'items' => array_slice($items, 0, $perTable), 'tag' => (string) $label];
+            }
+        }
+        return array_values($out);
+    }
+
     /** Feld mit Optionen = vorhandene Schlagworte füllen (Tables::hydrate) */
     public static function fill(string $handle, array $f): array
     {

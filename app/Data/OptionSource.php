@@ -125,6 +125,50 @@ final class OptionSource
         return $out;
     }
 
+    /**
+     * Themenseite: Einträge, die einen Listen-Eintrag ($e der Liste $source, Wert = Kurzname) verwenden – je Tabelle mit Detailseiten,
+     * veröffentlicht und öffentlich; Termine nur kommende (früher Beginn zuerst, $past = auch vergangene danach), sonst neueste.
+     * @return list<array{table: array, items: list<array{entry: array, href: string}>}>
+     */
+    public static function topic(array $source, array $e, int $perTable = 6, bool $past = false): array
+    {
+        $slug = (string) ($e['slug'] ?? '');
+        if ($slug === '') return [];
+        $byTable = [];
+        foreach (self::usedBy($source) as [$t, $f]) {
+            if (empty($t['settings']['detail_page_id']) || trim((string) ($t['settings']['route'] ?? ''), '/') === '') continue;
+            $p = [];
+            $w = self::cond($f, $slug, $p);
+            $ids = array_map('intval', array_column(Tables::db($t)->fetchAll("SELECT id FROM {$t['table']} WHERE status = 'published' AND $w", $p), 'id'));
+            if ($ids) $byTable[$t['handle']] = ['table' => $t, 'ids' => array_merge($byTable[$t['handle']]['ids'] ?? [], $ids)];
+        }
+        $out = [];
+        $now = time();
+        foreach ($byTable as ['table' => $t, 'ids' => $ids]) {
+            $cal = Calendar::enabled($t);
+            $items = [];
+            foreach (Exposure::publicRows($t, Entries::query($t, ['status' => 'published', 'ids' => array_values(array_unique($ids)), 'limit' => 300] + (\Core\Lang::multi() ? ['lang' => \Core\Lang::current()] : []))) as $r) {
+                $href = Entries::href($t, $r);
+                if (!$href) continue;
+                if ($cal) {
+                    $span = Calendar::span($t, $r);
+                    $end = $span ? ($span['has_end'] ? $span['end'] : $span['start']->setTime(23, 59))->getTimestamp() : 0;
+                    $up = $end >= $now;
+                    if (!$up && !$past) continue;
+                    $start = $span ? $span['start']->getTimestamp() : 0;
+                    $key = [$up ? 1 : 0, $up ? -$start : $start];   // kommende zuerst (früher Beginn vorn), danach vergangene (jüngste vorn)
+                } else {
+                    $key = [0, strtotime((string) ($r['published_at'] ?? '') ?: (string) ($r['created_at'] ?? '')) ?: 0];
+                }
+                $items[] = ['entry' => $r, 'href' => $href, '_ts' => $key];
+            }
+            usort($items, fn($a, $b) => $b['_ts'] <=> $a['_ts']);
+            $items = array_map(fn($x) => ['entry' => $x['entry'], 'href' => $x['href']], array_slice($items, 0, $perTable));
+            if ($items) $out[] = ['table' => $t, 'items' => $items];
+        }
+        return $out;
+    }
+
     /** Ist die Tabelle Quelle für Optionen? */
     public static function isSource(array $t): bool
     {

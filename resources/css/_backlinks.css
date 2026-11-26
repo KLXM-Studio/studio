@@ -94,3 +94,11 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .tg-form{display:flex;flex-wrap:wrap;gap:6px;align-items:end;margin-top:8px!important}
 .tg-form label{display:grid;gap:2px;font-size:13px}
 .tg-filter{width:min(100%,20rem)}
+
+/* Sammelaktion „Zuordnen“ (admin.js, DataController::bulkAssign) */
+.dt-assign form{display:grid;gap:12px}
+.dt-assign h2{margin:0}
+.dt-assign__mode{display:flex;flex-wrap:wrap;gap:6px 16px;border:0;padding:0;margin:0}
+.dt-assign__mode legend{width:100%;margin-bottom:4px;font-weight:600}
+.dt-assign [data-av] label{display:grid;gap:4px}
+.dt-assign__foot{justify-content:flex-end}

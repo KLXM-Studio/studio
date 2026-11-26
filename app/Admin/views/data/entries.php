@@ -139,6 +139,14 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     elseif (\Core\Data\Calendar::enabled($t) && can('data.export', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('ICS exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/kalender.ics')]];
     // Tabellen-Export (CSV/Excel) der gewählten Zeilen
     if (can('data.export', $t['handle']) && !Tables::isInbox($t)) $bulkItems[] = ['key' => 'export', 'icon' => 'file-csv', 'label' => __('Als Tabelle exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/export') . '?format=csv']];
+    // Zuordnen (Kategorie setzen, Schlagworte hinzufügen/entfernen) für alle gewählten – Felder: Auswahl, Mehrfachauswahl, Schlagworte
+    $assignFields = [];
+    if (can('data.edit', $t['handle']) && !Tables::isInbox($t)) foreach ($t['fields'] as $af) {
+        if (!in_array($af['type'], ['select', 'multiselect'], true) || !empty($af['legacy']) || !empty($af['system']) && empty($af['options_from']) && empty($af['free']) && !\Core\Data\Kinds::isContacts($t)) continue;
+        $assignFields[] = ['name' => $af['name'], 'label' => (string) $af['label'], 'kind' => \Core\Data\Tags::isFree($af) ? 'tags' : ($af['type'] === 'select' ? 'one' : 'many'),
+            'options' => array_map(fn($k, $l) => [(string) $k, (string) $l], array_keys((array) ($af['options'] ?? [])), (array) ($af['options'] ?? []))];
+    }
+    if ($assignFields) $bulkItems[] = ['key' => 'move', 'icon' => 'tag', 'label' => __('Zuordnen …'), 'attrs' => ['data-bulk-assign' => json_encode($assignFields, JSON_UNESCAPED_UNICODE)]];
     if (can('data.delete', $t['handle'])) $bulkItems[] = ['key' => 'delete', 'label' => __('Löschen'), 'attrs' => ['data-bulk-action' => 'delete']];
     echo \Core\RowMenu::bar($bulkItems, ['class' => 'dt-bulk']); ?>
   </div>

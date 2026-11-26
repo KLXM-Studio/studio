@@ -4,3 +4,7 @@
 @import "./_data-table.css";   /* Tabelle: Zahlen rechtsbündig, hervorgehobene Zeilen */
 @import "./_data-fields.css";
 @import "./_data-directory.css";   /* Verzeichnis, Besucher-Filter, A–Z, Profil, Kontaktkarte */
+
+/* Schlagworte/Kategorien als Links (Core\Data\Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}

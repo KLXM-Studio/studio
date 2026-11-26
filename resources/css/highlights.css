@@ -9,3 +9,10 @@
 :where(.hl--teaser) .hl-lead .dl-img{aspect-ratio:4/3;min-height:100%}
 :where(.hl--teaser) .hl-lead .dl-body{align-content:center;padding:clamp(20px,3vw,40px)}
 :where(.hl--teaser) .hl-lead .dl-name{font-size:var(--hl-lead-title,clamp(1.5rem,1.1rem + 1.6vw,2.25rem))}
+
+/* Seite je Schlagwort (app/Views/tag.php) */
+.tagpage__h{margin:2.2rem 0 .8rem}
+.tagpage__h small{font-weight:400;font-size:.7em}
+/* Schlagworte/Kategorien als Links (Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}

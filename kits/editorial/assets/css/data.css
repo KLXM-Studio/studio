@@ -134,3 +134,7 @@
 .df-back a{color:var(--e-muted);font:500 .8125rem var(--e-font-mono)}
 .dt-media video{display:block;width:100%;height:auto;background:#000}
 .dt-media .media-transcript{margin-top:10px}
+
+/* Schlagworte/Kategorien als Links (Core\Data\Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}

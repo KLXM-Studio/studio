@@ -94,3 +94,7 @@ a.dl-chip:hover{background:var(--m-a2);color:var(--m-pop-ink)}
 .dt-media .media-transcript{margin-top:.6rem}
 .dt-media .media-transcript summary{display:flex;align-items:center;min-height:2.75rem;font-weight:600;cursor:pointer}
 .dt-media .media-transcript__for{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* Schlagworte/Kategorien als Links (Core\Data\Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}

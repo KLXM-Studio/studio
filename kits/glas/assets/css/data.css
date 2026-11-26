@@ -105,3 +105,7 @@ a.dl-chip:hover{background:var(--g-a2)}
 /* Glas: Unschärfe nur mit feinem Zeiger und Breite (sonst höhere Deckkraft über --g-boost) */
 @media (hover:hover) and (pointer:fine) and (min-width:48em){.dl--cards .dl-item,.dl--list .dl-item{-webkit-backdrop-filter:blur(var(--g-blur-now)) saturate(1.4);backdrop-filter:blur(var(--g-blur-now)) saturate(1.4)}}
 @media (prefers-reduced-transparency:reduce){.dl-item{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
+
+/* Schlagworte/Kategorien als Links (Core\Data\Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}

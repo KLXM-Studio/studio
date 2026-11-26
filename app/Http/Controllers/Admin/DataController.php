@@ -663,7 +663,9 @@ final class DataController extends AdminController
         }
         // Kalender: Zeitraum + Wiederholung (_when) statt einzelner Datumsfelder
         $cal = \Core\Data\Calendar::enabled($t) ? \Core\Data\Calendar::config($t) : null;
-        $head = array_merge([$h . '_title', $h . ($cal ? '_when' : ($date ?? 'published_at'))], array_map(fn($n) => $h . $n, $selects),
+        // Auswahlliste (Thema/Kategorie): Kopf ohne Datum – die Seite lebt von „Zum Thema“
+        $isList = \Core\Data\OptionSource::isList($t);
+        $head = array_merge($isList ? [$h . '_title'] : [$h . '_title', $h . ($cal ? '_when' : ($date ?? 'published_at'))], array_map(fn($n) => $h . $n, $selects),
             $st['image_field'] ? [$h . $st['image_field']] : []);
         $used = array_merge([$st['title_field'], $st['image_field'], $date], $selects,
             $cal ? [$cal['start'], $cal['end'], $cal['all_day'], $cal['recurrence']] : []);
@@ -691,6 +693,9 @@ final class DataController extends AdminController
             $blocks[] = ['id' => bin2hex(random_bytes(5)), 'type' => 'data_fields', 'data' => ['table' => $t['handle'], 'layout' => 'prose', 'fields' => $rest, 'ratio' => '16:9'] + $back]
                 + ($cal ? ['tunes' => ['section' => ['spaceTop' => 'none']]] : []);
         }
+        // Themenseite füllt sich selbst: Auswahlliste (Thema/Kategorie) → „Zum Thema“; Tabellen mit Schlagworten → „Passend dazu“
+        if ($isList) $blocks[] = ['id' => bin2hex(random_bytes(5)), 'type' => 'topic', 'data' => ['limit' => 6, 'columns' => '3', 'show_date' => true]];
+        if (array_filter($t['fields'], [\Core\Data\Tags::class, 'isFree'])) $blocks[] = ['id' => bin2hex(random_bytes(5)), 'type' => 'related', 'data' => ['title' => 'Passend dazu', 'limit' => 6, 'columns' => '3', 'show_badge' => true, 'show_date' => true, 'ratio' => '16:10']];
         // Standard, wenn die Tabelle noch keine Vorlage hat (geteilte Tabellen: Vorlage gehört dieser Website)
         return \Core\Data\DetailTemplates::create($t, $t['name'] . ' – Detailseite', $blocks);
     }
@@ -949,6 +954,42 @@ final class DataController extends AdminController
         $res = \Core\Data\Reassign::delete($t, [(int) $id], self::reassignMap($r));
         if ($res['errors']) return $this->back("/admin/data/$handle/$id", 'error', __('Nicht gelöscht – die Neuzuordnung hat nicht geklappt: {errors}', ['errors' => implode(' ', $res['errors'])]));
         return $this->back("/admin/data/$handle", 'success', match ($res['moved']) { 0 => __('Eintrag gelöscht.'), 1 => __('Eintrag gelöscht, 1 Verweis neu zugeordnet.'), default => __('Eintrag gelöscht, {n} Verweise neu zugeordnet.', ['n' => $res['moved']]) });
+    }
+
+    /**
+     * Sammelaktion „Zuordnen“: Feld (Auswahl/Mehrfachauswahl/Schlagworte), mode set|add|remove, value(s) – je Eintrag Entries::save mit
+     * Versionsnotiz; fremde Einträge geteilter Tabellen bleiben unberührt. @return array{errors: list<string>, done: int}
+     */
+    private static function bulkAssign(array $t, array $ids, array $p): array
+    {
+        $f = Tables::field($t, (string) ($p['field'] ?? ''));
+        if (!$f || !in_array($f['type'], ['select', 'multiselect'], true)) return ['errors' => [__('Unbekanntes Feld.')], 'done' => 0];
+        $mode = in_array($p['mode'] ?? '', ['set', 'add', 'remove'], true) ? (string) $p['mode'] : 'add';
+        $vals = array_values(array_filter(array_map('strval', (array) ($p['values'] ?? [])), fn($v) => trim($v) !== ''));
+        if (\Core\Data\Tags::isFree($f)) $vals = \Core\Data\Tags::canon(\Core\Data\Tags::vocab($t['handle'], $f), $vals);
+        else $vals = array_values(array_filter($vals, fn($v) => array_key_exists($v, (array) ($f['options'] ?? []))));
+        if (!$vals && $mode !== 'set') return ['errors' => [__('Bitte einen Wert wählen.')], 'done' => 0];
+        $note = __('Sammelaktion „Zuordnen“: {field}', ['field' => $f['label']]);
+        $done = 0;
+        $errs = [];
+        foreach (array_slice($ids, 0, 500) as $id) {
+            $e = Entries::find($t, (int) $id);
+            if (!$e || Shared::isForeign($t, $e)) continue;
+            if ($f['type'] === 'select') {
+                $new = $mode === 'remove' ? (in_array((string) ($e[$f['name']] ?? ''), $vals, true) ? '' : (string) ($e[$f['name']] ?? '')) : ($vals[0] ?? '');
+            } else {
+                $cur = array_map('strval', (array) ($e[$f['name']] ?? []));
+                $low = array_map('mb_strtolower', $vals);
+                $new = match ($mode) {
+                    'set' => $vals,
+                    'add' => array_values(array_unique([...$cur, ...$vals])),
+                    default => array_values(array_filter($cur, fn($v) => !in_array(mb_strtolower($v), $low, true))),
+                };
+            }
+            [, $er] = Entries::save($t, (int) $id, [$f['name'] => $new], $note);
+            if ($er) $errs[] = Entries::title($t, $e) . ': ' . implode(' ', array_map('strval', $er)); else $done++;
+        }
+        return ['errors' => $errs, 'done' => $done];
     }
 
     /** Neuzuordnung aus dem Formular: reassign[tabelle.feld] = Ziel-ID */
@@ -1225,9 +1266,10 @@ final class DataController extends AdminController
             'draft' => Entries::setStatus($t, $ids, 'draft'),
             'delete' => $res = \Core\Data\Reassign::delete($t, $ids, self::reassignMap($r)),
             'reorder' => Entries::reorder($t, $ids),
+            'assign' => $res = self::bulkAssign($t, $ids, $r->post),
             default => throw new HttpException(422, 'Unbekannte Aktion.'),
         };
-        if (!empty($res['errors'])) return $r->wantsJson() ? Response::fail(__('Nicht gelöscht – die Neuzuordnung hat nicht geklappt: {errors}', ['errors' => implode(' ', $res['errors'])]), 422)
+        if (!empty($res['errors'])) return $r->wantsJson() ? Response::fail(($r->post['action'] ?? '') === 'delete' ? __('Nicht gelöscht – die Neuzuordnung hat nicht geklappt: {errors}', ['errors' => implode(' ', $res['errors'])]) : implode(' ', $res['errors']), 422)
             : $this->back("/admin/data/$handle", 'error', implode(' ', $res['errors']));
         // drafts: Zähler „Entwürfe“ der Seitenleiste (Status-Knopf der Eintragsliste aktualisiert ihn ohne Neuladen)
         $wait = $waiting ? __('Geplant – geht automatisch online: {date}.', ['date' => fmt()->datetime($waiting[0]['online_from'])]) : null;

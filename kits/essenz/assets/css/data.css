@@ -102,3 +102,7 @@ a.dl-chip:hover{background:var(--e-a2)}
 .df-prose :is(ul,ol){padding-inline-start:1.25em}
 .df-prose li::marker{color:var(--e-link)}
 .df-prose blockquote{margin-block:1.2em;padding-inline-start:var(--e-s-m);border-inline-start:3px solid var(--e-a);color:var(--e-ink);font:var(--e-hw) var(--e-t1)/1.4 var(--e-font-head)}
+
+/* Schlagworte/Kategorien als Links (Core\Data\Entries::optionLink) */
+a.dl-chip.opt-link{text-decoration:none}
+a.dl-chip.opt-link:hover{text-decoration:underline;text-underline-offset:.15em}
