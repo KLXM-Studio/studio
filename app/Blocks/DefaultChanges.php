@@ -45,6 +45,10 @@ final class DefaultChanges
         '2026-11-highlights-exclude-slider' => [
             'highlights' => ['exclude_slider' => false],
         ],
+        // 1.0.0: Datenliste „Darstellung der Filter“ (Standard: kompakte Leiste) – bestehende behalten die Chip-Reihen
+        '2026-11-data-list-filter-bar' => [
+            'data_list' => ['filter_style' => 'chips'],
+        ],
     ];
     public const SETTING = 'sys.block_defaults';
 

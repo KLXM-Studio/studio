@@ -181,6 +181,25 @@ function cmsLiveRegions(me) {
     clearTimeout(timer);
     load(region, formUrl(f), 'push', false);
   });
+  // Kompakte Filterleiste der Datenliste (.dl-fbar): nur ein Aufklapp-Filter offen, schließen mit Esc / Klick daneben; nach dem
+  // Nachladen den Filter wieder öffnen, in dem der Fokus steht (Mehrfachauswahl ohne erneutes Aufklappen)
+  const fbarClose = (keep) => document.querySelectorAll('.dl-fbar__dd[open]').forEach((x) => { if (x !== keep) x.open = false; });
+  document.addEventListener('toggle', (e) => { if (e.target.matches?.('.dl-fbar__dd') && e.target.open) fbarClose(e.target); }, true);
+  document.addEventListener('click', (e) => { if (!e.target.closest('.dl-fbar__dd')) fbarClose(null); });
+  document.addEventListener('keydown', (e) => {
+    const dd = e.key === 'Escape' && e.target.closest?.('.dl-fbar__dd[open]');
+    if (dd) { dd.open = false; dd.querySelector('summary')?.focus(); }
+  });
+  let fbarKeep = null;   // [Filter, Feld-ID] des Aufklapp-Filters, in dem gerade gewählt wurde
+  document.addEventListener('change', (e) => { const dd = e.target.closest?.('.dl-fbar__dd'); fbarKeep = dd ? [dd.dataset.fbar, e.target.id] : null; }, true);
+  document.addEventListener('cms:content-replaced', (e) => {
+    if (!fbarKeep) return;
+    const [k, id] = fbarKeep; fbarKeep = null;
+    const dd = e.target.querySelector?.('.dl-fbar__dd[data-fbar="' + CSS.escape(k) + '"]');
+    if (!dd) return;
+    dd.open = true;
+    (id && document.getElementById(id))?.focus({ preventScroll: true });
+  });
   // Mit Skript filtern Kontrollkästchen sofort – „Filter anwenden“ (nur für Besucher ohne JavaScript) ausblenden (CSS: .cms-live-js)
   document.documentElement.classList.add('cms-live-js');
   addEventListener('popstate', () => {

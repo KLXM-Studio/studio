@@ -173,16 +173,23 @@ final class MenuEntries
     }
 
     /**
-     * Anker der ersten Datenliste dieser Tabelle auf der Übersichtsseite („#b-…“ bzw. eigener Anker des Abschnitts) – der Menüpunkt
+     * Anker der Datenliste dieser Tabelle auf der Übersichtsseite (bevorzugt die mit Besucherfiltern/Suche) („#b-…“ bzw. eigener Anker des Abschnitts) – der Menüpunkt
      * springt so zur gefilterten Liste statt zum Einstieg; den festen Kopf berücksichtigt scroll-padding-top des Kits. '' ohne Liste.
      */
     private static function listAnchor(array $page, array $t): string
     {
         try {
+            $first = null;
             foreach (Pages::blocks($page, false) as $raw) {
                 if (!is_array($raw) || ($raw['type'] ?? '') !== 'data_list' || (string) ($raw['data']['table'] ?? '') !== $t['handle']) continue;
-                $a = trim((string) ($raw['tunes']['section']['anchor'] ?? ''));
-                $id = $a !== '' ? $a : 'b-' . (string) ($raw['id'] ?? '');
+                $first ??= $raw;
+                $dd = (array) ($raw['data'] ?? []);
+                // Liste mit Besucherfiltern bzw. Suche bevorzugen – dort wirkt ?feld=wert sichtbar
+                if (!empty($dd['visitor_filter']) || !empty($dd['visitor_filter2']) || !empty($dd['visitor_search'])) { $first = $raw; break; }
+            }
+            if ($first) {
+                $a = trim((string) ($first['tunes']['section']['anchor'] ?? ''));
+                $id = $a !== '' ? $a : 'b-' . (string) ($first['id'] ?? '');
                 return $id !== 'b-' ? '#' . rawurlencode($id) : '';
             }
         } catch (\Throwable) {

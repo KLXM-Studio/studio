@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Datenliste: kompakte Filterleiste
+- Neue Darstellung der Besucherfilter (Standard für neue Listen): Suchfeld mit Lupe und je Filter ein Aufklapp-Knopf mit Anzahl, gewählte Werte als entfernbare Chips, Trefferzahl, „Filter zurücksetzen“; Telefon: Suche volle Breite. Bestehende Listen behalten die Chip-Reihen.
+- Menü aus Feldwerten: Menüpunkte springen per Anker zur gefilterten Datenliste.
+
 ### Varianten mit Schemabild
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.

@@ -82,7 +82,8 @@ $ktree = $know ? \Core\Data\Knowledge::tree($t) : null;
 if ($layout === 'chapters' && !$know) $layout = 'list';
 // Mehrere Optionen je Filter (Kontrollkästchen), Trefferauszug, Glossar-Treffer: Stile css/list-filter.css ('@kfilter', auch nach dem Nachladen)
 $multi = !empty($d['visitor_multi']);
-if ($multi || !empty($d['search_excerpt']) || !empty($d['search_glossary']) || $know) app()->theme->markUsed('@kfilter');
+$fbar = ($d['filter_style'] ?? 'chips') === 'bar';   // kompakte Filterleiste (Suche + Aufklapp-Filter, list-filter.css + live.js)
+if ($multi || $fbar || !empty($d['search_excerpt']) || !empty($d['search_glossary']) || $know) app()->theme->markUsed('@kfilter');
 // A–Z: nur ohne Blättern (Sprungmarken auf dieser Seite) und nicht als Tabelle; sortiert nach dem Titel
 $az = !empty($d['az_index']) && empty($d['paginate']) && $layout !== 'table';
 $vcands = [];   // eingestellte Filterfelder [name => Feld]
@@ -228,7 +229,42 @@ $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($
   </header>
   <?php endif; ?>
 
-  <?php if (($vfilters || $vsearch) && $multi): $qid = $b->domId() . '-q'; // Mehrfach-Filter: ein GET-Formular mit Suche und Kontrollkästchen ?>
+  <?php if (($vfilters || $vsearch) && $fbar): $qid = $b->domId() . '-q'; $nActive = 0; // Kompakte Leiste: Suche + je Filter ein Aufklapp-Knopf, aktive Werte als Chips ?>
+  <form class="dl-fbar" role="search" method="get" data-live-nav action="<?= e($here . '#' . $b->domId()) ?>" aria-label="<?= e(lt('Suchen und filtern')) ?>">
+    <div class="dl-fbar__row">
+      <?php if ($vsearch): ?>
+      <span class="dl-fbar__search"><svg class="dl-fbar__ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input class="dl-fbar__q" id="<?= e($qid) ?>" type="search" name="q" value="<?= e($vq) ?>" maxlength="80" autocomplete="off" enterkeyhint="search" placeholder="<?= e(lt('In der Liste suchen')) ?>" aria-label="<?= e(lt('In der Liste suchen')) ?>" data-live-input></span>
+      <?php endif; ?>
+      <?php foreach ($vfilters as $vn => $vf): $vl = Tables::label($vf['field']); $selV = array_map('strval', (array) ($vf['sel'] ?? [])); $nActive += count($selV); ?>
+      <details class="dl-fbar__dd" data-fbar="<?= e($vn) ?>">
+        <summary class="dl-fbar__btn"><?= e($vl) ?><?php if ($selV): ?> <span class="dl-fbar__n"><span class="dl-sr">, <?= e(lt('gewählt')) ?>: </span><?= count($selV) ?></span><?php endif; ?><svg class="dl-fbar__chev" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <fieldset class="dl-fbar__pop">
+          <legend class="dl-sr"><?= e(lt('Filtern nach {label}', ['label' => $vl])) ?></legend>
+          <?php if (!$multi): $cid = $b->domId() . '-f-' . $vn . '-all'; ?>
+          <label class="dl-fbar__opt" for="<?= e($cid) ?>"><input type="radio" id="<?= e($cid) ?>" name="<?= e($vn) ?>" value=""<?= !$selV ? ' checked' : '' ?> data-live-change> <span><?= e(lt('Alle')) ?></span></label>
+          <?php endif; ?>
+          <?php foreach ($vf['options'] as $k => $l): $cid = $b->domId() . '-f-' . $vn . '-' . preg_replace('~[^a-z0-9_-]~i', '', (string) $k); $on = in_array((string) $k, $selV, true); $n = (int) ($vf['counts'][(string) $k] ?? 0); ?>
+          <label class="dl-fbar__opt" for="<?= e($cid) ?>"><input type="<?= $multi ? 'checkbox' : 'radio' ?>" id="<?= e($cid) ?>" name="<?= e($vn) ?><?= $multi ? '[]' : '' ?>" value="<?= e((string) $k) ?>"<?= $on ? ' checked' : '' ?> data-live-change> <span><?= e(Tables::optionLabel($vf['field'], (string) $k)) ?></span><?php if ($n): ?> <span class="dl-fbar__cnt"><span class="dl-sr">(</span><?= $n ?><span class="dl-sr"> <?= e(lt('Einträge')) ?>)</span></span><?php endif; ?></label>
+          <?php endforeach; ?>
+        </fieldset>
+      </details>
+      <?php endforeach; ?>
+      <button class="dl-fbar__apply" type="submit"><?= e($vfilters ? lt('Filter anwenden') : lt('Suchen')) ?></button>
+      <?php if ($filtering): $total = $limit ? Entries::count($t, $o) : count($rows); ?>
+      <p class="dl-fbar__count" role="status"><span data-live-count><?= e($total === 1 ? lt('1 Treffer') : lt('{n} Treffer', ['n' => $total])) ?></span></p>
+      <?php endif; ?>
+    </div>
+    <?php if ($nActive || $vq !== ''): ?>
+    <ul class="dl-fbar__active" role="list" aria-label="<?= e(lt('Aktive Filter')) ?>">
+      <?php foreach ($vfilters as $vn => $vf): foreach (array_map('strval', (array) ($vf['sel'] ?? [])) as $k): $rest = $multi ? array_values(array_diff(array_map('strval', (array) $vf['sel']), [$k])) : null; $lab = Tables::optionLabel($vf['field'], $k); ?>
+      <li><a class="dl-fbar__chip" href="<?= e($qs([$vn => $rest ?: null])) ?>" data-live-nav rel="nofollow" aria-label="<?= e(lt('Filter „{label}“ entfernen', ['label' => $lab])) ?>"><?= e($lab) ?> <span aria-hidden="true">×</span></a></li>
+      <?php endforeach; endforeach; ?>
+      <?php if ($vq !== ''): ?><li><a class="dl-fbar__chip" href="<?= e($qs(['q' => null])) ?>" data-live-nav rel="nofollow" aria-label="<?= e(lt('Suche „{label}“ entfernen', ['label' => $vq])) ?>">„<?= e($vq) ?>“ <span aria-hidden="true">×</span></a></li><?php endif; ?>
+      <li><a class="dl-fbar__reset" href="<?= e($here . '#' . $b->domId()) ?>" data-live-nav><?= e(lt('Filter zurücksetzen')) ?></a></li>
+    </ul>
+    <?php endif; ?>
+  </form>
+  <?php elseif (($vfilters || $vsearch) && $multi): $qid = $b->domId() . '-q'; // Mehrfach-Filter: ein GET-Formular mit Suche und Kontrollkästchen ?>
   <form class="dl-tools dl-tools--multi" role="search" method="get" data-live-nav action="<?= e($here . '#' . $b->domId()) ?>" aria-label="<?= e(lt('Suchen und filtern')) ?>">
     <?php if ($vsearch): ?>
     <div class="dl-search">

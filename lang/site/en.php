@@ -508,4 +508,9 @@ return [
     '„{ort}“ wurde nicht gefunden – es werden alle Einträge gezeigt.' => '“{ort}” was not found – showing all entries.',
     'Kapitel {n}' => 'Chapter {n}',
     'Diese Website wird gerade eingerichtet.' => 'This website is being set up.',
+    // Kompakte Filterleiste der Datenliste
+    'Aktive Filter' => 'Active filters',
+    'Filter „{label}“ entfernen' => 'Remove filter “{label}”',
+    'Suche „{label}“ entfernen' => 'Remove search “{label}”',
+    'gewählt' => 'selected',
 ];
