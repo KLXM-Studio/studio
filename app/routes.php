@@ -295,6 +295,11 @@ return function (Router $r): void {
     $r->get('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
     $r->post('/admin/data/{handle}/vcard', [Admin\AddressBookController::class, 'export']);
     // Austausch (Core\Data\Exchange): vCard in Adressbücher, ICS in Kalender – Datei/Adresse, Vorschau, Bestätigen; Kalender-Abo als Quelle
+    // Tabelle importieren/exportieren (CSV, XLSX – Core\Data\TableImport/TableExport, Rechte data.import/data.export)
+    $r->get('/admin/data/{handle}/export', [Admin\TableIoController::class, 'export']);
+    $r->get('/admin/data/{handle}/tabelle-import', [Admin\TableIoController::class, 'importForm']);
+    $r->post('/admin/data/{handle}/tabelle-import', [Admin\TableIoController::class, 'importUpload']);
+    $r->post('/admin/data/{handle}/tabelle-import/lauf', [Admin\TableIoController::class, 'importRun']);
     $r->get('/admin/data/{handle}/import', [Admin\ExchangeController::class, 'form']);
     $r->post('/admin/data/{handle}/import', [Admin\ExchangeController::class, 'submit']);
     $r->post('/admin/data/{handle}/import/abo', [Admin\ExchangeController::class, 'subscribe']);

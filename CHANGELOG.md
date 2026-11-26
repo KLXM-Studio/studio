@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Importieren und Exportieren (CSV, Excel)
+- Jede Datentabelle: Export als CSV (Semikolon oder Komma) oder XLSX mit Spaltenwahl, aktuelle Ansicht bzw. gewählte Zeilen; Import mit Spaltenzuordnung, Probelauf (Fehler je Zeile), Modus neu/aktualisieren/beides, Abgleich über ID, Adresse oder Feld, Sicherung vorher, Protokoll.
+- Eigene Rechte „Einträge importieren“ / „Einträge exportieren“ (`data.import`, `data.export`, Standard: Administration) – gelten auch für vCard/ICS und den Glossar-Import; ohne Recht keine Knöpfe.
+- CLI `data:export`, `data:import` (Probelauf ohne `--run`).
+
 ### Eintragsliste: einstellbare Filter
 - Je Tabelle unter „Felder & Einstellungen“ bis zu sechs Filter über der Liste: Auswahl, Mehrfachauswahl, Verknüpfung, Ja/Nein als Auswahlliste, Datumsfelder als Zeitraum „von … bis“; „Filter zurücksetzen“.
 - Zusatzrollen wirken jetzt auch beim Anmelden, in API-Tokens, Abo-Tokens und der Support-API (`Auth::userRow`, `Permissions::effective`); „Ansicht als Rolle“ ohne die Zusatzrollen des echten Kontos.

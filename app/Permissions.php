@@ -36,6 +36,8 @@ final class Permissions
                 'data.publish' => __('Einträge veröffentlichen'),
                 'data.delete' => __('Einträge löschen'),
                 'data.schema' => __('Tabellen und Felder ändern'),
+                'data.import' => __('Einträge importieren (CSV, Excel, vCard, ICS)'),
+                'data.export' => __('Einträge exportieren (CSV, Excel, vCard, ICS)'),
                 'data.shared.manage' => __('Geteilte Daten verwalten (Tabellen für mehrere Websites anlegen, Mitglieder zuordnen)'),
                 // Externe Quellen (Core\Sources) – zusätzlich Funktion „sources“ der Website
                 'sources.manage' => __('Externe Quellen einrichten und abrufen (Feeds, APIs, OpenImmo)'),

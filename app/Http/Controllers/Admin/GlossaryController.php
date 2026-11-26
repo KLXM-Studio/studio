@@ -29,6 +29,7 @@ final class GlossaryController extends AdminController
         $t = Glossary::table();
         $ok = match ($need) {
             'schema' => can('data.schema'),
+            'import' => $t ? can('data.import', $t['handle']) : can('data.schema'),   // Importieren: eigenes Recht
             default => $t ? can('data.edit', $t['handle']) : can('data.schema'),
         };
         if (!$ok) throw new HttpException(403, __('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'));
@@ -169,7 +170,7 @@ final class GlossaryController extends AdminController
 
     public function import(Request $r): Response
     {
-        $this->gate($r);
+        $this->gate($r, 'import');
         $text = trim((string) ($r->post['text'] ?? ''));
         $file = $r->files['file'] ?? null;
         if (is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK && is_uploaded_file((string) $file['tmp_name'])) {

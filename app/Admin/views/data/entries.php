@@ -102,8 +102,10 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     <?php if ($extTbl['actions']): // Erweiterungen (Extension::tableActions, Core\Slots): Knöpfe im Kopf ?>
     <span class="dt-head__pages"><?php foreach ($extTbl['actions'] as $xa): ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($xa['href'])) ?>" data-slot="<?= e($xa['extension']) ?>"><?= $xa['icon'] !== '' ? \Core\Icons::render($xa['icon']) . ' ' : '' ?><?= e($xa['label']) ?></a><?php endforeach; ?></span>
     <?php endif; ?>
-    <?php if (\Core\Data\Exchange::kind($t) !== null && can('data.edit', $t['handle'])): // Austausch: vCard bzw. ICS importieren (Core\Data\Exchange) ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/import')) ?>"><?= icon('upload-simple') ?> <?= e(__('Importieren')) ?></a><?php endif; ?>
-    <?php if (\Core\Data\Calendar::enabled($t)): // Kalender als ICS-Datei (Serien mit RRULE/EXDATE/RECURRENCE-ID) ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/kalender.ics')) ?>" download><?= icon('download-simple') ?> <?= e(__('ICS exportieren')) ?></a><?php endif; ?>
+    <?php if (\Core\Data\Exchange::kind($t) !== null && can('data.import', $t['handle'])): // Austausch: vCard bzw. ICS importieren (Core\Data\Exchange) ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/import')) ?>"><?= icon('upload-simple') ?> <?= e(\Core\Data\Exchange::kind($t) === 'ics' ? __('ICS importieren') : __('vCard importieren')) ?></a><?php endif; ?>
+    <?php if (!Tables::isInbox($t) && can('data.import', $t['handle'])): // Tabelle importieren (CSV/Excel, Core\Data\TableImport) ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/tabelle-import')) ?>"><?= icon('upload-simple') ?> <?= e(__('Importieren')) ?></a><?php endif; ?>
+    <?php if (!Tables::isInbox($t) && can('data.export', $t['handle'])): // Tabelle exportieren (CSV/Excel) – aktuelle Ansicht ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/export') . (($eq = http_build_query(array_filter(['status' => $status === 'all' ? '' : $status, 'q' => $q, 'zeit' => $when !== '' && $when !== 'kommende' ? $when : '', 'f' => $lfSel ?: null]))) !== '' ? '?' . $eq : '')) ?>"><?= icon('download-simple') ?> <?= e(__('Exportieren')) ?></a><?php endif; ?>
+    <?php if (\Core\Data\Calendar::enabled($t) && can('data.export', $t['handle'])): // Kalender als ICS-Datei (Serien mit RRULE/EXDATE/RECURRENCE-ID) ?><a class="adm-btn adm-btn--ghost" href="<?= e(url($base . '/kalender.ics')) ?>" download><?= icon('download-simple') ?> <?= e(__('ICS exportieren')) ?></a><?php endif; ?>
     <a class="adm-btn adm-btn--primary" href="<?= e(url($base . '/new') . ($multi ? '?lang=' . $lang : '')) ?>">+ <?= e($t['singular']) ?></a>
   </div>
 </header>
@@ -133,8 +135,10 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
         $bulkItems[] = ['key' => 'publish', 'label' => __('Online stellen'), 'attrs' => ['data-bulk-action' => 'publish']];
         $bulkItems[] = ['key' => 'publish', 'icon' => 'eye-slash', 'label' => __('Offline nehmen'), 'attrs' => ['data-bulk-action' => 'draft']];
     }
-    if (\Core\Data\AddressBook::enabled($t) && can('data.edit', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('vCard exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/vcard')]];
-    elseif (\Core\Data\Calendar::enabled($t) && can('data.edit', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('ICS exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/kalender.ics')]];
+    if (\Core\Data\AddressBook::enabled($t) && can('data.export', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('vCard exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/vcard')]];
+    elseif (\Core\Data\Calendar::enabled($t) && can('data.export', $t['handle'])) $bulkItems[] = ['key' => 'export', 'label' => __('ICS exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/kalender.ics')]];
+    // Tabellen-Export (CSV/Excel) der gewählten Zeilen
+    if (can('data.export', $t['handle']) && !Tables::isInbox($t)) $bulkItems[] = ['key' => 'export', 'icon' => 'file-csv', 'label' => __('Als Tabelle exportieren'), 'attrs' => ['data-bulk-export' => url($base . '/export') . '?format=csv']];
     if (can('data.delete', $t['handle'])) $bulkItems[] = ['key' => 'delete', 'label' => __('Löschen'), 'attrs' => ['data-bulk-action' => 'delete']];
     echo \Core\RowMenu::bar($bulkItems, ['class' => 'dt-bulk']); ?>
   </div>
@@ -198,7 +202,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
           <?= $rowMenu($e) ?>
         </div></td>
         <?php if ($perEntry): ?><td class="dt-c-vis" data-prio="1" data-label="<?= e(__('Website')) ?>"><?= $visTag($e) ?></td><?php endif; ?>
-        <?php foreach ($cols as $ci => $c): ?><td data-prio="<?= $prio($ci) ?>" data-label="<?= e($c['label']) ?>"<?= in_array($c['type'], ['date', 'datetime', 'time', 'number', 'tel', 'iban'], true) ? ' class="dt-c-nowrap"' : '' ?>><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : $clamp(strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>')))) ?></td><?php endforeach; ?>
+        <?php foreach ($cols as $ci => $c): ?><td data-prio="<?= $prio($ci) ?>" data-label="<?= e($c['label']) ?>"<?= in_array($c['type'], ['date', 'datetime', 'time', 'number', 'tel', 'iban', 'select', 'bool'], true) ? ' class="dt-c-nowrap"' : '' ?>><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : $clamp(strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>')))) ?></td><?php endforeach; ?>
         <?php if ($t['settings']['workflow']): ?><td class="dt-c-status" data-label="Status"><?= $statusCell($e) ?></td><?php endif; ?>
         <td class="adm-muted dt-c-date" data-prio="5" data-label="Geändert"><?= e(\Core\Format::admin()->date(strtotime((string) ($e['updated_at'] ?: $e['created_at'])))) ?></td>
       </tr>

@@ -112,7 +112,7 @@ final class AddressBookController extends AdminController
     {
         $this->auth($r);
         $t = $this->table($handle);
-        if (!can('data.edit', $handle) || !AddressBook::enabled($t)) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
+        if (!can('data.export', $handle) || !AddressBook::enabled($t)) throw new HttpException(403, __('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'));
         $ids = array_values(array_filter(array_map('intval', (array) ($r->post['ids'] ?? $r->query['ids'] ?? []))));
         if (!$ids) {
             $lists = AddressBook::lists($t);

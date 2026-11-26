@@ -4015,7 +4015,7 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .dt-star[aria-pressed=true] svg{fill:currentColor}
 .dt-star[aria-busy=true]{opacity:.5}
 .dt-forder{width:4.5rem;min-height:32px;margin-left:4px;padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
-.dt-c-nowrap,.dt-c-date{white-space:nowrap}   /* kurze Werte (Datum, Zahl) nie mitten im Wert umbrechen */
+.dt-c-nowrap,.dt-c-date,.dt-c-status{white-space:nowrap;overflow-wrap:normal;word-break:keep-all}   /* kurze Werte (Datum, Zahl) nie mitten im Wert umbrechen */
 /* Telefon/schmal: „Speichern“ (und „Veröffentlichen“) des Eintragsformulars als feste Leiste unten – nicht erst nach dem ganzen Formular */
 @media (max-width:760px){
   .dt-entry .dt-save{position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--adm-card);border-top:1px solid var(--adm-line);box-shadow:0 -6px 20px rgba(0,0,0,.08)}
@@ -4031,3 +4031,10 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .dt-lf select{max-width:16rem}
 .dt-lf--range{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dt-lf--range legend{float:left;width:100%;margin-bottom:4px;padding:0}
+.ti__wrap{overflow:auto;margin:8px 0 14px}
+.ti__table th[scope=row]{font-weight:600;white-space:nowrap}
+.ti__table select{min-width:12rem}
+.ti__opts{gap:14px;align-items:flex-end}
+.ti__opts .f{display:grid;gap:4px;margin:0}
+.ti__result{margin:14px 0;padding:12px 14px;border-radius:10px;background:var(--adm-fill,#F2F2F4)}
+.ti__errors{margin:6px 0 0;padding-left:1.2rem;color:var(--adm-err)}

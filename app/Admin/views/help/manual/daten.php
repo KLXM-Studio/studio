@@ -66,6 +66,13 @@
 
   <p><b>Eigene Filter über der Liste:</b> Unter <b>Felder &amp; Einstellungen → Darstellung → Filter in der Eintragsliste</b> wählen Sie bis zu sechs Felder – Auswahl-, Ja/Nein- und Verknüpfungsfelder erscheinen über der Liste als Auswahlliste (z. B. Kategorie, Standort), Datumsfelder als Zeitraum „von … bis“. Die Auswahl steht in der Adresse und lässt sich als Favorit merken.</p>
   <p><b>Termine</b> (Tabellen mit Kalender) zeigen in der Liste zuerst die <b>Kommenden</b>, nach Beginn sortiert; die Reiter <b>Vergangene</b> (neueste zuerst) und <b>Alle</b> stehen daneben. Ein <b>neuer Eintrag</b> startet als Entwurf: <b>Speichern</b> legt ihn offline an, <b>Veröffentlichen</b> stellt ihn gleich online. Fehlt Ihrer Rolle ein Recht oder gibt es einen Eintrag nicht mehr, sagt die Verwaltung das in ihrem eigenen Rahmen – mit Weg zurück zur Übersicht.</p>
+  <h3 id="import-export">Importieren und Exportieren (CSV, Excel)</h3>
+  <p>In der Eintragsliste stehen <b>Exportieren</b> und <b>Importieren</b> – nur für Rollen mit den Rechten „Einträge exportieren“ bzw. „Einträge importieren“ (Standard: Administration; unter Benutzer → Rollen vergeben).</p>
+  <ul>
+    <li><b>Exportieren:</b> CSV für Excel (Semikolon), CSV mit Komma oder Excel (.xlsx); Spalten wählbar. Exportiert wird die aktuelle Ansicht – Status, Suche, Filter – bzw. die markierten Zeilen („Als Tabelle exportieren“). Auswahlfelder erscheinen mit Beschriftung, Verknüpfungen mit Titel, das Datum lesbar, formatierter Text als Klartext. Die Spalte „ID“ steht immer vorn.</li>
+    <li><b>Importieren:</b> Datei wählen → Spalten zuordnen (automatisch nach Name oder Beschriftung, änderbar) → <b>Probelauf</b> zeigt „neu“, „aktualisiert“ und Fehler je Zeile, ohne zu speichern → <b>Importieren</b>. Vorgehen: vorhandene aktualisieren und übrige neu anlegen, nur aktualisieren oder alles neu; vorhandene erkennt der Import an der ID, der Adresse oder einem gewählten Feld. Neue Einträge starten offline, außer die Datei sagt „Online“ und Ihre Rolle darf veröffentlichen. Vorhandene Einträge werden vorher gesichert und haben zusätzlich Versionen. Bilder und Felder mit mehreren Angaben (Telefon, Adresse …) importiert die Tabelle nicht.</li>
+    <li>Tipp: erst exportieren, in Excel bearbeiten, dann wieder importieren.</li>
+  </ul>
   <h3 id="versionen">Versionen von Einträgen</h3>
   <p>Jedes Speichern eines Eintrags legt eine Version an – in der Verwaltung, direkt auf der Website, über API und MCP; beim ersten Ändern
     wird zusätzlich der bisherige Stand gesichert (die letzten <?= (int) app()->config->get('revisions', 20) ?> Stände je Eintrag).

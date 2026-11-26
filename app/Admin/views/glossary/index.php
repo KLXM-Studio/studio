@@ -165,6 +165,7 @@ $siteName = fn(string $k) => \Core\Data\Shared::siteInfo($k, 'glossar')['name'];
         <?php if ($import['errors']): ?><ul class="rd-errors"><?php foreach ($import['errors'] as $line => $msg): ?><li><?= e(__('Zeile {n}: {msg}', ['n' => $line, 'msg' => $msg])) ?></li><?php endforeach; ?></ul><?php endif; ?>
       </div>
       <?php endif; ?>
+      <?php if (($gt = \Core\Glossary\Glossary::table()) && can('data.import', $gt['handle'])): // Importieren: eigenes Recht (data.import) ?>
       <form method="post" action="<?= e(url($base . '/import')) ?>" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="f"><label for="gls-file"><?= e(__('Datei (CSV)')) ?></label><input id="gls-file" type="file" name="file" accept=".csv,.txt,text/csv"></div>
@@ -175,6 +176,7 @@ $siteName = fn(string $k) => \Core\Data\Shared::siteInfo($k, 'glossar')['name'];
         </div>
         <button class="adm-btn adm-btn--small" type="submit"><?= e(__('Importieren')) ?></button>
       </form>
+      <?php else: ?><p class="f-help"><?= e(__('Importieren darf nur, wer das Recht „Einträge importieren“ hat (Standard: Administration).')) ?></p><?php endif; ?>
       <p class="rd-export"><?= e(__('Exportieren:')) ?> <a href="<?= e(url($base . '/export')) ?>">CSV</a></p>
     </section>
 

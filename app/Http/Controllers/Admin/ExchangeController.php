@@ -14,14 +14,14 @@ use Core\RateLimiter;
 /**
  * Importieren in Adressbücher (vCard) und Kalender (ICS) – Core\Data\Exchange: Datei ziehen bzw. wählen (Kalender auch: Adresse
  * einmalig abrufen), Vorschau als Probelauf, Bestätigen. Kalender-Abos mit regelmäßigem Abruf legt „Abonnieren“ als Externe Quelle an.
- * Rechte: data.edit auf die Tabelle; neue Listen/Kategorien nur mit data.schema; Veröffentlichen neuer Einträge nur mit data.publish
+ * Rechte: data.import auf die Tabelle; neue Listen/Kategorien nur mit data.schema; Veröffentlichen neuer Einträge nur mit data.publish
  * (bei Freigabe-Workflow).
  */
 final class ExchangeController extends AdminController
 {
     private function table(Request $r, string $handle): array
     {
-        $this->auth($r, 'data.edit', $handle);
+        $this->auth($r, 'data.import', $handle);   // Importieren: eigenes Recht (Standard: nur Administration)
         $t = Tables::find($handle) ?? throw new HttpException(404);
         if (Exchange::kind($t) === null) throw new HttpException(404);
         return $t;

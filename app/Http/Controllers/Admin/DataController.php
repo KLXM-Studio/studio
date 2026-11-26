@@ -935,7 +935,7 @@ final class DataController extends AdminController
     {
         $this->auth($r);
         $t = $this->table($handle);
-        if (!can('data.edit', $handle) || !\Core\Data\Calendar::enabled($t)) throw new HttpException(404);
+        if (!can('data.export', $handle) || !\Core\Data\Calendar::enabled($t)) throw new HttpException(404);
         $c = \Core\Data\Calendar::config($t);
         // ?ids[]=…: nur diese Termine (Zeilenmenü „ICS exportieren“, Mehrfachauswahl) – auch Entwürfe, nur eigene Einträge
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($r->query['ids'] ?? [])))));

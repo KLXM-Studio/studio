@@ -70,6 +70,8 @@
  *   network:move <website> [--dry-run]                Netzwerk-Website wechseln: Konten, Passkeys, 2FA und Schatten-Konten umziehen,
  *                                                     sichert vorher alle Datenbanken (storage/backups/) und config.local.php
  *   support:stats [site]                              Support-Meldungen: offen, neu, dringend (alle Websites oder eine)
+ *   data:export <tabelle> [--format=csv|csv-comma|xlsx] [--out=datei] [--cols=a,b] [--status=all|published|draft] [--as=E-Mail]
+ *   data:import <tabelle> <datei> [--mode=both|update|new] [--match=_id|slug|feld] [--run] [--as=E-Mail]   Probelauf ohne --run
  *   support:list [--status=offen|…|alle] [--q=…] [--as=E-Mail] [--json]   Meldungen in der Sicht des Kontos (Standard: erstes Integrator-/Admin-Konto)
  *   support:show <id> [--as=E-Mail] [--json] [--seen] Meldung mit Umgebung, Verlauf und Anhängen
  *   support:reply <id> "Text" [--internal] [--status=…] [--as=E-Mail]   antworten bzw. interne Notiz; --status allein setzt nur den Status
@@ -1174,6 +1176,43 @@ switch ($cmd) {
         foreach ($st as $k => $v) echo str_pad($k, 10) . $v . "\n";
         break;
 
+    case 'data:export':
+    case 'data:import':
+        // Tabelle exportieren/importieren (CSV, XLSX – Core\Data\TableExport/TableImport) im Namen eines Administrationskontos (--as=E-Mail)
+        $as = (string) (Core\Cli::opt($args, 'as') ?? '');
+        $who = $as !== '' ? Core\Auth::userRow(app()->db, (int) app()->db->fetchValue('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', [$as])) : null;
+        if (!$who && $as === '') {
+            $aid = (int) app()->db->fetchValue("SELECT id FROM users WHERE disabled = 0 AND role = 'admin' ORDER BY id LIMIT 1");
+            $who = $aid ? Core\Auth::userRow(app()->db, $aid) : null;
+        }
+        if (!$who) { fwrite(STDERR, "Kein Konto gefunden – --as=E-Mail angeben.\n"); exit(1); }
+        app()->auth->actAs($who);
+        $pos = Core\Cli::positional($args);
+        $tbl = Core\Data\Tables::find((string) ($pos[0] ?? ''));
+        if (!$tbl) { fwrite(STDERR, "Tabelle fehlt oder unbekannt: php bin/console $cmd <tabelle> …\n"); exit(1); }
+        $perm = $cmd === 'data:export' ? 'data.export' : 'data.import';
+        if (!can($perm, $tbl['handle'])) { fwrite(STDERR, "Dem Konto {$who['email']} fehlt das Recht $perm.\n"); exit(1); }
+        if ($cmd === 'data:export') {
+            $fmt = (string) (Core\Cli::opt($args, 'format') ?? 'csv');
+            $file = Core\Data\TableExport::build($tbl, Core\Data\Entries::query($tbl, ['status' => (string) (Core\Cli::opt($args, 'status') ?? 'all'), 'source' => 'own', 'limit' => Core\Data\Tabular::MAX_ROWS]),
+                array_filter(explode(',', (string) (Core\Cli::opt($args, 'cols') ?? ''))), $fmt);
+            $out = (string) (Core\Cli::opt($args, 'out') ?? $file['name']);
+            file_put_contents($out, $file['body']);
+            echo "{$file['rows']} Einträge → $out\n";
+            break;
+        }
+        $path = (string) ($pos[1] ?? '');
+        if ($path === '' || !is_file($path)) { fwrite(STDERR, "Datei fehlt: php bin/console data:import <tabelle> <datei.csv|.xlsx> [--mode=both|update|new] [--match=_id|slug|feld] [--run]\n"); exit(1); }
+        $rows = Core\Data\Tabular::read((string) file_get_contents($path));
+        $run = Core\Cli::flag($args, 'run');
+        $res = Core\Data\TableImport::run($tbl, $rows, ['map' => Core\Data\TableImport::guess($tbl, $rows[0] ?? []), 'mode' => (string) (Core\Cli::opt($args, 'mode') ?? 'both'),
+            'match' => (string) (Core\Cli::opt($args, 'match') ?? '_id'), 'dry' => !$run]);
+        echo ($run ? 'Import' : 'Probelauf (nichts gespeichert, mit --run importieren)') . ": {$res['new']} neu, {$res['updated']} aktualisiert, {$res['skipped']} übersprungen, " . count($res['errors']) . " Fehler\n";
+        foreach (array_slice($res['errors'], 0, 30) as $er) echo "  Zeile {$er['row']}: {$er['msg']}\n";
+        foreach ($res['notes'] as $nt) echo "  Hinweis: $nt\n";
+        if ($run) Core\Activity::log('updated', 'entry', 0, (string) $tbl['name'], ['tbl' => $tbl['handle'], 'detail' => "Import (Kommandozeile): {$res['new']} neu, {$res['updated']} aktualisiert"]);
+        break;
+
     case 'support:list':
     case 'support:show':
     case 'support:reply':
@@ -1649,7 +1688,7 @@ switch ($cmd) {
         $res = Core\Data\SchemaPanel::selftest(in_array('--roundtrip', $args, true));
         // Verwendungszweck (Ableitung, Passung) und – ohne --roundtrip – der Assistent „Neue Tabelle“ je Zweck (vorübergehende Tabellen)
         // … dazu Abschnitte und Freitext im Formular (Core\Data\LayoutSelfTest, vorübergehende Tabelle)
-        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data(), Core\Data\RolesSelfTest::run(), Core\Data\NetworkSelfTest::logic()] as $x) {
+        foreach (in_array('--roundtrip', $args, true) ? [Core\Data\Purpose::selftest()] : [Core\Data\Purpose::selftest(), Core\Data\Wizard::selftest(), Core\Data\LayoutSelfTest::run(), Core\Combo::selftest(), Core\Data\EntryBlocks::selftest(), Core\Data\Feed::selftest(), Core\Data\Calendar::titleSelftest(), Core\Data\ExposureSelfTest::run(), Core\Data\Kinds::selftest(), Core\Data\ContactsSelfTest::run(), Core\Data\AddressBook::selftest(), Core\HotspotsSelfTest::data(), Core\Data\RolesSelfTest::run(), Core\Data\NetworkSelfTest::logic(), Core\Data\TableImport::selftest()] as $x) {
             $res['ok'] += $x['ok'];
             array_push($res['fails'], ...$x['fails']);
         }
