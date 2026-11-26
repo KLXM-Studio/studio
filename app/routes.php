@@ -129,6 +129,7 @@ return function (Router $r): void {
     $r->get('/admin/glossar', [Admin\GlossaryController::class, 'index']);
     $r->post('/admin/glossar/einrichten', [Admin\GlossaryController::class, 'install']);
     $r->post('/admin/glossar/einstellungen', [Admin\GlossaryController::class, 'settings']);
+    $r->post('/admin/glossar/uebersicht-veroeffentlichen', [Admin\GlossaryController::class, 'publishOverview']);
     $r->post('/admin/glossar/neu', [Admin\GlossaryController::class, 'quick']);
     $r->post('/admin/glossar/import', [Admin\GlossaryController::class, 'import']);
     $r->get('/admin/glossar/export', [Admin\GlossaryController::class, 'export']);

@@ -3960,3 +3960,11 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .f--multi:has(.f-multi__past input:checked) .f-check--past,.f--multi .f-check--past:has(input:checked){display:flex}
 .f--multi .f-check.is-filtered{display:none}
 .adm-steps{margin:.75rem 0 .5rem;padding-left:1.25rem;display:grid;gap:.35rem}
+/* Glossar: „So markiert das Glossar“ (glossary/index.php) */
+.gls-state__list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.gls-state__list li{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px}
+.gls-state__list li>.ico{flex:none;width:18px;height:18px;margin-top:2px;color:var(--adm-t2)}
+.gls-state__list li>span{flex:1 1 20rem}
+.gls-state__list .is-ok>.ico{color:var(--adm-ok)}
+.gls-state__list .is-warn>.ico{color:var(--adm-warn,#b45309)}
+.gls-state__act{margin:0}

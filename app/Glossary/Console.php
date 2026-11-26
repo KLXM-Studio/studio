@@ -38,7 +38,7 @@ final class Console
         try {
             switch ($cmd) {
                 case 'glossary:install':
-                    [$msgs] = Glossary::install(['publish' => $opt('publish') !== null, 'dry' => $opt('dry-run') !== null]);
+                    [$msgs] = Glossary::install(['publish' => $opt('draft') === null, 'dry' => $opt('dry-run') !== null]);   // Übersicht veröffentlicht, außer --draft
                     foreach ($msgs as $m) echo "  $m\n";
                     if ($opt('enable') !== null && $opt('dry-run') === null) {
                         Features::setUi(Glossary::FEATURE, true);

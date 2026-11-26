@@ -117,11 +117,20 @@ final class GlossaryController extends AdminController
     {
         $this->gate($r, 'schema');
         try {
-            [$msgs] = Glossary::install(['publish' => !empty($r->post['publish'])]);
+            [$msgs] = Glossary::install(['publish' => true]);
         } catch (\RuntimeException $e) {
             return $this->back(self::BASE, 'error', $e->getMessage());
         }
         return $this->back(self::BASE, 'success', implode(' ', $msgs));
+    }
+
+    /** Übersichtsseite des Glossars veröffentlichen (Hinweis in den Einstellungen) */
+    public function publishOverview(Request $r): Response
+    {
+        $this->gate($r, 'schema');
+        if (!can('pages.publish') && !can('pages.manage')) throw new HttpException(403);
+        Glossary::publishOverview();
+        return $this->back(self::BASE, 'success', __('Übersichtsseite des Glossars ist veröffentlicht.'));
     }
 
     public function settings(Request $r): Response

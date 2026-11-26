@@ -4,7 +4,9 @@
   <ul>
     <li><b>Wo?</b> Das Glossar hat keinen eigenen Punkt im Hauptmenü mehr: Seine Seite <b>Prüfen &amp; Einstellungen</b> erreichen Sie über <b>Daten → Glossar</b> (Knopf oben bzw. Unterpunkt in der Tabelle) und unter <b>Administration → Einstellungen</b>. Die Adresse <code>/admin/glossar</code> bleibt gleich.</li>
     <li><b>Prüfen &amp; Einstellungen</b> → „Glossar einrichten“: legt die Datentabelle „Glossar“ an, Detailseiten unter <code>/glossar/…</code> und die Übersichtsseite <code>/glossar</code> (als Entwurf – veröffentlichen Sie sie, wenn die ersten Begriffe stehen; im Menü erscheint sie erst, wenn Sie sie dort einhängen).</li>
-  </ul>
+  
+    <li><b>Wann markiert wird:</b> nur veröffentlichte Begriffe (Entwürfe sehen nur angemeldete Redakteure), auf allen Seiten einschließlich Wissensbereich und Detailseiten. Die Übersichtsseite /glossar wird beim Einrichten gleich veröffentlicht; ist sie ein Entwurf, fehlt im Hinweisfenster der Link „Mehr im Glossar“. Den Stand zeigt „So markiert das Glossar“ in den Einstellungen.</li>
+</ul>
   <h3>Begriffe pflegen</h3>
   <ul>
     <li><b>Begriff</b> (z. B. „SPF“) und <b>Kurz-Erklärung</b> sind Pflicht. Die Kurz-Erklärung ist Klartext mit höchstens 240 Zeichen – sie erscheint im Fenster. Schreiben Sie so, dass Laien sie verstehen, und in der Ansprache Ihrer Website.</li>

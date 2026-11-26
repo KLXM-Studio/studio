@@ -404,12 +404,13 @@ final class Glossary
         $page = !empty($s['page_id']) ? Pages::find((int) $s['page_id']) : null;
         $page ??= Pages::byPath(self::HANDLE, Lang::default());
         if (!$page) {
-            $pid = Pages::create(['slug' => self::HANDLE, 'title' => 'Glossar', 'status' => !empty($o['publish']) ? 'published' : 'draft',
+            // Die Übersicht gehört zum Glossar (Ziel von „Mehr im Glossar“) – standardmäßig gleich veröffentlicht
+            $pid = Pages::create(['slug' => self::HANDLE, 'title' => 'Glossar', 'status' => ($o['publish'] ?? true) ? 'published' : 'draft',
                 'meta_description' => 'Fachbegriffe kurz erklärt – von A bis Z.'],
                 Pages::sanitizeBlocks([['id' => bin2hex(random_bytes(5)), 'type' => 'glossary', 'data' => ['view' => 'list', 'title' => 'Glossar',
                     'intro' => 'Fachbegriffe kurz erklärt – von A bis Z.', 'search' => true, 'letters' => true], 'tunes' => ['section' => []]]]));
             $page = Pages::find($pid);
-            $msgs[] = !empty($o['publish']) ? __('Übersichtsseite /glossar angelegt und veröffentlicht.') : __('Übersichtsseite /glossar als Entwurf angelegt.');
+            $msgs[] = ($o['publish'] ?? true) ? __('Übersichtsseite /glossar angelegt und veröffentlicht.') : __('Übersichtsseite /glossar als Entwurf angelegt.');
         }
         if ((int) ($s['page_id'] ?? 0) !== (int) $page['id']) {
             $s['page_id'] = (int) $page['id'];
@@ -591,5 +592,27 @@ final class Glossary
         $r = \Core\AI\Assist::call('text', $pack, '[Test-KI] ' . $term . ' kurz erklärt – bitte prüfen.');
         \Core\AI\Assist::log('glossary', 'suggest', $term, 'suggested', (string) ($r['model'] ?? ''), (int) ($r['ms'] ?? 0));
         return self::short(\Core\AI\Assist::clean((string) $r['text'], 'plain'));
+    }
+
+    /**
+     * Stand des Glossars für die Einstellungen: Übersichtsseite (veröffentlicht?) und veröffentlichte Begriffe – mit Hinweisen, warum
+     * auf der Website (noch) nichts markiert wird. @return array{page: ?array, page_published: bool, published: int, drafts: int}
+     */
+    public static function status(array $terms): array
+    {
+        $id = (int) (self::settings()['page_id'] ?? 0);
+        $p = $id ? Pages::find($id) : null;
+        $pub = count(array_filter($terms, fn($x) => empty($x['draft'])));
+        return ['page' => $p, 'page_published' => $p !== null && $p['status'] === 'published', 'published' => $pub, 'drafts' => count($terms) - $pub];
+    }
+
+    /** Übersichtsseite veröffentlichen (Einstellungen → „Jetzt veröffentlichen“) */
+    public static function publishOverview(): bool
+    {
+        $id = (int) (self::settings()['page_id'] ?? 0);
+        $p = $id ? Pages::find($id) : null;
+        if (!$p || $p['status'] === 'published') return false;
+        Pages::publish($id, (int) (app()->auth->user()['id'] ?? 0) ?: null);
+        return true;
     }
 }

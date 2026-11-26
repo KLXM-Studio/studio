@@ -29,7 +29,6 @@ $siteName = fn(string $k) => \Core\Data\Shared::siteInfo($k, 'glossar')['name'];
   <?php if ($schema): ?>
   <form method="post" action="<?= e(url($base . '/einrichten')) ?>">
     <?= csrf_field() ?>
-    <label class="rv-check"><input type="checkbox" name="publish" value="1"> <span><?= e(__('Übersichtsseite gleich veröffentlichen (sonst als Entwurf)')) ?></span></label>
     <p><button class="adm-btn adm-btn--primary" type="submit"><?= e(__('Glossar einrichten')) ?></button></p>
   </form>
   <?php else: ?>
@@ -49,6 +48,22 @@ $siteName = fn(string $k) => \Core\Data\Shared::siteInfo($k, 'glossar')['name'];
       · <a href="<?= e(url('/admin/data/' . $t['handle'])) ?>"><?= e(__('In der Datentabelle bearbeiten')) ?></a>
       <?php if ($overview): ?> · <a href="<?= e($overview) ?>" target="_blank" rel="noopener"><?= e(__('Übersicht auf der Website')) ?> ↗</a><?php endif; ?>
     </p>
+
+    <?php $gst = \Core\Glossary\Glossary::status($terms); $gmode = (string) ($settings['mode'] ?? 'page'); // Stand: warum (nicht) markiert wird ?>
+    <section class="adm-card gls-state" aria-labelledby="gls-state-h">
+      <h2 id="gls-state-h"><?= e(__('So markiert das Glossar')) ?></h2>
+      <ul class="gls-state__list">
+        <li class="<?= $gst['published'] ? 'is-ok' : 'is-warn' ?>"><?= icon($gst['published'] ? 'check-circle' : 'warning') ?>
+          <span><?= e($gst['published'] ? __('{n} veröffentlichte Begriffe werden auf allen Seiten markiert – auch im Wissensbereich und auf Detailseiten.', ['n' => $gst['published']]) : __('Noch kein Begriff veröffentlicht – Besucher sehen keine Markierungen.')) ?>
+          <?php if ($gst['drafts']): ?><?= e(__('{n} Entwürfe sehen nur angemeldete Redakteure.', ['n' => $gst['drafts']])) ?><?php endif; ?></span></li>
+        <li class="<?= $gst['page_published'] ? 'is-ok' : 'is-warn' ?>"><?= icon($gst['page_published'] ? 'check-circle' : 'warning') ?>
+          <span><?= e($gst['page_published'] ? __('Die Übersichtsseite ist veröffentlicht – Hinweisfenster verlinken „Mehr im Glossar“.') : ($gst['page'] ? __('Die Übersichtsseite ist ein Entwurf – Begriffe werden markiert, aber ohne Link „Mehr im Glossar“ und ohne A–Z-Seite für Besucher.') : __('Es gibt keine Übersichtsseite – „Glossar einrichten“ legt sie an.'))) ?></span>
+          <?php if ($gst['page'] && !$gst['page_published'] && (can('pages.publish') || can('pages.manage'))): ?>
+          <form method="post" action="<?= e(url($base . '/uebersicht-veroeffentlichen')) ?>" class="gls-state__act"><?= csrf_field() ?><button class="adm-btn adm-btn--small adm-btn--primary" type="submit"><?= e(__('Jetzt veröffentlichen')) ?></button></form>
+          <?php endif; ?></li>
+        <li><?= icon('info') ?><span><?= e($gmode === 'off' ? __('Automatisches Markieren ist ausgeschaltet (Einstellungen unten).') : __('Markiert wird das erste Vorkommen je {scope}, nicht in Überschriften, Navigation und Formularen und nie beim Bearbeiten. Ausnahmen und Bereiche stellen Sie unten ein.', ['scope' => $gmode === 'section' ? __('Abschnitt') : __('Seite')])) ?></span></li>
+      </ul>
+    </section>
 
     <?php $warn = array_values(array_filter($checks, fn($c) => $c['level'] === 'warn')); $info = array_values(array_filter($checks, fn($c) => $c['level'] !== 'warn')); ?>
     <?php if ($checks): ?>
