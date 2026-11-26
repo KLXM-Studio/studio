@@ -35,9 +35,9 @@ final class Maps
         Proxy::register('ofm', [
             'label' => 'Karten (OpenFreeMap)',
             'upstream' => 'https://tiles.openfreemap.org',
-            'allow' => '^(styles/[a-z]+|planet(/[\w.-]+/\d+/\d+/\d+\.pbf)?|sprites/[\w./@-]+\.(json|png)|fonts/[^/]+/\d+-\d+\.pbf|natural_earth/ne2sr/\d+/\d+/\d+\.png)$',
+            'allow' => '^(styles/[a-z]+|(?:backup_)?planet(/[\w.-]+/\d+/\d+/\d+\.pbf)?|sprites/[\w./@-]+\.(json|png)|fonts/[^/]+/\d+-\d+\.pbf|natural_earth/ne2sr/\d+/\d+/\d+\.png)$',
             'rewrite' => true,
-            'ttl' => fn(string $p) => preg_match('~^(styles/|planet$)~', $p) ? 86400 : 30 * 86400,
+            'ttl' => fn(string $p) => preg_match('~^(styles/|(?:backup_)?planet$)~', $p) ? 86400 : 30 * 86400,
             'guard' => [self::class, 'allowTile'],
             'max' => 4 * 1024 * 1024,
         ]);
@@ -120,7 +120,7 @@ final class Maps
     /** Guard für /proxy/ofm: Kachel liegt im erlaubten Gebiet? */
     public static function allowTile(string $path): bool
     {
-        if (!preg_match('~^planet/[\w.-]+/(\d+)/(\d+)/(\d+)\.pbf$~', $path, $m)) {
+        if (!preg_match('~^(?:backup_)?planet/[\w.-]+/(\d+)/(\d+)/(\d+)\.pbf$~', $path, $m)) {   // auch backup_planet (OpenFreeMap-Ausweichquelle)
             return true;
         }
         [$z, $x, $y] = [(int) $m[1], (int) $m[2], (int) $m[3]];
