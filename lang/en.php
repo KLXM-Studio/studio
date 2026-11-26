@@ -10442,4 +10442,10 @@ return [
     '{n} mögliche Dubletten – nur einmal benutzt und einem anderen Schlagwort sehr ähnlich.' => '{n} possible duplicates – used only once and very similar to another tag.',
     'Ändern …' => 'Change …',
     '„{tag}“ entfernen' => 'Remove “{tag}”',
+    'Bild auswählen' => 'Choose image',
+    'Datei anklicken, dann „Auswählen“ – oder doppelklicken.' => 'Click a file, then “Choose” – or double-click.',
+    'Datei auswählen' => 'Choose file',
+    'Gewählt: {name}' => 'Selected: {name}',
+    'Importieren, Exportieren, Abonnieren' => 'Import, export, subscribe',
+    'vCard importieren …' => 'Import vCard …',
 ];

@@ -64,13 +64,15 @@ if ($hubPage && in_array(rtrim($hubPage['href'], '/'), [\Core\AdminPages::HUB, \
 // Genauester Menüpunkt zur Adresse (z. B. /admin/system/domain vor /admin/system) – der übergeordnete ist dann nicht aktuell
 $bestHref = '';
 foreach ($adminNav as $n) if ($reqPath !== '' && ($reqPath === $n[0] || str_starts_with($reqPath, $n[0] . '/')) && strlen($n[0]) > strlen($bestHref)) $bestHref = $n[0];
-$isCur = function (string $key, string $href = '') use ($hubKind, $reqPath, $section, $bestHref, $view): bool {
+$navContacts = !empty($navContacts) || $view === 'data/addressbook';   // Adressbuch, Kontakt-Formular und -Tabelle: „Kontakte“
+$isCur = function (string $key, string $href = '') use ($hubKind, $reqPath, $section, $bestHref, $view, $navContacts): bool {
     if ($hubKind !== '') return ($key === 'prefs' && $hubKind === 'settings') || ($key === 'stats' && $hubKind === 'stats');
+    if ($navContacts && in_array($key, ['data', 'contacts'], true)) return $key === 'contacts';
     if ($href !== '' && $bestHref !== $href && str_starts_with($bestHref, $href . '/')) return false;
     if ($href !== '' && ($reqPath === $href || str_starts_with($reqPath, $href . '/'))) return true;
     if (in_array($key, ['prefs', 'stats'], true)) return false;   // beide Sammelseiten liegen in views/prefs – nur über die Adresse
     // Adressbuch-Ansicht: „Kontakte“ statt „Daten“ ist der aktuelle Menüpunkt
-    if ($key === 'contacts' || ($key === 'data' && $view === 'data/addressbook')) return $view === 'data/addressbook' && $key === 'contacts';
+    if ($key === 'contacts' || ($key === 'data' && $navContacts)) return $navContacts && $key === 'contacts';
     return $section === $key || ($key === 'users' && $section === 'role');
 };
 $newReq = 0;

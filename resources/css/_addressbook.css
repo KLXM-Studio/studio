@@ -7,18 +7,32 @@
 .ab-head{margin-bottom:14px}
 .ab-head .adm-row{flex-wrap:wrap}
 .ab-views .ico{width:15px;height:15px}
-.ab{position:relative;display:grid;grid-template-columns:228px minmax(280px,340px) minmax(0,1fr);height:calc(100vh - 150px);height:calc(100dvh - 150px);min-height:520px;
+.ab{position:relative;display:grid;grid-template-columns:228px minmax(280px,340px) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:calc(100vh - 150px);height:calc(100dvh - 150px);min-height:520px;
   border-radius:12px;background:var(--adm-card);box-shadow:0 0 0 1px var(--adm-line),0 20px 50px -30px rgba(0,0,0,.35);overflow:hidden;color:var(--adm-ink)}
 .ab .ico{flex:none}
+
+/* Leiste über den Spalten: Suche · Adressbuch|Tabelle · Felder · + Kontakt – alles 36px hoch */
+.ab-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:10px 14px;border-bottom:1px solid var(--adm-line);background:var(--adm-card)}
+.ab-bar .ab-search{flex:1 1 260px;max-width:520px;min-width:0;box-sizing:border-box}
+.ab-bar__acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto}
+.ab-bar__btn{height:36px;min-height:36px;padding-block:0;box-sizing:border-box;white-space:nowrap}
+.ab-seg{display:inline-flex;gap:2px;height:36px;box-sizing:border-box;padding:3px;border-radius:999px;background:var(--adm-fill);box-shadow:inset 0 0 0 1px var(--adm-line)}
+.ab-seg a{display:inline-flex;align-items:center;gap:6px;padding:0 14px;border-radius:999px;color:var(--adm-t2);font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.ab-seg a:hover{color:var(--adm-ink)}
+.ab-seg a[aria-current]{background:var(--adm-card);color:var(--adm-ink);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px var(--adm-line)}
+.ab-seg .ico{width:15px;height:15px}
+.ab-tool--more{min-width:30px;justify-content:center;padding:0 6px;color:var(--adm-t2)}
+.ab-tool--more .ico{width:18px;height:18px}
 
 /* Links: Listen und Filter */
 .ab-src{display:flex;flex-direction:column;gap:2px;min-height:0;overflow:auto;padding:14px 10px;border-right:1px solid var(--adm-line);background:var(--adm-fill)}
 .ab-src h2{margin:14px 10px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--adm-t3)}
-.ab-src ul{display:grid;gap:1px;margin:0;padding:0;list-style:none}
+.ab-src ul{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;margin:0;padding:0;list-style:none}
+.ab-src li{min-width:0}
 .ab-src a{display:flex;align-items:center;gap:10px;min-height:34px;padding:6px 10px;border-radius:7px;color:var(--adm-ink);text-decoration:none;font-size:14px}
 .ab-src a span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ab-src a .ico{width:17px;height:17px;color:var(--adm-t3)}
-.ab-src a small{margin-left:auto;padding-left:6px;color:var(--adm-t3);font-size:12px;font-variant-numeric:tabular-nums}
+.ab-src a small{flex:none;margin-left:auto;padding-left:6px;color:var(--adm-t3);font-size:12px;font-variant-numeric:tabular-nums}
 .ab-src a:hover{background:var(--adm-hover)}
 .ab-src a[aria-current]{background:var(--adm-a);color:#fff;font-weight:700}
 .ab-src a[aria-current] .ico,.ab-src a[aria-current] small{color:#fff}
@@ -40,7 +54,7 @@
 .ab-list{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--adm-line)}
 .ab-list__top{display:grid;gap:8px;padding:12px 14px 10px;border-bottom:1px solid var(--adm-line)}
 .ab-list__h{margin:0;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ab-search{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;background:var(--adm-fill);color:var(--adm-t3);box-shadow:inset 0 0 0 1px var(--adm-line)}
+.ab-search{display:flex;align-items:center;gap:8px;height:36px;box-sizing:border-box;width:100%;min-width:0;padding:0 12px;border-radius:8px;background:var(--adm-fill);color:var(--adm-t3);box-shadow:inset 0 0 0 1px var(--adm-line)}
 .ab-search .ico{width:16px;height:16px}
 .ab-search:focus-within{background:var(--adm-surface);box-shadow:0 0 0 1px var(--adm-a),0 0 0 4px rgb(var(--adm-a-rgb,49 65 100) / .2)}
 .ab .ab-search input[type=search]{flex:1;width:auto;min-width:0;height:34px;min-height:0!important;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;font:400 14px var(--adm-font);color:var(--adm-ink);outline:none}
@@ -108,7 +122,8 @@
 .ab-hero{display:flex;align-items:center;gap:22px;margin-bottom:18px}
 .ab .ab-ava--l{width:96px;height:96px;font-size:32px;box-shadow:0 0 0 4px var(--adm-card),0 0 0 5px var(--adm-line)}
 .ab .ab-ava--l.ab-ava--org .ico{width:40px;height:40px}
-.ab-hero h2{margin:0 0 4px;font-size:28px;font-weight:700;line-height:1.15;letter-spacing:-.01em;outline:none}
+.ab-hero h2{margin:0 0 4px;font-size:28px;font-weight:700;line-height:1.15;letter-spacing:-.01em;outline:none;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word}
+.ab-hero>div{min-width:0}
 .ab-hero p{margin:0;font-size:15px;color:var(--adm-t2)}
 .ab-hero .ab-hero__org{margin-top:2px;font-size:14px;color:var(--adm-t3)}
 .ab-quick{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
@@ -127,7 +142,12 @@
 .ab-row__v a:hover{text-decoration:underline}
 /* Funktionen je Person (Core\Data\Roles): je Gremium ein Kopf, Funktion kräftig, Zeitraum klein darunter; Ehemalige zurückhaltend */
 .ab-roles dl+.ab-roles__h{margin-top:12px}
-.ab-roles .ab-row dt{color:var(--adm-t2);font-size:14px}
+/* Funktionen: linksbündig untereinander (Funktion, darunter Bezug und Zeitraum) statt rechtsbündiger Beschriftungsspalte */
+.ab-roles .ab-row{grid-template-columns:minmax(0,1fr) auto;gap:1px 10px}
+.ab-roles .ab-row dt{grid-column:1;text-align:left;color:var(--adm-ink);font-size:14.5px;font-weight:700}
+.ab-roles .ab-row dt:empty{display:none}
+.ab-roles .ab-row .ab-row__v{grid-column:1}
+.ab-roles .ab-row .ab-row__r{grid-column:2;grid-row:1}
 .ab-roles__when{display:block;font-size:13px;color:var(--adm-t3)}
 .ab-roles .ab-row__v a{text-decoration:underline;text-underline-offset:.15em}
 .ab-row__v a+.ab-roles__when{margin-top:1px}
@@ -179,6 +199,9 @@
   .adm-main:has(.ab){padding:12px 12px 16px}
   .ab-head h1{font-size:22px}
   .ab-hide-s{display:none!important}
+  .ab-bar{padding:8px 10px}
+  .ab-bar .ab-search{flex-basis:100%;max-width:none}
+  .ab-bar__acts{margin-left:0;width:100%;justify-content:space-between}
   .ab{grid-template-columns:minmax(0,1fr);height:calc(100dvh - 130px);min-height:480px}
   .ab-src,.ab-list,.ab-card{display:none;border-right:0}
   .ab.is-pane-src .ab-src,.ab.is-pane-names .ab-list{display:flex}

@@ -899,7 +899,7 @@ img.media-vthumb{object-fit:cover}
 .dt-c-title__in.dt-knsub{padding-inline-start:calc(var(--dt-depth,1) * 1.5rem)}
 .dt-knsub__mark{flex:none;color:var(--adm-t2);font-size:15px}
 .dt-entry{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
-.dt-entry__side{display:grid;gap:12px;position:sticky;top:20px}
+.dt-entry__side{display:grid;gap:12px;align-content:start;position:sticky;top:20px;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:2px;margin:-2px}
 .dt-statuspick{display:flex;flex-wrap:wrap;gap:8px 16px;border:0;padding:0;margin:0 0 14px}
 .dt-statuspick>.f-help{flex:1 0 100%;margin:0}   /* Hinweis unter den Knöpfen, nicht als schmale Spalte daneben */
 .dt-statuspick legend{font-weight:600;margin-bottom:8px}
@@ -917,7 +917,7 @@ img.media-vthumb{object-fit:cover}
 .f--multi{border:0;padding:0;margin:0}
 .f--multi legend{font-weight:600;margin-bottom:6px}
 .f-multi{display:flex;flex-wrap:wrap;gap:6px 18px}
-@media (max-width:1100px){.dt-schema,.dt-entry{grid-template-columns:1fr}.dt-schema__side,.dt-entry__side{position:static}.dt-field__row{grid-template-columns:1fr 1fr}}
+@media (max-width:1100px){.dt-schema,.dt-entry{grid-template-columns:1fr}.dt-schema__side,.dt-entry__side{position:static;max-height:none;overflow:visible}.dt-field__row{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.dt-field{grid-template-columns:1fr}.dt-field__icon{display:none}.dt-field__tools{flex-direction:row}.dt-field__row{grid-template-columns:1fr}}
 
 /* ==========================================================================
@@ -4079,3 +4079,5 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .mf-more__pop button:hover,.mf-more__pop button:focus-visible{background:var(--adm-hover,rgba(0,0,0,.06));outline:none}
 .upl{max-width:36rem;margin:40px auto;display:grid;gap:12px}
 .upl h1{margin:0}
+/* Einzelauswahl: keine Nummern-Kreise wie bei der Mehrfachauswahl, nur die Fußleiste */
+.fx-dialog--one .fx-item::after{display:none}

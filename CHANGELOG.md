@@ -59,6 +59,11 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
+### Adressbuch und Auswahl von Bildern
+- Adressbuch: eine Leiste über den Spalten mit Suche, „Adressbuch | Tabelle“ (Pillen), „Felder“ und „+ Kontakt“ in gleicher Höhe; Import, Export und Abonnieren im Menü „…“ der Namensspalte; Zahlen der linken Spalte werden nicht mehr abgeschnitten; Funktionen auf der Karte linksbündig; lange Namen trennen. Formular und Tabellenansicht eines Adressbuchs zeigen wie das Adressbuch das Hauptmenü („Kontakte“).
+- Bild- und Dateiauswahl: Fußleiste mit „Auswählen“ (ein Klick markiert, der Knopf übernimmt; Doppelklick wie bisher), Hinweis „Doppelklick / ↵: Auswählen“ im Auswahlmodus.
+- Eintragsformular: Die Seitenleiste mit „Speichern“ scrollt bei vielen Angaben in sich und bleibt dabei im Bild (auch Safari).
+
 ### Mit KI-Agenten arbeiten (MCP)
 - Erweiterungen melden eigene MCP-Werkzeuge an (`Extension::mcpTool`): sichtbar nur bei aktiver Erweiterung, gleicher Rahmen wie die Werkzeuge des Kerns (Schreib-Token, nicht im Modus „zur Freigabe“, Verlauf), eingeordnet auf der Hilfeseite „KI-Agenten“. Erste Nutzerin: Grafik-Erweiterung 1.4.0 (Bilder aus Vorlagen beauftragen).
 - Neue Hilfeseite „KI-Agenten (MCP)“ unter Handbuch & Hilfe: was ein Agent über MCP auf dieser Website tun kann – nach Aufgaben gruppiert (Seiten, Daten, Medien, Übersetzen, Angaben & Design, Anfragen, Mitteilungen, Aufgaben & Support, Prüfen), gefiltert nach Funktionen und Rechten, mit Beispiel-Aufträgen (echte Tabellen- und Seitennamen) zum Kopieren, Art je Werkzeug (liest/ändert/löscht), Suche und Verbindung für Claude Code/Desktop, Gemini CLI, Cursor/Windsurf/LM Studio, VS Code und Open WebUI (z. B. mit Ollama). Für Agenten: Resource `cms://capabilities`, Prompt `was_kannst_du` (`Core\Api\AgentGuide`).

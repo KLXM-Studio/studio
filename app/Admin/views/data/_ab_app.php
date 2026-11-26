@@ -20,6 +20,25 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
 ?>
 <div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?><?= !empty($edit) || !empty($new) ? ' is-editing' : '' ?>"<?php if (can('data.import', $t['handle'])): ?> data-imp-target="<?= e($base . '/import') ?>" data-imp-label="<?= e(__('vCard-Datei loslassen zum Importieren')) ?>"<?php endif; ?> data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"<?= \Core\RowMenu::selectAttrs() ?>
   data-ab-t-none="<?= e(__('Bitte zuerst Kontakte auswählen.')) ?>">
+  <?php // Leiste über den Spalten: Suche, Ansicht, Felder, neuer Kontakt – einheitliche Höhe; wird beim Suchen mit ersetzt (Fokus bleibt) ?>
+  <div class="ab-bar">
+    <form class="ab-search" method="get" action="<?= e($base) ?>" role="search" data-ab-search>
+        <?= icon('magnifying-glass') ?>
+        <?php if ($list !== ''): ?><input type="hidden" name="liste" value="<?= e($list) ?>"><?php endif; ?>
+        <?php if ($filter !== ''): ?><input type="hidden" name="filter" value="<?= e($filter) ?>"><?php endif; ?>
+        <?php if ($select): ?><input type="hidden" name="auswahl" value="1"><?php endif; ?>
+        <input type="search" name="q" value="<?= e($q) ?>" placeholder="<?= e(__('Name, Funktion, Telefon, E-Mail')) ?>" aria-label="<?= e(__('Kontakte durchsuchen: Name, Funktion, Telefon, E-Mail')) ?>" autocomplete="off" data-ab-q>
+        <button type="submit" class="sr-only"><?= e(__('Suchen')) ?></button>
+      </form>
+    <div class="ab-bar__acts">
+      <nav class="ab-seg" aria-label="<?= e(__('Ansicht')) ?>">
+        <a href="<?= e($base . '?view=book') ?>" aria-current="true"><?= icon('address-book') ?> <span><?= e(__('Adressbuch')) ?></span></a>
+        <a href="<?= e($base . '?view=list') ?>"><?= icon('list-bullets') ?> <span><?= e(__('Tabelle')) ?></span></a>
+      </nav>
+      <?php if ($canSchema): ?><a class="adm-btn ab-bar__btn ab-hide-s" href="<?= e($base . '/schema') ?>"><?= icon('gear-six') ?> <?= e(__('Felder')) ?></a><?php endif; ?>
+      <?php if (can('data.edit', $t['handle'])): ?><a class="adm-btn adm-btn--primary ab-bar__btn" href="<?= e($L(['k' => '', 'neu' => '1'])) ?>"><?= icon('plus') ?> <span><?= e($t['singular'] ?: __('Kontakt')) ?></span></a><?php endif; ?>
+    </div>
+  </div>
   <nav class="ab-src" aria-label="<?= e(__('Adressbücher und Listen')) ?>">
     <ul>
       <li><a href="<?= e($L(['liste' => '', 'filter' => '', 'ab' => '', 'ansicht' => ''])) ?>" data-ab-nav<?= $cur($list === '' && $filter === '') ?>><?= icon('users') ?><span><?= e(__('Alle Kontakte')) ?></span><small><?= (int) $counts['all'] ?></small></a></li>
@@ -67,30 +86,23 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
         <a class="ab-back" href="<?= e($L(['ansicht' => 'listen', 'k' => ''])) ?>" data-ab-pane="src"><?= icon('arrow-left') ?> <?= e(__('Listen')) ?></a>
       </div>
       <h2 id="ab-list-h" class="ab-list__h" data-ab-scope><?= e($scope) ?></h2>
-      <form class="ab-search" method="get" action="<?= e($base) ?>" role="search" data-ab-search>
-        <?= icon('magnifying-glass') ?>
-        <?php if ($list !== ''): ?><input type="hidden" name="liste" value="<?= e($list) ?>"><?php endif; ?>
-        <?php if ($filter !== ''): ?><input type="hidden" name="filter" value="<?= e($filter) ?>"><?php endif; ?>
-        <?php if ($select): ?><input type="hidden" name="auswahl" value="1"><?php endif; ?>
-        <input type="search" name="q" value="<?= e($q) ?>" placeholder="<?= e(__('Name, Funktion, Telefon, E-Mail')) ?>" aria-label="<?= e(__('Kontakte durchsuchen: Name, Funktion, Telefon, E-Mail')) ?>" autocomplete="off" data-ab-q>
-        <button type="submit" class="sr-only"><?= e(__('Suchen')) ?></button>
-      </form>
       <div class="ab-meta">
         <span aria-live="polite" data-ab-total><b><?= e(count($rows) === 1 ? __('1 Kontakt') : __('{n} Kontakte', ['n' => count($rows)])) ?></b> · <?= e(__('nach Nachname')) ?></span>
         <span class="ab-meta__tools">
-          <?php if (can('data.import', $t['handle'])): ?><a class="ab-tool" href="<?= e($base . '/import') ?>"><?= icon('upload-simple') ?> <?= e(__('vCard importieren')) ?></a><?php endif; ?>
           <a class="ab-tool<?= $select ? ' is-on' : '' ?>" href="<?= e($L(['auswahl' => $select ? '' : '1'])) ?>" data-ab-select<?= $select ? ' aria-current="true"' : '' ?>><?= icon('list-checks') ?> <?= e(__('Auswählen')) ?></a>
-          <?php if (can('data.export', $t['handle']) || ($subs && can('data.edit', $t['handle']))): ?>
+          <?php $canImp = can('data.import', $t['handle']); $canExp = can('data.export', $t['handle']); $canSub = $subs && can('data.edit', $t['handle']); ?>
+          <?php if ($canImp || $canExp || $canSub): ?>
           <details class="ab-menu">
-            <summary class="ab-tool"><?= icon('export') ?> <?= e(__('Exportieren')) ?></summary>
+            <summary class="ab-tool ab-tool--more" aria-label="<?= e(__('Importieren, Exportieren, Abonnieren')) ?>" title="<?= e(__('Importieren, Exportieren, Abonnieren')) ?>"><?= icon('dots-three') ?></summary>
             <div class="ab-menu__pop">
-              <?php if (can('data.export', $t['handle'])): ?>
-              <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q]))) ?>" download><?= e(__('Diese Kontakte als vCard – alle Angaben')) ?></a>
-              <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q, 'umfang' => 'oeffentlich']))) ?>" download><?= e(__('Diese Kontakte als vCard – nur öffentliche Angaben')) ?></a>
-              <?php if ($list !== '' || $filter !== '' || $q !== ''): ?><a href="<?= e($base . '/vcard') ?>" download><?= e(__('Ganzes Adressbuch als vCard')) ?></a><?php endif; ?>
+              <?php if ($canImp): ?><a href="<?= e($base . '/import') ?>"><?= icon('upload-simple') ?> <?= e(__('vCard importieren …')) ?></a><?php endif; ?>
+              <?php if ($canExp): ?>
+              <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q]))) ?>" download><?= icon('export') ?> <?= e(__('Diese Kontakte als vCard – alle Angaben')) ?></a>
+              <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q, 'umfang' => 'oeffentlich']))) ?>" download><?= icon('export') ?> <?= e(__('Diese Kontakte als vCard – nur öffentliche Angaben')) ?></a>
+              <?php if ($list !== '' || $filter !== '' || $q !== ''): ?><a href="<?= e($base . '/vcard') ?>" download><?= icon('export') ?> <?= e(__('Ganzes Adressbuch als vCard')) ?></a><?php endif; ?>
               <a href="<?= e($base . '/export' . ($q !== '' ? '?' . http_build_query(['q' => $q]) : '')) ?>"><?= icon('file-csv') ?> <?= e(__('Als Tabelle (CSV, Excel) …')) ?></a>
               <?php endif; ?>
-              <?php if ($subs && can('data.edit', $t['handle'])): ?><a href="<?= e($base . '/abonnieren') ?>"><?= icon('rss') ?> <?= e(__('In Apps abonnieren …')) ?></a><?php endif; ?>
+              <?php if ($canSub): ?><a href="<?= e($base . '/abonnieren') ?>"><?= icon('rss') ?> <?= e(__('In Apps abonnieren …')) ?></a><?php endif; ?>
             </div>
           </details>
           <?php endif; ?>

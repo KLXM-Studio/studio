@@ -182,6 +182,8 @@ final class DataController extends AdminController
                 'data/external_entry' => 'entry',
                 default => '',
             };
+            // Adressbücher (Kontakte-Tabellen): Formular und Tabellenansicht wie das Adressbuch mit dem Hauptmenü („Kontakte“)
+            if ($t && in_array($view, ['data/entry', 'data/entries'], true) && \Core\Data\AddressBook::enabled($t)) { $vars['drill'] ??= ''; $vars['navContacts'] = true; }
             $vars['drill'] ??= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_nav.php', ['cur' => $cur, 'active' => $t]);
             $vars['drillTitle'] ??= __('Daten');
         }

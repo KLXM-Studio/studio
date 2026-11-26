@@ -1217,7 +1217,7 @@ class Finder {
           ${this.items.length && !this.ro ? `<button type="button" class="adm-btn adm-btn--small adm-btn--ghost adm-btn--danger-text" data-emptytrash>${esc(t('Papierkorb leeren'))}</button>` : ''}` : ''}
         <p class="fx-i-hint">Dateien vom Computer einfach hierher ziehen oder mit ${isMac ? '⌘' : 'Strg'}+V einfügen – auch mehrere und große (bis ${MAX_MB} MB).<br>Auf Sammlungen links ziehen = einsortieren.</p>
         ${this.mode === 'library' ? `<p class="fx-i-hint">Bilder werden automatisch in 480–2400 px als ${esc($('[data-media-formats]')?.dataset.mediaFormats || 'WebP')} erzeugt. Alt-Texte sind beim Hochladen Pflicht (Barrierefreiheit).</p>` : ''}
-        <dl class="fx-keys"><dt>Doppelklick / ↵</dt><dd>Bearbeiten</dd><dt>Leertaste</dt><dd>Quick Look</dd><dt>${isMac ? '⌘' : 'Strg'}-Klick / ⇧-Klick</dt><dd>Mehrere auswählen</dd><dt>${isMac ? '⌘' : 'Strg'} A</dt><dd>Alle auswählen</dd><dt>${isMac ? '⌘' : 'Strg'} V</dt><dd>Aus Zwischenablage einfügen</dd><dt>⌫ / Entf</dt><dd>Löschen</dd><dt>Rechtsklick</dt><dd>Weitere Aktionen</dd></dl></div>`;
+        <dl class="fx-keys"><dt>Doppelklick / ↵</dt><dd>${this.mode === 'pick' ? esc(t('Auswählen')) : 'Bearbeiten'}</dd><dt>Leertaste</dt><dd>Quick Look</dd><dt>${isMac ? '⌘' : 'Strg'}-Klick / ⇧-Klick</dt><dd>Mehrere auswählen</dd><dt>${isMac ? '⌘' : 'Strg'} A</dt><dd>Alle auswählen</dd><dt>${isMac ? '⌘' : 'Strg'} V</dt><dd>Aus Zwischenablage einfügen</dd><dt>⌫ / Entf</dt><dd>Löschen</dd><dt>Rechtsklick</dt><dd>Weitere Aktionen</dd></dl></div>`;
       $('[data-emptytrash]', this.$info)?.addEventListener('click', async () => {
         if (!(await ask({ title: t('Papierkorb leeren? {n} Dateien werden endgültig gelöscht.', { n: this.items.length }), ok: t('Endgültig löschen') }))) return;
         try { const r = await api.emptyTrash(); toast(r.message); this.load(); } catch (ex) { toast(ex.message); }
@@ -1715,10 +1715,23 @@ function pick(kind = 'image', opts = {}) {
   return new Promise(resolve => {
     const dlg = inBox('media-dialog', '<dialog id="media-dialog" class="fx-dialog" aria-label="Mediathek"></dialog>');
     let chosen = null;
-    dlg.innerHTML = `<div class="fx-dhead"><h2>${kind === 'image' ? 'Bild auswählen' : kind === 'visual' ? t('Bild oder Video auswählen') : 'Datei auswählen'}</h2><button type="button" class="adm-btn adm-btn--ghost adm-btn--small" data-close>Abbrechen</button></div><div class="fx-host"></div>`;
-    const f = new Finder($('.fx-host', dlg), { mode: 'pick', kind: kind === 'image' || kind === 'visual' ? kind : null, onPick: m => { chosen = m; dlg.close(); } });
+    // Fußleiste mit „Auswählen“: ein Klick markiert, der Knopf übernimmt (Doppelklick/Enter wie bisher direkt) – ohne die Leiste
+    // suchten Personen nach dem Übernehmen (Hinweis „Diese Datei verwenden“ stand nur unten in der Info-Spalte)
+    dlg.classList.add('fx-dialog--many', 'fx-dialog--one');
+    dlg.innerHTML = `<div class="fx-dhead"><h2>${kind === 'image' ? esc(t('Bild auswählen')) : kind === 'visual' ? esc(t('Bild oder Video auswählen')) : esc(t('Datei auswählen'))}</h2><button type="button" class="adm-btn adm-btn--ghost adm-btn--small" data-close>${esc(t('Abbrechen'))}</button></div>
+      <div class="fx-host"></div>
+      <div class="fx-dfoot"><span class="fx-dfoot__n" aria-live="polite"></span><button type="button" class="adm-btn adm-btn--primary" data-take disabled>${esc(t('Auswählen'))}</button></div>`;
+    const take = $('[data-take]', dlg), num = $('.fx-dfoot__n', dlg);
+    const foot = f => {
+      const one = f.sel.size === 1 ? f.byId([...f.sel][0]) : null;
+      take.disabled = !one;
+      num.textContent = one ? t('Gewählt: {name}', { name: one.title || one.name || one.filename || ('#' + one.id) }) : t('Datei anklicken, dann „Auswählen“ – oder doppelklicken.');
+    };
+    const f = new Finder($('.fx-host', dlg), { mode: 'pick', kind: kind === 'image' || kind === 'visual' ? kind : null, onPick: m => { chosen = m; dlg.close(); }, onSel: foot });
+    foot(f);
+    take.onclick = () => { const one = f.sel.size === 1 ? f.byId([...f.sel][0]) : null; if (one) f.opts.onPick?.(one); };
     $('[data-close]', dlg).onclick = () => dlg.close();
-    dlg.onclose = () => { resolve(chosen); dlg.innerHTML = ''; };
+    dlg.onclose = () => { resolve(chosen); dlg.innerHTML = ''; dlg.classList.remove('fx-dialog--many', 'fx-dialog--one'); };
     dlg.showModal();
     $('.fx-items', dlg).focus();
     if (opts.upload) f.uploader?.choose();   // noch in derselben Nutzeraktion (Klick) – sonst blockiert der Browser die Dateiauswahl
