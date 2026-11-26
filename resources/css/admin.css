@@ -3891,10 +3891,10 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .f-exp__on,.f-exp__ico--on,.f-exp__st{display:none}
 .f-exp--editor:has([data-expose-target]:checked) .f-exp__mark :is(.f-exp__on,.f-exp__ico--on){display:inline-flex}
 /* Redaktion entscheidet, Feld ist öffentlich (der Normalfall): nur ein dezentes Symbol, das das Menü öffnet – „Intern“ bleibt als Etikett sichtbar */
-.f-exp--editor:has([data-expose-target]:checked) .f-exp__menu:not([open])>.f-exp__btn{width:26px;min-height:26px;padding:0;justify-content:center;border-color:transparent;background:none;color:var(--adm-t3)}
-.f-exp--editor:has([data-expose-target]:checked) .f-exp__menu:not([open])>.f-exp__btn:hover{background:var(--adm-fill);color:var(--adm-ok)}
-.f-exp--editor:has([data-expose-target]:checked) .f-exp__menu:not([open]) .f-exp__btn :is(.f-exp__on,.f-exp__caret){display:none}
-.f-exp--editor:has([data-expose-target]:checked){--exp-w:2rem}
+.f-exp--editor:not([data-exp-multi]):has([data-expose-target]:checked) .f-exp__menu:not([open])>.f-exp__btn{width:26px;min-height:26px;padding:0;justify-content:center;border-color:transparent;background:none;color:var(--adm-t3)}
+.f-exp--editor:not([data-exp-multi]):has([data-expose-target]:checked) .f-exp__menu:not([open])>.f-exp__btn:hover{background:var(--adm-fill);color:var(--adm-ok)}
+.f-exp--editor:not([data-exp-multi]):has([data-expose-target]:checked) .f-exp__menu:not([open]) .f-exp__btn :is(.f-exp__on,.f-exp__caret){display:none}
+.f-exp--editor:not([data-exp-multi]):has([data-expose-target]:checked){--exp-w:2rem}
 .f-exp--editor:has([data-expose-target]:checked) .f-exp__mark :is(.f-exp__off,.f-exp__ico--off){display:none}
 .f-exp--item:has([data-expose-item]:checked:not([value="0"])) .f-exp__ico--on{display:inline-flex}
 .f-exp--item:has([data-expose-item]:checked:not([value="0"])) .f-exp__ico--off{display:none}
