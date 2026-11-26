@@ -21,6 +21,9 @@ $__cmds = [
         ['network:list', 'Netzwerk-Konten und Websites'],
         ['network:user <email> [--invite|--create|--disable|--enable|--reset-2fa|--password] [--name="…"] [--lang=de|en]', 'Netzwerk-Admin einladen (E-Mail mit Link, 7 Tage, 2FA beim Annehmen; ohne Versand wird der Link angezeigt) bzw. Netzwerk-Konto anlegen, sperren, entsperren, 2FA zurücksetzen, Passwort setzen'],
         ['support:stats [site]', 'Support-Meldungen: offen, neu, dringend, wartend, gesamt'],
+        ['support:list [--status=offen|neu|in_arbeit|rueckfrage|geloest|geschlossen|alle] [--q=…] [--as=E-Mail] [--json]', 'Meldungen in der Sicht eines Kontos dieser Website (ohne --as: erstes Integrator- bzw. Admin-Konto)'],
+        ['support:show <id> [--as=E-Mail] [--json] [--seen]', 'Meldung mit Umgebung, Verlauf (auch interne Notizen fürs Team) und Anhängen'],
+        ['support:reply <id> "Text" [--internal] [--status=…] [--as=E-Mail]', 'Antworten (E-Mail an die meldende Person) bzw. interne Notiz; mit --status auch den Status setzen'],
     ],
     'Kits & Erweiterungen' => [
         ['theme:list', 'Installierte Kits mit Herkunft (lokal, upload, composer), Version, nutzenden Websites und verdeckten Kits gleichen Namens (Alias: kit:list)'],

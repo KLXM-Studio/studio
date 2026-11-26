@@ -70,6 +70,9 @@
  *   network:move <website> [--dry-run]                Netzwerk-Website wechseln: Konten, Passkeys, 2FA und Schatten-Konten umziehen,
  *                                                     sichert vorher alle Datenbanken (storage/backups/) und config.local.php
  *   support:stats [site]                              Support-Meldungen: offen, neu, dringend (alle Websites oder eine)
+ *   support:list [--status=offen|…|alle] [--q=…] [--as=E-Mail] [--json]   Meldungen in der Sicht des Kontos (Standard: erstes Integrator-/Admin-Konto)
+ *   support:show <id> [--as=E-Mail] [--json] [--seen] Meldung mit Umgebung, Verlauf und Anhängen
+ *   support:reply <id> "Text" [--internal] [--status=…] [--as=E-Mail]   antworten bzw. interne Notiz; --status allein setzt nur den Status
  *   chat:purge [--days=N]                             Chat: Nachrichten nach Aufbewahrungsfrist löschen (Standard: Einstellung, 180 Tage; 0 = nie)
  *   cron:run [-v]                                     Geplante Aufgaben: der einzige Cronjob (jede Minute) – startet fällige Aufgaben und die Warteschlange
  *   integrity:check [--all] [--quiet]                 Integrität: unerwartete Dateien (Installation) und Daten (je Website) – meldet neue Fehler per E-Mail
@@ -1169,6 +1172,51 @@ switch ($cmd) {
         // Kennzahlen der zentralen Support-Datenbank (Core\Support\Tickets::stats)
         $st = Core\Support\Tickets::stats(($args[0] ?? '') !== '' && !str_starts_with($args[0], '--') ? $args[0] : null);
         foreach ($st as $k => $v) echo str_pad($k, 10) . $v . "\n";
+        break;
+
+    case 'support:list':
+    case 'support:show':
+    case 'support:reply':
+        // Meldungen lesen/beantworten wie im MCP (Core\Support\Api) – im Namen eines Kontos dieser Website
+        $as = (string) (Core\Cli::opt($args, 'as') ?? '');
+        $who = $as !== '' ? app()->db->fetch('SELECT id, email, name, role, locale, network_uid, disabled FROM users WHERE LOWER(email) = LOWER(?)', [$as]) : null;
+        if (!$who && $as === '') {
+            foreach (app()->db->fetchAll("SELECT id, email, name, role, locale, network_uid, disabled FROM users WHERE disabled = 0 AND role = 'admin' ORDER BY id") as $cand) {
+                if (Core\Features::integratorEmail((string) $cand['email'])) { $who = $cand; break; }
+                $who ??= $cand;
+            }
+        }
+        if (!$who) { fwrite(STDERR, "Kein Konto gefunden – --as=E-Mail angeben (Konto auf dieser Website, --site=…).\n"); exit(1); }
+        $pos = Core\Cli::positional($args);
+        try {
+            if ($cmd === 'support:list') {
+                $res = Core\Support\Api::issues($who, ['status' => Core\Cli::opt($args, 'status') ?? 'offen', 'q' => Core\Cli::opt($args, 'q') ?? '',
+                    'site' => Core\Cli::opt($args, 'filter-site') ?? '', 'limit' => (int) (Core\Cli::opt($args, 'limit') ?? 50)]);
+                if (Core\Cli::flag($args, 'json')) { echo json_encode($res, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "\n"; break; }
+                echo "Sicht: {$res['scope']} ({$who['email']}) · {$res['total']} Meldungen\n";
+                foreach ($res['issues'] as $i) {
+                    echo str_pad('#' . $i['id'], 6) . ($i['unread'] ? '* ' : '  ') . str_pad($i['status'], 12) . str_pad($i['priority'] === 'dringend' ? '!' : '', 2)
+                        . str_pad($i['site'], 12) . substr($i['updated_at'], 0, 16) . '  ' . $i['title'] . ' (' . $i['reporter'] . ', ' . $i['replies'] . " Antw.)\n";
+                }
+            } elseif ($cmd === 'support:show') {
+                $i = Core\Support\Api::issue($who, (int) ($pos[0] ?? 0), Core\Cli::flag($args, 'seen'));
+                if (Core\Cli::flag($args, 'json')) { echo json_encode($i, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), "\n"; break; }
+                echo "#{$i['id']} {$i['title']}\n{$i['status_label']} · {$i['category']} · {$i['priority']} · {$i['site_label']} · von {$i['reporter']} · {$i['created_at']}\n{$i['url']}\n\n{$i['body']}\n";
+                if ($i['context']) { echo "\nUmgebung:\n"; foreach ($i['context'] as $k => $v) echo '  ' . str_pad((string) $k, 12) . (is_scalar($v) ? $v : json_encode($v, JSON_UNESCAPED_UNICODE)) . "\n"; }
+                foreach ($i['posts'] as $p) {
+                    $head = $p['kind'] === 'status' ? 'Status ' . ($p['meta']['from'] ?? '') . ' → ' . ($p['meta']['to'] ?? '') : ($p['kind'] === 'assign' ? 'Zuständig: ' . ($p['meta']['to'] ?? '–') : ($p['internal'] ? 'Interne Notiz' : 'Antwort'));
+                    echo "\n--- {$p['at']} · {$p['author']}" . ($p['staff'] ? ' (Team)' : '') . " · $head\n" . ($p['body'] !== '' ? $p['body'] . "\n" : '');
+                }
+                if ($i['files']) { echo "\nAnhänge:\n"; foreach ($i['files'] as $f) echo "  {$f['name']} ({$f['mime']}, " . round($f['size'] / 1024) . " KB)" . ($f['internal'] ? ' intern' : '') . "\n"; }
+            } else {
+                $st = Core\Cli::opt($args, 'status');
+                $res = Core\Support\Api::reply($who, ['id' => (int) ($pos[0] ?? 0), 'body' => (string) ($pos[1] ?? ''), 'internal' => Core\Cli::flag($args, 'internal'), 'status' => $st]);
+                echo "#{$res['id']}: gespeichert, Status {$res['status']}. {$res['hint']}\n";
+            }
+        } catch (Core\Api\ApiError $e) {
+            fwrite(STDERR, $e->getMessage() . "\n");
+            exit(1);
+        }
         break;
 
     case 'migrate':

@@ -57,6 +57,18 @@ final class Auth
         $this->role = null;
     }
 
+    /**
+     * Ohne Sitzung im Namen eines Kontos handeln (CLI, Token-Zugriff wie MCP) – gilt nur für diese Anfrage bzw. diesen Prozess.
+     * null hebt es wieder auf (danach wird die Sitzung neu gelesen).
+     */
+    public function actAs(?array $user): void
+    {
+        if ($user === null) { $this->reset(); return; }
+        $this->loaded = true;
+        $this->user = $user;
+        $this->role = Permissions::role((string) $user['role']) ?? Permissions::role('author');
+    }
+
     /** Kennung der Website für die Sitzung (aus dem Schlüssel der Website – nicht übertragbar) */
     public static function siteMark(): string
     {

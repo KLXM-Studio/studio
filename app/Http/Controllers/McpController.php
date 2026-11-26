@@ -440,6 +440,19 @@ final class McpController
                 $schema(['id' => $int('Quellen-ID aus list_sources')], ['id']), ['readOnlyHint' => false, 'destructiveHint' => false, 'openWorldHint' => true], true, fn($a) => $s->sourceSync((int) $a['id']));
         }
 
+        // Systemprüfung (wie Verwaltung → System → Prüfung) – nur Fehler und Hinweise; nur Tokens ohne Benutzer oder mit Administrationsrolle
+        $hu = $this->token['user_id'] ?? null;
+        $hRole = $hu !== null && $hu !== '' ? (string) app()->db->fetchValue('SELECT role FROM users WHERE id = ? AND disabled = 0', [(int) $hu]) : 'admin';
+        if ($hRole === 'admin') {
+            $add('site_health', 'Systemprüfung lesen', 'Ergebnis der Systemprüfung dieser Website: Fehler (ok=false) und Hinweise (ok=null) mit Kategorie technical | setup | editorial – z. B. bei Support-Meldungen zuerst prüfen. all=true: auch bestandene Prüfungen.',
+                $schema(['all' => $bool('Auch bestandene Prüfungen liefern')]), $ro, false, function ($a) {
+                    $rows = \Core\Health::rows();
+                    $bad = array_values(array_filter($rows, fn($r) => $r['ok'] !== true));
+                    return ['site' => site()->key, 'version' => CMS_VERSION, 'errors' => count(array_filter($rows, fn($r) => $r['ok'] === false)),
+                        'hints' => count(array_filter($rows, fn($r) => $r['ok'] === null)), 'checks' => !empty($a['all']) ? $rows : $bad];
+                });
+        }
+
         // Support & Wissensdatenbank (Core\Support\Api)
         if (\Core\Features::on('support', false)) {
             $add('search_knowledge', 'Wissensdatenbank durchsuchen', 'Anleitungen und gesammelte Lösungen des Supports (für diese Website sichtbare, veröffentlichte Artikel). Ohne q: neueste Artikel. Vor report_issue nutzen – vielleicht gibt es die Lösung schon.',
@@ -450,6 +463,25 @@ final class McpController
                 $schema(['title' => $str('Kurzer Titel'), 'description' => $str('Was ist passiert, was wurde erwartet, auf welcher Seite? Markdown-lite erlaubt.'),
                     'category' => $str('frage|fehler|wunsch', ['enum' => ['frage', 'fehler', 'wunsch']]), 'priority' => $str('normal|dringend', ['enum' => ['normal', 'dringend']])], ['title', 'description']),
                 $rw, true, fn($a) => \Core\Support\Api::report($token, $a));
+            // Meldungen lesen und beantworten – im Namen des Token-Benutzers, mit dessen Sicht (Team: alle Websites)
+            $su = fn() => \Core\Support\Api::tokenUser($token);
+            $add('support_list', 'Support-Meldungen auflisten', 'Meldungen, die der Token-Benutzer sehen darf (Support-Team: alle Websites, Website-Administration: eigene Website, sonst eigene) – offen zuerst, dringend vor normal, mit Status, Website, Zuständigkeit, Zahl der Antworten und „unread“.',
+                $schema(['status' => $str('offen (Standard: neu, in_arbeit, rueckfrage) | neu | in_arbeit | rueckfrage | geloest | geschlossen | alle', ['enum' => ['offen', 'neu', 'in_arbeit', 'rueckfrage', 'geloest', 'geschlossen', 'alle']]),
+                    'q' => $str('Suchbegriffe in Titel/Text oder #Nummer'), 'site' => $str('Nur diese Website (Schlüssel, nur Support-Team)'),
+                    'category' => $str('frage|fehler|wunsch', ['enum' => ['frage', 'fehler', 'wunsch']]), 'priority' => $str('dringend = nur dringende', ['enum' => ['dringend']]),
+                    'assignee' => $str('ich | niemand'), 'mine' => $bool('Nur selbst gemeldete'), 'limit' => $int('1–100, Standard 25'), 'page' => $int('Seite, Standard 1')]), $ro, false,
+                fn($a) => \Core\Support\Api::issues($su(), $a));
+            $add('support_get', 'Support-Meldung lesen', 'Eine Meldung vollständig: Text (Markdown-lite), Umgebung beim Melden (Seite, Browser, Fenstergröße, Version), Verlauf mit Antworten, internen Notizen (nur Team) und Statuswechseln, Anhänge (Name, Größe). Vor support_reply lesen.',
+                $schema(['id' => $int('Nummer der Meldung'), 'mark_seen' => $bool('Als gelesen merken (Standard nein)')], ['id']), $ro, false,
+                fn($a) => \Core\Support\Api::issue($su(), (int) $a['id'], !empty($a['mark_seen'])));
+            $add('support_reply', 'Support-Meldung beantworten', 'Antwort an die meldende Person (geht per E-Mail raus) oder mit internal=true eine interne Notiz nur fürs Team; status setzt dabei den neuen Status (nur Team, z. B. rueckfrage oder geloest).',
+                $schema(['id' => $int('Nummer der Meldung'), 'body' => $str('Text der Antwort, Markdown-lite'), 'internal' => $bool('Interne Notiz (nur Support-Team)'),
+                    'status' => $str('Neuer Status (optional)', ['enum' => ['neu', 'in_arbeit', 'rueckfrage', 'geloest', 'geschlossen']])], ['id']), $rw, true,
+                fn($a) => \Core\Support\Api::reply($su(), $a));
+            $add('support_status', 'Status einer Support-Meldung setzen', 'Nur den Status ändern (Team; Meldende nur geloest bzw. wieder in_arbeit). notify=false: ohne E-Mail an die meldende Person.',
+                $schema(['id' => $int('Nummer der Meldung'), 'status' => $str('neuer Status', ['enum' => ['neu', 'in_arbeit', 'rueckfrage', 'geloest', 'geschlossen']]),
+                    'notify' => $bool('Meldende Person benachrichtigen (Standard ja)')], ['id', 'status']), $rw, true,
+                fn($a) => \Core\Support\Api::status($su(), $a));
         }
 
         // Aufgaben der Redaktion (Core\Tasks\Api) – im Namen des Token-Benutzers, mit dessen Rechten; nicht über die Prüf-Ebene

@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Support über MCP und CLI lesen und beantworten
+- Neue MCP-Werkzeuge `support_list`, `support_get`, `support_reply`, `support_status`: Meldungen mit Umgebung, Verlauf und Anhängen lesen, antworten, interne Notizen, Status – in der Sicht und mit den Rechten des Token-Benutzers.
+- CLI `support:list`, `support:show`, `support:reply` (`--as=E-Mail`, `--json`).
+- MCP `site_health`: Fehler und Hinweise der Systemprüfung (nur Tokens ohne Benutzer oder mit Administrationsrolle).
+
 ### Eingereicht: Vorschau und lesbare Gegenüberstellung
 - Änderungen an Einträgen (z. B. über MCP) zeigen „Vorschau“ – die Detailseite mit den vorgeschlagenen Werten, ohne zu speichern.
 - Formatierter Text erscheint so wie auf der Website (Unterschiede wortweise aufklappbar), Verknüpfungen und Auswahlfelder mit Titel bzw. Beschriftung statt IDs; Feldschlüssel ausgeblendet.
