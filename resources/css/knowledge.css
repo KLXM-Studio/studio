@@ -54,7 +54,7 @@ a.kn-nav__link:hover{background:var(--kn-soft)}
 .kn-main:focus{outline:none}
 /* Im Bearbeiten-Modus liegt jeder Abschnitt in einer Hülle .eb-entry – die Regeln gelten für beide Fälle */
 .kn .kn-content > section,.kn .kn-content > .eb-entry > section{padding-block:0 clamp(1rem,2.5vw,1.75rem)}
-.kn .kn-content .wrap{max-width:none;margin-inline:0;padding-inline:0}
+.kn .kn-content .wrap{width:auto;max-width:none;margin-inline:0;padding-inline:0}   /* volle Breite der Kapitelspalte (sonst schmaler als die Fläche und links bündig) */
 /* Abschnitte mit Hintergrund (bg-muted, bg-tint, bg-accent …; bg-white = ohne) in der Kapitelspalte als Karte: Innenabstand und Radius
    wie die Karten des Kits, keine Ausdehnung über die Spalte – sonst klebt der Text an der Kante der Fläche */
 .kn .kn-content > section[class*="bg-"]:not(.bg-white),.kn .kn-content > .eb-entry > section[class*="bg-"]:not(.bg-white){padding:clamp(1.25rem,3vw,2rem);border-radius:var(--kit-radius,var(--f-radius,12px));margin-block-end:clamp(1rem,2.5vw,1.75rem)}

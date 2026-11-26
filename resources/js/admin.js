@@ -1247,7 +1247,15 @@ function initBlockFields(scope = d) {
       if (act === 'toggle') { const open = a.getAttribute('aria-expanded') !== 'true'; a.setAttribute('aria-expanded', String(open)); row.classList.toggle('is-collapsed', !open); return; }
       if (act === 'up' && row.previousElementSibling) items.insertBefore(row, row.previousElementSibling);
       else if (act === 'down' && row.nextElementSibling) items.insertBefore(row.nextElementSibling, row);
-      else if (act === 'remove') { const next = row.nextElementSibling || row.previousElementSibling; row.remove(); (next?.querySelector('[data-blk=toggle]') || btn).focus(); changed(); return; }
+      else if (act === 'remove') {
+        // Immer erlaubt; mit Inhalt (Text, Auswahl, Bild) vorher fragen – leere Blöcke gehen sofort
+        const go = () => { const next = row.nextElementSibling || row.previousElementSibling; row.remove(); (next?.querySelector('[data-blk=toggle]') || btn).focus(); changed(); };
+        const filled = [...row.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), textarea, .rte-area, [contenteditable=true]')]
+          .some(el => ('value' in el && el.tagName !== 'DIV' ? el.value : el.textContent).trim() !== '') || !!row.querySelector('.media-field input[type=hidden][value]:not([value=""])');
+        if (!filled) { go(); return; }
+        bar_.ask({ title: t('Block mit Inhalt entfernen?'), ok: t('Entfernen') }).then(ok => { if (ok) go(); });
+        return;
+      }
       a.focus(); changed();
     });
   });

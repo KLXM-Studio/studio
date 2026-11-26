@@ -34,6 +34,13 @@ $body = fluid_head($b, 'mt__head')
 <?php else: ?>
 <div class="wrap mt mt--<?= e($side) ?> mt--va-<?= e($valign) ?><?= in_array($d['split'] ?? 'even', ['text', 'media', 'mediaxl'], true) ? ' mt--s-' . e($d['split']) : '' ?>">
   <div class="mt__text"><?= $body ?></div>
+  <?php // Bildunterschrift: eigener Text, sonst (Schalter) der Bildnachweis der Mediathek
+  $cap = trim((string) ($d['caption'] ?? ''));
+  if ($cap === '' && !empty($d['caption_credit']) && !empty($d['image']) && ($cm = \Core\Media::find((int) $d['image']))) $cap = trim((string) ($cm['credit'] ?? ''));
+  if ($cap !== ''): ?>
+  <figure class="mt__media mt__fig"><?= fluid_image($d['image'] ?? null, '(min-width: 1080px) 600px, 100vw', $ratio) ?><figcaption class="mt__cap"<?= trim((string) ($d['caption'] ?? '')) !== '' ? $b->edit('caption') : '' ?>><?= fluid_title($cap) ?></figcaption></figure>
+  <?php else: ?>
   <?= fluid_image($d['image'] ?? null, '(min-width: 1080px) 600px, 100vw', $ratio, 'mt__media') ?>
+  <?php endif; ?>
 </div>
 <?php endif;

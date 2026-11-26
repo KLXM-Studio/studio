@@ -10,6 +10,15 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Rückmeldungen aus dem Testsystem (Kennzahlen, Pakete, Text + Bild, Blöcke, Aufgaben, Suche)
+- Kennzahlen: „Höchstens nebeneinander“ (2–5); Werte brechen nicht mehr mitten im Wert um, Karten mit etwas breiterer Mindestbreite.
+- Wissensbereich: Inhalte nutzen die volle Breite der Kapitelspalte (Karten und Kacheln standen links, rechts blieb Platz).
+- Text + Bild: optionale Bildunterschrift, auf Wunsch aus dem Bildnachweis der Mediathek.
+- Blöcke im Eintragsformular: Entfernen fragt nach, wenn der Block Inhalt hat.
+- Aufgaben: „Abhaken …“ statt „Erledigt“ bei offenen Aufgaben; „Aufgabe anlegen“ ohne Plus.
+- Bearbeiten auf der Website: „Weitere Angaben“ statt „Alle Felder“.
+- Suchvorschläge im farbigen bzw. dunklen Kopf lesbar.
+
 ### Datenliste: Optionen aus dem Filter nehmen
 - „Filter für Besucher“ → „Im Filter nicht anbieten“: Optionen (Beschriftung oder Schlüssel, kommagetrennt) bekommen keine Schaltfläche;
   die Einträge bleiben in der Liste.

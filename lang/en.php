@@ -10037,4 +10037,5 @@ return [
     'Unterkapitel' => 'Sub-chapter',
     'Abhaken …' => 'Check off …',
     'Seitenleiste mit allen Angaben des Eintrags: Datum, Kategorie, Bild …' => 'Sidebar with all details of the entry: date, category, image …',
+    'Block mit Inhalt entfernen?' => 'Remove block with content?',
 ];
