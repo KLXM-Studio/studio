@@ -4,7 +4,7 @@
  * Breite). Links der Umschalter Netzwerk ↔ Website (Netzwerk-Konten mit mehreren Websites, _areaswitch.php) bzw. der Name der Website,
  * in der Mitte die Suche direkt in der Leiste (Quelle wählen oder per Kürzel – resources/js/_quickbar.js, /admin/api/search?scope=…),
  * rechts Seitenbaum, Favoriten (Abschnitt #adm-fav, resources/js/_favorites.js) und das Konto-Menü mit Hilfe und Assistent.
- * „Website ansehen“ bleibt erster Punkt der Seitenleiste.
+ * „Website ansehen“ steht immer sichtbar rechts in der Leiste (Website-Bereich; schmal nur das Symbol).
  * Farbe je Modus (resources/css/_topbar.css): Website wie die Seitenleiste, Netzwerk Petrol, „Ansicht als Rolle/Person“ Pflaume;
  * Testumgebung als Hinweis mit Streifen an der Unterkante. Telefon: volle Breite mit Menü-Knopf, Seitenleiste als Schublade.
  * @var array $user  @var array $favs  @var string $favHere  @var string $favTitle  @var string $favIcon  @var bool $netArea  @var bool $netMulti
@@ -44,6 +44,7 @@ $tbName = (string) ($user['name'] ?: $user['email']);
   </div>
 
   <div class="adm-tb__tools">
+    <?php if (!$netArea): ?><a class="adm-tb__view" href="<?= e(url('/')) ?>" target="_blank" rel="noopener" title="<?= e(__('Website ansehen')) ?>"><?= icon('globe') ?><span><?= e(__('Website ansehen')) ?></span><span class="adm-sr"> <?= e(__('(öffnet in neuem Tab)')) ?></span></a><?php endif; ?>
     <?php if ($tbEnv !== ''): ?><span class="adm-tb__env" title="<?= e(__('Testumgebung – Änderungen hier gehen nicht auf die Live-Website. E-Mails werden umgeleitet, Suchmaschinen ausgesperrt.')) ?>"><?= icon('flask') ?><span><?= e(ucfirst($tbEnv)) ?></span><span class="adm-sr"> – <?= e(__('Testumgebung – Änderungen hier gehen nicht auf die Live-Website. E-Mails werden umgeleitet, Suchmaschinen ausgesperrt.')) ?></span></span><?php endif; ?>
     <?php if ($tbImp): // Ansicht als Rolle/Person (Core\Impersonation): Kopfleiste in Pflaume, Rückweg immer sichtbar ?>
     <div class="adm-tb__imp" role="status"><?= icon('user-circle') ?><span title="<?= e(__('Bis {time} · Konto, Benutzer und Grundeinstellungen sind gesperrt.', ['time' => \Core\Format::admin()->time((int) $tbImp['until'])])) ?>"><?= e($tbImp['mode'] === 'role' ? __('Ansicht als Rolle „{name}“', ['name' => $tbImp['label']]) : __('Sie arbeiten als {name}', ['name' => $tbImp['label']])) ?><small> · <?= e(__('bis {time}', ['time' => \Core\Format::admin()->time((int) $tbImp['until'])])) ?></small></span>

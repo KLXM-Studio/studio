@@ -28,6 +28,7 @@ import { initDesign } from './_design.js';
 import { drill } from './_drill.js';
 import { initDrawer } from './_drawer.js';
 import { initFavorites } from './_favorites.js';
+import { initSideMini } from './_sidemini.js';   // Seitenleiste schmal/breit (Knopf in der Titelzeile)
 import { initNavGroups } from './_navgroups.js';   // Seitenleiste → Administration: aufklappbare Gruppen
 import { initSupport } from './_support.js';
 import { initNetwork } from './_network.js';
@@ -87,6 +88,7 @@ if (IN_ADMIN) initAssistant();
 
 // ------------------------------------------------------------ Administration: aufklappbare Gruppen „Einstellungen“, „Werkzeuge“ (_navgroups.js)
 initNavGroups();
+initSideMini();
 // ------------------------------------------------------------ Bereichsnavigation (Daten): serverseitig in der Seitenleiste
 {
   const box = $('.adm-side > .adm-drill');

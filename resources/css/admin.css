@@ -30,6 +30,7 @@
 @import "./_addressbook.css";   /* Kontakte: Adressbuch-Ansicht (Core\Data\AddressBook, resources/js/_addressbook.js) */
 @import "./_netarea.css";   /* Netzwerk-Bereich: Seitenleiste mit Gruppen (Core\Network\Area) */
 @import "./_areaswitch.css";   /* Umschalter Netzwerk ↔ Website + Popover-Menüs (.adm-pop) */
+@import "./_sidemini.css";   /* Seitenleiste schmal (nur Symbole), per Hover ausfahren */
 @import "./_topbar.css";   /* Kopfleiste über dem Inhalt: Umschalter, Suche, Favoriten, Konto (views/_topbar.php) */
 @import "./_mailsettings.css";   /* E-Mail-Versand: nummerierte Gruppen, wirksamer Absender (system/_mail.php, network/_email.php) */
 @import "./_settingsui.css";   /* Einstellungsseiten: Geltung, Warnhinweis, wirksamer Wert, Letzte Änderungen (Fields::renderGroups) */
@@ -3810,8 +3811,6 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 @media (min-width:1800px){body.adm{grid-template-columns:288px minmax(0,1fr)}}
 
 /* Seitenleiste: „Website ansehen“ als Menüpunkt */
-.adm-nav-site a{display:flex}
-.adm-nav-site__ext{width:14px;height:14px;margin-left:auto;color:var(--adm-t3)}
 
 /* Beschriftete Mehrfachfelder (Core\Combo, Fields 'rows'): Zeile Beschriftung · Wert · Freigabe · Entfernen – wie Adressbuch-Apps */
 .rep-row{display:flex;align-items:flex-start;gap:8px;border:0;padding:0;margin:0 0 6px;background:none}

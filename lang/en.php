@@ -1525,6 +1525,8 @@ return [
     'Diesen geteilten Pool darf diese Website nur verwenden. Ändern können Personen mit dem Recht „Geteilte Medien pflegen“ auf Websites, die zum Pflegen freigegeben sind.' => 'This website may only use this shared pool. Changes can be made by people with the “Maintain shared media” permission on websites allowed to maintain it.',
     'Zentrale Mediatheken für mehrere Websites dieser Installation, z. B. Logos und Markenbilder. In der Mediathek erscheint dafür eine Umschaltung. Pflegen dürfen Rollen mit „Geteilte Medien pflegen“ auf der Hauptwebsite und auf Websites, die unter „Pflegen dürfen“ freigegeben sind; alle anderen verwenden die Dateien nur. Änderungen wirken sofort auf allen Websites.' => 'Central media libraries for several websites of this installation, e.g. logos and brand images. The media library shows a switch for them. Roles with “Maintain shared media” on the main website and on websites listed under “May maintain” can edit them; everyone else only uses the files. Changes apply to all websites immediately.',
     'Hauptmenü' => 'Main menu',
+    'Seitenleiste schmal (nur Symbole)' => 'Narrow sidebar (icons only)',
+    'Seitenleiste breit (mit Beschriftung)' => 'Wide sidebar (with labels)',
     'Menü' => 'Menu',
     'Menü öffnen' => 'Open menu',
     'Menü schließen' => 'Close menu',

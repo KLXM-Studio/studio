@@ -1,0 +1,23 @@
+/* ==========================================================================
+   Seitenleiste schmal (nur Symbole) – Knopf [data-side-mini] in der Titelzeile (views/layout.php, resources/js/_sidemini.js).
+   body.adm--mini: Spalte 60 px; Zeiger darüber oder Tastaturfokus darin fährt die Leiste kurz verzögert über den Inhalt aus
+   (überlagert, kein Springen des Inhalts). Nur ab 901 px – darunter bleibt die Schublade.
+   ========================================================================== */
+@media (min-width:901px){
+  body.adm.adm--mini{grid-template-columns:60px minmax(0,1fr)}
+  .adm--mini .adm-side{width:60px;z-index:70;overflow-x:hidden;transition:width .15s ease,box-shadow .15s ease}
+  .adm--mini .adm-side:is(:hover,:focus-within){width:264px;box-shadow:10px 0 28px rgba(15,20,35,.18);transition-delay:.15s}
+  .adm--mini .adm-side :is(nav a,.adm-navgrp__btn,.adm-drill__back){white-space:nowrap}
+  /* eingeklappt: nur Symbole – Beschriftungen bleiben im Fluss (rechts abgeschnitten), Überschriften und Zähler ausgeblendet */
+  .adm--mini .adm-side:not(:hover):not(:focus-within) .adm-brand{display:none}
+  .adm--mini .adm-side:not(:hover):not(:focus-within) .adm-brand-row{justify-content:center}
+  .adm--mini .adm-side:not(:hover):not(:focus-within) :is(.adm-side__label,.adm-drill__title,.adm-count,.adm-navgrp__chev,.adm-product){opacity:0}
+  .adm--mini .adm-side:not(:hover):not(:focus-within) .adm-navgrp__list{display:none}
+  /* Bereichsleisten (Medien, Daten …) haben eigene Texte, Zähler und Hinweise: im eingeklappten Zustand Schrift aus, Symbole (px-Größe) bleiben */
+  .adm--mini .adm-side:not(:hover):not(:focus-within) *{font-size:0}
+  .adm--mini .adm-side:not(:hover):not(:focus-within) :is(.ico--glyph,.adm-drill__back span){font-size:16px}
+  .adm--mini .adm-side:not(:hover):not(:focus-within) p{display:none}
+  .adm-side__mini[aria-pressed=true]{color:var(--adm-a-ink,var(--adm-ink))}
+}
+@media (max-width:900px){.adm-side__mini{display:none}}
+@media (prefers-reduced-motion:reduce){.adm--mini .adm-side{transition:none}}

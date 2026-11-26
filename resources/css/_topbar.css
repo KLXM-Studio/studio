@@ -77,6 +77,12 @@ html.adm-ui[data-theme=dark]{--tb-site:#172034;--tb-net:#0A3A40;--tb-imp:#45203F
 
 /* Rechts: Seitenbaum, Favoriten, Konto */
 .adm-tb__tools{display:flex;align-items:center;gap:4px;flex:none}
+/* Website ansehen: immer sichtbar (neuer Tab); unter 1200 px nur das Symbol */
+.adm-tb__view{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;color:#E3E8F0;text-decoration:none;font:600 13px var(--adm-font);white-space:nowrap}
+:where(.adm) a.adm-tb__view,:where(.adm) a.adm-tb__view:hover{color:#fff}
+.adm-tb__view:hover{background:rgba(255,255,255,.1)}
+.adm-tb__view .ico{width:20px;height:20px}
+@media (max-width:1199px){.adm-tb__view{width:40px;padding:0;justify-content:center}.adm-tb__view>span:not(.adm-sr){display:none}}
 .adm-tb__icobtn{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:10px;background:none;color:#E3E8F0;cursor:pointer;text-decoration:none}
 .adm-tb__icobtn .ico,.adm-tb__icobtn svg{width:20px;height:20px}
 .adm-tb__icobtn:hover,.adm-tb__icobtn[aria-expanded=true]{background:rgba(255,255,255,.12);color:#fff}
