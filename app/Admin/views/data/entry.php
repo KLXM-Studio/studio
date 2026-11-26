@@ -32,12 +32,13 @@ $status = $values['status'] ?? ($e['status'] ?? ($t['settings']['workflow'] ? 'd
   <?php if ($url): ?><a class="adm-btn adm-btn--ghost" href="<?= e($url) ?>" target="_blank" rel="noopener">Ansehen ↗</a><?php endif; ?>
 </header>
 
-<form method="post" action="<?= e(url($isNew ? $base . '/new' : $base . '/' . $e['id'])) ?>" class="dt-entry" novalidate<?= \Core\Data\Calendar::enabled($t) ? ' data-rrule-preview="' . e(url($base . '/wiederholung')) . '"' . ($e ? ' data-entry-id="' . (int) $e['id'] . '"' : '') : '' ?><?php if ($cond = \Core\Data\Rules::client($t['fields'])): ?> data-conditions="<?= e(json_encode($cond, JSON_UNESCAPED_UNICODE)) ?>"<?php endif; ?>>
+<form method="post" action="<?= e(url($isNew ? $base . '/new' : $base . '/' . $e['id']) . (($_GET['eingebettet'] ?? '') === '1' ? '?eingebettet=1' : '')) ?>" class="dt-entry" novalidate<?= \Core\Data\Calendar::enabled($t) ? ' data-rrule-preview="' . e(url($base . '/wiederholung')) . '"' . ($e ? ' data-entry-id="' . (int) $e['id'] . '"' : '') : '' ?><?php if ($cond = \Core\Data\Rules::client($t['fields'])): ?> data-conditions="<?= e(json_encode($cond, JSON_UNESCAPED_UNICODE)) ?>"<?php endif; ?>>
   <?= csrf_field() ?>
   <section class="adm-card dt-entry__main">
     <?= /* Sichtbarkeit: „Auf der Website: …“ bzw. „nicht auf der Website“ (Core\Data\Exposure) */ \Core\Theme::capture(__DIR__ . '/_visibility.php', ['t' => $t, 'values' => $values, 'status' => (string) $status]) ?>
     <div class="adm-fields"><?= Fields::renderForm(Entries::formSchema($t, $values), $values, $errors, 'f') ?></div>
     <?= /* Netzwerk: Zusatzfelder dieser Website (Core\Data\Network) */ \Core\Theme::capture(__DIR__ . '/_network.php', ['t' => $t, 'e' => $e, 'values' => $values, 'part' => 'extra', 'action' => null]) ?>
+    <?php if (!$isNew): ?><?= /* Rückverknüpfungen: Einträge anderer Tabellen, die hierher verknüpfen – bearbeitbar (Core\Data\Backlinks) */ \Core\Theme::capture(__DIR__ . '/_backlinks.php', ['t' => $t, 'e' => $e]) ?><?php endif; ?>
   </section>
   <aside class="dt-entry__side">
     <section class="adm-card">
@@ -119,13 +120,14 @@ $status = $values['status'] ?? ($e['status'] ?? ($t['settings']['workflow'] ? 'd
       <p class="f-help"><?= e(__('Prüfen: Rich-Suchergebnis-Test von Google mit der Adresse der Stelle. „Gültig bis“ aktuell halten bzw. besetzte Stellen auf Entwurf stellen.')) ?></p>
     </section>
     <?php endif; ?>
-    <?php if (!$isNew && ($links = Entries::backlinks($t, (int) $e['id']))): ?>
+    <?php if (!$isNew && ($blg = array_values(array_filter(\Core\Data\Backlinks::groups($t, (int) $e['id'], true), fn($g) => $g['total'] > 0)))): // Kurzfassung; bearbeitbar im Hauptbereich ?>
     <section class="adm-card dt-backlinks">
-      <h2>Verknüpft mit</h2>
-      <?php foreach ($links as $bl): ?>
-      <p class="dt-bl-head"><span aria-hidden="true"><?= icon($bl['table']['icon']) ?></span> <?= e($bl['table']['name']) ?> <small>· <?= e($bl['field']['label']) ?> · <?= count($bl['entries']) ?></small></p>
-      <ul><?php foreach ($bl['entries'] as $be): ?><li><a href="<?= e(url('/admin/data/' . $bl['table']['handle'] . '/' . $be['id'])) ?>"><?= e(Entries::title($bl['table'], $be)) ?></a><?= $be['status'] === 'draft' ? ' <small class="adm-muted">(Entwurf)</small>' : '' ?></li><?php endforeach; ?></ul>
-      <?php endforeach; ?>
+      <h2><?= e(__('Verknüpft mit')) ?></h2>
+      <ul class="dt-bl-sum" role="list">
+        <?php foreach ($blg as $g): ?>
+        <li><a href="<?= e($g['enabled'] ? '#rueckverknuepfungen' : $g['list_url']) ?>"><span aria-hidden="true"><?= icon($g['table']['icon']) ?></span> <span><?= e($g['label']) ?></span></a> <small><?= e(\Core\Data\Backlinks::summary($g)) ?></small></li>
+        <?php endforeach; ?>
+      </ul>
     </section>
     <?php endif; ?>
     <?= /* KI-Assistent: Teaser, SEO, Übersetzen (Core\AI) */ \Core\Theme::capture(ROOT . '/app/Admin/views/ai/_entry.php', ['t' => $t, 'e' => $e]) ?>

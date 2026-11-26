@@ -472,6 +472,9 @@ final class Tables
                     $errors["fields.$i"] = __('Feld „{label}“: Geteilte Tabellen können nur mit geteilten Tabellen derselben Website verknüpft werden.', ['label' => $label]);
                 }
                 $def['target'] = $target;
+                // Rückverknüpfung im Formular der Zieltabelle (Core\Data\Backlinks): Standard an, abschaltbar, eigene Beschriftung
+                if (array_key_exists('backlink', $f) && !filter_var($f['backlink'], FILTER_VALIDATE_BOOLEAN)) $def['backlink'] = false;
+                if (($bl = mb_substr(trim(strip_tags((string) ($f['backlink_label'] ?? ''))), 0, 80)) !== '') $def['backlink_label'] = $bl;
                 // Zielart (Vorauswahl „Kontakt“): nur Adressbücher
                 if (($f['target_kind'] ?? '') === Kinds::CONTACTS) {
                     $def['target_kind'] = Kinds::CONTACTS;

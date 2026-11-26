@@ -59,6 +59,10 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
+### Rückverknüpfungen
+- Verknüpfungen in beide Richtungen bearbeiten: Im Formular eines Eintrags zeigt **Verknüpft mit diesem Eintrag** je Verknüpfungsfeld anderer Tabellen die Gegenrichtung (z. B. Termine eines Workshops) – verknüpfen (Auswahlfenster), neu anlegen (Formular im Dialog, Feld vorbelegt), lösen. Kalender nach Datum (kommende zuerst, vergangene eingeklappt), höchstens 5 sichtbar, „Alle … anzeigen“, gefilterte Liste. Je Feld abschaltbar und beschriftbar (`backlink`, `backlink_label`); Seitenleiste „Verknüpft mit“ als Kurzfassung mit Zählern (`Core\Data\Backlinks`, Selbsttest `backlinks:selftest`).
+- Listen: `?f[feld]=ID` filtert Verknüpfungsfelder auch ohne eingerichteten Listenfilter, mit Hinweis „Gefiltert: …“.
+
 ### Formulare: Öffentlich/Intern und Wiederholung
 - Felder tragen nur noch ein Merkmal, wenn sie vom Normalfall abweichen: „Intern“ (Schloss) bzw. bei „Redaktion entscheidet“ ein dezentes Symbol; feste öffentliche Felder ohne Globus/„Öffentlich · Website“. Zeilen von Kontaktangaben behalten ihren Schalter.
 - Wiederholung neu gegliedert: „[wöchentlich] alle [1] Woche(n)“ in einer Zeile, „Endet“ als Umschalter (Nie / Am Datum / Nach Anzahl) mit nur dem passenden Feld, Ausnahmen daneben, Zusammenfassung und nächste Termine als eine Karte.

@@ -717,6 +717,13 @@ final class DataController extends AdminController
             $sf = \Core\Data\Calendar::config($t)['start'];
             $values[$sf] = (Tables::field($t, $sf)['type'] ?? '') === 'datetime' ? $r->str('start') . ' 09:00' : $r->str('start');
         }
+        // Rückverknüpfung „+ … neu“ (Core\Data\Backlinks): Verknüpfungsfeld vorbelegen (?mit[feld]=ID)
+        foreach ((array) ($r->query['mit'] ?? []) as $fn => $tid) {
+            $rf = Tables::field($t, (string) $fn);
+            if ($rf && in_array($rf['type'], ['relation', 'relations'], true) && ctype_digit((string) $tid) && (int) $tid > 0) {
+                $values[$rf['name']] = $rf['type'] === 'relation' ? (int) $tid : [(int) $tid];
+            }
+        }
         // Stellenangebot: „Veröffentlicht am“ = heute
         if (\Core\Data\Jobs::is($t) && ($df = \Core\Data\Jobs::f($t, 'date_posted')) !== '') $values[$df] = \Core\Data\Jobs::today();
         return $this->view('data/entry', ['t' => $t, 'e' => null, 'values' => $values, 'errors' => []]);
@@ -1016,6 +1023,30 @@ final class DataController extends AdminController
             if (Entries::setFeatured($t, (int) $m[2], $act === 'off' ? false : null, $act === 'order' ? ($i + 1) * 10 : null)) $done++;
         }
         return $done ? Response::json(['ok' => true, 'done' => $done]) : Response::fail(__('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'), 403);
+    }
+
+    /**
+     * Rückverknüpfung (Core\Data\Backlinks): am Eintrag {row} der Tabelle {handle} das Verknüpfungsfeld {field} auf {target}
+     * setzen bzw. lösen (action link|unlink). Recht data.edit auf {handle}; die Zieltabelle muss die des Feldes sein.
+     */
+    public function backlinkApi(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        if (!can('data.edit', $handle)) return Response::fail(__('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'), 403);
+        $s = $this->table($handle);
+        if (Tables::isInbox($s)) return Response::fail(__('Eingangs-Tabelle: Anfragen im „Eingang“ bearbeiten.'), 403);
+        $act = $r->str('action');
+        $rows = array_values(array_filter(array_map('intval', is_array($r->post['rows'] ?? null) ? $r->post['rows'] : [$r->str('row')])));
+        $target = (int) $r->str('target');
+        $f = Tables::field($s, $r->str('field'));
+        if (!in_array($act, ['link', 'unlink'], true) || !$rows || count($rows) > 100 || $target < 1 || !$f || !\Core\Data\Backlinks::enabled($f)) return Response::fail(__('Ungültige Anfrage.'), 400);
+        $tt = Tables::findContent((string) ($f['target'] ?? ''));
+        if (!$tt || !Entries::find($tt, $target)) return Response::fail(__('Eintrag nicht gefunden.'), 404);
+        $errs = [];
+        foreach ($rows as $row) {
+            if (($err = \Core\Data\Backlinks::apply($s, (string) $f['name'], $row, $target, $act === 'link')) !== null) $errs[] = $err;
+        }
+        return $errs ? Response::fail(implode(' ', array_unique($errs)), 422) : Response::json(['ok' => true, 'done' => count($rows)]);
     }
 
     /** Auswahlfenster: Einträge suchen und filtern (JSON, Core\Data\Picker) */

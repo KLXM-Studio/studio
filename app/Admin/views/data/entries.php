@@ -142,6 +142,10 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     if (can('data.delete', $t['handle'])) $bulkItems[] = ['key' => 'delete', 'label' => __('Löschen'), 'attrs' => ['data-bulk-action' => 'delete']];
     echo \Core\RowMenu::bar($bulkItems, ['class' => 'dt-bulk']); ?>
   </div>
+  <?php if ($lfExtra = \Core\Data\ListFilters::extra($t, $lfSel)): // Filter aus einem Link (z. B. Rückverknüpfung), nicht als Listenfilter eingerichtet ?>
+  <p class="dt-lfextra" role="status"><?= icon('funnel') ?> <span><?= e(__('Gefiltert:')) ?> <?php foreach ($lfExtra as $i => $x): ?><?= $i ? ' · ' : '' ?><b><?= e($x['label']) ?></b> = <?= e($x['value']) ?><?php endforeach; ?></span>
+    <a href="<?= e(url($base)) ?>"><?= e(__('Filter aufheben')) ?></a></p>
+  <?php endif; ?>
   <?php if ($lfDefs && empty($cal)): // Filter der Eintragsliste (Core\Data\ListFilters, Felder & Einstellungen) ?>
   <form class="dt-lfilters" method="get" action="<?= e(url($base)) ?>" aria-label="<?= e(__('Liste filtern')) ?>">
     <?php foreach (['status' => $status === 'all' ? '' : $status, 'q' => $q, 'zeit' => $when !== '' && $when !== 'kommende' ? $when : '', 'hervorgehoben' => $featView ? '1' : ''] as $hk => $hv): if ($hv === '') continue; ?><input type="hidden" name="<?= e($hk) ?>" value="<?= e($hv) ?>"><?php endforeach; ?>

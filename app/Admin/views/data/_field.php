@@ -84,6 +84,9 @@ $type = $f['type'] ?? 'text';
         <?php if ($books): ?><optgroup label="<?= e(__('Adressbücher – Feld „Kontakt“')) ?>"><?php foreach ($books as $h => $l): ?><option value="<?= e($h) ?>"<?= ($f['target'] ?? '') === $h ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></optgroup><optgroup label="<?= e(__('Tabellen')) ?>"><?php endif; ?>
         <?php foreach (array_diff_key($tables, $books) as $h => $l): ?><option value="<?= e($h) ?>"<?= ($f['target'] ?? '') === $h ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?><?= $books ? '</optgroup>' : '' ?></select></label>
       <p class="f-help"><?= e(__('Kontakt-Feld: Tabelle aus „Adressbücher“ wählen – „Verknüpfung (mehrere)“ für mehrere Kontakte. Auf der Website erscheinen nur freigegebene Kontakte mit ihren öffentlichen Angaben.')) ?></p>
+      <?php // Rückverknüpfung (Core\Data\Backlinks): im Formular der verknüpften Tabelle die Gegenrichtung zeigen und bearbeiten ?>
+      <input type="hidden" name="<?= $n ?>[backlink]" value="0"><label class="f-check"><input type="checkbox" name="<?= $n ?>[backlink]" value="1"<?= ($f['backlink'] ?? true) !== false ? ' checked' : '' ?>> <span><?= e(__('Rückverknüpfung im Formular der verknüpften Tabelle zeigen')) ?></span></label>
+      <label class="dt-in"><span><?= e(__('Beschriftung der Rückverknüpfung (optional)')) ?></span><input name="<?= $n ?>[backlink_label]" value="<?= e((string) ($f['backlink_label'] ?? '')) ?>" maxlength="80" placeholder="<?= e(__('z. B. Termine dieses Workshops')) ?>"></label>
     </div>
     <?php
     // Wiederholbare Gruppe: Unterfelder (Bezeichnung, Kurzname, Typ, Pflicht, halbe Breite, Auswahlmöglichkeiten) + Anzahl und Beschriftungen

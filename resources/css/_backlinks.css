@@ -1,0 +1,45 @@
+/* Rückverknüpfungen im Formular eines Eintrags (views/data/_backlinks.php, resources/js/_backlinks.js) + Dialog „+ … neu“ (eingebettetes Formular) */
+.dt-bl{margin-top:24px;padding-top:20px;border-top:1px solid var(--adm-line);display:grid;gap:18px;background:none;box-shadow:none;padding-left:0;padding-right:0;padding-bottom:0}
+.dt-bl>h2{display:flex;align-items:center;gap:8px;margin:0;font-size:16px}
+.dt-bl>h2 .ico{width:18px;height:18px;color:var(--adm-a)}
+.dt-bl__g{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--adm-line);border-radius:10px;background:var(--adm-surface)}
+.dt-bl__head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.dt-bl__h{display:flex;align-items:center;gap:8px;margin:0;font-size:15px}
+.dt-bl__h .ico{width:18px;height:18px;color:var(--adm-a)}
+.dt-bl__sum{color:var(--adm-t3);font-size:13px}
+.dt-bl__acts{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.dt-bl__list{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.dt-bl__row{display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 0;border-top:1px solid var(--adm-line);font-size:14px}
+.dt-bl__list:first-child>.dt-bl__row:first-child,.dt-bl__head+.dt-bl__list>.dt-bl__row:first-child{border-top:0}
+.dt-bl__date{flex:none;min-width:9.5em;color:var(--adm-t2);font-variant-numeric:tabular-nums;font-size:13px}
+.dt-bl__title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-bl__title a{color:inherit;text-decoration:none;font-weight:600}
+.dt-bl__title a:hover{text-decoration:underline}
+.dt-bl__x{flex:none;width:30px;height:30px;border-color:transparent;background:none;color:var(--adm-t3)}
+.dt-bl__x:hover{color:var(--adm-err);background:var(--adm-err-bg)}
+.dt-bl__x .ico{width:14px;height:14px}
+.dt-bl__more>summary,.dt-bl__past>summary{cursor:pointer;padding:6px 0;color:var(--adm-a-ink,var(--adm-a));font-size:13px;font-weight:600}
+.dt-bl__past{border-top:1px dashed var(--adm-line);margin-top:2px}
+.dt-bl__past .dt-bl__row{color:var(--adm-t2)}
+.dt-bl__empty{margin:0}
+.dt-bl__all{margin:0;font-size:13px}
+@media (max-width:640px){.dt-bl__date{min-width:0}.dt-bl__row{flex-wrap:wrap}.dt-bl__acts{margin-left:0}}
+/* Kurzfassung in der Seitenleiste */
+.dt-bl-sum{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:14px}
+.dt-bl-sum a{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:inherit;text-decoration:none}
+.dt-bl-sum a:hover span:last-child{text-decoration:underline}
+.dt-bl-sum .ico{width:16px;height:16px;color:var(--adm-a)}
+.dt-bl-sum small{display:block;margin-left:22px;color:var(--adm-t3)}
+/* Dialog mit eingebettetem Formular */
+.dt-bl-dlg{width:min(1100px,calc(100vw - 24px));height:min(90vh,980px);padding:0;display:grid;grid-template-rows:auto 1fr}
+.dt-bl-dlg:not([open]){display:none}
+.dt-bl-dlg .adm-dialog__head{padding:12px 16px;border-bottom:1px solid var(--adm-line)}
+.dt-bl-dlg__frame{width:100%;height:100%;border:0;background:var(--adm-bg)}
+/* eingebettet (?eingebettet=1): nur der Inhalt */
+body.adm.adm--embed{display:block}
+.adm--embed .adm-main{grid-column:auto;margin:0 auto}
+body.adm--embed :is(.adm-side,.adm-tb,.adm-backbar,.adm-guidehint){display:none}
+body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
+.dt-lfextra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:var(--adm-info-bg);font-size:14px}
+.dt-lfextra .ico{width:16px;height:16px;color:var(--adm-a)}
+.dt-lfextra a{margin-left:auto;font-weight:600}

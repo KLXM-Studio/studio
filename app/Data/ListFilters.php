@@ -71,7 +71,29 @@ final class ListFilters
                 $sel[$fl['name']] = $v;
             }
         }
+        // Verknüpfungsfelder auch ohne eingerichteten Filter (?f[feld]=ID, z. B. „In der Liste öffnen“ der Rückverknüpfung)
+        foreach ($t['fields'] as $f) {
+            $v = $in[$f['name']] ?? null;
+            if (!isset($sel[$f['name']]) && in_array($f['type'], ['relation', 'relations'], true) && is_string($v) && ctype_digit($v) && (int) $v > 0) $sel[(string) $f['name']] = $v;
+        }
         return $sel;
+    }
+
+    /**
+     * Gewählte Filter, die nicht als Listenfilter eingerichtet sind – für einen Hinweis über der Liste
+     * @return list<array{name: string, label: string, value: string}>
+     */
+    public static function extra(array $t, array $sel): array
+    {
+        $active = array_column(self::active($t), 'name');
+        $out = [];
+        foreach ($sel as $name => $v) {
+            if (in_array($name, $active, true) || is_array($v) || !($f = Tables::field($t, (string) $name))) continue;
+            $target = Tables::findContent((string) ($f['target'] ?? ''));
+            $e = $target ? Entries::find($target, (int) $v) : null;
+            $out[] = ['name' => (string) $name, 'label' => (string) $f['label'], 'value' => $e && $target ? Entries::title($target, $e) : (string) $v];
+        }
+        return $out;
     }
 
     /** Bedingungen für Entries::query ('where') @return list<array{0: string, 1: string, 2: mixed}> */

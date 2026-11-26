@@ -287,6 +287,7 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/quick', [Admin\DataController::class, 'quick']);
     $r->post('/admin/data/{handle}/{id}/featured', [Admin\DataController::class, 'featured']);
     $r->post('/admin/api/featured', [Admin\DataController::class, 'featuredApi']);   // Folien/Karten im Bearbeiten-Modus: nicht mehr hervorheben, Reihenfolge   // Stern: „Auf der Startseite hervorheben“ (JSON)
+    $r->post('/admin/api/backlinks/{handle}', [Admin\DataController::class, 'backlinkApi']);   // Rückverknüpfung verknüpfen/lösen (Core\Data\Backlinks)
     $r->get('/admin/api/picker/{handle}', [Admin\DataController::class, 'picker']);            // Auswahlfenster für Einträge (Core\Data\Picker)
     $r->get('/admin/api/picker/{handle}/{id}', [Admin\DataController::class, 'pickerPreview']);
     // Adressbuch-Ansicht (Core\Data\AddressBook): Listen zuordnen, vCard-Export – vor /{id}; Menüpunkt „Kontakte“

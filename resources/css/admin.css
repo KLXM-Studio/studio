@@ -30,6 +30,7 @@
 @import "./_addressbook.css";   /* Kontakte: Adressbuch-Ansicht (Core\Data\AddressBook, resources/js/_addressbook.js) */
 @import "./_netarea.css";   /* Netzwerk-Bereich: Seitenleiste mit Gruppen (Core\Network\Area) */
 @import "./_areaswitch.css";   /* Umschalter Netzwerk ↔ Website + Popover-Menüs (.adm-pop) */
+@import "./_backlinks.css";   /* Rückverknüpfungen im Formular */
 @import "./_sidemini.css";   /* Seitenleiste schmal (nur Symbole), per Hover ausfahren */
 @import "./_topbar.css";   /* Kopfleiste über dem Inhalt: Umschalter, Suche, Favoriten, Konto (views/_topbar.php) */
 @import "./_mailsettings.css";   /* E-Mail-Versand: nummerierte Gruppen, wirksamer Absender (system/_mail.php, network/_email.php) */
