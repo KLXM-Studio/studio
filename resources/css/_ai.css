@@ -226,3 +226,16 @@ html.adm-ui .kia-chk__i{color:var(--adm-on-ink,#fff)}
 .kia-pg-item{display:flex;flex-direction:column;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--adm-line)}
 .kia-pg-item:last-child{border-bottom:0;padding-bottom:0}
 .kia-pg-markers ul{margin:6px 0 0;padding-left:1.2em}
+/* Übersicht „KLXM AI“: Kachel je aktiver Funktion (ai/index.php) */
+.kia-over{margin:0 0 20px}
+.kia-tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr));gap:12px}
+.kia-tile>a,.kia-tile>div{display:flex;gap:12px;align-items:flex-start;height:100%;padding:14px 16px;border:1px solid var(--adm-line);border-radius:12px;background:var(--adm-card);color:var(--adm-ink);text-decoration:none}
+.kia-tile>a:hover{border-color:var(--adm-accent)}
+.kia-tile__ico{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--adm-accent-bg);color:var(--adm-a-ink)}
+.kia-tile__ico .ico{width:18px;height:18px}
+.kia-tile__body{display:grid;gap:3px;min-width:0}
+.kia-tile__body small{color:var(--adm-t2);line-height:1.4}
+.kia-tile__st{justify-self:start;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--adm-ok-bg);color:var(--adm-ok)}
+.kia-tile--off .kia-tile__st{background:var(--adm-fill-2,var(--adm-fill));color:var(--adm-t2)}
+.kia-tile--off .kia-tile__ico{background:var(--adm-fill);color:var(--adm-t2)}
+.kia-tile--hot .kia-tile__st{background:var(--adm-warn-bg,#fff4d6);color:var(--adm-warn,#8a5a00)}

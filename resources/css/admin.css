@@ -3959,3 +3959,4 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .f--multi .f-check--past{display:none}
 .f--multi:has(.f-multi__past input:checked) .f-check--past,.f--multi .f-check--past:has(input:checked){display:flex}
 .f--multi .f-check.is-filtered{display:none}
+.adm-steps{margin:.75rem 0 .5rem;padding-left:1.25rem;display:grid;gap:.35rem}

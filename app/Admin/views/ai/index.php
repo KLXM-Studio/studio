@@ -1,5 +1,5 @@
 <?php
-/** Bereich „KLXM AI“ – Übersicht: Status je Fähigkeit, Tageslimit, Schnellzugriffe; ohne Einrichtung eine Erklärung. */
+/** Bereich „KLXM AI“ – Übersicht: Kacheln je aktiver Funktion (interne KI, MCP, REST-API, Freigaben, Chats, Suche); mit interner KI dazu Zahlen, Status und Schnellzugriffe. */
 use Core\AI\Ai;
 use Core\AI\Assist;
 use Core\AI\Center;
@@ -14,31 +14,60 @@ $labels = ['text' => __('Texte: schreiben, übersetzen, SEO'), 'vision' => __('B
 ?>
 <header class="adm-head">
   <div><p class="adm-eyebrow"><?= e(__('KI-Assistent')) ?></p><h1 class="kia-brand"><?= Assist::logo() ?> <?= e($brand) ?></h1>
-    <p class="adm-muted"><?= e(__('Schreiben, übersetzen, Suchmaschinen-Angaben und Alt-Texte – die KI macht Vorschläge, Sie prüfen und entscheiden.')) ?></p></div>
+    <p class="adm-muted"><?= e(__('Übersicht der aktiven Funktionen rund um KI und Schnittstellen – die KI macht Vorschläge, Sie prüfen und entscheiden.')) ?></p></div>
 </header>
 
-<?php if (!$any): ?>
-<section class="adm-card kia-setup" aria-labelledby="kia-setup-h">
-  <?php if ($cfg['configured'] && !$site['enabled']): // Anbieter der Installation steht – nur diese Website ist aus ?>
-  <h2 id="kia-setup-h"><?= e(__('KI ist auf dieser Website ausgeschaltet')) ?></h2>
-  <p><?= e(__('Der KI-Anbieter der Installation ist eingerichtet ({provider}). Für diese Website ist die KI aber noch nicht eingeschaltet.', ['provider' => ucfirst((string) ($cfg['provider'] ?? ''))])) ?></p>
-  <ol class="kia-steps">
-    <li><?= e(__('Unter Grundeinstellungen → KI „KI für diese Website“ einschalten und die gewünschten Fähigkeiten (Texte, Bilder, Suche, Sprache → Text) wählen.')) ?></li>
-    <li><?= e(__('Festlegen, welche Rollen sie nutzen dürfen (Recht „KI-Funktionen nutzen“).')) ?></li>
-  </ol>
-  <?php else: ?>
-  <h2 id="kia-setup-h"><?= e(__('Noch nicht eingerichtet')) ?></h2>
-  <p><?= e(!$cfg['configured'] ? __('Für diese Installation ist noch kein KI-Anbieter festgelegt.') : __('Die Fähigkeiten „Texte“ und „Bilder“ sind ausgeschaltet oder ohne Modell.')) ?></p>
-  <ol class="kia-steps">
-    <li><?= e(__('Anbieter wählen: ein eigener Ollama-Server (Daten bleiben im Haus) oder ein EU-Anbieter wie Mistral AI mit Auftragsverarbeitungsvertrag.')) ?></li>
-    <li><?= e(__('Unter Grundeinstellungen → KI den Anbieter eintragen und „Verbindung testen“.')) ?></li>
-    <li><?= e(__('KI für die Website einschalten und festlegen, welche Rollen sie nutzen dürfen (Recht „KI-Funktionen nutzen“).')) ?></li>
-  </ol>
-  <?php endif; ?>
-  <?php if (can('system.manage')): ?><a class="adm-btn adm-btn--primary" href="<?= e(url('/admin/system#ki')) ?>"><?= e(__('Zu Grundeinstellungen → KI')) ?></a>
-  <?php else: ?><p class="adm-muted"><?= e(__('Die Einrichtung übernimmt Ihre Administration bzw. Agentur.')) ?></p><?php endif; ?>
+<?php
+// Übersicht aller aktiven Funktionen rund um KI und Schnittstellen – eine Kachel je Funktion; sind keine internen KI-Funktionen an,
+// weist genau eine Kachel darauf hin (MCP, API und Freigaben laufen unabhängig davon)
+$mcpOn = \Core\Features::on('mcp');
+$apiOn = \Core\Features::on('api');
+$tokens = ($mcpOn || $apiOn) ? \Core\Api\Tokens::all() : [];
+$lastUse = $tokens ? max(array_map(fn($t) => (string) ($t['last_used_at'] ?? ''), $tokens)) : '';
+$mcpClients = array_values(array_unique(array_filter(array_map(fn($t) => strtok((string) ($t['mcp_client'] ?? ''), ' ') ?: '', $tokens))));   // nur der Name, ohne Version
+$canTok = can('api.manage');
+$review = \Core\Review\Queue::canReview();
+$pending = $review ? \Core\Review\Queue::pendingCount() : 0;
+$visitor = $any && \Core\Features::on('chat.visitor');
+$assistant = $any && \Core\Features::on('chat.assistant');
+$searchAns = $any && (string) setting('sys.search_answer', 'off') !== 'off';
+$semantic = Ai::enabled('embed');
+$tile = function (string $icon, string $title, string $status, string $text, string $href = '', string $mod = 'on'): string {
+    $inner = '<span class="kia-tile__ico" aria-hidden="true">' . icon($icon) . '</span><span class="kia-tile__body"><strong>' . e($title) . '</strong>'
+        . '<span class="kia-tile__st kia-tile__st--' . e($mod) . '">' . e($status) . '</span><small>' . e($text) . '</small></span>';
+    return '<li class="kia-tile kia-tile--' . e($mod) . '">' . ($href !== '' ? '<a href="' . e(url($href)) . '">' . $inner . '</a>' : '<div>' . $inner . '</div>') . '</li>';
+};
+?>
+<section class="kia-over" aria-labelledby="kia-over-h">
+  <h2 id="kia-over-h" class="adm-sr"><?= e(__('Aktive Funktionen')) ?></h2>
+  <ul class="kia-tiles" role="list">
+    <?php if ($any): ?>
+    <?= $tile('sparkle', __('Interne KI'), __('aktiv'), implode(' · ', array_map(fn($c) => $labels[$c], array_values(array_filter(['text', 'vision', 'embed'], fn($c) => Ai::enabled($c)))))
+        . ($q['cap'] > 0 ? ' · ' . __('{left} von {cap} Aufrufen heute übrig', ['left' => (int) $q['left'], 'cap' => (int) $q['cap']]) : ''), can('system.manage') ? '/admin/system#ki' : '') ?>
+    <?php else: ?>
+    <?= $tile('sparkle', __('Interne KI-Funktionen'), __('noch nicht aktiviert'), $cfg['configured'] && !$site['enabled']
+        ? __('Der Anbieter ist eingerichtet ({provider}), für diese Website aber ausgeschaltet. Schreiben, Übersetzen, Alt-Texte und Besucher-Chat brauchen ihn.', ['provider' => ucfirst((string) ($cfg['provider'] ?? ''))])
+        : __('Schreiben, Übersetzen, Alt-Texte, semantische Suche und Besucher-Chat brauchen einen KI-Anbieter (eigener Ollama-Server oder EU-Anbieter). Externe Assistenten über MCP funktionieren auch ohne.'),
+        can('system.manage') ? '/admin/system#ki' : '', 'off') ?>
+    <?php endif; ?>
+    <?php if ($mcpOn): ?>
+    <?= $tile('code', __('MCP-Server'), __('aktiv'), ($tokens ? (count($tokens) === 1 ? __('1 Zugangs-Token') : __('{n} Zugangs-Tokens', ['n' => count($tokens)])) : __('noch kein Zugangs-Token'))
+        . ($mcpClients ? ' · ' . __('verbunden: {list}', ['list' => implode(', ', array_slice($mcpClients, 0, 3))]) : '')
+        . ($lastUse !== '' ? ' · ' . __('zuletzt genutzt {when}', ['when' => fmt()->relative($lastUse)]) : ''), $canTok ? '/admin/api-tokens' : '') ?>
+    <?php endif; ?>
+    <?php if ($apiOn): ?>
+    <?= $tile('globe', __('REST-API'), __('aktiv'), __('Schnittstelle für Automatisierungen unter /api/v1 – gleiche Zugangs-Tokens wie MCP.'), $canTok ? '/admin/api-tokens' : '') ?>
+    <?php endif; ?>
+    <?php if ($review && ($mcpOn || $apiOn || $any)): ?>
+    <?= $tile('tray', __('Eingereichte Änderungen'), $pending ? __('{n} offen', ['n' => $pending]) : __('nichts offen'), __('Vorschläge von KI-Assistenten und Schnittstellen zur Freigabe.'), '/admin/ai/eingereicht', $pending ? 'hot' : 'on') ?>
+    <?php endif; ?>
+    <?php if ($assistant): ?><?= $tile('chat-circle-text', __('KI-Assistent der Redaktion'), __('aktiv'), __('Hilfe und Aktionen mit Bestätigung direkt in der Verwaltung.')) ?><?php endif; ?>
+    <?php if ($visitor): ?><?= $tile('chats', __('KI-Chat für Besucher'), __('aktiv'), __('Antwortet nur aus den Inhalten der Website.'), can('system.manage') ? '/admin/system#ki' : '') ?><?php endif; ?>
+    <?php if ($semantic || $searchAns): ?><?= $tile('magnifying-glass', __('KI in der Website-Suche'), __('aktiv'), implode(' · ', array_filter([$semantic ? __('semantische Suche') : '', $searchAns ? __('KI-Antwort über den Treffern') : '']))) ?><?php endif; ?>
+  </ul>
 </section>
-<?php else:
+
+<?php if ($any):
   $gaps = Assist::available('text') && \Core\Lang::multi() ? Center::translationGaps() : [];
   $open = 0; foreach ($gaps as $g) $open += count($g['pages']) + count($g['entries']) + count($g['media']) + $g['settings'];
   $noalt = can('media.upload') ? count(Center::missingAlt()) : 0;

@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### KLXM AI: Übersicht der aktiven Funktionen, Anleitung für Claude Desktop
+- Die Startseite von KLXM AI zeigt je aktiver Funktion eine Kachel (interne KI, MCP-Server mit Tokens und verbundenen Clients, REST-API, eingereichte Änderungen, Chats, KI in der Suche). Sind keine internen KI-Funktionen an, weist genau eine Kachel darauf hin – MCP und API laufen unabhängig davon.
+- API & MCP: Schritt-für-Schritt-Anleitung für Claude Desktop (Einstellungen → Entwickler → Konfiguration bearbeiten).
+
 ### MCP: Bilder per Adresse hochladen
 - `upload_media` nimmt statt Base64 auch eine öffentliche Adresse (`url`, Bilder und PDF) und übernimmt neben Alt-Text und Titel jetzt auch den Fotonachweis (`credit`).
 

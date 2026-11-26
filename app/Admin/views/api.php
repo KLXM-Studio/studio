@@ -89,6 +89,15 @@ $err = fn($k) => isset($errors[$k]) ? '<p class="f-error">' . e($errors[$k]) . '
   }
 }</code></pre>
       <button type="button" class="adm-btn adm-btn--small" data-copy="#snip-cd">Kopieren</button>
+      <ol class="adm-steps">
+        <li><?= e(__('Oben unter „Zugangs-Tokens“ ein Token anlegen (für KI-Assistenten empfohlen: „Zur Freigabe“) und den Wert sofort kopieren – er erscheint nur einmal.')) ?></li>
+        <li><?= e(__('Node.js installieren, falls noch nicht vorhanden (nodejs.org) – Claude Desktop startet damit die Verbindung „mcp-remote“.')) ?></li>
+        <li><?= e(__('In Claude Desktop: Einstellungen (⌘, bzw. Strg+,) → „Entwickler“ → „Konfiguration bearbeiten“. Es öffnet sich der Ordner mit der Datei claude_desktop_config.json.')) ?></li>
+        <li><?= e(__('Die Datei mit einem Texteditor öffnen, den Block oben einfügen (gibt es schon „mcpServers“, nur den Eintrag „klxm-studio“ ergänzen) und bei „Bearer …“ den kopierten Token-Wert eintragen. Speichern.')) ?></li>
+        <li><?= e(__('Claude Desktop ganz beenden und neu starten. Unter Einstellungen → „Entwickler“ steht „klxm-studio“ dann als „running“; im Chat zeigt das Werkzeug-Symbol die Tools der Website.')) ?></li>
+        <li><?= e(__('Ausprobieren, z. B.: „Welche Seiten hat die Website?“ – Änderungen erscheinen je nach Token als Entwurf bzw. unter {brand} → Eingereicht.', ['brand' => \Core\AI\Assist::brand()])) ?></li>
+      </ol>
+      <p class="f-help"><?= e(__('Hinweis: „Konnektor hinzufügen“ in Claude (Einstellungen → Konnektoren) verlangt eine Anmeldung per OAuth und lässt keinen eigenen Token zu – deshalb der Weg über die Konfigurationsdatei.')) ?></p>
     </div>
     <div>
       <h3>REST-API testen</h3>
