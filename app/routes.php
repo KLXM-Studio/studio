@@ -506,6 +506,8 @@ return function (Router $r): void {
     $r->post('/admin/users/invite', [Admin\InviteController::class, 'store']);
     $r->post('/admin/users/invites/{id}/resend', [Admin\InviteController::class, 'resend']);
     $r->post('/admin/users/invites/{id}/revoke', [Admin\InviteController::class, 'revoke']);
+    $r->get('/admin/hochladen/{token}', [Admin\UploadLinkController::class, 'show']);     // Upload-Link (Core\UploadLink, MCP media_upload_link)
+    $r->post('/admin/hochladen/{token}', [Admin\UploadLinkController::class, 'upload']);
     $r->get('/admin/einladung/{token}', [Admin\InviteController::class, 'show']);
     $r->post('/admin/einladung/{token}', [Admin\InviteController::class, 'accept']);
     $r->post('/admin/einladung/{token}/passkey/options', [Admin\InviteController::class, 'passkeyOptions']);

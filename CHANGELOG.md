@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Bilder aus dem Chat (MCP)
+- Neue MCP-Werkzeuge `media_upload_link` und `media_upload_status`: Hat die Person im Chat ein Bild angehängt, erzeugt der Assistent einen Upload-Link (30 Minuten, eine Datei); die Person lädt dort hoch, der Assistent bindet das Bild über seine Medien-ID ein. Die Anweisungen des MCP-Servers nennen den Weg.
+
 ### Bildfunktionen überall gleich
 - Bildfelder in Seitenleisten und Formularen bieten dieselben Funktionen wie das Bild auf der Seite: Hochladen, Zuschneiden, Bild bearbeiten (Drehen, Spiegeln, Ausrichten, Entzerren), Anpassen, Rahmen. Am Bild auf der Seite und in „Eintrag bearbeiten“ neu: „Bild bearbeiten“. Anpassen/Rahmen gelten im Seiten-Editor für die Einbindung im Block, sonst für alle Verwendungen.
 

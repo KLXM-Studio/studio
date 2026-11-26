@@ -10236,4 +10236,13 @@ return [
     'Zuschneiden …' => 'Crop …',
     'Drehen, Spiegeln, Ausrichten …' => 'Rotate, flip, straighten …',
     'Bearbeitung gespeichert – gilt für alle Verwendungen (nach dem Neuladen sichtbar).' => 'Edit saved – applies to all uses (visible after reloading).',
+    // Upload-Link (MCP)
+    'Bild wählen oder hierher ziehen' => 'Choose an image or drag it here',
+    'Bitte ein Bild (JPG, PNG, WebP oder GIF) wählen.' => 'Please choose an image (JPG, PNG, WebP or GIF).',
+    'Bitte eine Datei wählen.' => 'Please choose a file.',
+    'Datei wählen oder hierher ziehen' => 'Choose a file or drag it here',
+    'Der Link gilt 30 Minuten für eine Datei. Die Datei landet in der Mediathek dieser Website.' => 'The link is valid for 30 minutes and one file. The file goes into the media library of this website.',
+    'Die Datei ist zu groß.' => 'The file is too large.',
+    'Dieser Upload-Link ist abgelaufen oder unbekannt.' => 'This upload link has expired or is unknown.',
+    'Hochgeladen: {name}. Sie können zurück in den Chat – der Assistent bindet die Datei jetzt ein.' => 'Uploaded: {name}. You can go back to the chat – the assistant will now insert the file.',
 ];

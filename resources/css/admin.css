@@ -4046,3 +4046,5 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .mf-more__pop{position:absolute;z-index:30;top:calc(100% + 4px);left:0;display:grid;min-width:15rem;padding:4px;border:1px solid var(--adm-line);border-radius:8px;background:var(--adm-card);box-shadow:0 8px 24px rgba(0,0,0,.14)}
 .mf-more__pop button{all:unset;box-sizing:border-box;padding:8px 10px;border-radius:6px;font-size:14px;cursor:pointer}
 .mf-more__pop button:hover,.mf-more__pop button:focus-visible{background:var(--adm-hover,rgba(0,0,0,.06));outline:none}
+.upl{max-width:36rem;margin:40px auto;display:grid;gap:12px}
+.upl h1{margin:0}
