@@ -679,6 +679,15 @@ final class DataController extends AdminController
                     'occ' => \Core\Data\Calendar::occurrences($t, $gridStart, $gridEnd, ['status' => $status, 'lang' => $lang, 'q' => $r->str('q'), 'source' => 'own'])];
             }
         }
+        // Kalender-Tabellen: Liste standardmäßig „Kommende“ (nach Beginn aufsteigend), Reiter „Vergangene“ (neueste zuerst) und „Alle“
+        $when = '';
+        if (\Core\Data\Calendar::enabled($t) && !$cal) {
+            $when = in_array($r->str('zeit'), ['kommende', 'vergangene', 'alle'], true) ? $r->str('zeit') : 'kommende';
+            if ($when !== 'alle') {
+                $o['when'] = $when === 'kommende' ? 'upcoming' : 'past';
+                if ($r->str('sort') === '') { $o['sort'] = $sort = (string) \Core\Data\Calendar::config($t)['start']; $o['dir'] = $dir = $when === 'kommende' ? 'asc' : 'desc'; }
+            }
+        }
         // „Auf der Startseite hervorheben“ (Core\Data\Featured): Stern je Zeile, Ansicht „Hervorgehoben“ (?hervorgehoben=1, nach Reihenfolge)
         $feat = \Core\Data\Featured::enabled($t) && can('data.publish', $handle) && !Tables::isInbox($t);
         $featView = $feat && $r->str('hervorgehoben') === '1';
@@ -686,7 +695,7 @@ final class DataController extends AdminController
         if ($featView) $o['featured'] = 'order';
         $total = Entries::count($t, $o);
         $rows = Entries::query($t, $o + ['limit' => $per, 'offset' => ($page - 1) * $per]);
-        return $this->view('data/entries', ['t' => $t, 'rows' => $rows, 'total' => $total, 'status' => $status, 'feat' => $feat, 'featView' => $featView,
+        return $this->view('data/entries', ['t' => $t, 'rows' => $rows, 'total' => $total, 'status' => $status, 'feat' => $feat, 'featView' => $featView, 'when' => $when,
             'featCount' => $feat ? Entries::count($t, ['status' => 'all', 'featured' => 'order', 'lang' => $lang, 'source' => 'own']) : 0,
             'q' => $r->str('q'), 'sort' => $sort, 'dir' => $dir, 'page' => $page, 'pages' => (int) ceil($total / $per), 'lang' => $lang, 'cal' => $cal,
             'counts' => ['all' => Entries::count($t, ['status' => 'all', 'lang' => $lang, 'source' => 'own']), 'published' => Entries::count($t, ['status' => 'published', 'lang' => $lang, 'source' => 'own']), 'draft' => Entries::count($t, ['status' => 'draft', 'lang' => $lang, 'source' => 'own'])],

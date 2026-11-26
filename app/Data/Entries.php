@@ -230,6 +230,20 @@ final class Entries
             $where[] = '(' . implode(' OR ', $or) . ')';
         }
         array_push($where, ...self::conditions($table, (array) ($o['where'] ?? []), $params));
+        // Kalender-Tabellen (Core\Data\Calendar): 'when' => 'upcoming' (endet heute oder später, Serien immer) | 'past' (vorbei, ohne Serien) –
+        // Liste der Verwaltung „Kommende | Vergangene“; ohne Ende zählt der Tag des Beginns
+        if (in_array($o['when'] ?? '', ['upcoming', 'past'], true) && Calendar::enabled($table)) {
+            $cc = Calendar::config($table);
+            $cs = (string) $cc['start'];
+            if ($cs !== '' && preg_match('~^[a-z_][a-z0-9_]*$~', $cs)) {
+                $ce = (string) $cc['end'] !== '' && preg_match('~^[a-z_][a-z0-9_]*$~', (string) $cc['end']) ? "COALESCE(NULLIF({$cc['end']}, ''), $cs)" : $cs;
+                $rr = (string) $cc['recurrence'] !== '' && preg_match('~^[a-z_][a-z0-9_]*$~', (string) $cc['recurrence']) ? (string) $cc['recurrence'] : '';
+                $params[] = date('Y-m-d');
+                $where[] = $o['when'] === 'upcoming'
+                    ? "(substr($ce, 1, 10) >= ?" . ($rr !== '' ? " OR COALESCE($rr, '') != ''" : '') . ')'
+                    : "(substr($ce, 1, 10) < ?" . ($rr !== '' ? " AND COALESCE($rr, '') = ''" : '') . ')';
+            }
+        }
         // Nur gerade hervorgehobene Einträge (Core\Data\Featured, Option 'featured' => 'date'|'order'; „bis“-Datum einschließlich)
         if (!empty($o['featured'])) $where[] = Featured::sql($params);
         // Stellenangebote (Core\Data\Jobs): abgelaufene („Gültig bis“ vor heute) erscheinen auf der Website nicht – in Listen, Sitemap,

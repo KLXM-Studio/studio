@@ -53,12 +53,12 @@ $thumb = function (?int $id, string $cls = '') use ($listImg): string {
 };
 $base = '/admin/data/' . $t['handle'];
 $multi = \Core\Lang::multi();
-$qs = fn(array $o) => url($base) . '?' . http_build_query(array_filter(array_merge(['lang' => $multi && $lang !== \Core\Lang::default() ? $lang : '', 'status' => $status === 'all' ? '' : $status, 'q' => $q, 'sort' => $sort, 'dir' => $dir, 'hervorgehoben' => !empty($featView) ? '1' : ''], $o), fn($v) => $v !== '' && $v !== null));
+$qs = fn(array $o) => url($base) . '?' . http_build_query(array_filter(array_merge(['lang' => $multi && $lang !== \Core\Lang::default() ? $lang : '', 'status' => $status === 'all' ? '' : $status, 'q' => $q, 'sort' => $sort, 'dir' => $dir, 'hervorgehoben' => !empty($featView) ? '1' : '', 'zeit' => !empty($when) && $when !== 'kommende' ? $when : ''], $o), fn($v) => $v !== '' && $v !== null));
 $sortLink = function (string $key, string $label) use ($sort, $dir, $qs) {
     $active = $sort === $key;
     return '<a href="' . e($qs(['sort' => $key, 'dir' => $active && $dir === 'asc' ? 'desc' : 'asc', 'seite' => null])) . '" class="' . ($active ? 'is-sorted' . ($dir === 'desc' ? ' is-desc' : '') : '') . '">' . e($label) . '</a>';
 };
-$feat ??= false; $featView ??= false; $featCount ??= 0;
+$feat ??= false; $featView ??= false; $featCount ??= 0; $when ??= '';
 $manual = $sort === 'sort' && $q === '' && $status === 'all' && !$featView;
 // Geteilte Tabellen (Mitglieder): Entscheidung der Eigentümer-Website über Vorschläge
 $ownerPicks = \Core\Data\Tables::isShared($t) && !\Core\Data\Shared::isOwner($t) ? \Core\Data\Shared::picks($t, array_column($rows, 'id'), $t['shared']['owner']) : [];
@@ -116,6 +116,9 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <a href="<?= e($qs(['status' => $k === 'all' ? '' : $k, 'seite' => null])) ?>"<?= $status === $k ? ' aria-current="true"' : '' ?>><?= $l ?> <small data-count="<?= $k ?>"><?= $counts[$k] ?></small></a>
       <?php endforeach; ?>
     </nav>
+    <?php if ($when !== ''): // Kalender: Kommende (Standard) | Vergangene | Alle ?>
+    <nav class="fx-seg dt-seg" aria-label="<?= e(__('Zeitraum')) ?>"><?php foreach (['kommende' => __('Kommende'), 'vergangene' => __('Vergangene'), 'alle' => __('Alle')] as $wk => $wl): ?><a href="<?= e($qs(['zeit' => $wk === 'kommende' ? '' : $wk, 'sort' => null, 'dir' => null, 'seite' => null])) ?>"<?= $when === $wk ? ' aria-current="true"' : '' ?>><?= e($wl) ?></a><?php endforeach; ?></nav>
+    <?php endif; ?>
     <?php if ($feat): // Ansicht „Hervorgehoben“: nur gerade hervorgehobene, nach Reihenfolge – Zahl direkt änderbar ?>
     <nav class="fx-seg dt-seg" aria-label="<?= e(__('Auf der Startseite hervorheben')) ?>"><a href="<?= e($qs(['hervorgehoben' => $featView ? '' : '1', 'seite' => null])) ?>"<?= $featView ? ' aria-current="true"' : '' ?>><?= icon('star') ?> <?= e(__('Hervorgehoben')) ?> <small data-feat-count><?= (int) $featCount ?></small></a></nav>
     <?php endif; ?>

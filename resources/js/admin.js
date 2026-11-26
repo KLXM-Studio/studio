@@ -1480,6 +1480,8 @@ initEntryEdit();
 // Karten und Kacheln: Ziel (Seite/Eintrag) bearbeiten – mit Rückfrage der Werkzeugleiste bei ungespeicherten Änderungen
 initTargetEdit(bar_);
 
+// Fehlerseite der Verwaltung: „Zurück“
+d.addEventListener('click', e => { if (e.target.closest?.('[data-history-back]')) { e.preventDefault(); history.length > 1 ? history.back() : (location.href = d.querySelector('.adm-errorpage a')?.href || '/admin'); } });
 // Eintragsformular: „Auf der Startseite hervorheben“ – Reihenfolge und „bis“ erst nach dem Einschalten
 d.addEventListener('change', e => {
   const c = e.target.closest?.('[data-featured-toggle]'); if (!c) return;

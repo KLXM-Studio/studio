@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Verwaltung aus Sicht der Redaktion (Prüfbericht, Teil 1)
+- Termine: Liste standardmäßig „Kommende“ nach Beginn, Reiter „Vergangene“ (neueste zuerst) und „Alle“ (`Entries` Option `when` upcoming|past).
+- Neue Einträge starten als Entwurf; „Speichern“ legt offline an, „Veröffentlichen“ stellt direkt online.
+- Fehler in der Verwaltung (403, 404 …) erscheinen für Angemeldete im Verwaltungsrahmen mit verständlicher Meldung statt der Fehlerseite der Website.
+
 ### Hervorheben leicht pflegen
 - Eintragsliste: Stern je Zeile schaltet „Auf der Startseite hervorheben“ direkt um; Filter „Hervorgehoben (n)“ mit Reihenfolge als Zahl.
 - Formular und Seitenleiste „Eintrag bearbeiten“: sichtbarer Schalter unter dem Status, Reihenfolge und „bis“ erst nach dem Einschalten.

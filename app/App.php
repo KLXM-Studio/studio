@@ -274,6 +274,13 @@ final class App
             }
             // Typische Angriffsadresse (/wp-login.php, /.env …) ohne Weiterleitung → Sicherheits-Log für fail2ban
             if ($e->getCode() === 404 && SecurityLog::isProbe($request->path)) SecurityLog::write('probe');
+            // Verwaltung, angemeldet: Fehler im Verwaltungsrahmen (Recht fehlt, Eintrag weg) statt der öffentlichen Fehlerseite des Kits
+            if (str_starts_with($request->path, '/admin') && !$request->wantsJson() && in_array($e->getCode(), [403, 404, 405, 413, 419], true) && $this->auth->check()) {
+                try {
+                    return (new Http\Controllers\Admin\ErrorController())->show((int) $e->getCode(), (string) $e->getMessage());
+                } catch (\Throwable) {
+                }
+            }
             return (new Http\Controllers\SiteController())->error($e->getCode(), $e->getMessage());
         } catch (\Throwable $e) {
             error_log((string) $e);

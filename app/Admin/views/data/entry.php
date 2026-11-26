@@ -19,7 +19,8 @@ $rule = $isHead ? \Core\Data\Calendar::describe(\Core\Data\Calendar::config($t)[
 $isNew = $e === null;
 $base = '/admin/data/' . $t['handle'];
 $url = $e ? Entries::url($t, $e) : null;
-$status = $values['status'] ?? ($e['status'] ?? 'published');
+// Neue Einträge starten offline (Entwurf), wenn die Tabelle Entwurf/Online kennt – „Veröffentlichen“ stellt sie direkt online
+$status = $values['status'] ?? ($e['status'] ?? ($t['settings']['workflow'] ? 'draft' : 'published'));
 ?>
 <header class="adm-head dt-head">
   <div><p class="adm-eyebrow"><a href="<?= e(url($base)) ?>"><span aria-hidden="true"><?= icon($t['icon']) ?></span> <?= e($t['name']) ?></a></p>
@@ -105,7 +106,8 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
       </fieldset>
       <?php endif; ?>
       <div class="dt-save">
-        <button class="adm-btn adm-btn--primary adm-btn--block" type="submit">Speichern</button>
+        <button class="adm-btn adm-btn--primary adm-btn--block" type="submit"><?= e(__('Speichern')) ?></button>
+        <?php if ($isNew && $t['settings']['workflow'] && can('data.publish', $t['handle'])): ?><button class="adm-btn adm-btn--block" type="submit" name="status" value="published"><?= icon('globe') ?> <?= e(__('Veröffentlichen')) ?></button><?php endif; ?>
         <div class="adm-row"><button class="adm-btn adm-btn--small adm-btn--ghost" name="then" value="new">Speichern &amp; neu</button><button class="adm-btn adm-btn--small adm-btn--ghost" name="then" value="list">Speichern &amp; zur Liste</button></div>
       </div>
       <?php if (!$isNew): ?>

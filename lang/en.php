@@ -10139,4 +10139,12 @@ return [
     'Wirkt nur dort, wo ein Element hervorgehobene Einträge zeigt – z. B. ein Einstieg mit Slider oder der Block „Highlights“.' => 'Only takes effect where an element shows featured entries – e.g. a hero with slider or the “Highlights” block.',
     'Auf dieser Website: {where}' => 'On this website: {where}',
     'Derzeit nutzt kein Element dieser Website hervorgehobene Einträge.' => 'Currently no element of this website shows featured entries.',
+    // Fehlerseiten der Verwaltung
+    'Bitte laden Sie die Seite neu.' => 'Please reload the page.',
+    'Dafür fehlt Ihrer Rolle das Recht. Fragen Sie bei Bedarf die Administration Ihrer Website.' => 'Your role lacks the permission for this. If needed, ask the administrators of your website.',
+    'Die Aktion ist hier nicht möglich.' => 'This action is not possible here.',
+    'Diese Seite der Verwaltung gibt es nicht (mehr) – vielleicht wurde der Eintrag gelöscht oder die Adresse ist unvollständig.' => 'This admin page does not exist (any more) – perhaps the entry was deleted or the address is incomplete.',
+    'Fehlercode {code}' => 'Error code {code}',
+    'Kein Zugriff' => 'No access',
+    'Sitzung abgelaufen' => 'Session expired',
 ];
