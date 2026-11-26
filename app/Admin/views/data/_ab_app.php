@@ -18,7 +18,7 @@ $canSchema = can('data.schema') && \Core\Data\Shared::canSchema($t);
 $back = AddressBook::link($t, $s);
 $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
 ?>
-<div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?><?= !empty($edit) || !empty($new) ? ' is-editing' : '' ?>" data-imp-target="<?= e($base . '/import') ?>" data-imp-label="<?= e(__('vCard-Datei loslassen zum Importieren')) ?>" data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"<?= \Core\RowMenu::selectAttrs() ?>
+<div class="ab is-pane-<?= e($pane) ?><?= $select ? ' is-select' : '' ?><?= !empty($edit) || !empty($new) ? ' is-editing' : '' ?>"<?php if (can('data.import', $t['handle'])): ?> data-imp-target="<?= e($base . '/import') ?>" data-imp-label="<?= e(__('vCard-Datei loslassen zum Importieren')) ?>"<?php endif; ?> data-ab data-ab-base="<?= e($base) ?>" data-ab-assign="<?= e($base . '/listen') ?>"<?= \Core\RowMenu::selectAttrs() ?>
   data-ab-t-none="<?= e(__('Bitte zuerst Kontakte auswählen.')) ?>">
   <nav class="ab-src" aria-label="<?= e(__('Adressbücher und Listen')) ?>">
     <ul>
@@ -78,17 +78,21 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
       <div class="ab-meta">
         <span aria-live="polite" data-ab-total><b><?= e(count($rows) === 1 ? __('1 Kontakt') : __('{n} Kontakte', ['n' => count($rows)])) ?></b> · <?= e(__('nach Nachname')) ?></span>
         <span class="ab-meta__tools">
-          <a class="ab-tool" href="<?= e($base . '/import') ?>"><?= icon('upload-simple') ?> <?= e(__('Importieren')) ?></a>
+          <?php if (can('data.import', $t['handle'])): ?><a class="ab-tool" href="<?= e($base . '/import') ?>"><?= icon('upload-simple') ?> <?= e(__('vCard importieren')) ?></a><?php endif; ?>
           <a class="ab-tool<?= $select ? ' is-on' : '' ?>" href="<?= e($L(['auswahl' => $select ? '' : '1'])) ?>" data-ab-select<?= $select ? ' aria-current="true"' : '' ?>><?= icon('list-checks') ?> <?= e(__('Auswählen')) ?></a>
+          <?php if (can('data.export', $t['handle']) || ($subs && can('data.edit', $t['handle']))): ?>
           <details class="ab-menu">
             <summary class="ab-tool"><?= icon('export') ?> <?= e(__('Exportieren')) ?></summary>
             <div class="ab-menu__pop">
+              <?php if (can('data.export', $t['handle'])): ?>
               <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q]))) ?>" download><?= e(__('Diese Kontakte als vCard – alle Angaben')) ?></a>
               <a href="<?= e($base . '/vcard?' . http_build_query(array_filter(['liste' => $list, 'filter' => $filter, 'q' => $q, 'umfang' => 'oeffentlich']))) ?>" download><?= e(__('Diese Kontakte als vCard – nur öffentliche Angaben')) ?></a>
               <?php if ($list !== '' || $filter !== '' || $q !== ''): ?><a href="<?= e($base . '/vcard') ?>" download><?= e(__('Ganzes Adressbuch als vCard')) ?></a><?php endif; ?>
+              <?php endif; ?>
               <?php if ($subs && can('data.edit', $t['handle'])): ?><a href="<?= e($base . '/abonnieren') ?>"><?= icon('rss') ?> <?= e(__('In Apps abonnieren …')) ?></a><?php endif; ?>
             </div>
           </details>
+          <?php endif; ?>
         </span>
       </div>
     </div>
@@ -103,7 +107,7 @@ $subs = \Core\Data\Subscriptions::kind($t) === 'contacts';
           $selItems[] = ['key' => 'move', 'icon' => 'list-bullets', 'label' => __('Zu Liste hinzufügen'), 'submit' => true, 'attrs' => ['name' => 'op', 'value' => 'add']];
           $selItems[] = ['key' => 'move', 'icon' => 'x', 'label' => __('Aus Liste entfernen'), 'submit' => true, 'attrs' => ['name' => 'op', 'value' => 'remove']];
       }
-      $selItems[] = ['key' => 'export', 'label' => __('vCard exportieren'), 'attrs' => ['formaction' => $base . '/vcard']];
+      if (can('data.export', $t['handle'])) $selItems[] = ['key' => 'export', 'label' => __('vCard exportieren'), 'attrs' => ['formaction' => $base . '/vcard']];
       $listSel = '';
       if ($lists) {
           $listSel = '<label class="sr-only" for="ab-sel-list">' . e(__('Liste')) . '</label><select id="ab-sel-list" name="liste">';

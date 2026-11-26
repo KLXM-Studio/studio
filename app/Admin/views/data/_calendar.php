@@ -26,17 +26,20 @@ $evN = 0;
 $extRow = \Core\Extensions::tableActions($t)['row'];
 $de = str_starts_with(\Core\I18n::locale(), 'de');
 ?>
-<section class="dt-cal" aria-labelledby="dt-cal-month"<?php if ($canEdit && \Core\Data\Kinds::isCalendar($t)): ?> data-imp-target="<?= e(url($base . '/import')) ?>" data-imp-label="<?= e(__('ICS-Datei loslassen zum Importieren')) ?>"<?php endif; ?>>
+<section class="dt-cal" aria-labelledby="dt-cal-month"<?php if (can('data.import', $t['handle']) && \Core\Data\Kinds::isCalendar($t)): ?> data-imp-target="<?= e(url($base . '/import')) ?>" data-imp-label="<?= e(__('ICS-Datei loslassen zum Importieren')) ?>"<?php endif; ?>>
   <div class="dt-cal__bar">
     <h2 id="dt-cal-month" class="dt-cal__month"><?= e($fmt($first, 'LLLL y')) ?></h2>
-    <?php if ($canEdit && \Core\Data\Kinds::isCalendar($t)): ?>
+    <?php $calSub = $canEdit && \Core\Data\Subscriptions::kind($t) === 'calendar';
+    if ((can('data.export', $t['handle']) || $calSub) && \Core\Data\Kinds::isCalendar($t)): ?>
     <div class="dt-cal__tools">
       <details class="ab-menu">
         <summary class="adm-btn adm-btn--small adm-btn--ghost"><?= icon('export') ?> <?= e(__('Exportieren')) ?></summary>
         <div class="ab-menu__pop">
+          <?php if (can('data.export', $t['handle'])): ?>
           <a href="<?= e(url($base . '/kalender.ics') . '?umfang=intern') ?>" download><?= e(__('Alle Termine als ICS – alle Angaben')) ?></a>
           <a href="<?= e(url($base . '/kalender.ics')) ?>" download><?= e(__('Veröffentlichte Termine als ICS – nur öffentliche Angaben')) ?></a>
-          <?php if (\Core\Data\Subscriptions::kind($t) === 'calendar'): ?><a href="<?= e(url($base . '/abonnieren')) ?>"><?= icon('rss') ?> <?= e(__('In Apps abonnieren …')) ?></a><?php endif; ?>
+          <?php endif; ?>
+          <?php if ($calSub): ?><a href="<?= e(url($base . '/abonnieren')) ?>"><?= icon('rss') ?> <?= e(__('In Apps abonnieren …')) ?></a><?php endif; ?>
         </div>
       </details>
     </div>

@@ -42,7 +42,7 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
           // Listen-Vorlagen (Core\Blocks\ListTemplates): gespeicherte Darstellungen der Datenliste – Recht „Blöcke gestalten“
           if (can(\Core\Blocks\ListTemplates::PERMISSION) && \Core\Data\Placement::blockType($t) === 'data_list' && app()->theme->block('data_list')) $subs[] = [url($base . '/vorlagen'), __('Listen-Vorlagen'), $cur === 'templates'];
           // Abonnieren per App: Kalender- und Kontakte-Tabellen (Core\Data\Subscriptions)
-          if ($edit && \Core\Data\Exchange::kind($t) !== null) $subs[] = [url($base . '/import'), __('Importieren'), $cur === 'import'];
+          if (\Core\Data\Exchange::kind($t) !== null && can('data.import', $t['handle'])) $subs[] = [url($base . '/import'), \Core\Data\Exchange::kind($t) === 'ics' ? __('ICS importieren') : __('vCard importieren'), $cur === 'import'];
           if ($edit && \Core\Data\Subscriptions::kind($t) !== null) $subs[] = [url($base . '/abonnieren'), __('Abonnieren'), $cur === 'subscribe'];
           // Einstellungsseiten von Funktionen/Erweiterungen zu dieser Tabelle (Core\AdminPages, 'table' => …), z. B. Glossar
           foreach (\Core\AdminPages::forTable($t['handle']) as $tp) $subs[] = [url($tp['href']), $tp['label'], $cur === 'page:' . $tp['id']];
