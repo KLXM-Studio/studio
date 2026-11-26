@@ -14,7 +14,7 @@
   .adm--mini:not(.is-side-peek) .adm-side .adm-brand{display:none}
   .adm--mini:not(.is-side-peek) .adm-side .adm-brand-row{justify-content:center}
   .adm--mini:not(.is-side-peek) .adm-side :is(.adm-side__label,.adm-drill__title,.adm-count,.adm-navgrp__chev,.adm-product){opacity:0}
-  .adm--mini:not(.is-side-peek) .adm-side :is(.adm-navgrp__list,p){display:none}
+  .adm--mini:not(.is-side-peek) .adm-side :is(.adm-navgrp__list,p,li ul,.adm-subnav){display:none}   /* Untermenüs (z. B. Ansichten der Tabelle) haben keine Symbole */
   .adm--mini:not(.is-side-peek) .adm-side *{font-size:0}
   .adm--mini:not(.is-side-peek) .adm-side :is(.ico--glyph,.adm-drill__back span){font-size:16px}
   /* während der Breitenänderung (body.is-side-anim, JS ~250 ms): nichts umbrechen, nur abschneiden */
