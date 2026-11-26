@@ -1097,6 +1097,14 @@ final class Extensions
         return [];
     }
 
+    /** MCP-Werkzeuge der aktiven Erweiterungen (Extension::mcpTool) – mit 'extension' => Name @return list<array> */
+    public static function mcpTools(): array
+    {
+        $out = [];
+        foreach (self::$active as $x) foreach ($x->mcpTools as $d) $out[] = $d + ['extension' => $x->name];
+        return $out;
+    }
+
     /** CLI-Befehle: [name => [beschreibung, callable]] */
     public static function commands(): array
     {

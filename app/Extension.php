@@ -145,6 +145,8 @@ final class Extension
     public array $mailTransports = [];
     /** @var array<string, array{label: string|callable, documents: callable, feature?: string}> Eigene Dokumente der Website-Suche (searchProvider()) */
     public array $searchProviders = [];
+    /** @var list<array> MCP-Werkzeuge (mcpTool) */
+    public array $mcpTools = [];
     /** @var array<string, callable(Db\Table): mixed> Tabellen (table()) */
     private array $tables = [];
 
@@ -265,6 +267,25 @@ final class Extension
     public function migration(int $version, callable $step): self
     {
         $this->migrations[$version] = $step;
+        return $this;
+    }
+
+    /**
+     * Eigenes MCP-Werkzeug (Core\Http\Controllers\McpController) – gleicher Rahmen wie die Werkzeuge des Kerns: nur sichtbar, wenn die
+     * Erweiterung auf der Website aktiv ist; schreibende nur mit Schreib-Token und nicht im Modus „zur Freigabe“ (die Prüf-Ebene kennt
+     * nur Kern-Aktionen); jede schreibende Ausführung steht im Verlauf „Eingereicht → Übernommen“ (Core\Review\Queue::record).
+     * $def: name (a–z, 0–9, _; eindeutig), title, description, input (Eigenschaften als JSON-Schema), required (list), write (bool),
+     * destructive (bool), perm (Recht für die Hilfeseite, z. B. 'media.upload'), group (Gruppe der Hilfeseite „KI-Agenten“: start, pages,
+     * data, media, translate, settings, requests, push, tasks, check, more), examples (Beispiel-Aufträge in Alltagssprache),
+     * run: fn(array $args, \Core\Api\CmsService $svc): array. Fehler: \Core\Api\ApiError werfen (Meldung erscheint beim Agenten).
+     */
+    public function mcpTool(array $def): self
+    {
+        if (!preg_match('~^[a-z][a-z0-9_]{2,60}$~', (string) ($def['name'] ?? '')) || !is_callable($def['run'] ?? null)) {
+            throw new \InvalidArgumentException('mcpTool: name (a–z, 0–9, _) und run sind Pflicht.');
+        }
+        $this->mcpTools[] = $def + ['title' => $def['name'], 'description' => '', 'input' => [], 'required' => [], 'write' => false, 'destructive' => false,
+            'perm' => null, 'group' => 'more', 'examples' => []];
         return $this;
     }
 

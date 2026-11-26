@@ -95,6 +95,16 @@ final class CmsService
     }
 
     /** Werden Änderungen dieses Zugangs zur Freigabe eingereicht statt ausgeführt? */
+    /** Werkzeug einer Erweiterung ausführen (MCP): schreibende im Verlauf vermerken (Core\Review\Queue::record) */
+    public function extensionTool(string $ext, string $tool, callable $run, array $args, bool $write): array
+    {
+        if ($write) Tokens::requireWrite($this->token);
+        $res = $run($args, $this);
+        if ($write) \Core\Review\Queue::record(['token' => $this->token, 'origin' => $this->origin, 'lang' => $this->lang], 'ext:' . $ext . '.' . $tool,
+            ['type' => 'extension', 'extension' => $ext, 'tool' => $tool, 'id' => is_array($res) ? ($res['id'] ?? null) : null]);
+        return is_array($res) ? $res : ['result' => $res];
+    }
+
     public function reviewMode(): bool
     {
         if ($this->change !== null) return false;

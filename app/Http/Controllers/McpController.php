@@ -509,6 +509,26 @@ final class McpController
             $rw + ['idempotentHint' => true], true,
             fn($a) => !empty($a['reopen']) ? \Core\Tasks\Api::reopen($tk, (int) $a['id'], (string) ($a['comment'] ?? ''), 'mcp') : \Core\Tasks\Api::done($tk, (int) $a['id'], (string) ($a['comment'] ?? ''), 'mcp'));
 
+        // Werkzeuge der aktiven Erweiterungen (Extension::mcpTool): schreibende nicht im Modus „zur Freigabe“ (Prüf-Ebene kennt nur Kern-Aktionen)
+        $review = $this->token['scope'] === 'write' && $s->reviewMode();
+        foreach (\Core\Extensions::mcpTools() as $x) {
+            if (isset($t[$x['name']]) || ($x['write'] && $review)) continue;
+            $ann = !$x['write'] ? $ro : ($x['destructive'] ? $del : $rw);
+            $add((string) $x['name'], (string) $x['title'], (string) $x['description'] . ' (Erweiterung „' . $x['extension'] . '“)',
+                $schema((array) $x['input'], array_values((array) $x['required'])), $ann, (bool) $x['write'],
+                function ($a) use ($s, $x) {
+                    try {
+                        return $s->extensionTool((string) $x['extension'], (string) $x['name'], $x['run'], (array) $a, (bool) $x['write']);
+                    } catch (ApiError $e) {
+                        throw $e;
+                    } catch (\Throwable $e) {
+                        error_log('[Erweiterung ' . $x['extension'] . '] MCP ' . $x['name'] . ': ' . $e->getMessage());
+                        throw new ApiError(500, 'Das Werkzeug „' . $x['name'] . '“ ist fehlgeschlagen: ' . $e->getMessage());
+                    }
+                });
+            \Core\Api\AgentGuide::meta((string) $x['name'], (string) $x['group'], $x['perm'] !== null ? (string) $x['perm'] : null, array_map('strval', (array) $x['examples']));
+        }
+
         // Nur-Lese-Tokens sehen keine Schreib-Tools
         if ($this->token['scope'] !== 'write') {
             $t = array_filter($t, fn($x) => !$x['write']);
