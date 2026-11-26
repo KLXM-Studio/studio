@@ -61,6 +61,14 @@ final class TagsSelfTest
             $r1 = Tags::merge($va, ['Rewild'], 'Rehwild');
             $ck($r1['changed'] === 1 && Entries::find($b, (int) $e3)['sw'] === ['Rehwild', 'Schalenwild'], 'Zusammenführen über Tabellen hinweg');
             $ck(in_array(true, array_map(fn($x) => str_contains($x['note'], 'zusammengeführt'), Revisions::list($b, (int) $e3)), true), 'Versionsnotiz');
+            // „Passend dazu“ (Core\Data\Related): über das geteilte Vokabular, gewichtet nach gemeinsamen Schlagworten
+            $pid = (int) app()->db->fetchValue('SELECT id FROM pages ORDER BY id LIMIT 1');
+            foreach ([$a, $b] as $x) app()->db->query("UPDATE data_tables SET settings_json = json_set(settings_json, '$.route', ?, '$.detail_page_id', ?) WHERE handle = ?", [str_replace('_', '-', $x['handle']), $pid, $x['handle']]);
+            Tables::flush();
+            $a = Tables::find($a['handle']);
+            $rel = Related::items($a, Entries::find($a, (int) $e1));
+            $ck(count($rel) === 2 && (int) $rel[0]['entry']['id'] === (int) $e2 && $rel[0]['score'] === 2.0 && (int) $rel[1]['entry']['id'] === (int) $e3 && $rel[1]['score'] === 1.0, 'Passend dazu: beide Tabellen, nach gemeinsamen Schlagworten gewichtet');
+            $ck(count(Related::items($a, Entries::find($a, (int) $e1), [['table' => $b['handle'], 'limit' => 1]])) === 1, 'Passend dazu: nur gewählte Tabellen');
             $r2 = Tags::rename($va, 'Rehwild', 'Reh');
             $ck($r2['changed'] === 3 && Entries::find($a, (int) $e1)['tags'] === ['Reh', 'Wald'], 'Umbenennen in allen Einträgen');
             $r3 = Tags::remove($va, 'Wald');

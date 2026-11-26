@@ -300,6 +300,31 @@ return [
     ],
     // Highlights (Core\Data\Featured): hervorgehobene Einträge mehrerer Tabellen gemischt – Kartenausgabe wie „Datenliste“ (dl-items),
     // damit Kits sie gestalten; Renderer app/Blocks/highlights.php, Zusatz-CSS css/highlights.css (Kit kann es ersetzen)
+    // „Passend dazu“ (Core\Data\Related): Einträge anderer Tabellen mit gemeinsamen Schlagworten bzw. derselben Kategorie – für Detailseiten;
+    // Karten wie Highlights/Datenliste (Kits gestalten sie mit), Renderer app/Blocks/related.php
+    'related' => [
+        'label' => 'Passend dazu', 'icon' => 'link-simple', 'group' => 'Daten',
+        'description' => 'Auf Detailseiten: Einträge mit gemeinsamen Schlagworten oder gleichem Thema – auch aus anderen Tabellen.',
+        'help' => 'Zeigt zum aufgerufenen Eintrag passende Einträge: je gemeinsames Schlagwort zählt mehr als ein gemeinsames Thema. Termine erscheinen nur, solange sie anstehen; sonst die neuesten. Damit Tabellen zusammenfinden, teilen sie ihre Schlagworte („Schlagworte teilen mit …“) bzw. nutzen dieselbe Auswahlliste. Am besten in der Detailseiten-Vorlage einsetzen.',
+        'fields' => [
+            ['name' => 'eyebrow', 'label' => 'Dachzeile (optional)', 'type' => 'text', 'width' => 'half'],
+            ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'width' => 'half', 'default' => 'Passend dazu'],
+            ['name' => 'sources', 'label' => 'Tabellen (optional)', 'type' => 'repeater', 'item_label' => 'Tabelle', 'title_field' => 'badge', 'max_items' => 8,
+                'help' => 'Leer = alle passenden Tabellen mit Detailseiten (je 3). Sonst nur diese, je höchstens so viele Einträge wie angegeben.', 'fields' => [
+                ['name' => 'table', 'label' => 'Tabelle', 'type' => 'datatable', 'required' => true, 'width' => 'half'],
+                ['name' => 'limit', 'label' => 'Höchstens', 'type' => 'select', 'required' => true, 'default' => '3', 'width' => 'half',
+                    'options' => ['1' => '1', '2' => '2', '3' => '3', '4' => '4', '6' => '6']],
+                ['name' => 'badge', 'label' => 'Etikett (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half', 'placeholder' => 'Name der Tabelle'],
+            ]],
+            ['name' => 'limit', 'label' => 'Anzahl gesamt', 'type' => 'number', 'default' => 6, 'min' => 1, 'max' => 18, 'width' => 'half'],
+            ['name' => 'columns', 'label' => 'Spalten (höchstens)', 'type' => 'select', 'required' => true, 'default' => '3', 'width' => 'half', 'options' => ['2' => '2', '3' => '3', '4' => '4']],
+            ['name' => 'show_badge', 'label' => 'Etikett mit dem Bereich zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'show_date', 'label' => 'Datum zeigen', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+            ['name' => 'show_text', 'label' => 'Kurzbeschreibung zeigen', 'type' => 'bool', 'default' => false, 'width' => 'half'],
+            ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => '16:10', 'width' => 'half',
+                'options' => ['16:10' => '16:10', '4:3' => '4:3', '1:1' => '1:1', '16:9' => '16:9']],
+        ],
+    ],
     'highlights' => [
         'label' => 'Highlights', 'icon' => 'star', 'group' => 'Daten',
         'description' => 'Hervorgehobene Einträge aus mehreren Tabellen – als Karten oder großer Teaser.',

@@ -10470,4 +10470,6 @@ return [
     '{n} Einträge aktualisiert.' => '{n} entries updated.',
     'Bei allen Einträgen sind Schlagworte und Kategorien schon ausgefüllt.' => 'Tags and categories are already filled in for all entries.',
     'Nur Einträge mit leeren Feldern' => 'Only entries with empty fields',
+    'Zu diesem Eintrag gibt es noch nichts Passendes – gemeinsame Schlagworte oder dasselbe Thema verbinden Einträge.' => 'Nothing related to this entry yet – shared tags or the same topic connect entries.',
+    '„Passend dazu“ zeigt auf Detailseiten Einträge mit gemeinsamen Schlagworten – bitte in der Detailseiten-Vorlage einsetzen.' => '“Related” shows entries with shared tags on detail pages – please add it to the detail page template.',
 ];

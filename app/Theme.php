@@ -896,7 +896,7 @@ final class Theme
         // Live-Galerie nutzt das Markup der Bildergalerie (cms-gallery) – gleiche Stile (Kern und Kit)
         if ($types !== null && in_array('live_gallery', $types, true)) $types[] = 'gallery';
         // Highlights (Core\Data\Featured) nutzen die Karten der Datenliste – gleiche Stile (Kern und Kit), dazu css/highlights.css
-        $highlights = $types === null || in_array('highlights', $types, true);
+        $highlights = $types === null || in_array('highlights', $types, true) || in_array('related', $types, true);   // „Passend dazu“ wie Highlights
         if ($types !== null && $highlights) $types[] = 'data_list';
         if ($types !== null && $this->embedCss) $types[] = 'video';
         $out = [];
