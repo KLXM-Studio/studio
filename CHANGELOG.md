@@ -59,6 +59,9 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
+### Mit KI-Agenten arbeiten (MCP)
+- Neue Hilfeseite „KI-Agenten (MCP)“ unter Handbuch & Hilfe: was ein Agent über MCP auf dieser Website tun kann – nach Aufgaben gruppiert (Seiten, Daten, Medien, Übersetzen, Angaben & Design, Anfragen, Mitteilungen, Aufgaben & Support, Prüfen), gefiltert nach Funktionen und Rechten, mit Beispiel-Aufträgen (echte Tabellen- und Seitennamen) zum Kopieren, Art je Werkzeug (liest/ändert/löscht), Suche und Verbindung für Claude Code/Desktop, Gemini CLI, Cursor/Windsurf/LM Studio, VS Code und Open WebUI (z. B. mit Ollama). Für Agenten: Resource `cms://capabilities`, Prompt `was_kannst_du` (`Core\Api\AgentGuide`).
+
 ### Kategorien als eigene Tabelle
 - Löschen mit Neuzuordnung: Verweisen andere Einträge auf einen Eintrag, der gelöscht wird (einzeln oder mehrere), fragt die Verwaltung je Feld nach – „Leer lassen“ oder „Einem anderen Eintrag zuordnen“ (Auswahlfenster); Versionsnotiz an den umgehängten Einträgen. Auch per CLI `data:delete … --reassign=ID`, REST `?reassign=ID` und MCP `delete_entry` (`reassign`) (`Core\Data\Reassign`).
 - Auswahllisten: Entfernte Optionen, die Einträge noch haben, werden beim Speichern des Schemas nicht mehr verwaist – Rückfrage „N Einträge haben ‚X‘: neu zuordnen zu … / leer lassen“ (select und multiselect, Tabellen-Designer und Seitenleiste „Felder bearbeiten“; `Core\Data\OptionRemap`).

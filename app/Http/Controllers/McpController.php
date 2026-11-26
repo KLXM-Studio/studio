@@ -567,6 +567,7 @@ final class McpController
             ['uri' => 'cms://site', 'name' => 'site', 'title' => 'Website-Überblick', 'mimeType' => 'application/json'],
             ['uri' => 'cms://settings', 'name' => 'settings', 'title' => app()->theme->settingsTitle(), 'mimeType' => 'application/json'],
             ['uri' => 'cms://block-types', 'name' => 'block-types', 'title' => 'Blocktypen', 'mimeType' => 'application/json'],
+            ['uri' => 'cms://capabilities', 'name' => 'capabilities', 'title' => 'Was ich hier tun kann (Aufgaben, Beispiele, Werkzeuge)', 'mimeType' => 'application/json'],
         ];
         if (CmsService::hasHours()) {
             $r[] = ['uri' => 'cms://hours', 'name' => 'hours', 'title' => (string) project('hours.label', 'Öffnungszeiten'), 'mimeType' => 'application/json'];
@@ -585,6 +586,7 @@ final class McpController
                 $uri === 'cms://settings' => $this->svc->settingsGet(),
                 $uri === 'cms://hours' => $this->svc->hoursGet(),
                 $uri === 'cms://block-types' => $this->svc->blockTypes(),
+                $uri === 'cms://capabilities' => \Core\Api\AgentGuide::forAgent(array_keys($this->tools())),
                 str_starts_with($uri, 'cms://pages/') => $this->svc->pageGet(substr($uri, 12)),
                 default => throw new \DomainException('Resource nicht gefunden', -32002),
             };
@@ -605,6 +607,10 @@ final class McpController
                 'description' => 'Findet offene [Platzhalter] und fehlende Alt-Texte.',
                 'arguments' => [['name' => 'seite', 'description' => 'Pfad oder „home“', 'required' => false]],
                 'text' => "Prüfe die Seite {seite} (get_page) sowie get_settings und list_media: Liste alle Texte in [eckigen Klammern], leere Pflichtfelder und Bilder ohne Alt-Text als übersichtliche Checkliste auf. Ändere nichts."],
+            'was_kannst_du' => ['name' => 'was_kannst_du', 'title' => 'Was kannst du auf dieser Website?',
+                'description' => 'Übersicht der Aufgaben, die ein Agent hier erledigen kann – mit Beispielen.',
+                'arguments' => [],
+                'text' => "Lies die Resource cms://capabilities und site_overview. Erkläre mir in einfachen Worten und nach Aufgaben gruppiert, was du auf dieser Website für mich tun kannst – je Gruppe zwei Beispiel-Aufträge. Keine Werkzeugnamen, außer ich frage danach. Ändere nichts."],
             'beitrag_anlegen' => ['name' => 'beitrag_anlegen', 'title' => 'Eintrag in einer Datentabelle anlegen',
                 'description' => 'Legt z. B. einen Beitrag, eine Person oder ein Produkt als Entwurf an.',
                 'arguments' => [['name' => 'tabelle', 'description' => 'z. B. aktuelles', 'required' => true], ['name' => 'inhalt', 'description' => 'Stichpunkte oder Text', 'required' => true]],

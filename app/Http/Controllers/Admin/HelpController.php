@@ -58,6 +58,16 @@ final class HelpController extends AdminController
     }
 
     /** Lizenzen & Danksagungen: Projektlizenz (LICENSE, COPYRIGHT) und THIRD-PARTY-NOTICES.md (Drittsoftware, Schriften, Daten, Medien) */
+    /** Handbuch & Hilfe → Mit KI-Agenten arbeiten (MCP): Aufgaben nach Rechten, Verbindung (Core\Api\AgentGuide) */
+    public function agent(Request $r): Response
+    {
+        $this->auth($r);
+        $all = $r->str('alle') === '1';
+        return $this->view('help/agent', ['title' => __('Mit KI-Agenten arbeiten (MCP)'), 'css' => ['css/docs.css'],
+            'groups' => \Core\Api\AgentGuide::overview($all), 'all' => $all, 'mcpOn' => \Core\Features::on('mcp'),
+            'tokens' => \Core\Api\AgentGuide::myTokens(), 'canTokens' => can('api.manage'), 'endpoint' => absolute_url('/mcp')]);
+    }
+
     public function licenses(Request $r): Response
     {
         $this->auth($r);

@@ -2,7 +2,7 @@
 /**
  * Reiter „Handbuch & Hilfe“: Handbuch · Wissensdatenbank · Fragen & Antworten · Technik · Lizenzen.
  * Eingebunden in help/manual.php, help/technical.php und die Wissens-Seiten des Supports.
- * @var string $helpTab  manual|tutorials|kb|questions|icons|ui|technical|licenses
+ * @var string $helpTab  manual|tutorials|kb|questions|agent|icons|ui|technical|licenses
  */
 $helpTab ??= '';
 $tabs = [['/admin/hilfe', __('Handbuch'), 'manual']];
@@ -11,6 +11,7 @@ if (\Core\Support\Support::canRead()) {
     $tabs[] = ['/admin/support/wissen', __('Wissensdatenbank'), 'kb'];
     $tabs[] = ['/admin/support/fragen', __('Fragen & Antworten'), 'questions'];
 }
+$tabs[] = ['/admin/hilfe/agent', __('KI-Agenten (MCP)'), 'agent'];   // Was ein Agent über MCP hier tun kann (Core\Api\AgentGuide)
 $tabs[] = ['/admin/hilfe/symbole', __('Symbole'), 'icons'];   // Übersicht aller Symbole (Core\Icons)
 $tabs[] = ['/admin/hilfe/ui', __('Oberfläche'), 'ui'];   // Musterseite der Bausteine (Core\AdminUi, Core\Charts)
 $tabs[] = ['/admin/hilfe/technik', __('Technische Dokumentation'), 'technical'];

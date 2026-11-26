@@ -1,5 +1,6 @@
 <?php /** Entwicklerhandbuch · MCP-Server (Tools, Resources, Prompts live aus McpController::catalog()) · @var array $mcp */ ?>
   <p class="lead">Model Context Protocol über <b>Streamable HTTP</b> unter <code><?= e($mcpUrl) ?></code> – zustandslos, JSON-Antworten, gleiche Tokens und Rechte wie die REST-API. Protokollversionen: <?= e(implode(', ', $mcp['versions'])) ?>.</p>
+  <p>Für die Redaktion: <a href="<?= e(url('/admin/hilfe/agent')) ?>">Mit KI-Agenten arbeiten (MCP)</a> (<code>Core\Api\AgentGuide</code>) – Werkzeuge nach Aufgaben gruppiert (<code>AgentGuide::META</code>: Gruppe und Recht je Werkzeug, unbekannte unter „Weitere“), gefiltert nach Funktionen der Website und den Rechten der Person (<code>?alle=1</code> zeigt alles, Fehlendes ausgegraut), Beispiel-Aufträge mit echten Tabellen- und Seitennamen, Verbindungs-Schnipsel für verbreitete Programme. Erweiterungen ordnen eigene Werkzeuge mit <code>AgentGuide::meta($tool, $gruppe, $recht, $beispiele)</code> ein. Dieselbe Übersicht liefert der MCP-Server als Resource <code>cms://capabilities</code> (Werkzeuge dieses Tokens) und Prompt <code>was_kannst_du</code>.</p>
   <h3>Verbinden</h3>
   <h4>Claude Code</h4>
   <pre><code>claude mcp add --transport http klxm-studio <?= e($mcpUrl) ?> \

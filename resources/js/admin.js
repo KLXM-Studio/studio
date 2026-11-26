@@ -613,6 +613,20 @@ listen('submit', e => {   // „submit“ verlässt keine Schatten-Wurzel: liste
     delete form.dataset.confirmed;
   });
 });
+// Hilfe → KI-Agenten (MCP): Aufgaben durchsuchen (Core\Api\AgentGuide, help/agent.php)
+d.addEventListener('input', e => {
+  const f = e.target.closest?.('[data-agent-filter]');
+  if (!f) return;
+  const q = f.value.trim().toLowerCase();
+  let n = 0;
+  $$('[data-agent-group]').forEach(g => {
+    const hit = !q || g.textContent.toLowerCase().includes(q);
+    g.hidden = !hit;
+    if (hit) n++;
+  });
+  const none = $('[data-agent-none]');
+  if (none) none.hidden = n > 0;
+});
 // Tabellen-Designer: Auswahlmöglichkeiten aus einer Tabelle (Core\Data\OptionSource) – eigene Liste nur ohne Quelle
 d.addEventListener('change', e => {
   const s = e.target.closest?.('[data-options-from]');
