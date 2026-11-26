@@ -64,7 +64,7 @@ $tones = [];
 foreach ($sources as $s) $tones[(string) $s['table']] ??= 'dl-tone-' . (count($tones) % 5 + 1);
 foreach ($items as $it) $tones[$it['table']['handle']] ??= 'dl-tone-' . (count($tones) % 5 + 1);
 ?>
-<div class="<?= e($wrap) ?> dl dl--cards dl--highlights hl--<?= e($layout) ?><?= e($restCls) ?>">
+<div class="<?= e($wrap) ?> dl dl--cards dl--highlights hl--<?= e($layout) ?><?= e($restCls) ?><?= ($d['card_link'] ?? 'card') === 'title' ? ' dl--titlelink' : '' ?>">
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
   <header class="dl-head">
     <?php if (!empty($d['eyebrow'])): ?><p class="eyebrow eyebrow--accent"<?= $b->edit('eyebrow') ?>><?= emphasis((string) $d['eyebrow']) ?></p><?php endif; ?>

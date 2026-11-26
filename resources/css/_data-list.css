@@ -18,6 +18,9 @@
 .dl-link{color:inherit;text-decoration:none}
 .dl-link::after{content:"";position:absolute;inset:0}
 .dl-link:hover,.dl-link:focus-visible{text-decoration:underline;text-underline-offset:3px}
+/* Klickfläche „Nur Titel und Knopf“ (Block-Einstellung card_link) – sonst überdeckt der Titel-Link die ganze Karte; Links im Text liegen darüber */
+.dl--titlelink .dl-link::after{content:none}
+.dl-body :is(a:not(.dl-link),button){position:relative;z-index:1}
 .dl-item:focus-within{outline:2px solid var(--dl-accent);outline-offset:3px}
 .dl-f{color:var(--dl-muted);font-size:.95rem}
 .dl-meta{margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dl-accent)}

@@ -219,7 +219,7 @@ $colLabel = fn(string $f) => match (true) {
 ?>
 <?php // Filtern, Suche, Blättern ohne Seitenwechsel (Core\Live::region – Links/Formulare mit data-live-nav, ohne JS normale Links)
 $reload = !$host && ($pages > 1 || $vfilters || $vsearch) ? \Core\Live::region($b) : '';   // im Eintrag: normale Links (Block steht nicht auf der Seite) ?>
-<div class="<?= e($wrap) ?> dl dl--<?= e($layout) ?>"<?= $reload ?>>
+<div class="<?= e($wrap) ?> dl dl--<?= e($layout) ?><?= ($d['card_link'] ?? 'card') === 'title' ? ' dl--titlelink' : '' /* Klickfläche: nur Titel und Knopf */ ?>"<?= $reload ?>>
   <?= !empty($d['nearby']) && empty($d['paginate']) ? \Core\Data\Nearby::form($d, $nearLoc, count($rows)) : '' ?>
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
   <header class="dl-head">

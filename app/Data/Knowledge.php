@@ -692,7 +692,7 @@ final class Knowledge
     public static function tocCards(array $t, ?array $tree = null, array $d = []): string
     {
         $tree ??= self::tree($t);
-        $cfg = self::config($t);
+        $cfg = self::config($t) + ['card_link' => ($d['card_link'] ?? 'card') !== 'title'];
         $cols = in_array((string) ($d['columns'] ?? ''), ['2', '3', '4'], true) ? (string) $d['columns'] : '3';
         $ratio = in_array((string) ($d['ratio'] ?? ''), ['16:9', '16:10', '4:3', '1:1', '3:4'], true) ? (string) $d['ratio'] : '16:10';
         $sizes = ['2' => '(min-width: 1080px) 520px, (min-width: 640px) 45vw, 90vw', '3' => '(min-width: 1080px) 360px, (min-width: 640px) 45vw, 90vw',
@@ -714,11 +714,12 @@ final class Knowledge
         $img = self::imageOf($t, $n['entry']);
         $pic = $img ? img($img, $sizes, ['ratio' => $ratio, 'alt' => '']) : '';
         $teaser = trim((string) ($n['entry']['anreisser'] ?? ''));
-        $out = '<li class="kn-card' . ($pic !== '' ? ' kn-card--img' : '') . '">';
+        $whole = !empty($cfg['card_link']) && $n['href'];   // ganze Karte klickbar: Titel-Link mit ::after über die Karte (list-filter.css)
+        $out = '<li class="kn-card' . ($pic !== '' ? ' kn-card--img' : '') . ($whole ? ' kn-card--link' : '') . '">';
         if ($pic !== '') $out .= '<div class="kn-card__img kn-card__img--r' . e(str_replace(':', '-', $ratio)) . '">' . $pic . '</div>';
         $out .= '<div class="kn-card__body">';
         if ($cfg['numbers'] && $n['number'] !== '') $out .= '<span class="kn-card__num">' . e($n['number']) . '</span>';
-        $out .= '<h3 class="kn-card__title">' . ($n['href'] ? '<a href="' . e((string) $n['href']) . '">' . e($n['title']) . '</a>' : e($n['title'])) . '</h3>';
+        $out .= '<h3 class="kn-card__title">' . ($n['href'] ? '<a href="' . e((string) $n['href']) . '"' . ($whole ? ' class="kn-card__link"' : '') . '>' . e($n['title']) . '</a>' : e($n['title'])) . '</h3>';
         if ($excerpt !== '') $out .= '<div class="kn-card__text dl-excerpt">' . $excerpt . '</div>';
         elseif ($teaser !== '') $out .= '<p class="kn-card__text">' . e(mb_strimwidth($teaser, 0, 220, '…')) . '</p>';
         $kids = $kidsOn ? array_values(array_filter(array_map(fn($c) => $tree['nodes'][$c], $n['children']), fn($c) => $c['href'])) : [];
@@ -737,7 +738,7 @@ final class Knowledge
      */
     public static function flatCards(array $t, array $tree, array $rows, array $d = [], ?\Closure $excerpt = null): string
     {
-        $cfg = self::config($t);
+        $cfg = self::config($t) + ['card_link' => ($d['card_link'] ?? 'card') !== 'title'];
         $cols = in_array((string) ($d['columns'] ?? ''), ['2', '3', '4'], true) ? (string) $d['columns'] : '3';
         $ratio = in_array((string) ($d['ratio'] ?? ''), ['16:9', '16:10', '4:3', '1:1', '3:4'], true) ? (string) $d['ratio'] : '16:10';
         $sizes = ['2' => '(min-width: 1080px) 520px, (min-width: 640px) 45vw, 90vw', '3' => '(min-width: 1080px) 360px, (min-width: 640px) 45vw, 90vw',

@@ -49,6 +49,14 @@
 .kn-card__title a{color:inherit;text-decoration:none}
 .kn-card__title a:hover{text-decoration:underline}
 .kn-card__title a:focus-visible{outline:2px solid var(--kit-link,var(--kit-accent,currentColor));outline-offset:2px}
+/* ganze Karte klickbar (Block-Einstellung card_link, Standard): Titel-Link über die Karte, Unterkapitel und Begriffe im Text bleiben eigene Links */
+.kn-card__link::after{content:"";position:absolute;inset:0;z-index:0}
+.kn-card--link .kn-card__body a:not(.kn-card__link){position:relative;z-index:1}
+.kn-card--link .kn-card__title a:focus-visible{outline:0}
+.kn-card--link:focus-within{outline:2px solid var(--kit-link,var(--kit-accent,currentColor));outline-offset:3px}
+.kn-card--link{transition:translate .18s ease,box-shadow .18s ease,border-color .18s ease}
+@media (hover:hover){.kn-card--link:hover{translate:0 -3px;box-shadow:0 10px 24px -12px rgb(0 0 0/.25)}}
+@media (prefers-reduced-motion:reduce){.kn-card--link{transition:none}.kn-card--link:hover{translate:none}}
 .kn-card__text{margin:0;color:var(--kit-text,currentColor);font-size:.95rem;line-height:1.5}
 .kn-card__sub{display:grid;gap:.25rem;margin:.35rem 0 0;padding:.6rem 0 0;border-top:1px solid var(--kit-line,color-mix(in srgb,currentColor 16%,transparent));list-style:none;font-size:.92rem}
 .kn-card__sub a{color:var(--kit-link,inherit)}

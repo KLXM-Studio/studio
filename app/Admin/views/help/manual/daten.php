@@ -83,7 +83,7 @@
   <h3>3. Auf der Website ausgeben</h3>
   <ol class="doc-steps">
     <li>Seite im Editor öffnen → <b>+</b> → Block <b>Datenliste</b>.</li>
-    <li>Tabelle wählen, <b>angezeigte Felder</b> ankreuzen, Darstellung wählen: Karten, Liste mit Bild, kompakte Liste, Tabelle oder <b>Verzeichnis</b>.</li>
+    <li>Tabelle wählen, <b>angezeigte Felder</b> ankreuzen, Darstellung wählen: Karten, Liste mit Bild, kompakte Liste, Tabelle oder <b>Verzeichnis</b>. Unter <b>Klickfläche</b> legen Sie fest, ob die <b>ganze Karte</b> den Eintrag öffnet (Standard – die Karte hebt sich beim Darüberfahren, Links im Text wie Glossar-Begriffe bleiben eigene Links) oder <b>nur Titel und Knopf</b>.</li>
     <li>Optional filtern (z. B. nur Kategorie „Neuigkeiten“ oder nur Termine ab „heute“), sortieren, Anzahl begrenzen, seitenweise blättern, Button „Alle Beiträge“.</li>
   </ol>
   <p><b>Tabelle:</b> Zahlenfelder stehen rechtsbündig. Unter <b>Zeilen hervorheben, wenn …</b> wählen Sie ein Ja/Nein-Feld der Tabelle (z. B. „Summenzeile“) – diese Zeilen erscheinen fett. Mit <b>Spalten sortierbar</b> sortieren Besucher per Klick auf einen Spaltenkopf (auch mit der Tastatur; Zahlen, Datum und Text werden erkannt, ein weiterer Klick dreht die Reihenfolge) – sortiert wird, was die Seite gerade zeigt; ist die Tabelle breiter als der Platz, zeigt ein Schatten an der Kante, dass sie weiter scrollt. Dieselben Zahlen als Diagramm: Block <b>Diagramm</b> mit „Daten: Aus einer Datentabelle“.</p>

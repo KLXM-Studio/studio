@@ -218,7 +218,7 @@ final class KnowledgeSelfTest
                     $blk = Pages::sanitizeBlocks([['id' => 'qakc', 'type' => 'data_list', 'data' => ['title' => 'QA', 'chapters_style' => 'cards', 'columns' => '3', 'ratio' => '4:3'] + Knowledge::listBlock($t)]]);
                     return $blk ? (string) $th->renderInner($th->makeBlock($blk[0])) : '';
                 })();
-                $ck(preg_match_all('~<li class="kn-card( kn-card--img)?"~', $cardsHtml) === 3 && str_contains($cardsHtml, 'kn-card__num">2.1<') && str_contains($cardsHtml, 'kn-cards--c3')
+                $ck(preg_match_all('~<li class="kn-card( kn-card--img)?( kn-card--link)?"~', $cardsHtml) === 3 && str_contains($cardsHtml, 'kn-card__num">2.1<') && str_contains($cardsHtml, 'kn-cards--c3') && str_contains($cardsHtml, 'class="kn-card__link"')
                     && substr_count($cardsHtml, 'class="kn-card__sub"') === 2, 'Karten: drei Kapitel der obersten Ebene, Nummer als Plakette, Unterkapitel als Links');
                 $ck(str_contains($cardsHtml, ' K3</a>') && !str_contains($cardsHtml, ' K4</a>') && str_contains($cardsHtml, 'kn-card__more'), 'Karten: höchstens drei Unterkapitel, dann „weitere“');
                 $ck(!$mid0 || Knowledge::imageOf($t, Entries::find($t, end($extraIds))) === $mid0, 'Karten: Verweis-Kapitel ohne Bild nimmt das Bild der Zielseite');
