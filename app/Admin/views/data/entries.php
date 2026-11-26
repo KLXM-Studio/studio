@@ -53,12 +53,12 @@ $thumb = function (?int $id, string $cls = '') use ($listImg): string {
 };
 $base = '/admin/data/' . $t['handle'];
 $multi = \Core\Lang::multi();
-$qs = fn(array $o) => url($base) . '?' . http_build_query(array_filter(array_merge(['lang' => $multi && $lang !== \Core\Lang::default() ? $lang : '', 'status' => $status === 'all' ? '' : $status, 'q' => $q, 'sort' => $sort, 'dir' => $dir, 'hervorgehoben' => !empty($featView) ? '1' : '', 'zeit' => !empty($when) && $when !== 'kommende' ? $when : ''], $o), fn($v) => $v !== '' && $v !== null));
+$qs = fn(array $o) => url($base) . '?' . http_build_query(array_filter(array_merge(['lang' => $multi && $lang !== \Core\Lang::default() ? $lang : '', 'status' => $status === 'all' ? '' : $status, 'q' => $q, 'sort' => $sort, 'dir' => $dir, 'hervorgehoben' => !empty($featView) ? '1' : '', 'zeit' => !empty($when) && $when !== 'kommende' ? $when : '', 'f' => $lfSel ?: null], $o), fn($v) => $v !== '' && $v !== null));
 $sortLink = function (string $key, string $label) use ($sort, $dir, $qs) {
     $active = $sort === $key;
     return '<a href="' . e($qs(['sort' => $key, 'dir' => $active && $dir === 'asc' ? 'desc' : 'asc', 'seite' => null])) . '" class="' . ($active ? 'is-sorted' . ($dir === 'desc' ? ' is-desc' : '') : '') . '">' . e($label) . '</a>';
 };
-$feat ??= false; $featView ??= false; $featCount ??= 0; $when ??= '';
+$feat ??= false; $featView ??= false; $featCount ??= 0; $when ??= ''; $lfSel ??= []; $lfDefs ??= [];
 $manual = $sort === 'sort' && $q === '' && $status === 'all' && !$featView;
 // Geteilte Tabellen (Mitglieder): Entscheidung der Eigentümer-Website über Vorschläge
 $ownerPicks = \Core\Data\Tables::isShared($t) && !\Core\Data\Shared::isOwner($t) ? \Core\Data\Shared::picks($t, array_column($rows, 'id'), $t['shared']['owner']) : [];
@@ -138,6 +138,25 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     if (can('data.delete', $t['handle'])) $bulkItems[] = ['key' => 'delete', 'label' => __('Löschen'), 'attrs' => ['data-bulk-action' => 'delete']];
     echo \Core\RowMenu::bar($bulkItems, ['class' => 'dt-bulk']); ?>
   </div>
+  <?php if ($lfDefs && empty($cal)): // Filter der Eintragsliste (Core\Data\ListFilters, Felder & Einstellungen) ?>
+  <form class="dt-lfilters" method="get" action="<?= e(url($base)) ?>" aria-label="<?= e(__('Liste filtern')) ?>">
+    <?php foreach (['status' => $status === 'all' ? '' : $status, 'q' => $q, 'zeit' => $when !== '' && $when !== 'kommende' ? $when : '', 'hervorgehoben' => $featView ? '1' : ''] as $hk => $hv): if ($hv === '') continue; ?><input type="hidden" name="<?= e($hk) ?>" value="<?= e($hv) ?>"><?php endforeach; ?>
+    <?php foreach ($lfDefs as $lf): $lid = 'lf-' . $lf['name']; $cur = $lfSel[$lf['name']] ?? null; ?>
+    <?php if ($lf['kind'] === 'range'): ?>
+    <fieldset class="dt-lf dt-lf--range"><legend><?= e($lf['label']) ?></legend>
+      <label><span class="sr-only"><?= e(__('{label} von', ['label' => $lf['label']])) ?></span><input type="date" name="f[<?= e($lf['name']) ?>][von]" value="<?= e(is_array($cur) ? $cur['von'] : '') ?>" aria-label="<?= e(__('{label} von', ['label' => $lf['label']])) ?>" data-autosubmit></label>
+      <span aria-hidden="true">–</span>
+      <label><span class="sr-only"><?= e(__('{label} bis', ['label' => $lf['label']])) ?></span><input type="date" name="f[<?= e($lf['name']) ?>][bis]" value="<?= e(is_array($cur) ? $cur['bis'] : '') ?>" aria-label="<?= e(__('{label} bis', ['label' => $lf['label']])) ?>" data-autosubmit></label>
+    </fieldset>
+    <?php else: ?>
+    <label class="dt-lf" for="<?= e($lid) ?>"><span><?= e($lf['label']) ?></span>
+      <select id="<?= e($lid) ?>" name="f[<?= e($lf['name']) ?>]" data-autosubmit><option value=""><?= e(__('Alle')) ?></option><?php foreach ($lf['options'] as $ok => $ol): ?><option value="<?= e((string) $ok) ?>"<?= is_string($cur) && $cur === (string) $ok ? ' selected' : '' ?>><?= e($ol) ?></option><?php endforeach; ?></select></label>
+    <?php endif; ?>
+    <?php endforeach; ?>
+    <noscript><button class="adm-btn adm-btn--small" type="submit"><?= e(__('Filtern')) ?></button></noscript>
+    <?php if ($lfSel): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e($qs(['f' => null, 'seite' => null])) ?>"><?= e(__('Filter zurücksetzen')) ?></a><?php endif; ?>
+  </form>
+  <?php endif; ?>
 
   <?php if (!empty($cal)): ?>
   <?= \Core\Theme::capture(__DIR__ . '/_calendar.php', ['t' => $t, 'cal' => $cal, 'base' => $base, 'lang' => $lang, 'multi' => $multi, 'status' => $status, 'q' => $q]) ?>

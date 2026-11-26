@@ -28,7 +28,7 @@ final class Auth
                 $id = null;
             }
             if ($id) {
-                $this->user = $this->db->fetch('SELECT id, email, name, role, locale, appearance, ui_prefs, network_uid, auth_ver, disabled, totp_enabled, idp FROM users WHERE id = ?', [$id]);
+                $this->user = self::userRow($this->db, (int) $id);
                 // Konto gesperrt, Passwort/2FA geändert (auth_ver) oder Netzwerk-Konto nicht mehr gültig → Sitzung endet sofort
                 if ($this->user && !$this->sessionValid($this->user)) {
                     $this->logout();
@@ -61,6 +61,12 @@ final class Auth
      * Ohne Sitzung im Namen eines Kontos handeln (CLI, Token-Zugriff wie MCP) – gilt nur für diese Anfrage bzw. diesen Prozess.
      * null hebt es wieder auf (danach wird die Sitzung neu gelesen).
      */
+    /** Konto für die Anmeldung laden – mit Zusatzrollen (roles_extra, Permissions::effective); auch für Selbsttests */
+    public static function userRow(Database $db, int $id): ?array
+    {
+        return $db->fetch('SELECT id, email, name, role, roles_extra, locale, appearance, ui_prefs, network_uid, auth_ver, disabled, totp_enabled, idp FROM users WHERE id = ?', [$id]) ?: null;
+    }
+
     public function actAs(?array $user): void
     {
         if ($user === null) { $this->reset(); return; }

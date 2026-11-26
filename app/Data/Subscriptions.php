@@ -185,8 +185,8 @@ final class Subscriptions
         if (!$t || self::kind($t) === null) return $fail();
         if (self::expired($row)) return ['status' => 410];
         // Konto hinter dem Token: besteht, nicht gesperrt (auch im Netzwerk), darf die Tabelle bearbeiten
-        $u = !empty($row['user_id']) ? app()->db->fetch('SELECT id, email, name, role, disabled, network_uid FROM users WHERE id = ?', [(int) $row['user_id']]) : null;
-        $role = $u ? Permissions::role((string) $u['role']) : null;
+        $u = !empty($row['user_id']) ? app()->db->fetch('SELECT id, email, name, role, roles_extra, disabled, network_uid FROM users WHERE id = ?', [(int) $row['user_id']]) : null;
+        $role = $u ? Permissions::effective($u) : null;
         if (!$u || (int) ($u['disabled'] ?? 0) || (!empty($u['network_uid']) && !\Core\Network\Network::accountActive((int) $u['network_uid']))
             || !Permissions::allows($role, 'data.edit', (string) $t['handle'])) return $fail();
         $key = 'abo:' . (int) $row['id'];

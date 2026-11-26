@@ -10172,4 +10172,10 @@ return [
     'Zusatzrollen speichern' => 'Save additional roles',
     'Zusatzrollen gespeichert.' => 'Additional roles saved.',
     'Zusatzrollen entfernt.' => 'Additional roles removed.',
+    'Filter in der Eintragsliste' => 'Filters in the entry list',
+    'Über der Liste in der Verwaltung: Auswahl- und Ja/Nein-Felder sowie Verknüpfungen als Auswahlliste, Datumsfelder als Zeitraum „von … bis“. Höchstens {n}.' => 'Above the list in the admin: choice and yes/no fields and relations as a dropdown, date fields as a range “from … to”. At most {n}.',
+    'Liste filtern' => 'Filter list',
+    '{label} von' => '{label} from',
+    '{label} bis' => '{label} to',
+    'Filter zurücksetzen' => 'Reset filters',
 ];

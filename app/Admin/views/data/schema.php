@@ -266,6 +266,14 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
             <option value="<?= $lk ?>"<?= ($s['list_image'] ?? 'small') === $lk ? ' selected' : '' ?>><?= e($ll) ?></option>
             <?php endforeach; ?>
           </select></div>
+        <?php if ($table && ($lfC = \Core\Data\ListFilters::candidates($table))): $lfOn = (array) ($s['list_filters'] ?? []); // Filter der Eintragsliste (Core\Data\ListFilters) ?>
+        <fieldset class="f">
+          <legend><?= e(__('Filter in der Eintragsliste')) ?></legend>
+          <p class="f-help"><?= e(__('Über der Liste in der Verwaltung: Auswahl- und Ja/Nein-Felder sowie Verknüpfungen als Auswahlliste, Datumsfelder als Zeitraum „von … bis“. Höchstens {n}.', ['n' => \Core\Data\ListFilters::MAX])) ?></p>
+          <input type="hidden" name="settings[list_filters][]" value="">
+          <div class="set-checks"><?php foreach ($lfC as $lk => $ll): ?><label class="f-check"><input type="checkbox" name="settings[list_filters][]" value="<?= e($lk) ?>"<?= in_array($lk, $lfOn, true) ? ' checked' : '' ?>> <span><?= e($ll) ?></span></label><?php endforeach; ?></div>
+        </fieldset>
+        <?php endif; ?>
         <div class="f f--inline"><label for="t-schema_type"><?= e(__('Strukturierte Daten (schema.org)')) ?></label>
           <p class="f-help"><?= e(__('Für Suchmaschinen: So wird die Detailseite eines Eintrags beschrieben. Titel, Bild, Beschreibung, Datum, Preis, Funktion usw. werden automatisch aus den passenden Feldern übernommen.')) ?></p>
           <select id="t-schema_type" name="settings[schema_type]">

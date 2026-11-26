@@ -41,9 +41,9 @@ final class Api
     {
         self::enabled();
         $uid = $token['user_id'] ?? null;
-        $user = $uid !== null ? app()->db->fetch('SELECT id, email, name, role FROM users WHERE id = ?', [(int) $uid]) : null;
+        $user = $uid !== null ? app()->db->fetch('SELECT id, email, name, role, roles_extra FROM users WHERE id = ?', [(int) $uid]) : null;
         if (!$user) throw new ApiError(403, 'report_issue braucht ein Token, das einem Benutzer gehört (API & MCP → Token mit Benutzer anlegen).');
-        if (!Permissions::allows(Permissions::role((string) $user['role']), 'support.report')) {
+        if (!Permissions::allows(Permissions::effective($user), 'support.report')) {
             throw new ApiError(403, 'Die Rolle des Token-Benutzers darf keine Probleme melden (Recht support.report).');
         }
         $title = trim((string) ($args['title'] ?? ''));
@@ -65,7 +65,7 @@ final class Api
     public static function tokenUser(array $token): array
     {
         $uid = $token['user_id'] ?? null;
-        $u = $uid !== null && $uid !== '' ? app()->db->fetch('SELECT id, email, name, role, locale, network_uid, disabled FROM users WHERE id = ?', [(int) $uid]) : null;
+        $u = $uid !== null && $uid !== '' ? app()->db->fetch('SELECT id, email, name, role, roles_extra, locale, network_uid, disabled FROM users WHERE id = ?', [(int) $uid]) : null;
         if (!$u || !empty($u['disabled'])) throw new ApiError(403, 'Support-Meldungen lesen braucht ein Token, das einem aktiven Benutzer gehört (API & MCP → Token mit Benutzer anlegen).');
         return $u;
     }

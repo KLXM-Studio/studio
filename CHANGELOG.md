@@ -10,6 +10,10 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Eintragsliste: einstellbare Filter
+- Je Tabelle unter „Felder & Einstellungen“ bis zu sechs Filter über der Liste: Auswahl, Mehrfachauswahl, Verknüpfung, Ja/Nein als Auswahlliste, Datumsfelder als Zeitraum „von … bis“; „Filter zurücksetzen“.
+- Zusatzrollen wirken jetzt auch beim Anmelden, in API-Tokens, Abo-Tokens und der Support-API (`Auth::userRow`, `Permissions::effective`); „Ansicht als Rolle“ ohne die Zusatzrollen des echten Kontos.
+
 ### Verwaltung aus Sicht der Redaktion (Prüfbericht, Teil 3)
 - Rollen: Blöcke „zusätzlich nur bearbeiten“ (bestehende pflegen, keine neuen einfügen); mehrere Rollen je Konto (Zusatzrollen, Rechte addieren sich).
 - Blockauswahl: in der Listenansicht je Block eine Zeile Beschreibung.

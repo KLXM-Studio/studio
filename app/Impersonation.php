@@ -71,9 +71,10 @@ final class Impersonation
         if ($imp['mode'] === 'role') {
             $role = Permissions::role((string) $imp['value']);
             if (!$role || in_array((string) $imp['value'], ['admin', 'network'], true)) return null;
-            return ['role' => (string) $imp['value'], '_imp' => $meta + ['label' => (string) $role['name']]] + $real;
+            // Ansicht als Rolle: genau diese Rolle – ohne die Zusatzrollen des echten Kontos (Permissions::effective)
+            return ['role' => (string) $imp['value'], 'roles_extra' => null, '_imp' => $meta + ['label' => (string) $role['name']]] + $real;
         }
-        $t = $db->fetch('SELECT id, email, name, role, locale, appearance, ui_prefs, network_uid, auth_ver, disabled, totp_enabled FROM users WHERE id = ?', [(int) $imp['value']]);
+        $t = $db->fetch('SELECT id, email, name, role, roles_extra, locale, appearance, ui_prefs, network_uid, auth_ver, disabled, totp_enabled FROM users WHERE id = ?', [(int) $imp['value']]);
         if (!$t || !self::canUser($real, $t)) return null;
         return $t + ['_imp' => $meta + ['label' => (string) ($t['name'] ?: $t['email'])]];
     }

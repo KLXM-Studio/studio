@@ -693,9 +693,12 @@ final class DataController extends AdminController
         $featView = $feat && $r->str('hervorgehoben') === '1';
         if ($feat) \Core\Data\Featured::ensure($t);
         if ($featView) $o['featured'] = 'order';
+        // Eingestellte Filter der Eintragsliste (Core\Data\ListFilters, ?f[feld]=…)
+        $lfSel = \Core\Data\ListFilters::selection($t, $r->query);
+        if ($lfSel) $o['where'] = \Core\Data\ListFilters::where($lfSel);
         $total = Entries::count($t, $o);
         $rows = Entries::query($t, $o + ['limit' => $per, 'offset' => ($page - 1) * $per]);
-        return $this->view('data/entries', ['t' => $t, 'rows' => $rows, 'total' => $total, 'status' => $status, 'feat' => $feat, 'featView' => $featView, 'when' => $when,
+        return $this->view('data/entries', ['t' => $t, 'rows' => $rows, 'total' => $total, 'status' => $status, 'feat' => $feat, 'featView' => $featView, 'when' => $when, 'lfSel' => $lfSel, 'lfDefs' => \Core\Data\ListFilters::active($t),
             'featCount' => $feat ? Entries::count($t, ['status' => 'all', 'featured' => 'order', 'lang' => $lang, 'source' => 'own']) : 0,
             'q' => $r->str('q'), 'sort' => $sort, 'dir' => $dir, 'page' => $page, 'pages' => (int) ceil($total / $per), 'lang' => $lang, 'cal' => $cal,
             'counts' => ['all' => Entries::count($t, ['status' => 'all', 'lang' => $lang, 'source' => 'own']), 'published' => Entries::count($t, ['status' => 'published', 'lang' => $lang, 'source' => 'own']), 'draft' => Entries::count($t, ['status' => 'draft', 'lang' => $lang, 'source' => 'own'])],

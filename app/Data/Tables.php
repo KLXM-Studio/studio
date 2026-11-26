@@ -581,6 +581,11 @@ final class Tables
         // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
         // Einträge im Menü unter der Übersichtsseite (Core\Data\MenuEntries) – nur gespeichert, wenn gesetzt (Bestand bleibt unverändert)
         if (isset($s['menu_entries']) || isset($existing['settings']['menu_entries'])) $settings['menu_entries'] = MenuEntries::validate((array) ($s['menu_entries'] ?? $existing['settings']['menu_entries']));
+        // Filter der Eintragsliste in der Verwaltung (Core\Data\ListFilters) – nur gespeichert, wenn gesetzt
+        if (isset($s['list_filters']) || isset($existing['settings']['list_filters'])) {
+            $lf = ListFilters::validate($s['list_filters'] ?? ($existing['settings']['list_filters'] ?? []), $fields);
+            if ($lf || isset($existing['settings']['list_filters'])) $settings['list_filters'] = $lf;
+        }
         // Stil der mitgelieferten Vorlagen (style) bleibt, auch wenn das Formular ihn nicht mitschickt
         if ($kind === Kinds::KNOWLEDGE) $settings['knowledge'] = Knowledge::validateSettings((array) ($s['knowledge'] ?? ($existing['settings']['knowledge'] ?? []))
             + array_intersect_key((array) ($existing['settings']['knowledge'] ?? []), ['style' => 1]));

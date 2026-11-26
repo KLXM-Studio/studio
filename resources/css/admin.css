@@ -4024,3 +4024,10 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
   .dt-entry{padding-bottom:84px}
 }
 .doc-locked small{color:var(--adm-t3);font-weight:500}   /* Verweis auf einen Bereich ohne Recht (Core\AdminAccess::markLinks) */
+/* Filter der Eintragsliste (Core\Data\ListFilters): eine Zeile unter der Leiste, Auswahllisten und Zeiträume */
+.dt-lfilters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;padding:10px 16px;border-bottom:1px solid var(--adm-line)}
+.dt-lf{display:grid;gap:4px;margin:0;padding:0;border:0;min-width:0;font-size:13px;font-weight:600;color:var(--adm-t2)}
+.dt-lf select,.dt-lf input{min-height:34px;padding:4px 8px;font-size:14px;font-weight:400}
+.dt-lf select{max-width:16rem}
+.dt-lf--range{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dt-lf--range legend{float:left;width:100%;margin-bottom:4px;padding:0}

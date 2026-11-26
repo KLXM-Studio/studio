@@ -317,8 +317,8 @@ final class CmsService
     public function designUpdate(array $in): array
     {
         $this->designAvailable();
-        $user = $this->userId() !== null ? app()->db->fetch('SELECT id, email, role FROM users WHERE id = ?', [$this->userId()]) : null;
-        if (!$user || !\Core\Permissions::allows(\Core\Permissions::role((string) $user['role']), 'design.edit')) {
+        $user = $this->userId() !== null ? app()->db->fetch('SELECT id, email, role, roles_extra FROM users WHERE id = ?', [$this->userId()]) : null;
+        if (!$user || !\Core\Permissions::allows(\Core\Permissions::effective($user), 'design.edit')) {
             throw new ApiError(403, 'Für Design-Änderungen muss das Token einem Benutzer gehören, dessen Rolle das Recht „Design (Style-Editor)“ hat.');
         }
         $known = array_keys(\Core\Design::defaults());

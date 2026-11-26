@@ -37,6 +37,16 @@ final class BlockGuardSelfTest
             $eq('Zusatzrolle: Schlüssel der Hauptrolle', $eff['key'] ?? null, 'author');
             $eq('Zusatzrolle: ohne Netzwerk/Unbekanntes', $eff['extra'] ?? null, ['editor']);
             $eq('Ohne Zusatzrolle unverändert', Permissions::effective(['role' => 'author'])['permissions'] ?? null, $ar['permissions']);
+            // Über den Ladeweg der Anmeldung (Auth::userRow): Zusatzrollen kommen mit
+            $db = app()->db;
+            $uid = (int) $db->insert('users', ['email' => 'qa-zusatz-' . bin2hex(random_bytes(3)) . '@example.test', 'name' => 'QA', 'password_hash' => '', 'role' => 'author',
+                'roles_extra' => json_encode(['editor']), 'created_at' => now()]);
+            try {
+                $row = Auth::userRow($db, $uid);
+                $eq('Anmeldung lädt Zusatzrollen', array_values(array_diff($er['permissions'], (array) (Permissions::effective((array) $row)['permissions'] ?? []))), []);
+            } finally {
+                $db->query('DELETE FROM users WHERE id = ?', [$uid]);
+            }
         }
         $theme = app()->theme;
         // Zwei einfache, erlaubte Blockarten mit Textfeld: A (erlaubt) und B (für die eingeschränkte Rolle verboten)

@@ -112,9 +112,9 @@ final class Tokens
     private static function checkOwner(array $row): void
     {
         if (empty($row['user_id'])) return;
-        $u = app()->db->fetch('SELECT id, role, disabled FROM users WHERE id = ?', [(int) $row['user_id']]);
+        $u = app()->db->fetch('SELECT id, role, roles_extra, disabled FROM users WHERE id = ?', [(int) $row['user_id']]);
         if (!$u || (int) ($u['disabled'] ?? 0)) throw new ApiError(401, 'API-Token ist ungültig: das Konto wurde gelöscht oder gesperrt.');
-        $role = \Core\Permissions::role((string) $u['role']);
+        $role = \Core\Permissions::effective($u);   // Hauptrolle + Zusatzrollen
         if (!\Core\Permissions::allows($role, 'api.manage')) throw new ApiError(401, 'API-Token ist ungültig: das Konto darf die API nicht mehr verwalten.');
         if (!in_array('*', (array) ($role['permissions'] ?? []), true)) {
             throw new ApiError(403, 'API-Tokens setzen ein Konto mit allen Rechten (Administration) voraus.');
