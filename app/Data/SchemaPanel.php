@@ -128,6 +128,8 @@ final class SchemaPanel
             [$def, $errors] = Tables::validate(Tables::toInput($t), $t);
             $eq("Rundlauf {$t['handle']}: keine Fehler", $errors, []);
             $want = array_map(function (array $f) use ($langs) {
+                // Optionen aus einer Tabelle (Core\Data\OptionSource): gespeichert wird nur die Quelle, options füllt erst hydrate
+                if (!empty($f['options_from'])) { $f['options'] = []; unset($f['options_i18n']); }
                 foreach (['labels', 'options_i18n'] as $k) {
                     if (isset($f[$k])) { $f[$k] = $langs((array) $f[$k]); if (!$f[$k]) unset($f[$k]); }
                 }
