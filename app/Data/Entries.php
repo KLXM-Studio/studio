@@ -86,6 +86,8 @@ final class Entries
     {
         PageCache::clear();
         \Core\Live::touch('data:' . $table['handle']);   // Live-Blöcke (Core\Live)
+        // Options-Tabelle (Core\Data\OptionSource): Optionen der nutzenden Tabellen neu lesen
+        if (OptionSource::isSource($table)) Tables::flush();
         if (Tables::isShared($table)) {
             Shared::clearCaches($table['shared']['key']);
             Shared::touch($table);
@@ -796,6 +798,10 @@ final class Entries
         if ($current && $versioned && !Revisions::has($table, (int) $id)) Revisions::record($table, $current, __('Ausgangsstand'));
         if ($current) {
             $db->update($table['table'], $row, 'id = :id', ['id' => $id]);
+            // Options-Tabelle (Core\Data\OptionSource): neuer Kurzname → gespeicherte Werte nachziehen
+            if (($current['slug'] ?? '') !== '' && $current['slug'] !== ($row['slug'] ?? $current['slug']) && \Core\Lang::norm($current['lang'] ?? null) === \Core\Lang::default()) {
+                OptionSource::renamed($table, (string) $current['slug'], (string) $row['slug']);
+            }
         } else {
             $row['created_at'] = now();
             $row['sort'] = (int) $db->fetchValue("SELECT COALESCE(MAX(sort), 0) + 10 FROM {$table['table']}");
@@ -849,6 +855,10 @@ final class Entries
             foreach ($db->fetchAll("SELECT id FROM {$table['table']} WHERE " . Series::SERIES . ' = ? AND id != ?', [$id, $id]) as $ov) self::delete($table, (int) $ov['id']);
         }
         Revisions::forget($table, $id);
+        // Options-Tabelle (Core\Data\OptionSource): Kurzname merken – Werte, die nicht neu zugeordnet wurden, danach leeren
+        $optSlug = null;
+        if (!Tables::isShared($table) && OptionSource::isSource($table) && ($or = $db->fetch("SELECT slug, lang FROM {$table['table']} WHERE id = ?", [$id]))
+            && \Core\Lang::norm($or['lang'] ?? null) === \Core\Lang::default()) $optSlug = (string) $or['slug'];
         if (Tables::isShared($table)) {
             // Geteilt: nur eigene Einträge; Auswahl aller Websites mit entfernen
             if ($db->query("DELETE FROM {$table['table']} WHERE id = ? AND origin_site = ?", [$id, site()->key])->rowCount() === 0) return;
@@ -866,6 +876,7 @@ final class Entries
             if ($f['type'] === 'relation') Tables::db($t)->query("UPDATE {$t['table']} SET {$f['name']} = NULL WHERE {$f['name']} = ?", [$id]);
             else Tables::db($t)->query('DELETE FROM ' . Tables::pivot($t, $f['name']) . ' WHERE target_id = ?', [$id]);
         }
+        if ($optSlug !== null && $optSlug !== '') OptionSource::rewrite($table, $optSlug, '');
         self::changed($table);
         Occurrences::changed($table, $id);
         \Core\Extensions::emit(new \Core\Events\EntryDeleted($table, $id, $before));   // Erweiterungen (Extension::on)

@@ -62,6 +62,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 ### Kategorien als eigene Tabelle
 - Löschen mit Neuzuordnung: Verweisen andere Einträge auf einen Eintrag, der gelöscht wird (einzeln oder mehrere), fragt die Verwaltung je Feld nach – „Leer lassen“ oder „Einem anderen Eintrag zuordnen“ (Auswahlfenster); Versionsnotiz an den umgehängten Einträgen. Auch per CLI `data:delete … --reassign=ID`, REST `?reassign=ID` und MCP `delete_entry` (`reassign`) (`Core\Data\Reassign`).
 - Auswahllisten: Entfernte Optionen, die Einträge noch haben, werden beim Speichern des Schemas nicht mehr verwaist – Rückfrage „N Einträge haben ‚X‘: neu zuordnen zu … / leer lassen“ (select und multiselect, Tabellen-Designer und Seitenleiste „Felder bearbeiten“; `Core\Data\OptionRemap`).
+- Auswahl-Optionen aus einer Tabelle: Auswahl- und Mehrfachauswahl-Felder beziehen ihre Möglichkeiten wahlweise aus einer eigenen kleinen Tabelle (`options_from`), die die Redaktion pflegt – gespeichert bleibt der Kurzname, Kalender-Kategorien, ICS, Filter, Menü und Export bleiben gleich; Kurzname-Änderungen und Löschen ziehen die Werte nach. Bestehende Felder per Knopf „In eine eigene Tabelle auslagern“ bzw. CLI `data:options-to-table` (`Core\Data\OptionSource`).
 - Verknüpfungen wie Auswahllisten: Filter-Schaltflächen der Datenliste und „Einträge im Menü“ (Werte von …) nehmen auch Verknüpfungsfelder – die Einträge der Zieltabelle in deren Reihenfolge; Menüpunkte wahlweise zur Detailseite des verknüpften Eintrags. Selbsttest `reassign:selftest`.
 
 ### Rückverknüpfungen

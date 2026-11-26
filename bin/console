@@ -208,6 +208,7 @@
  *   pool:detach <key> [--dry-run]                     Pool-Dateien in die Mediathek der Website übernehmen (IDs bleiben)
  *   pool:retire <key>                                 Pool ohne Verweise nach storage/pools/_removed verschieben
  *   pool:list                                         Pools und nutzende Websites
+ *   data:options-to-table <tabelle> <feld> [--handle=…] [--name="…"]   Auswahl-Optionen in eine eigene Tabelle auslagern
  *   data:delete <tabelle> <id[,id…]> [--reassign=ID] [--dry-run]   Einträge löschen, Verweise vorher umhängen
  *   data:share <handle> --members=a,b [--see-members] [--merge]
  *                                                     Tabelle dieser Website teilen (diese Website = Eigentümer, --site=…); Verknüpfungen
@@ -1645,6 +1646,17 @@ switch ($cmd) {
             printf("%-14s %-28s %4d Dateien   genutzt von: %s   pflegen: %s\n", $k, $l, $n, implode(', ', $users) ?: '–', implode(', ', $editors));
         }
         if (!Core\MediaPools::all()) echo "Keine Pools. Anlegen: php bin/console pool:create marke \"Markenbilder\"\n";
+        break;
+
+    case 'data:options-to-table':
+        // Auswahl-/Mehrfachauswahl-Feld: Optionen in eine eigene Tabelle auslagern (Core\Data\OptionSource), Werte bleiben gültig
+        $ot = Core\Data\Tables::findContent((string) ($args[0] ?? ''));
+        $ofield = (string) ($args[1] ?? '');
+        if (!$ot || $ofield === '') { fwrite(STDERR, "Aufruf: data:options-to-table <tabelle> <feld> [--handle=kurzname] [--name=\"Name\"] [--site=key]\n"); exit(1); }
+        try {
+            $res = Core\Data\OptionSource::extract($ot, $ofield, (string) Core\Cli::opt($args, 'handle'), (string) Core\Cli::opt($args, 'name'));
+        } catch (Throwable $e) { fwrite(STDERR, $e->getMessage() . "\n"); exit(1); }
+        echo "Tabelle {$res['table']['handle']} („{$res['table']['name']}“): {$res['created']} Einträge; Feld {$ofield} bezieht die Optionen jetzt daraus" . ($res['renamed'] ? ", {$res['renamed']} Werte auf gültige Kurznamen umgeschrieben" : '') . ".\n";
         break;
 
     case 'data:delete':

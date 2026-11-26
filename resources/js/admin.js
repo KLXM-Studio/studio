@@ -613,6 +613,12 @@ listen('submit', e => {   // „submit“ verlässt keine Schatten-Wurzel: liste
     delete form.dataset.confirmed;
   });
 });
+// Tabellen-Designer: Auswahlmöglichkeiten aus einer Tabelle (Core\Data\OptionSource) – eigene Liste nur ohne Quelle
+d.addEventListener('change', e => {
+  const s = e.target.closest?.('[data-options-from]');
+  const own = s?.closest('.dt-field__extra')?.querySelector('[data-options-own]');
+  if (own) own.hidden = s.value !== '';
+});
 d.addEventListener('click', e => {
   const c = e.target.closest('[data-copy]');
   if (c) navigator.clipboard.writeText($(c.dataset.copy).textContent.trim()).then(() => { c.textContent = 'Kopiert ✓'; });

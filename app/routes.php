@@ -276,6 +276,7 @@ return function (Router $r): void {
     $r->post('/admin/data', [Admin\DataController::class, 'store']);
     $r->get('/admin/data/{handle}/schema', [Admin\DataController::class, 'schema']);
     $r->post('/admin/data/{handle}/schema', [Admin\DataController::class, 'update']);
+    $r->post('/admin/data/{handle}/optionen-auslagern', [Admin\DataController::class, 'extractOptions']);   // Auswahl → eigene Tabelle (Core\Data\OptionSource)
     $r->post('/admin/data/{handle}/destroy', [Admin\DataController::class, 'destroy']);
     $r->post('/admin/data/{handle}/delivery-test', [Admin\DataController::class, 'deliveryTest']);
     $r->post('/admin/data/{handle}/template', [Admin\DataController::class, 'template']);

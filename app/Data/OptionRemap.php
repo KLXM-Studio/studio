@@ -27,14 +27,17 @@ final class OptionRemap
             if (!in_array($old['type'], ['select', 'multiselect'], true) || empty($old['options'])) continue;
             $nf = $new[(string) ($old['id'] ?? '')] ?? null;
             if (!$nf || ($nf['type'] ?? '') !== $old['type']) continue;   // Feld weg oder andere Art: eigene Rückfrage bzw. Umwandlung
-            $keep = array_map('strval', array_keys((array) ($nf['options'] ?? [])));
+            // Optionen aus einer Tabelle (Core\Data\OptionSource): deren Kurznamen gelten
+            $newOpts = !empty($nf['options_from']) ? OptionSource::load((string) $nf['options_from'])[0] : (array) ($nf['options'] ?? []);
+            if (!empty($nf['options_from']) && ($old['options_from'] ?? '') === $nf['options_from']) continue;
+            $keep = array_map('strval', array_keys($newOpts));
             foreach (array_keys((array) $old['options']) as $k) {
                 $k = (string) $k;
                 if (in_array($k, $keep, true)) continue;
                 $n = self::count($t, $old, $k);
                 if ($n < 1) continue;
                 $out[] = ['id' => (string) $old['id'], 'name' => (string) $old['name'], 'label' => (string) ($old['label'] ?? $old['name']), 'type' => $old['type'],
-                    'key' => $k, 'option' => Tables::optionLabel($old, $k), 'count' => $n, 'choices' => array_map('strval', (array) ($nf['options'] ?? []))];
+                    'key' => $k, 'option' => Tables::optionLabel($old, $k), 'count' => $n, 'choices' => array_map('strval', $newOpts)];
             }
         }
         return $out;

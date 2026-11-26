@@ -43,6 +43,8 @@ final class ReassignSelfTest
                 ['name' => 'auch', 'label' => 'Auch', 'type' => 'relations', 'target' => $th['handle']],
                 ['name' => 'art', 'label' => 'Art', 'type' => 'select', 'options' => "a=Alpha\nb=Beta\nc=Gamma"],
                 ['name' => 'tags', 'label' => 'Schlagworte', 'type' => 'multiselect', 'options' => "x=Iks\ny=Ypsilon\nz=Zett"],
+                ['name' => 'kat', 'label' => 'Kategorie', 'type' => 'select', 'options' => "wald=Wald\nwild=Wild\nx_y=X Y"],
+                ['name' => 'kats', 'label' => 'Kategorien', 'type' => 'multiselect', 'options' => "eins=Eins\nzwei=Zwei"],
             ]);
             if (!$wi) return ['ok' => $ok, 'fails' => $fails];
             [$wald] = Entries::save($th, null, ['titel' => 'Wald', 'status' => 'published']);
@@ -93,6 +95,42 @@ final class ReassignSelfTest
             $ck($errs2 === [] && !isset($wi2['fields'][array_search('art', array_column($wi2['fields'], 'name'), true)]['options']['a']), 'Gespeichert nach Antwort');
             $ck(Entries::find($wi2, (int) $k1)['art'] === 'c' && Entries::find($wi2, (int) $k3)['art'] === 'c' && Entries::find($wi2, (int) $k2)['art'] === 'b', 'select: neu zugeordnet');
             $ck(array_values((array) Entries::find($wi2, (int) $k1)['tags']) === ['y'] && array_values((array) Entries::find($wi2, (int) $k2)['tags']) === [], 'multiselect: leer gelassen');
+
+            // Optionen aus einer Tabelle (Core\Data\OptionSource)
+            $wi = Tables::find($wi['handle']);
+            [$o1] = Entries::save($wi, null, ['titel' => 'O1', 'kat' => 'x_y', 'status' => 'published']);
+            [$o2] = Entries::save($wi, null, ['titel' => 'O2', 'kat' => 'wald', 'status' => 'published']);
+            $ex = OptionSource::extract($wi, 'kat', 'qa_ra_k' . bin2hex(random_bytes(2)), 'QA Kategorien');
+            $tables[] = $ex['table']['handle'];
+            $kt = $ex['table'];
+            $wi = Tables::find($wi['handle']);
+            $kf = Tables::field($wi, 'kat');
+            $ck($ex['created'] === 3 && ($kf['options_from'] ?? '') === $kt['handle'], 'Auslagern: Tabelle mit 3 Einträgen, Feld bezieht daraus');
+            $ck(array_values($kf['options']) === ['Wald', 'Wild', 'X Y'], 'Optionen aus der Tabelle in deren Reihenfolge');
+            $xy = (string) Entries::find($wi, (int) $o1)['kat'];
+            $ck($xy !== '' && isset($kf['options'][$xy]) && Tables::optionLabel($kf, $xy) === 'X Y', 'Wert bleibt gültig (ggf. auf Kurznamen umgeschrieben)');
+            $stored = json_decode((string) app()->db->fetchValue('SELECT fields_json FROM data_tables WHERE handle = ?', [$wi['handle']]), true);
+            $sk = array_values(array_filter($stored, fn($x) => ($x['name'] ?? '') === 'kat'))[0] ?? [];
+            $ck(($sk['options'] ?? []) === [] && ($sk['options_from'] ?? '') === $kt['handle'], 'Gespeichert wird nur die Quelle');
+            [$again, $aerr] = Tables::validate(Tables::toInput($wi), $wi);
+            $ak = array_values(array_filter($again['fields'], fn($x) => $x['name'] === 'kat'))[0] ?? [];
+            $ck($aerr === [] && ($ak['options_from'] ?? '') === $kt['handle'], 'Erneut speichern: Quelle bleibt');
+            [$neu] = Entries::save($kt, null, ['titel' => 'Neu dazu', 'status' => 'published']);
+            $ck(in_array('Neu dazu', Tables::field(Tables::find($wi['handle']), 'kat')['options'], true), 'Neuer Eintrag = neue Option');
+            $wid = (int) app()->db->fetchValue("SELECT id FROM {$kt['table']} WHERE slug = 'wald'");
+            Entries::save($kt, $wid, ['titel' => 'Wald & Forst']);
+            $wi = Tables::find($wi['handle']);
+            $ck(Tables::optionLabel(Tables::field($wi, 'kat'), 'wald') === 'Wald & Forst' && Entries::find($wi, (int) $o2)['kat'] === 'wald', 'Umbenennen = Titel ändern, Wert bleibt');
+            Entries::save($kt, $wid, ['slug' => 'forst']);
+            $ck(Entries::find(Tables::find($wi['handle']), (int) $o2)['kat'] === 'forst', 'Kurzname geändert: Werte nachgezogen');
+            $refs = Reassign::refs($kt, [$wid]);
+            $ck(count($refs) === 1 && $refs[0]['count'] === 1, 'Löschen: Verweise über das Auswahlfeld erkannt');
+            $r3 = Reassign::delete($kt, [$wid], ['*' => (int) $neu]);
+            $ck($r3['moved'] === 1 && Entries::find(Tables::find($wi['handle']), (int) $o2)['kat'] === (string) Entries::find($kt, (int) $neu)['slug'], 'Löschen mit Neuzuordnung (Auswahl)');
+            Entries::delete($kt, (int) $neu);
+            $ck((string) (Entries::find(Tables::find($wi['handle']), (int) $o2)['kat'] ?? '') === '', 'Löschen ohne Zuordnung leert den Wert');
+            $ck(OptionSource::extract(Tables::find($wi['handle']), 'kats', '', '')['created'] === 2, 'Mehrfachauswahl auslagern');
+            $tables[] = Tables::field(Tables::find($wi['handle']), 'kats')['options_from'];
         } finally {
             foreach (array_reverse($tables) as $x) if ($tt = Tables::find($x)) Tables::delete($tt);
             foreach ($tables as $x) app()->db->query('DELETE FROM entry_revisions WHERE tbl = ?', [$x]);

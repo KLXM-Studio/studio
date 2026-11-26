@@ -92,6 +92,7 @@ final class Tables
     {
         self::$cache = [];
         self::$shared = null;
+        OptionSource::flush();
         Shared::flush();
         MenuEntries::flush();   // Einträge im Menü: Tabellen je Adresse neu lesen
     }
@@ -226,6 +227,9 @@ final class Tables
     {
         // fields = nur Datenfelder (eine Spalte je Feld); fields_all = Reihenfolge samt Abschnitten und Freitext (allFields)
         $row['fields_all'] = array_values(json_decode((string) $row['fields_json'], true) ?: []);
+        // Auswahl-Optionen aus einer Tabelle (Core\Data\OptionSource): options zur Laufzeit füllen
+        foreach ($row['fields_all'] as &$of) if (!empty($of['options_from'])) $of = OptionSource::fill($of);
+        unset($of);
         $row['fields'] = self::dataFields($row['fields_all']);
         $row['settings'] = (json_decode((string) $row['settings_json'], true) ?: []) + [
             'route' => '', 'title_field' => '', 'image_field' => '', 'description_field' => '',
@@ -435,7 +439,14 @@ final class Tables
             // Altfeld nach data:convert (ausgeblendet, nie öffentlich, bleibt für --revert) bzw. Feld des Grundschemas (Kinds)
             if (!$inbox && !empty($f['legacy'])) $def['legacy'] = true;
             if (!$inbox && Kinds::isSystem($kind, $fname, $kindVersion)) $def['system'] = true;
-            if (in_array($type, ['select', 'multiselect'], true)) {
+            // Optionen aus einer Tabelle (Core\Data\OptionSource): nur der Kurzname der Quelle wird gespeichert
+            $from = in_array($type, ['select', 'multiselect'], true) && !$inbox ? preg_replace('~[^a-z0-9_]~', '', (string) ($f['options_from'] ?? '')) : '';
+            if ($from !== '' && !OptionSource::valid($from, $handle)) {
+                $errors["fields.$i"] = __('Feld „{label}“: Die Tabelle für die Auswahlmöglichkeiten gibt es nicht.', ['label' => $label]);
+            } elseif ($from !== '') {
+                $def['options_from'] = $from;
+                $def['options'] = [];
+            } elseif (in_array($type, ['select', 'multiselect'], true)) {
                 $opts = [];
                 foreach (preg_split('~\R~', (string) ($f['options'] ?? '')) as $line) {
                     $line = trim(strip_tags($line));
@@ -646,6 +657,7 @@ final class Tables
     /** Ein gespeichertes Feld im Eingabeformat von validate(): Auswahlmöglichkeiten als Zeilen „kurzname=Text“ */
     public static function fieldInput(array $f): array
     {
+        if (!empty($f['options_from'])) { unset($f['options_i18n']); $f['options'] = ''; return $f; }
         if (is_array($f['options'] ?? null)) {
             $f['options'] = implode("\n", array_map(fn($k, $v) => "$k=$v", array_keys($f['options']), $f['options']));
         }

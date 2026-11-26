@@ -75,7 +75,22 @@ $type = $f['type'] ?? 'text';
       <p class="f-help"><?= e(__('Erscheint an dieser Stelle im Formular, z. B. als Hinweis zwischen den Feldern. Die Bezeichnung dient nur hier im Designer als Name. Speichert keine Daten.')) ?></p>
     </div>
     <div class="dt-field__extra" data-show-for="select multiselect">
-      <label class="dt-in"><span>Auswahlmöglichkeiten (eine pro Zeile)</span><textarea name="<?= $n ?>[options]" rows="3" placeholder="Neuigkeiten&#10;Hinweise&#10;Veranstaltungen"><?= e($opts) ?></textarea></label>
+      <?php // Optionen aus einer Tabelle (Core\Data\OptionSource): Kategorien/Themen pflegt die Redaktion als eigene kleine Tabelle
+      $from = (string) ($f['options_from'] ?? ''); $self = (string) ($handle ?? ''); ?>
+      <?php if (!$inbox): ?>
+      <label class="dt-in"><span><?= e(__('Auswahlmöglichkeiten kommen aus')) ?></span><select name="<?= $n ?>[options_from]" data-options-from>
+        <option value=""><?= e(__('dieser Liste (unten eintragen)')) ?></option>
+        <?php foreach ($tables as $h => $l): if ($h === $self) continue; ?><option value="<?= e($h) ?>"<?= $from === $h ? ' selected' : '' ?>><?= e(__('Tabelle „{name}“', ['name' => $l])) ?></option><?php endforeach; ?>
+      </select></label>
+      <?php endif; ?>
+      <label class="dt-in" data-options-own<?= $from !== '' ? ' hidden' : '' ?>><span>Auswahlmöglichkeiten (eine pro Zeile)</span><textarea name="<?= $n ?>[options]" rows="3" placeholder="Neuigkeiten&#10;Hinweise&#10;Veranstaltungen"><?= e($from !== '' ? '' : $opts) ?></textarea></label>
+      <?php if ($from !== ''): ?>
+      <p class="f-help"><?= e(__('Neue Möglichkeiten legen Sie als Eintrag in dieser Tabelle an; umbenennen = Titel ändern.')) ?> <a href="<?= e(url('/admin/data/' . $from)) ?>"><?= e(__('Liste bearbeiten')) ?></a></p>
+      <?php elseif (!$inbox && !empty($f['id']) && $self !== '' && ($can ?? false)): ?>
+      <p class="f-help"><button type="submit" class="adm-btn adm-btn--small adm-btn--ghost" formaction="<?= e(url('/admin/data/' . $self . '/optionen-auslagern')) ?>" name="field" value="<?= e((string) ($f['name'] ?? '')) ?>" formnovalidate
+        data-confirm="<?= e(__('Auswahlmöglichkeiten in eine eigene Tabelle auslagern?') . "
+" . __('Es entsteht eine Tabelle „{name}“ mit einem Eintrag je Möglichkeit; die Redaktion kann sie dann selbst ergänzen und umbenennen. Gespeicherte Werte bleiben gültig. Ungespeicherte Änderungen an den Feldern gehen verloren.', ['name' => (string) ($f['label'] ?? '')])) ?>"><?= icon('table') ?> <?= e(__('In eine eigene Tabelle auslagern')) ?></button></p>
+      <?php endif; ?>
     </div>
     <div class="dt-field__extra" data-show-for="relation relations">
       <?php // Adressbücher (Core\Data\Kinds) zuerst: eine Verknüpfung dorthin ist ein Kontakt-Feld (Auswahl mit Funktion/Organisation, Website zeigt nur freigegebene Kontakte)

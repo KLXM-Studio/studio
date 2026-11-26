@@ -509,6 +509,21 @@ final class DataController extends AdminController
             : $this->back($back, 'error', __('Testmail nicht gesendet: {error}', ['error' => (string) $res['error']]));
     }
 
+    /** Auswahlmöglichkeiten eines Feldes in eine eigene Tabelle auslagern (Core\Data\OptionSource::extract) */
+    public function extractOptions(Request $r, string $handle): Response
+    {
+        $this->auth($r, 'data.schema');
+        $t = $this->table($handle);
+        $this->schemaGuard($t);
+        try {
+            $res = \Core\Data\OptionSource::extract($t, $r->str('field'));
+        } catch (\RuntimeException $e) {
+            return $this->back('/admin/data/' . $handle . '/schema#felder', 'error', $e->getMessage());
+        }
+        $this->changed();
+        return $this->back('/admin/data/' . $handle . '/schema#felder', 'success', __('Ausgelagert: Tabelle „{name}“ mit {n} Einträgen. Neue Möglichkeiten legen Sie jetzt dort an.', ['name' => $res['table']['name'], 'n' => $res['created']]));
+    }
+
     public function destroy(Request $r, string $handle): Response
     {
         $this->auth($r, 'data.schema');
@@ -518,6 +533,10 @@ final class DataController extends AdminController
         }
         if ($r->str('confirm') !== $t['handle']) {
             return $this->back('/admin/data/' . $handle . '/schema', 'error', 'Zum Löschen bitte den Kurznamen „' . $t['handle'] . '“ eintippen.');
+        }
+        if ($users = \Core\Data\OptionSource::usedBy($t)) {
+            return $this->back('/admin/data/' . $handle . '/schema', 'error', __('Diese Tabelle liefert die Auswahlmöglichkeiten für {fields} – bitte dort zuerst eine andere Quelle wählen.',
+                ['fields' => implode(', ', array_map(fn($x) => '„' . $x[0]['name'] . ' · ' . $x[1]['label'] . '“', $users))]));
         }
         Tables::delete($t);
         return $this->back('/admin/data', 'success', 'Tabelle „' . $t['name'] . '“ samt Einträgen gelöscht.');

@@ -12,6 +12,7 @@ namespace Core\Data;
  *  - refs(): je verweisendem Feld die Einträge (nur eigene, keine aus externen Quellen; Einträge, die mitgelöscht werden, nicht).
  *  - delete(): erst umhängen (Entries::save, Teilaktualisierung mit Versionsnotiz), dann löschen. $map: „tabelle.feld“ => Ziel-ID
  *    (0/fehlend = leer lassen); Ziel muss in derselben Tabelle existieren und darf nicht mitgelöscht werden.
+ * Auch Auswahlfelder, deren Optionen aus dieser Tabelle kommen (Core\Data\OptionSource, Wert = Kurzname).
  * Verwaltung (Einzel- und Mehrfachlöschen, resources/js/_reassign.js), CLI data:delete --reassign=ID, API/MCP reassign.
  */
 final class Reassign
@@ -40,6 +41,27 @@ final class Reassign
                 'label' => count($rows) === 1
                     ? __('1 Eintrag in „{table}“ (Feld {field}) verweist darauf', ['table' => $s['name'], 'field' => $f['label']])
                     : __('{n} Einträge in „{table}“ (Feld {field}) verweisen darauf', ['n' => count($rows), 'table' => $s['name'], 'field' => $f['label']])];
+        }
+        // Auswahlfelder, deren Optionen aus dieser Tabelle kommen (Core\Data\OptionSource): Wert = Kurzname
+        if (!Tables::isShared($t)) {
+            $slugs = [];
+            foreach ($ids as $id) {
+                $r = Tables::db($t)->fetch("SELECT slug, lang FROM {$t['table']} WHERE id = ?", [$id]);
+                if ($r && ($r['slug'] ?? '') !== '' && \Core\Lang::norm($r['lang'] ?? null) === \Core\Lang::default()) $slugs[] = (string) $r['slug'];
+            }
+            foreach ($slugs ? OptionSource::usedBy($t) : [] as [$s, $f]) {
+                $rows = [];
+                foreach ($slugs as $slug) {
+                    $p = [];
+                    $w = OptionSource::cond($f, $slug, $p);
+                    foreach (Tables::db($s)->fetchAll("SELECT id FROM {$s['table']} WHERE $w" . (Tables::isShared($s) ? ' AND origin_site = ?' : ''), Tables::isShared($s) ? [...$p, site()->key] : $p) as $r) $rows[(int) $r['id']] = (int) $r['id'];
+                }
+                if (!$rows) continue;
+                $out[] = ['key' => $s['handle'] . '.' . $f['name'], 'table' => $s, 'field' => $f, 'rows' => array_values($rows), 'count' => count($rows), 'slugs' => $slugs,
+                    'label' => count($rows) === 1
+                        ? __('1 Eintrag in „{table}“ (Feld {field}) verweist darauf', ['table' => $s['name'], 'field' => $f['label']])
+                        : __('{n} Einträge in „{table}“ (Feld {field}) verweisen darauf', ['n' => count($rows), 'table' => $s['name'], 'field' => $f['label']])];
+            }
         }
         return $out;
     }
@@ -72,7 +94,13 @@ final class Reassign
                 foreach ($g['rows'] as $rid) {
                     $row = Entries::find($s, $rid);
                     if (!$row) continue;
-                    if ($f['type'] === 'relation') {
+                    if (isset($g['slugs'])) {
+                        // Auswahl aus Options-Tabelle: Kurznamen ersetzen
+                        $to = (string) (Entries::find($t, $target)['slug'] ?? '');
+                        $cur = $f['type'] === 'select' ? [(string) ($row[$f['name']] ?? '')] : array_map('strval', (array) ($row[$f['name']] ?? []));
+                        $new = array_values(array_unique(array_filter(array_map(fn($v) => in_array($v, $g['slugs'], true) ? $to : $v, $cur), fn($v) => $v !== '')));
+                        $val = $f['type'] === 'select' ? ($new[0] ?? '') : $new;
+                    } elseif ($f['type'] === 'relation') {
                         $val = $target;
                     } else {
                         $cur = array_values(array_map('intval', (array) ($row[$f['name']] ?? [])));
