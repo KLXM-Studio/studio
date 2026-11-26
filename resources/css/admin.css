@@ -3066,10 +3066,13 @@ html.adm-ui[data-theme=dark]{--adm-switch-off:#4A4E5A}
 .f-check > input:not(#\#){margin:2px 0 0}
 .f--multi legend{padding:0;margin-bottom:8px}
 /* Mehrfachauswahl: ruhiges Raster aus Kästchen mit Text (wie Listen in den macOS-Einstellungen) */
-.f-multi{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,10rem),1fr));gap:8px 16px}
+.f-multi{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,11.5rem),1fr));gap:8px 16px}
 .f-multi .f-check{align-items:flex-start;margin:0;font-size:13.5px;line-height:1.35}
 .f-multi .f-check > input:not(#\#){margin:1px 0 0}
 .f-multi .f-check[hidden]{display:none}
+/* lange Beschriftungen (z. B. „Campfire/Mitgliedertreffen“) brechen in ihrer Spalte um statt in die Nachbarspalte zu laufen */
+.f-multi .f-check{min-width:0}
+.f-multi .f-check > span{min-width:0;overflow-wrap:break-word;hyphens:auto}
 
 /* ================= Einstellungen im Stil der macOS-Systemeinstellungen (07.10.2026) =================
    Fields::renderGroups(): .set-groups > .set-group (Titel, .set-list, Fußnote). Jede Zeile: Beschriftung (+ graue Hilfe) links,
