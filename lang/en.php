@@ -10136,5 +10136,7 @@ return [
     '„{title}“ nicht mehr hervorheben' => 'Stop featuring “{title}”',
     '„{title}“ weiter nach hinten' => 'Move “{title}” back',
     '„{title}“ weiter nach vorne' => 'Move “{title}” forward',
-    'Erscheint vorn auf der Startseite – im wechselnden Einstiegsbild und bei den hervorgehobenen Beiträgen, sofern die Startseite sie zeigt.' => 'Appears up front on the home page – in the rotating hero image and among the featured posts, if the home page shows them.',
+    'Wirkt nur dort, wo ein Element hervorgehobene Einträge zeigt – z. B. ein Einstieg mit Slider oder der Block „Highlights“.' => 'Only takes effect where an element shows featured entries – e.g. a hero with slider or the “Highlights” block.',
+    'Auf dieser Website: {where}' => 'On this website: {where}',
+    'Derzeit nutzt kein Element dieser Website hervorgehobene Einträge.' => 'Currently no element of this website shows featured entries.',
 ];

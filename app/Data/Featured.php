@@ -170,6 +170,35 @@ final class Featured
             . ($sort !== 'order' ? ' ' . e(__('Reihenfolge ändern: in der Seitenleiste die Sortierung auf „Reihenfolge“ stellen.')) : '') . '</p>';
     }
 
+    /**
+     * Wo wertet diese Website hervorgehobene Einträge der Tabelle aus? Seiten mit Block „Highlights“ bzw. Einstieg als Slider, deren
+     * Quellen die Tabelle nennen (veröffentlichte Fassung, auch in Spalten) – für den Hilfetext am Schalter. [Seitentitel => [Blocktitel]]
+     * @return array<string, list<string>>
+     */
+    public static function usedOn(array $t): array
+    {
+        $out = [];
+        $theme = app()->theme;
+        foreach (\Core\Pages::all() as $p) {
+            if (!str_contains((string) ($p['content_published'] ?? ''), '"' . $t['handle'] . '"')) continue;
+            $walk = function (array $blocks) use (&$walk, &$out, $p, $t, $theme): void {
+                foreach ($blocks as $b) {
+                    if (!is_array($b)) continue;
+                    $d = (array) ($b['data'] ?? []);
+                    $type = (string) ($b['type'] ?? '');
+                    $src = $type === 'highlights' ? (array) ($d['sources'] ?? []) : ($type === 'hero' && !empty($d['slider']) ? (array) ($d['slides_sources'] ?? []) : []);
+                    if (in_array($t['handle'], array_map(fn($x) => (string) (is_array($x) ? ($x['table'] ?? '') : ''), $src), true)) {
+                        $label = (string) ($theme->block($type)['label'] ?? $type);
+                        $out[(string) $p['title']][] = $type === 'hero' ? __('Einstieg') : $label;
+                    }
+                    foreach ((array) ($d['columns'] ?? []) as $col) if (is_array($col)) $walk((array) ($col['blocks'] ?? $col));
+                }
+            };
+            $walk(\Core\Pages::blocks($p, false));
+        }
+        return array_map(fn($l) => array_values(array_unique($l)), $out);
+    }
+
     /** Tabellen, deren Einträge sich hervorheben lassen (Auswahl im Block, Hinweise) – [handle => Name] */
     public static function tables(): array
     {
