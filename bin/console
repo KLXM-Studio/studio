@@ -200,6 +200,8 @@
  *
  * Medien & Daten
  *   pool:create <key> "Name"                          Geteilten Medien-Pool anlegen (Websites: 'media_pools' => [...])
+ *   pool:detach <key> [--dry-run]                     Pool-Dateien in die Mediathek der Website übernehmen (IDs bleiben)
+ *   pool:retire <key>                                 Pool ohne Verweise nach storage/pools/_removed verschieben
  *   pool:list                                         Pools und nutzende Websites
  *   data:share <handle> --members=a,b [--see-members] [--merge]
  *                                                     Tabelle dieser Website teilen (diese Website = Eigentümer, --site=…); Verknüpfungen
@@ -1521,6 +1523,27 @@ switch ($cmd) {
             Core\MediaPools::create((string) ($args[0] ?? ''), (string) ($args[1] ?? ($args[0] ?? '')));
         } catch (InvalidArgumentException $e) { fwrite(STDERR, $e->getMessage() . "\nAufruf: pool:create <key> \"Bezeichnung\"\n"); exit(1); }
         echo "Pool „{$args[0]}“ angelegt. Freigeben je Website: 'media_pools' => ['{$args[0]}'] in config/sites/<key>.php bzw. config/config.local.php\n";
+        break;
+
+    case 'pool:detach':
+        // Pool-Dateien dieser Website (--site=…) in die eigene Mediathek übernehmen; IDs und Verwendungen bleiben (Core\MediaPools::detach)
+        $key = (string) ($args[0] ?? '');
+        if ($key === '' || !isset(Core\MediaPools::all()[$key])) { fwrite(STDERR, "Aufruf: pool:detach <key> [--dry-run] --site=…  (Pools: " . implode(', ', array_keys(Core\MediaPools::all())) . ")\n"); exit(1); }
+        $dry = in_array('--dry-run', $args, true);
+        $res = Core\MediaPools::detach($key, $dry);
+        printf("%s: %d Datei(en) %s, %d übersprungen\n", site()->key, $res['done'], $dry ? 'würden übernommen' : 'übernommen', $res['skipped']);
+        foreach ($res['errors'] as $er) echo "  ! $er\n";
+        if (!$dry && !Core\MediaPools::referencedBy($key)) echo "Keine Website verweist mehr auf den Pool – stilllegen mit: php bin/console pool:retire $key\n";
+        break;
+
+    case 'pool:retire':
+        // Pool stilllegen, wenn keine Website mehr verweist: nach storage/pools/_removed verschieben (nichts wird gelöscht)
+        $key = (string) ($args[0] ?? '');
+        try {
+            echo "Stillgelegt: " . Core\MediaPools::archive($key) . "\n";
+        } catch (\Throwable $e) {
+            fwrite(STDERR, $e->getMessage() . "\n"); exit(1);
+        }
         break;
 
     case 'pool:list':

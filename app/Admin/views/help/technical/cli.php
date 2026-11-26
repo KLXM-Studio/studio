@@ -78,6 +78,8 @@ $__cmds = [
     ],
     'Medien & Daten' => [
         ['pool:create <key> "Name"', 'Geteilten Medien-Pool anlegen'],
+        ['pool:detach <key> [--dry-run]', 'Pool-Dateien in die Mediathek dieser Website übernehmen (--site=…): Datei kopiert, Angaben übernommen, IDs und Verwendungen bleiben'],
+        ['pool:retire <key>', 'Pool stilllegen, wenn keine Website mehr verweist – nach storage/pools/_removed verschoben, nichts gelöscht'],
         ['pool:list', 'Pools und nutzende Websites'],
         ['media:thumbs [--missing|--all] [--pool=key]', 'Vorschaubilder für Videos erzeugen (nur mit ffmpeg): fehlende bzw. alle neu'],
         ['media:selftest', 'Selbsttest der Bildbearbeitung (Drehen, einbeschriebenes Rechteck, Entzerren, Format, Reihenfolge, GD)'],

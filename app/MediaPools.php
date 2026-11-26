@@ -298,4 +298,81 @@ final class MediaPools
             'alt' => '', 'variants_json' => '{}', 'created_at' => now(), 'pool_ref' => $ref,
         ]);
     }
+
+    /**
+     * Pool-Dateien dieser Website in die eigene Mediathek übernehmen („aus dem Pool lösen“): Datei wird in den Medienordner der Website
+     * kopiert, Angaben (Alt-Text, Titel, Nachweis, Tags, Fokus …) aus dem Pool übernommen, pool_ref geleert – die Medien-ID bleibt, alle
+     * Verwendungen bleiben gültig. Danach kann pool:retire den Pool entfernen, wenn keine Website ihn mehr nutzt.
+     * @return array{done: int, skipped: int, errors: list<string>}
+     */
+    public static function detach(string $key, bool $dry = false): array
+    {
+        $db = app()->db;
+        $rows = $db->fetchAll('SELECT id, pool_ref FROM media WHERE pool_ref LIKE ?', [$key . ':%']);
+        try {
+            $local = array_flip(array_column($db->fetchAll('PRAGMA table_info(media)') ?: [], 'name'));
+        } catch (\Throwable) {
+            $local = [];   // MySQL: Spalten aus einer Zeile
+        }
+        if (!$local) $local = array_flip(array_keys((array) ($db->fetch('SELECT * FROM media LIMIT 1') ?? [])));
+        $out = ['done' => 0, 'skipped' => 0, 'errors' => []];
+        foreach ($rows as $r) {
+            $pid = (int) substr((string) $r['pool_ref'], strlen($key) + 1);
+            $row = self::row($key, $pid);
+            if (!$row) { $out['skipped']++; $out['errors'][] = "#{$r['id']}: Datei im Pool fehlt"; continue; }
+            $src = self::mediaDir($key) . '/' . $row['file'];
+            $dst = site()->mediaDir() . '/' . $row['file'];
+            if (!is_file($src)) { $out['skipped']++; $out['errors'][] = "#{$r['id']}: Originaldatei fehlt ({$row['file']})"; continue; }
+            if ($dry) { $out['done']++; continue; }
+            if (!is_file($dst)) {
+                @mkdir(dirname($dst), 0775, true);
+                if (!@copy($src, $dst)) { $out['skipped']++; $out['errors'][] = "#{$r['id']}: Kopieren fehlgeschlagen"; continue; }
+            }
+            // Angaben aus dem Pool – nur Spalten, die es hier gibt; Bildvarianten entstehen neu bei Bedarf
+            $data = array_intersect_key($row, $local);
+            unset($data['id'], $data['pool_ref'], $data['deleted_at']);
+            $data['variants_json'] = '{}';
+            $data['pool_ref'] = null;
+            $db->update('media', $data, 'id = :id', ['id' => (int) $r['id']]);
+            Media::forget((int) $r['id']);
+            $out['done']++;
+        }
+        \Core\PageCache::clear();
+        return $out;
+    }
+
+    /** Websites, deren Mediathek noch auf Dateien dieses Pools verweist (pool_ref) – Grundlage für pool:retire */
+    public static function referencedBy(string $key): array
+    {
+        $out = [];
+        foreach (array_keys(Sites::all()) as $k) {
+            try {
+                $cfg = (array) Network\Network::config((string) $k)->get('db');
+                if (($cfg['driver'] ?? 'sqlite') === 'sqlite' && !is_file((string) ($cfg['path'] ?? ''))) continue;
+                $db = (string) $k === site()->key ? app()->db : new Database($cfg);
+                if ((int) $db->fetchValue('SELECT COUNT(*) FROM media WHERE pool_ref LIKE ?', [$key . ':%']) > 0) $out[] = (string) $k;
+            } catch (\Throwable) {
+                $out[] = (string) $k . ' (nicht lesbar)';
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Pool stilllegen, den keine Website mehr nutzt: Ordner (Datenbank + Dateien) nach storage/pools/_removed verschieben – nichts wird
+     * gelöscht, zurückholen durch Zurückverschieben. Bricht ab, solange eine Website noch verweist.
+     */
+    public static function archive(string $key): string
+    {
+        if (!is_file(self::dir($key) . '/pool.json')) throw new \InvalidArgumentException('Unbekannter Pool.');
+        if ($refs = self::referencedBy($key)) throw new \InvalidArgumentException('Noch verwendet von: ' . implode(', ', $refs) . ' – dort zuerst pool:detach.');
+        unset(self::$dbs[$key]);
+        $stamp = date('YmdHis');
+        @mkdir(self::dir('_removed'), 0770, true);
+        $to = self::dir('_removed') . '/' . $key . '-' . $stamp;
+        if (!@rename(self::dir($key), $to)) throw new \RuntimeException("Pool „{$key}“ konnte nicht verschoben werden.");
+        if (is_dir(self::mediaDir($key)) && !str_starts_with(self::mediaDir($key), $to)) @rename(self::mediaDir($key), $to . '/files-public');
+        self::forget();
+        return $to;
+    }
 }
