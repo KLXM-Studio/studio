@@ -1150,6 +1150,8 @@ return [
     'An diesen Tagen' => 'On these days',
     'Anzahl der Termine' => 'Number of occurrences',
     'Ausnahme hinzufügen' => 'Add exception',
+    'Am Datum' => 'On date',
+    'Nach Anzahl' => 'After count',
     'Ausnahme {date} entfernen' => 'Remove exception {date}',
     'Ausnahmen (fällt aus am)' => 'Exceptions (cancelled on)',
     'Auswahlfeld – zum Filtern und als Kategorie in Kalender-Apps.' => 'Choice field – for filtering and as category in calendar apps.',

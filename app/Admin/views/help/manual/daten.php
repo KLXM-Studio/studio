@@ -199,10 +199,10 @@
   <p>Beispiele: Mobilnummer „Redaktion entscheidet“ (Website aus, Visitenkarte an); interne Notiz „Nie öffentlich“; „Vita“ oder „Über mich“ „Immer öffentlich“ nur mit Haken bei Website – solche Felder erscheinen auf der Detailseite, gehen aber nie in Visitenkarten, Kalender-Dateien oder Adressbuch- und Kalender-Apps. In der Verwaltung, über die Schnittstelle und in den Apps der Redaktion sehen Berechtigte alle übrigen Angaben weiter.</p>
 
   <h3 id="oeffentlich-erkennen">Auf einen Blick: Was ist öffentlich?</h3>
-  <p>Im Formular eines Eintrags – in der Verwaltung und in der Seitenleiste „Eintrag bearbeiten“ auf der Website – trägt <b>jedes Feld und jede einzelne Angabe dasselbe Merkmal</b>, immer an derselben Stelle: im Feldkopf rechts neben der Beschriftung (nur bei sehr schmalen Feldern darunter) bzw. rechts in der Zeile einer Nummer, E-Mail-Adresse oder Anschrift.</p>
+  <p>Im Formular eines Eintrags – in der Verwaltung und in der Seitenleiste „Eintrag bearbeiten“ auf der Website – sind <b>nur Abweichungen markiert</b>: Öffentlich ist der Normalfall und braucht keinen Hinweis (der Kasten oben zählt die öffentlichen Felder auf). Das Merkmal steht im Feldkopf rechts neben der Beschriftung bzw. rechts in der Zeile einer Nummer, E-Mail-Adresse oder Anschrift.</p>
   <ul>
-    <li><b>Kleine Weltkugel</b> (ohne Text) – das Feld ist immer öffentlich, überall. Das ist der Normalfall; der Mauszeiger auf dem Symbol nennt es, und der Kasten oben zählt diese Felder auf.</li>
-    <li><b>Weltkugel „Öffentlich“</b> (grün, mit Text) – öffentlich, aber nicht überall oder nach Entscheidung der Redaktion. Haben Visitenkarte oder Kalender-Datei für die Tabelle eine Bedeutung, steht dahinter, wohin genau: „Öffentlich · Website“.</li>
+    <li><b>Kleine Weltkugel</b> (ohne Text) – nur bei Feldern, über die die Redaktion je Eintrag entscheidet, und gerade öffentlich: ein Klick öffnet das Menü zum Ändern.</li>
+    <li><b>„Öffentlich“</b> (grün) – in den Zeilen von Telefon, E-Mail, Adresse und Web, wo jede Angabe einzeln freigegeben wird.</li>
     <li><b>Schloss „Intern“</b> (grau) – die Angabe sieht nur die Redaktion. Interne Felder sind zusätzlich leicht grau hinterlegt, damit niemand aus Versehen Privates in ein öffentliches Feld schreibt.</li>
     <li><b>Nur Ort</b> – bei Adressen: auf der Website steht nur der Ort, ohne Straße und Postleitzahl.</li>
   </ul>

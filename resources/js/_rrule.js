@@ -107,11 +107,10 @@ export function initRRule(scope = document) {
     const id = 'rr' + (++uid);
     const opt = (v, l, sel) => `<option value="${v}"${sel ? ' selected' : ''}>${esc(l)}</option>`;
     ui.innerHTML = `
-      <div class="rr-row">
-        <div class="rr-f"><label for="${id}-freq">${esc(t('Wiederholen'))}</label>
-          <select id="${id}-freq" data-rr="freq">${opt('', t('nicht (einmalig)'))}${Object.entries(FREQ).map(([k, [l]]) => opt(k, l)).join('')}</select></div>
-        <div class="rr-f" data-rr-when="any"><label for="${id}-int">${esc(t('Intervall: alle'))}</label>
-          <span class="rr-inline"><input id="${id}-int" type="number" min="1" max="99" inputmode="numeric" data-rr="interval"> <span data-rr-unit></span></span></div>
+      <div class="rr-head">
+        <select id="${id}-freq" data-rr="freq" aria-label="${esc(t('Wiederholen'))}">${opt('', t('nicht (einmalig)'))}${Object.entries(FREQ).map(([k, [l]]) => opt(k, l)).join('')}</select>
+        <span class="rr-every" data-rr-when="any"><label for="${id}-int">${esc(t('alle'))}</label>
+          <input id="${id}-int" type="number" min="1" max="99" inputmode="numeric" data-rr="interval" class="rr-num"> <span data-rr-unit></span></span>
       </div>
       <fieldset class="rr-set" data-rr-when="WEEKLY"><legend>${esc(t('An diesen Tagen'))}</legend><div class="rr-days">
         ${DAYS.map((d, i) => `<label class="rr-day"><input type="checkbox" value="${d}" data-rr="byday"><span><abbr title="${esc(dayName(i))}">${esc(dayName(i).slice(0, 2))}</abbr></span></label>`).join('')}
@@ -123,18 +122,22 @@ export function initRRule(scope = document) {
         <select data-rr="nth" aria-label="${esc(t('Welche Woche'))}">${Object.entries(NTH).map(([k, l]) => opt(k, l)).join('')}</select>
         <select data-rr="nthday" aria-label="${esc(t('Wochentag'))}">${DAYS.map((d, i) => opt(d, dayName(i))).join('')}</select>
       </fieldset>
-      <fieldset class="rr-set" data-rr-when="any"><legend>${esc(t('Endet'))}</legend>
-        <label class="f-check"><input type="radio" name="${id}-end" value="never" data-rr="end"> <span>${esc(t('nie'))}</span></label>
-        <span class="rr-inline"><label class="f-check"><input type="radio" name="${id}-end" value="until" data-rr="end"> <span>${esc(t('am'))}</span></label>
-          <input type="date" data-rr="until" aria-label="${esc(t('Enddatum der Wiederholung'))}"></span>
-        <span class="rr-inline"><label class="f-check"><input type="radio" name="${id}-end" value="count" data-rr="end"> <span>${esc(t('nach'))}</span></label>
-          <input type="number" min="1" max="1000" inputmode="numeric" data-rr="count" aria-label="${esc(t('Anzahl der Termine'))}" class="rr-num"> ${esc(t('Terminen'))}</span>
+      <div class="rr-grid" data-rr-when="any">
+      <fieldset class="rr-set rr-end"><legend>${esc(t('Endet'))}</legend>
+        <span class="rr-seg">
+          <label><input type="radio" name="${id}-end" value="never" data-rr="end"><span>${esc(t('Nie'))}</span></label>
+          <label><input type="radio" name="${id}-end" value="until" data-rr="end"><span>${esc(t('Am Datum'))}</span></label>
+          <label><input type="radio" name="${id}-end" value="count" data-rr="end"><span>${esc(t('Nach Anzahl'))}</span></label>
+        </span>
+        <span class="rr-endval" data-rr-endval="until"><input type="date" data-rr="until" aria-label="${esc(t('Enddatum der Wiederholung'))}"></span>
+        <span class="rr-endval" data-rr-endval="count"><input type="number" min="1" max="1000" inputmode="numeric" data-rr="count" aria-label="${esc(t('Anzahl der Termine'))}" class="rr-num"> ${esc(t('Terminen'))}</span>
       </fieldset>
-      <fieldset class="rr-set" data-rr-when="any"><legend>${esc(t('Ausnahmen (fällt aus am)'))}</legend>
+      <fieldset class="rr-set rr-exset"><legend>${esc(t('Ausnahmen (fällt aus am)'))}</legend>
+        <span class="rr-exadd"><input type="date" data-rr-exnew aria-label="${esc(t('Datum der Ausnahme'))}">
+          <button type="button" class="adm-btn adm-btn--small" data-rr-exadd>${esc(t('Hinzufügen'))}</button></span>
         <ul class="rr-ex" data-rr-ex role="list"></ul>
-        <span class="rr-inline"><input type="date" data-rr-exnew aria-label="${esc(t('Datum der Ausnahme'))}">
-          <button type="button" class="adm-btn adm-btn--small" data-rr-exadd>${esc(t('Ausnahme hinzufügen'))}</button></span>
       </fieldset>
+      </div>
       <p class="rr-note" data-rr-note hidden>${esc(t('Diese Regel lässt sich nur unter „Erweitert“ bearbeiten.'))}</p>
       <p class="rr-summary" data-rr-summary aria-live="polite"></p>`;
     ui.hidden = false;
@@ -156,6 +159,7 @@ export function initRRule(scope = document) {
       q('[data-rr=count]').value = s.count;
       q('[data-rr=until]').disabled = s.end !== 'until';
       q('[data-rr=count]').disabled = s.end !== 'count';
+      qa('[data-rr-endval]').forEach(el => { el.hidden = el.dataset.rrEndval !== s.end; });   // nur das Feld der gewählten Option
       q('[data-rr=monthday]').disabled = s.monthMode !== 'day';
       q('[data-rr=nth]').disabled = q('[data-rr=nthday]').disabled = s.monthMode !== 'nth';
       qa('[data-rr-when]').forEach(el => { const w = el.dataset.rrWhen; el.hidden = !on || !s.freq || (w !== 'any' && w !== s.freq); });

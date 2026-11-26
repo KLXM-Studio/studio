@@ -1288,6 +1288,28 @@ body.adm:has(.adm-env){padding-bottom:26px}
 .rr-adv textarea{width:100%;font-family:var(--adm-mono);font-size:13px}
 /* Vorschau „Nächste Termine“ (Serien, _rrule.js) */
 .rr-preview{padding:12px 14px;border-radius:8px;background:var(--adm-fill)}
+/* Wiederholung, Aufbau 2026-11: Kopfzeile „[täglich] alle [1] Tag(e)“, Endet als Umschalter, Ausnahmen daneben, Zusammenfassung + nächste Termine als eine Karte */
+.rr{gap:16px}
+.rr-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.rr-every{display:inline-flex;align-items:center;gap:8px;color:var(--adm-t2);font-weight:600}
+.rr-every[hidden]{display:none}
+.f.f--rrule .rr input.rr-num[type=number]:not(#\#){width:5.5em;flex:none}
+.rr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:16px 24px;align-items:start}
+.rr-grid[hidden]{display:none}
+.rr-grid .rr-set{display:grid;gap:8px;justify-items:start}
+.rr-seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:10px;background:var(--adm-fill)}
+.rr-seg label{position:relative;display:block;cursor:pointer}
+.f.f--rrule .rr .rr-seg input[type=radio]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.rr-seg span{display:block;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--adm-t2);white-space:nowrap}
+.rr-seg input:checked+span{background:var(--adm-surface);color:var(--adm-ink);box-shadow:0 1px 2px rgba(0,0,0,.14),0 0 0 1px var(--adm-line)}
+.rr-seg input:focus-visible+span{outline:2px solid var(--adm-a);outline-offset:1px}
+.rr-endval{display:inline-flex;align-items:center;gap:8px}
+.rr-endval[hidden]{display:none}
+.rr-exadd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f.f--rrule .rr :is(.rr-endval,.rr-exadd) input:not([type=hidden]):not(.rr-num){width:10.5rem;flex:none}
+.rr-summary{display:flex;align-items:center;gap:8px}
+.rr-summary:has(+.rr-preview:not([hidden])){border-radius:8px 8px 0 0}
+.rr-summary+.rr-preview{margin-top:-16px;border-radius:0 0 8px 8px;background:color-mix(in srgb,var(--adm-accent-bg) 45%,var(--adm-surface));border:1px solid var(--adm-accent-bg);border-top:0}
 .rr-preview[hidden]{display:none}
 .rr-preview__title{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--adm-t2)}
 .rr-preview__list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 20px}
@@ -3867,6 +3889,11 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .f-exp--item:has([data-expose-item]:checked:not([value="0"]))>.f-exp__btn{border-color:color-mix(in srgb,var(--adm-ok) 45%,transparent);background:var(--adm-ok-bg);color:var(--adm-ok)}
 .f-exp__on,.f-exp__ico--on,.f-exp__st{display:none}
 .f-exp--editor:has([data-expose-target]:checked) .f-exp__mark :is(.f-exp__on,.f-exp__ico--on){display:inline-flex}
+/* Redaktion entscheidet, Feld ist öffentlich (der Normalfall): nur ein dezentes Symbol, das das Menü öffnet – „Intern“ bleibt als Etikett sichtbar */
+.f-exp--editor:has([data-expose-target]:checked) .f-exp__menu:not([open])>.f-exp__btn{width:26px;min-height:26px;padding:0;justify-content:center;border-color:transparent;background:none;color:var(--adm-t3)}
+.f-exp--editor:has([data-expose-target]:checked) .f-exp__menu:not([open])>.f-exp__btn:hover{background:var(--adm-fill);color:var(--adm-ok)}
+.f-exp--editor:has([data-expose-target]:checked) .f-exp__menu:not([open]) .f-exp__btn :is(.f-exp__on,.f-exp__caret){display:none}
+.f-exp--editor:has([data-expose-target]:checked){--exp-w:2rem}
 .f-exp--editor:has([data-expose-target]:checked) .f-exp__mark :is(.f-exp__off,.f-exp__ico--off){display:none}
 .f-exp--item:has([data-expose-item]:checked:not([value="0"])) .f-exp__ico--on{display:inline-flex}
 .f-exp--item:has([data-expose-item]:checked:not([value="0"])) .f-exp__ico--off{display:none}

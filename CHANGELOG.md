@@ -59,6 +59,10 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Bearbeiten-Modus: Einstiege mit Hintergrundvideo zeigen ein Standbild aus dem Video (statt einer leeren Fläche); der Hinweis „Slider mit n Folien“ ist gestaltet.
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
+### Formulare: Öffentlich/Intern und Wiederholung
+- Felder tragen nur noch ein Merkmal, wenn sie vom Normalfall abweichen: „Intern“ (Schloss) bzw. bei „Redaktion entscheidet“ ein dezentes Symbol; feste öffentliche Felder ohne Globus/„Öffentlich · Website“. Zeilen von Kontaktangaben behalten ihren Schalter.
+- Wiederholung neu gegliedert: „[wöchentlich] alle [1] Woche(n)“ in einer Zeile, „Endet“ als Umschalter (Nie / Am Datum / Nach Anzahl) mit nur dem passenden Feld, Ausnahmen daneben, Zusammenfassung und nächste Termine als eine Karte.
+
 ### Einträge auf der Website bearbeiten
 - Die Seitenleiste „Eintrag bearbeiten“ bietet jetzt dieselben Funktionen wie die Verwaltung: **Zeitplan** (Online ab / Offline ab, Teil `data/_schedule.php`) und **Auf der Startseite hervorheben** auch beim Anlegen.
 
