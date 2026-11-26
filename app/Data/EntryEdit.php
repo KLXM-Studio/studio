@@ -199,7 +199,7 @@ final class EntryEdit
             'panel' => __('Eintrag bearbeiten'),
             'format' => __('Formatierung'),
             'mediaPick' => __('Bild oder Video wählen …'),
-            'mediaFx' => __('Anpassen'), 'mediaFit' => __('Rahmen'), 'mediaCrop' => __('Zuschneiden'),
+            'mediaFx' => __('Anpassen'), 'mediaFit' => __('Rahmen'), 'mediaCrop' => __('Zuschneiden'), 'mediaEdit' => __('Bild bearbeiten'),
             'mediaFxHint' => __('Effekte, Helligkeit, Kontrast – gilt für alle Verwendungen des Bildes'),
             'mediaFitHint' => __('Darstellung im Rahmen – gilt für alle Verwendungen des Bildes'),
             'mediaRemove' => __('Medium entfernen'),

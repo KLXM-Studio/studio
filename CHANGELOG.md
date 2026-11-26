@@ -10,6 +10,9 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Bildfunktionen überall gleich
+- Bildfelder in Seitenleisten und Formularen bieten dieselben Funktionen wie das Bild auf der Seite: Hochladen, Zuschneiden, Bild bearbeiten (Drehen, Spiegeln, Ausrichten, Entzerren), Anpassen, Rahmen. Am Bild auf der Seite und in „Eintrag bearbeiten“ neu: „Bild bearbeiten“. Anpassen/Rahmen gelten im Seiten-Editor für die Einbindung im Block, sonst für alle Verwendungen.
+
 ### Importieren und Exportieren (CSV, Excel)
 - Jede Datentabelle: Export als CSV (Semikolon oder Komma) oder XLSX mit Spaltenwahl, aktuelle Ansicht bzw. gewählte Zeilen; Import mit Spaltenzuordnung, Probelauf (Fehler je Zeile), Modus neu/aktualisieren/beides, Abgleich über ID, Adresse oder Feld, Sicherung vorher, Protokoll.
 - Eigene Rechte „Einträge importieren“ / „Einträge exportieren“ (`data.import`, `data.export`, Standard: Administration) – gelten auch für vCard/ICS und den Glossar-Import; ohne Recht keine Knöpfe.

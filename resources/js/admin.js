@@ -478,6 +478,7 @@ function initMedia(scope = d) {
   $$('.media-field', scope).forEach(mf => {
     if (mf._init) return; mf._init = true;
     const input = $('input[type=hidden]', mf), prev = $('.media-field-preview', mf);
+    let syncTools = () => {};   // Bildfunktionen (unten) – bei Dateifeldern ohne
     window.CMSMedia?.lazyThumbs?.(prev);   // Video ohne Vorschaubild (Fields::mediaPreview): beim Sichtbarwerden erzeugen
     $('[data-media-pick]', mf).addEventListener('click', async () => {
       const m = await openMediaPicker(mf.dataset.accept);
@@ -493,6 +494,40 @@ function initMedia(scope = d) {
     $('[data-media-clear]', mf).addEventListener('click', () => {
       input.value = ''; prev.innerHTML = '<span class="media-empty">Keine Datei gewählt</span>';
       input.dispatchEvent(new Event('input', { bubbles: true }));
+      syncTools();
+    });
+    // Gleiche Bildfunktionen wie am Bild auf der Seite (_media.js): Hochladen, Zuschneiden, Bild bearbeiten, Anpassen, Rahmen
+    if (mf.dataset.accept === 'file' || !window.CMSMedia) return;
+    const tools = d.createElement('span');
+    tools.className = 'mf-tools';
+    tools.innerHTML = `<button type="button" class="btn btn--small btn--ghost" data-mf="up">${esc(t('Hochladen …'))}</button>`
+      + `<details class="mf-more"><summary class="btn btn--small btn--ghost">${esc(t('Bild bearbeiten'))}</summary><span class="mf-more__pop" role="group">`
+      + `<button type="button" data-mf="crop">${esc(t('Zuschneiden …'))}</button><button type="button" data-mf="edit">${esc(t('Drehen, Spiegeln, Ausrichten …'))}</button>`
+      + `<button type="button" data-mf="fx">${esc(t('Anpassen …'))}</button><button type="button" data-mf="fit">${esc(t('Rahmen …'))}</button></span></details>`;
+    $('[data-media-clear]', mf).after(tools);
+    const more = $('.mf-more', tools);
+    syncTools = () => { more.hidden = !input.value || !$('img', prev); };
+    syncTools();
+    input.addEventListener('input', syncTools);
+    // Bild dieses Blocks auf der Seite (Seiten-Editor): Anpassen/Rahmen gelten dann für diese Einbindung, sonst für alle Verwendungen
+    const onPage = id => d.querySelector(`.cms-block.is-selected img[data-media-id="${CSS.escape(String(id))}"]`) || null;
+    tools.addEventListener('click', async e => {
+      const b = e.target.closest('[data-mf]'); if (!b) return;
+      more.open = false;
+      const id = +input.value, M = window.CMSMedia;
+      if (b.dataset.mf === 'up') {
+        const m = await M.pick(mf.dataset.accept, { upload: true }); if (!m) return;
+        input.value = m.id;
+        prev.innerHTML = m.thumb ? `<img src="${esc(m.thumb)}" alt="" width="120"><span>${esc(m.alt || m.display)}</span>` : `<span class="media-file">${esc(m.display)}</span>`;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+      }
+      if (!id) return;
+      const im = onPage(id);
+      if (b.dataset.mf === 'crop') await M.cropAt(id, im?.dataset.ratio || '');
+      else if (b.dataset.mf === 'edit') await M.editAt(id);
+      else if (b.dataset.mf === 'fx') await (im && M.inline?.adjust ? M.inline.adjust(im) : M.adjustAll(id));
+      else if (b.dataset.mf === 'fit') await (im && M.inline?.fit ? M.inline.fit(im) : M.fitAll(id));
     });
   });
 }

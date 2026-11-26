@@ -1774,9 +1774,10 @@ function initInlineCrop() {
   bar.innerHTML = `<button type="button" class="cms-cropbtn cms-imgtools__btn" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(t('Bild bearbeiten'))}" title="${esc(t('Bild bearbeiten'))}">${ico('image')}${ico('caret-down')}</button>`
     + `<div class="cms-imgtools__menu" role="menu" aria-label="${esc(t('Bild bearbeiten'))}" hidden>`
     + item('data-fx', 'sliders-horizontal', 'Anpassen') + item('data-fit', 'image', 'Rahmen') + item('data-crop', 'crop', 'Zuschneiden')
+    + item('data-ie', 'pencil-simple', 'Bild bearbeiten')
     + item('data-swap', 'arrows-clockwise', 'Tauschen') + item('data-swap-up', 'upload-simple', 'Hochladen') + '</div>';
   box().append(bar);   // Shadow-DOM-Ebene: Kit-Regeln für button wirken nicht
-  const fxBtn = $('[data-fx]', bar), cropBtn = $('[data-crop]', bar), fitBtn = $('[data-fit]', bar), swapBtn = $('[data-swap]', bar), upBtn = $('[data-swap-up]', bar);
+  const fxBtn = $('[data-fx]', bar), cropBtn = $('[data-crop]', bar), fitBtn = $('[data-fit]', bar), swapBtn = $('[data-swap]', bar), upBtn = $('[data-swap-up]', bar), ieBtn = $('[data-ie]', bar);
   const menuBtn = $('.cms-imgtools__btn', bar), menu = $('.cms-imgtools__menu', bar);
   const items = () => $$('.cms-imgtools__item', menu).filter(b => !b.hidden);
   const closeMenu = (focus = false) => { if (menu.hidden) return; menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); if (focus) menuBtn.focus(); };
@@ -1823,6 +1824,7 @@ function initInlineCrop() {
     // Platzhalter ohne Bild: nur „Bild wählen“ / „Hochladen“ (Zuordnung zum leeren Bildfeld: CMSEditor.swap.empty)
     const ph = !im.matches('img');
     cropBtn.hidden = ph || !im.dataset.ratio;
+    ieBtn.hidden = ph || !im.dataset.mediaId;   // Drehen, Spiegeln, Ausrichten, Entzerren – gilt für alle Verwendungen
     fxBtn.hidden = ph || !im.closest('.cms-block__preview') || !window.CMSEditor?.fx;
     fitBtn.hidden = fxBtn.hidden || !window.CMSEditor?.fit;
     // Tauschen/Hochladen: nur Bilder, die einem Bildfeld des Blocks gehören (nicht aus Datentabellen oder zentral gepflegt)
@@ -1931,16 +1933,41 @@ function initInlineCrop() {
     if (v !== undefined) toast(t('Übernommen – mit „Speichern“ sichern'));
   };
   // Bild im Rahmen je Einbindung (data._fit des Blocks über window.CMSEditor.fit, resources/js/editor.js)
-  fitBtn.addEventListener('click', async e => {
-    e.preventDefault(); e.stopPropagation();
-    if (!target) return;
-    const im = target;
-    bar.hidden = true;
+  const fitHere = async im => {
     const place = window.CMSEditor?.fit?.target(im);
     // Nicht zuordenbar (z. B. Bild aus einem Eintrag in der Detailvorlage): Standard des Bildes wie in der Mediathek
     if (!place) { await window.CMSMedia.fitAll(+im.dataset.mediaId); return; }
     const v = await local(() => place.open());
     if (v !== undefined) toast(t('Übernommen – mit „Speichern“ sichern'));
+  };
+  fitBtn.addEventListener('click', async e => {
+    e.preventDefault(); e.stopPropagation();
+    if (!target) return;
+    const im = target;
+    bar.hidden = true;
+    await fitHere(im);
+  });
+  ieBtn.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (!target) return;
+    bar.hidden = true;
+    editAt(+target.dataset.mediaId);
+  });
+  // Seitenleiste „Block“ (admin.js initMedia): dieselben Funktionen für die Einbindung dieses Blocks wie am Bild auf der Seite
+  inlineApi.adjust = im => local(() => adjustHere(im, +im.dataset.mediaId));
+  inlineApi.fit = im => fitHere(im);
+}
+const inlineApi = {};
+
+/** Bild bearbeiten (Core\ImageEdit): Drehen, Spiegeln, Ausrichten, Entzerren, Zuschneiden – gilt für alle Verwendungen, speichert sofort */
+async function editAt(id, tool = 'rotate') {
+  return local(async () => {
+    let m;
+    try { m = await api.detail(id); } catch (ex) { toast(ex.message); return undefined; }
+    if (m.editable) { toast(m.editable); return undefined; }
+    const item = await editImage(m, { tool, engine: m.edit_engine, save: edit => api.edit(m.id, edit) });
+    if (item) toast(item.edit ? t('Bearbeitung gespeichert – gilt für alle Verwendungen (nach dem Neuladen sichtbar).') : t('Bearbeitung entfernt – Original'));
+    return item;
   });
 }
 
@@ -1976,6 +2003,7 @@ window.CMSMedia = { pick, pickMany: (k, sel) => local(() => pickMany(k, sel)), p
     return v;
   }),
   cropAt: (id, ratio) => local(() => crop(id, ratio, (r, res) => refreshPictures(id, r, res.sources), { only: ratio })),
+  editAt, inline: inlineApi,
 };
 const root = $('[data-media-library]');
 if (root) {
