@@ -10,7 +10,7 @@ if (\Core\Data\Featured::enabled($t) && can('data.publish', $t['handle'])):
       <div class="dt-featured">
         <input type="hidden" name="_featured_form" value="1">
         <div class="f f--bool"><label class="f-check f-check--switch"><input type="checkbox" name="<?= \Core\Data\Featured::COL ?>" value="1" role="switch"<?= $fOn ? ' checked' : '' ?> data-featured-toggle> <span><?= icon('star') ?> <?= e(__('Auf der Startseite hervorheben')) ?></span></label>
-          <p class="f-help"><?= e(__('Erscheint im Block „Highlights“ und als Folie eines Einstiegs mit Slider, der diese Tabelle nutzt.')) ?><?php if (($fl = \Core\Data\Featured::label($values)) !== '' && !\Core\Data\Featured::active($values)): ?> <strong><?= e($fl) ?></strong><?php endif; ?></p></div>
+          <p class="f-help"><?= e(__('Erscheint vorn auf der Startseite – im wechselnden Einstiegsbild und bei den hervorgehobenen Beiträgen, sofern die Startseite sie zeigt.')) ?><?php if (($fl = \Core\Data\Featured::label($values)) !== '' && !\Core\Data\Featured::active($values)): ?> <strong><?= e($fl) ?></strong><?php endif; ?></p></div>
         <div class="dt-featured__more" data-featured-more<?= $fOn || isset($errors[\Core\Data\Featured::UNTIL]) || isset($errors[\Core\Data\Featured::ORDER]) ? '' : ' hidden' ?>>
         <div class="f<?= isset($errors[\Core\Data\Featured::ORDER]) ? ' f--error' : '' ?>"><label for="f-featured-order"><?= e(__('Reihenfolge (optional)')) ?></label>
           <input type="number" id="f-featured-order" name="<?= \Core\Data\Featured::ORDER ?>" value="<?= e($fOrder) ?>" step="1" aria-describedby="f-featured-order-h"><?= $fErr(\Core\Data\Featured::ORDER) ?>

@@ -10136,4 +10136,5 @@ return [
     '„{title}“ nicht mehr hervorheben' => 'Stop featuring “{title}”',
     '„{title}“ weiter nach hinten' => 'Move “{title}” back',
     '„{title}“ weiter nach vorne' => 'Move “{title}” forward',
+    'Erscheint vorn auf der Startseite – im wechselnden Einstiegsbild und bei den hervorgehobenen Beiträgen, sofern die Startseite sie zeigt.' => 'Appears up front on the home page – in the rotating hero image and among the featured posts, if the home page shows them.',
 ];
