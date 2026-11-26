@@ -448,7 +448,7 @@ final class Entries
                 $target = Tables::findContent($f['target'] ?? '');
                 $def['type'] = $f['type'] === 'relation' ? 'select' : 'multiselect';
                 $def['options'] = $target ? self::titles($target) : [];
-                // Ziel mit Datum (Kalender): Datum in der Auswahl, kommende zuerst, vergangene erst auf Wunsch (Fields: 'past')
+                // Ziel mit Datum (Kalender; ohne Ende zählt der Tag des Beginns): Datum in der Auswahl, kommende zuerst, vergangene erst auf Wunsch (Fields: 'past')
                 if ($target && Calendar::enabled($target)) [$def['options'], $def['past']] = self::calendarChoices($target);
                 if ($target) {
                     $def['relation'] = ['table' => $target['name'], 'singular' => $target['singular'], 'create' => url('/admin/data/' . $target['handle'] . '/quick'),
@@ -578,7 +578,7 @@ final class Entries
         foreach (self::query($table, ['status' => 'all', 'limit' => 1000, 'source' => 'all']) as $e) {
             $span = Calendar::span($table, $e);
             $label = self::title($table, $e) . ($span ? ' · ' . fmt()->date($span['start']->format('Y-m-d')) : '');
-            $end = $span ? ($span['has_end'] ? $span['end'] : $span['start']->modify('+1 day')) : null;
+            $end = $span ? ($span['has_end'] ? $span['end'] : $span['start']->setTime(0, 0)->modify('+1 day')) : null;
             $row = [(int) $e['id'], $label, $span ? $span['start']->getTimestamp() : 0];
             if ($end === null || $end > $now) $up[] = $row; else $down[] = $row;
         }

@@ -129,7 +129,7 @@ function rowHtml(it) {
   const k = key(it.table, it.id);
   return `<li role="option" id="cms-ep-${esc(k.replace(':', '-'))}" class="lp__opt ep__opt${it.past ? ' is-past' : ''}" data-key="${esc(k)}" aria-selected="${st.sel.has(k) ? 'true' : 'false'}">`
     + (st.multiple ? '<span class="pgp__cb ep__cb" aria-hidden="true"></span>' : '')
-    + (it.thumb ? `<img class="lp__thumb" src="${esc(it.thumb)}" alt="" loading="lazy">` : '<span class="lp__thumb ep__nothumb" aria-hidden="true"></span>')
+    + (it.thumb ? `<img class="lp__thumb" src="${esc(it.thumb)}" alt="" loading="lazy">` : '')
     + `<span class="lp__txt"><span class="lp__label">${esc(it.title)}</span>${it.sub ? `<span class="lp__meta">${esc(it.sub)}</span>` : ''}</span>`
     + (it.status === 'draft' ? `<span class="lp__badge lp__badge--draft">${esc(t('Entwurf'))}</span>` : '') + '</li>';
 }

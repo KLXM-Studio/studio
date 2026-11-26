@@ -15,7 +15,8 @@
 .ep__opt[aria-selected=true] .pgp__cb{background:var(--adm-a);border-color:var(--adm-a)}
 .ep__opt[aria-selected=true] .pgp__cb::after{content:"";width:10px;height:6px;margin-top:-2px;border:2px solid var(--adm-on-a,#fff);border-top:0;border-right:0;transform:rotate(-45deg)}
 .ep__opt.is-past .lp__label{color:var(--adm-t2)}
-.ep__nothumb{display:block}
+.ep__opt .lp__label{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;line-height:1.3}
+.ep__opt .lp__badge{align-self:flex-start;margin-top:2px}
 .ep__more{justify-self:center}
 .ep__prev{position:sticky;top:0;display:grid;gap:6px;align-content:start;min-height:160px;padding:12px;border-radius:8px;background:var(--adm-fill,#F2F2F4);font-size:14px;overflow-wrap:anywhere}
 .ep__prev .lp__empty{padding:24px 6px}

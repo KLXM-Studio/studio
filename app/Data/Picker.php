@@ -71,7 +71,7 @@ final class Picker
                     if (!in_array($v, array_map('strval', $vals), true)) continue 2;
                 }
                 if ($cal) {
-                    $end = $span ? ($span['has_end'] ? $span['end'] : $span['start']->modify('+1 day')) : null;
+                    $end = $span ? ($span['has_end'] ? $span['end'] : $span['start']->setTime(0, 0)->modify('+1 day')) : null;
                     $past = $end !== null && $end <= $today;
                     if ($when === 'upcoming' && $past) continue;
                     if ($when === 'past' && !$past) continue;
@@ -116,7 +116,7 @@ final class Picker
         }
         $past = false;
         if ($span) {
-            $end = $span['has_end'] ? $span['end'] : $span['start']->modify('+1 day');
+            $end = $span['has_end'] ? $span['end'] : $span['start']->setTime(0, 0)->modify('+1 day');
             $past = $end <= new \DateTimeImmutable('today');
         }
         $st = (string) ($e['status'] ?? 'published');
