@@ -25,6 +25,19 @@ final class BlockGuardSelfTest
         $ok = 0;
         $fails = [];
         $eq = Testing\Check::eq($ok, $fails, 'Blöcke – ');
+        // „nur bearbeiten“ (roles.blocks_edit_json): bestehende ändern ja, neue einfügen nein
+        $ro = ['key' => 'qa', 'permissions' => ['pages.edit'], 'blocks' => ['qa_a'], 'blocks_edit' => ['qa_b']];
+        $eq('nur bearbeiten: Block ändern erlaubt', BlockGuard::protection($ro, ['type' => 'qa_b']), null);
+        $eq('nur bearbeiten: andere Art gesperrt', BlockGuard::protection($ro, ['type' => 'qa_c']), 'type');
+        // Mehrere Rollen je Konto (Permissions::effective): Rechte addieren sich, Hauptrolle bleibt Schlüssel
+        $ar = Permissions::role('author'); $er = Permissions::role('editor');
+        if ($ar && $er) {
+            $eff = Permissions::effective(['role' => 'author', 'roles_extra' => json_encode(['editor', 'network', 'gibtsnicht'])]);
+            $eq('Zusatzrolle: Rechte vereinigt', array_values(array_diff($er['permissions'], (array) ($eff['permissions'] ?? []))), []);
+            $eq('Zusatzrolle: Schlüssel der Hauptrolle', $eff['key'] ?? null, 'author');
+            $eq('Zusatzrolle: ohne Netzwerk/Unbekanntes', $eff['extra'] ?? null, ['editor']);
+            $eq('Ohne Zusatzrolle unverändert', Permissions::effective(['role' => 'author'])['permissions'] ?? null, $ar['permissions']);
+        }
         $theme = app()->theme;
         // Zwei einfache, erlaubte Blockarten mit Textfeld: A (erlaubt) und B (für die eingeschränkte Rolle verboten)
         $pick = [];

@@ -395,6 +395,9 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-addpop__ico svg{width:18px;height:18px}
 .cms-addpop__txt{display:flex;flex-direction:column;min-width:0}
 .cms-addpop__desc{display:none;font-size:12px;line-height:1.35;color:var(--adm-t3,#5A6461)}
+/* Liste: je Block eine Zeile Beschreibung (Prüfbericht) – gekürzt, voll in der Vorschau */
+.cms-addpop[data-view=list] .cms-addpop__desc{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.cms-addpop[data-view=list] .cms-addpop__txt{min-width:0}
 .cms-addpop__item--preset .cms-addpop__desc{display:block;font-size:11.5px}
 .cms-addpop__pv{display:none}
 .cms-addpop__none{margin:4px 6px;color:var(--adm-t3,#5A6461)}

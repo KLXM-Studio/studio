@@ -483,6 +483,11 @@ final class Entries
     public static function formSchema(array $table, ?array $e = null): array
     {
         $data = array_column(self::schema($table, $e), null, 'name');
+        // Verknüpfung (ein Eintrag) auf eine Tabelle ohne Einträge und ohne Wert: im Formular ausblenden – eine leere Auswahl verwirrt
+        // (z. B. „Ort aus der Liste“ neben Ort und Standort); sobald die Zieltabelle Einträge hat, erscheint das Feld wieder
+        foreach ($data as $k => $df) {
+            if (($df['type'] ?? '') === 'select' && !empty($df['relation']) && empty($df['options']) && ($e === null || ($e[$k] ?? null) === null || ($e[$k] ?? '') === '')) unset($data[$k]);
+        }
         // Merkmal „Öffentlich“/„Intern“ an jedem Datenfeld (Core\Fields::renderExpose, Regeln aus Exposure::fieldReach): fest bei
         // „immer“/„nie“, umschaltbar bei „Redaktion entscheidet“. Nicht in Eingängen und nicht am Schalter „Auf der Website zeigen“.
         if (!Tables::isInbox($table)) {

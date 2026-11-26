@@ -217,7 +217,7 @@ ob_start();
 <?php
 $buf[$cur] = ($buf[$cur] ?? '') . ob_get_clean();   // letzten Bereich abschließen – kein neuer Puffer (sonst rutscht der Seitenkopf vor das Layout)
 $secs = ['profil' => [__('Profil'), 'user-circle'], 'sicherheit' => [__('Anmeldung & Sicherheit'), 'shield-check'], 'darstellung' => [__('Darstellung'), 'paint-brush'],
-    'mitteilungen' => [__('Mitteilungen'), 'bell-ringing'], 'favoriten' => [__('Favoriten'), 'star'], 'erweiterungen' => [__('Weitere'), 'puzzle-piece']];
+    'mitteilungen' => [__('Benachrichtigungen'), 'bell-ringing'], 'favoriten' => [__('Favoriten'), 'star'], 'erweiterungen' => [__('Weitere'), 'puzzle-piece']];
 $sections = [];
 foreach ($secs as $k => [$label, $ico]) {
     if (trim(strip_tags((string) ($buf[$k] ?? ''), '<form><input><section><button><select><a>')) === '') continue;   // leere Bereiche (z. B. ohne Mitteilungen) weglassen

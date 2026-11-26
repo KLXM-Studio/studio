@@ -161,6 +161,31 @@ final class Permissions
         return $r ? self::hydrate($r) : null;
     }
 
+    /**
+     * Wirksame Rolle eines Kontos: Hauptrolle (users.role) plus Zusatzrollen (users.roles_extra, JSON-Liste) – Rechte addieren sich.
+     * Rechte: Vereinigung („*“ gewinnt); Tabellen bzw. Blöcke: uneingeschränkt (null), sobald eine Rolle uneingeschränkt ist, sonst
+     * Vereinigung; „nur bearbeiten“-Blöcke vereinigt. Schlüssel bleibt der der Hauptrolle, der Name nennt alle („Redaktion + Newsletter“).
+     */
+    public static function effective(array $user): ?array
+    {
+        $base = self::role((string) ($user['role'] ?? '')) ?? self::role('author');
+        $extra = array_values(array_filter(array_map('strval', (array) (json_decode((string) ($user['roles_extra'] ?? ''), true) ?: [])), fn($k) => $k !== '' && $k !== 'network' && $k !== ($base['key'] ?? '')));
+        if (!$base || !$extra) return $base;
+        $r = $base;
+        foreach ($extra as $k) {
+            $x = self::role($k);
+            if (!$x) continue;
+            $r['permissions'] = array_values(array_unique([...$r['permissions'], ...$x['permissions']]));
+            $r['tables'] = $r['tables'] === null || $x['tables'] === null ? null : array_values(array_unique([...$r['tables'], ...$x['tables']]));
+            $r['blocks'] = $r['blocks'] === null || $x['blocks'] === null ? null : array_values(array_unique([...$r['blocks'], ...$x['blocks']]));
+            $r['blocks_edit'] = array_values(array_unique([...(array) ($r['blocks_edit'] ?? []), ...(array) ($x['blocks_edit'] ?? [])]));
+            $r['name'] .= ' + ' . $x['name'];
+            $r['extra'][] = $x['key'];
+        }
+        if (in_array('*', $r['permissions'], true)) $r['permissions'] = ['*'];
+        return $r;
+    }
+
     private static function hydrate(array $r): array
     {
         return ['key' => $r['rkey'], 'name' => $r['name'], 'description' => (string) $r['description'],
@@ -168,6 +193,8 @@ final class Permissions
             'tables' => $r['tables_json'] === null ? null : (json_decode((string) $r['tables_json'], true) ?: []),
             // Erlaubte Blöcke (Core\BlockGuard): null = alle, die die Website erlaubt; Liste = nur diese Typen einfügen und ändern
             'blocks' => ($r['blocks_json'] ?? null) === null ? null : array_values(array_map('strval', (array) (json_decode((string) $r['blocks_json'], true) ?: []))),
+            // Zusätzlich „nur bearbeiten“: bestehende Blöcke dieser Typen ändern, keine neuen einfügen (z. B. Preisvergleich pflegen)
+            'blocks_edit' => array_values(array_map('strval', (array) (json_decode((string) ($r['blocks_edit_json'] ?? '[]'), true) ?: []))),
             'builtin' => (bool) $r['builtin']];
     }
 

@@ -23,7 +23,7 @@ final class UserController extends AdminController
     public function index(Request $r, array $errors = [], array $old = [], string $section = ''): Response
     {
         $this->auth($r, 'users.manage');
-        $users = app()->db->fetchAll('SELECT id, email, name, role, created_at, last_login, network_uid, totp_enabled, disabled, idp FROM users ORDER BY email');
+        $users = app()->db->fetchAll('SELECT id, email, name, role, roles_extra, created_at, last_login, network_uid, totp_enabled, disabled, idp FROM users ORDER BY email');
         // Eingerichtete Verfahren je Konto (Abzeichen „2FA“, „Passkey ×n“) und Anmelde-Richtlinie (Core\Mfa)
         $pk = \Core\Passkeys::counts(app()->db);
         // Netzwerk-Domain (Core\NetworkHost): Passkeys gelten je Domain – Hinweis an Konten ohne Passkey für die Netzwerk-Domain

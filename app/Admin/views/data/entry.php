@@ -47,6 +47,9 @@ $status = $values['status'] ?? ($e['status'] ?? ($t['settings']['workflow'] ? 'd
       <fieldset class="dt-statuspick"><legend>Status</legend>
         <label><input type="radio" name="status" value="published"<?= $status === 'published' ? ' checked' : '' ?>> <span class="dt-status dt-status--published">Online</span></label>
         <label><input type="radio" name="status" value="draft"<?= $status === 'draft' ? ' checked' : '' ?>> <span class="dt-status dt-status--draft"><?= e(__('Offline')) ?></span></label>
+        <?php if (\Core\Data\Tables::field($t, \Core\Data\Kinds::PUBLIC_FIELD)): // Kontakte: zwei Schalter – was sie jeweils bedeuten ?>
+        <p class="f-help"><?= e(__('Status = Eintrag aktiv (Offline: ruht, auch für Verknüpfungen). Ob die Person öffentlich erscheint, regelt zusätzlich „Auf der Website zeigen“.')) ?></p>
+        <?php endif; ?>
       </fieldset>
       <?php // Zeitplan (Core\Schedule): „Online ab“ hält den Eintrag bis dahin offline, „Offline ab“ nimmt ihn automatisch heraus
         $sFrom = \Core\Schedule::input(\Core\Schedule::norm($values['online_from'] ?? '') ?? ''); $sUntil = \Core\Schedule::input(\Core\Schedule::norm($values['online_until'] ?? '') ?? '');

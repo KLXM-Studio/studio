@@ -501,10 +501,15 @@ final class Fields
                 . str_replace('</summary>', $count . '</summary>', $open[0]) . '<div class="f-sec__body">' . $open[1] . '</div></details>';
             $open = null;
         };
-        foreach ($fields as $f) {
+        $fields = array_values($fields);
+        foreach ($fields as $fi => $f) {
             // Hinweis ohne Überschrift (z. B. Freitext einer Datentabelle) bleibt im laufenden Abschnitt
             if (($f['type'] ?? '') === 'heading' && (trim((string) ($f['label'] ?? '')) !== '' || !empty($f['collapse']) || $open === null)) {
                 $close();
+                // Abschnitt heißt wie das Feld direkt darunter (z. B. „Text“ über „Text“): keine doppelte Überschrift
+                $nx = $fields[$fi + 1] ?? null;
+                if (empty($f['collapse']) && empty($f['help']) && empty($f['links']) && is_array($nx) && ($nx['type'] ?? '') !== 'heading'
+                    && trim((string) $f['label']) !== '' && mb_strtolower(trim((string) $f['label'])) === mb_strtolower(trim(strip_tags((string) ($nx['label'] ?? ''))))) continue;
                 if (!empty($f['collapse']) && $path === '') {
                     $help = (!empty($f['help']) ? '<p class="f-help">' . e($f['help']) . '</p>' : '')
                         . (!empty($f['links']) ? '<p class="f-help">' . implode(' · ', array_map(fn($l) => '<a href="' . e(url((string) $l['url'])) . '">' . e((string) $l['label']) . '</a>', (array) $f['links'])) . '</p>' : '');
@@ -785,7 +790,7 @@ final class Fields
             return '<fieldset class="f f--rrule' . $width . ($err ? ' f--error' : '') . '" data-rrule data-start="' . e($start) . '" data-allday="' . e($allDay) . '"'
                 . ($describedBy ? ' aria-describedby="' . $describedBy . '"' : '') . '><legend>' . $label . '</legend>'
                 . '<div class="rr" data-rrule-ui hidden></div>'
-                . '<details class="rr-adv"' . ($err ? ' open' : '') . '><summary>' . e(__('Erweitert: Regel nach RFC 5545 (RRULE)')) . '</summary>'
+                . '<details class="rr-adv"' . ($err ? ' open' : '') . '><summary>' . e(__('Erweiterte Wiederholung (RRULE)')) . '</summary>'
                 . '<label class="rr-adv__label" for="' . $id . '">' . e(__('Regel, optional zweite Zeile „EXDATE:“ mit Ausnahmen (JJJJ-MM-TT, durch Komma getrennt)')) . '</label>'
                 . '<textarea id="' . $id . '" name="' . $inputName . '" rows="2" spellcheck="false" autocomplete="off" placeholder="FREQ=WEEKLY;BYDAY=MO;UNTIL=20261231" data-rrule-raw>' . e(is_scalar($value) ? (string) $value : '') . '</textarea></details>'
                 . $help . $errHtml . '</fieldset>';

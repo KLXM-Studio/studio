@@ -32,6 +32,15 @@
             <select id="us-role-<?= (int) $u['id'] ?>" name="role" aria-label="<?= e(__('Rolle von {name}', ['name' => $u['email']])) ?>" data-autosubmit>
               <?php foreach ($roles as $k => $ro): if ($k === 'network') continue; ?><option value="<?= e($k) ?>"<?= $u['role'] === $k ? ' selected' : '' ?>><?= e($ro['name']) ?></option><?php endforeach; ?>
             </select><noscript><button class="adm-btn adm-btn--small"><?= e(__('Ändern')) ?></button></noscript></form></div></div>
+          <?php $uExtra = array_map('strval', (array) (json_decode((string) ($u['roles_extra'] ?? ''), true) ?: [])); // Zusatzrollen: Rechte addieren sich ?>
+          <form class="set-row set-row--stack" method="post" action="<?= e(url('/admin/users/' . $u['id'] . '/zusatzrollen')) ?>"><?= csrf_field() ?>
+            <div class="set-row__main"><span class="set-row__label"><?= e(__('Zusatzrollen')) ?></span>
+              <span class="set-row__sub"><?= e(__('Rechte addieren sich zur Rolle oben – z. B. „Redaktion“ plus „Newsletter“.')) ?></span></div>
+            <div class="set-checks us-extra"><?php foreach ($roles as $k => $ro): if ($k === 'network' || $k === $u['role'] || !\Core\Http\Controllers\Admin\UserController::mayManageRole($k)) continue; ?>
+              <label class="f-check"><input type="checkbox" name="extra[]" value="<?= e($k) ?>"<?= in_array($k, $uExtra, true) ? ' checked' : '' ?>> <span><?= e($ro['name']) ?></span></label>
+            <?php endforeach; ?></div>
+            <div class="set-row__ctl"><button class="adm-btn adm-btn--small" type="submit"><?= e(__('Zusatzrollen speichern')) ?></button></div>
+          </form>
           <?php if (\Core\Invites::assignable($roles[$u['role']] ?? null, app()->auth->role())): // E-Mail-Adresse direkt ändern (Core\EmailChange::adminChange) ?>
           <form class="set-row us-mail__form" method="post" action="<?= e(url('/admin/users/' . $u['id'] . '/email')) ?>"><?= csrf_field() ?>
             <div class="set-row__main"><label class="set-row__label" for="us-mail-<?= (int) $u['id'] ?>"><?= e(__('E-Mail ändern')) ?></label>

@@ -534,6 +534,7 @@ return function (Router $r): void {
     $r->post('/admin/api/favorites/rename', [Admin\FavoriteController::class, 'rename']);
     $r->post('/admin/api/favorites/reorder', [Admin\FavoriteController::class, 'reorder']);
     $r->post('/admin/users/{id}/role', [Admin\RoleController::class, 'assign']);
+    $r->post('/admin/users/{id}/zusatzrollen', [Admin\RoleController::class, 'extra']);   // Zusatzrollen (Core\Permissions::effective)
     $r->get('/admin/roles/new', [Admin\RoleController::class, 'edit']);
     $r->post('/admin/roles', [Admin\RoleController::class, 'save']);
     $r->get('/admin/roles/{key}', [Admin\RoleController::class, 'edit']);

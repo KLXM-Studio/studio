@@ -55,6 +55,11 @@ $someBlocks = is_array($role['blocks'] ?? null);
         <label class="us-radio"><input type="radio" name="blocks_mode" value="some"<?= $someBlocks ? ' checked' : '' ?>> <span class="set-row__label"><?= e(__('Nur ausgewählte:')) ?></span></label>
         <?php $catalog = $blockCatalog; $checked = $someBlocks ? $role['blocks'] : []; $name = 'blocks[]'; $mode = 'role'; include __DIR__ . '/_block_choice.php'; ?>
       </div>
+      <details class="set-row set-row--stack"<?= !empty($role['blocks_edit']) ? ' open' : '' ?>>
+        <summary class="set-row__label"><?= e(__('Zusätzlich nur bearbeiten (keine neuen einfügen)')) ?><?php if (!empty($role['blocks_edit'])): ?> <small class="adm-muted"><?= e(__('{n} gewählt', ['n' => count($role['blocks_edit'])])) ?></small><?php endif; ?></summary>
+        <p class="f-help"><?= e(__('Bestehende Blöcke dieser Arten darf die Rolle weiter pflegen – z. B. einen Preisvergleich auf einer Seite –, neue fügt sie nicht ein. Gilt nur bei „Nur ausgewählte“.')) ?></p>
+        <?php $checked = (array) ($role['blocks_edit'] ?? []); $name = 'blocks_edit[]'; $mode = 'role'; include __DIR__ . '/_block_choice.php'; ?>
+      </details>
     </div>
     <p class="set-group__note"><?= e(__('Neue Blöcke lassen sich nur aus dieser Auswahl einfügen. Blöcke anderer Arten bleiben auf den Seiten sichtbar und verschiebbar, lassen sich aber weder ändern noch löschen – das gilt auch für API, MCP und KI. Rollen mit „Blöcke gestalten (voll)“ ändern bestehende Blöcke trotzdem.')) ?></p>
     <p class="set-group__note"><?= e(__('Gestaltung: Ohne „Blöcke gestalten im Rahmen des Kits“ ändert die Rolle nur Inhalte – Variante, Hintergrund und Abstände bleiben, wie sie sind. Gesperrte Blöcke (Schloss) ändert nur „Blöcke gestalten (voll)“.')) ?></p>

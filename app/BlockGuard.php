@@ -51,7 +51,9 @@ final class BlockGuard
         if (self::level($role) === 'full') return null;
         if (!empty($b['lock'])) return 'lock';
         $list = $role['blocks'] ?? null;
-        return is_array($list) && !in_array((string) ($b['type'] ?? ''), $list, true) ? 'type' : null;
+        $type = (string) ($b['type'] ?? '');
+        // „nur bearbeiten“ (roles.blocks_edit_json): ändern ja, einfügen nein (mayInsert prüft nur „Erlaubte Blöcke“)
+        return is_array($list) && !in_array($type, $list, true) && !in_array($type, (array) ($role['blocks_edit'] ?? []), true) ? 'type' : null;
     }
 
     /** Hinweis für Redaktion (Editor, Fehlermeldung) */

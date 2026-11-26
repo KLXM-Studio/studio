@@ -257,7 +257,7 @@ final class Tasks
     public static function actor(?array $u, string $channel = 'admin', string $label = ''): array
     {
         $name = $u ? (trim((string) ($u['name'] ?? '')) ?: (string) ($u['email'] ?? '')) : '';
-        return ['id' => $u ? (int) $u['id'] : null, 'label' => mb_substr($label !== '' ? $label : ($name !== '' ? $name : __('Konsole')), 0, 191), 'channel' => $channel];
+        return ['id' => $u ? (int) $u['id'] : null, 'label' => mb_substr($label !== '' ? $label : ($name !== '' ? $name : __('System')), 0, 191), 'channel' => $channel];
     }
 
     /**

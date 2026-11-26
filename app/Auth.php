@@ -39,7 +39,7 @@ final class Auth
                     $eff = Impersonation::effective($this->user, $imp, $this->db);
                     if ($eff) $this->user = $eff; else $this->session->forget('imp');
                 }
-                $this->role = $this->user ? (Permissions::role((string) $this->user['role']) ?? Permissions::role('author')) : null;
+                $this->role = $this->user ? Permissions::effective($this->user) : null;   // Hauptrolle + Zusatzrollen (Rechte addieren sich)
                 // Absolute Timeout-Prüfung
                 if ($this->user && time() - (int) $this->session->get('login_at', 0) > 60 * 60 * 12) {
                     $this->logout();
@@ -66,7 +66,7 @@ final class Auth
         if ($user === null) { $this->reset(); return; }
         $this->loaded = true;
         $this->user = $user;
-        $this->role = Permissions::role((string) $user['role']) ?? Permissions::role('author');
+        $this->role = Permissions::effective($user);
     }
 
     /** Kennung der Website für die Sitzung (aus dem Schlüssel der Website – nicht übertragbar) */

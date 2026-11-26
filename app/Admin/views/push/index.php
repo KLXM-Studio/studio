@@ -13,7 +13,7 @@ $stateTone = ['scheduled' => 'info', 'canceled' => 'muted', 'sending' => 'warn',
 $q = fn(array $p) => url($b) . '?' . http_build_query(array_filter(['ordner' => $folder !== 'alle' ? $folder : null] + $p));
 $when = fn(array $m) => $m['status'] === 'scheduled' && $m['scheduled_at'] ? fmt()->datetime((int) $m['scheduled_at']) : fmt()->relative((string) $m['created_at']);
 ?>
-<h1 class="adm-sr"><?= e(__('Mitteilungen')) ?></h1>
+<h1 class="adm-sr"><?= e(__('Push-Mitteilungen')) ?></h1>
 <div class="pm pm--split<?= $sel ? ' is-reading' : '' ?>">
   <section class="pm-col pm-col--list" aria-labelledby="pm-list-h">
     <div class="pm-bar"><div class="pm-bar__title"><h2 id="pm-list-h"><?= e($titles[$folder]) ?></h2><small><?= e(count($rows) === 1 ? __('1 Mitteilung') : __('{n} Mitteilungen', ['n' => count($rows)])) ?></small></div>

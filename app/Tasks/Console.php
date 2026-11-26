@@ -42,7 +42,7 @@ final class Console
     private static function actor(array $args): array
     {
         $as = Cli::opt($args, 'as');
-        if ($as === null || $as === '') return Tasks::actor(null, 'cli', __('Konsole'));
+        if ($as === null || $as === '') return Tasks::actor(null, 'cli', __('System'));
         $u = app()->db->fetch('SELECT * FROM users WHERE LOWER(email) = ?', [mb_strtolower($as)]) ?? throw new \InvalidArgumentException("Konto „{$as}“ nicht gefunden.");
         return Tasks::actor($u, 'cli');
     }

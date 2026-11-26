@@ -290,10 +290,13 @@ final class Database
         // bekommen „Blöcke gestalten im Rahmen des Kits“ (design.blocks.basic) – Abschnitts-Optionen und Varianten durften sie schon immer
         $freshBlocks = !in_array('blocks_json', $this->columns('roles'), true);
         $this->ensureColumns('roles', ['blocks_json' => 'TEXT NULL']);
+        // Blöcke „nur bearbeiten“ (Core\BlockGuard): bestehende Blöcke dieser Typen ändern, aber keine neuen einfügen
+        $this->ensureColumns('roles', ['blocks_edit_json' => 'TEXT NULL']);
         if ($freshBlocks) Permissions::grantDesignBasic($this);
         $this->ensureColumns('users', ['locale' => 'VARCHAR(10) NULL', 'appearance' => 'VARCHAR(10) NULL',
             'favorites' => 'TEXT NULL']);   // Favoriten der Verwaltung (JSON, Core\Favorites)
-        $this->ensureColumns('users', ['ui_prefs' => 'TEXT NULL']);   // persönliche Oberfläche: Akzentfarbe u. a. (JSON, Core\Accent)
+        $this->ensureColumns('users', ['ui_prefs' => 'TEXT NULL']);
+        $this->ensureColumns('users', ['roles_extra' => 'TEXT NULL']);   // Zusatzrollen (JSON-Liste, Core\Permissions::effective) – Rechte addieren sich   // persönliche Oberfläche: Akzentfarbe u. a. (JSON, Core\Accent)
         // Grafik-Editor: Ordner der eigenen Bausteine (Bibliothek)
         $this->ensureColumns('graphics', ['folder' => "$str NULL"]);
         // Persona Bild: Komposition aus einer Vorlage (tpl = site:{id} | net:{id}) mit den ausgefüllten Feldern (vals, JSON)

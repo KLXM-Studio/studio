@@ -53,6 +53,8 @@ final class RoleController extends AdminController
             $kept = array_values(array_filter((array) ($role['blocks'] ?? []), fn($t) => !\Core\Features::allowsBlock((string) $t)));
             $blocks = array_values(array_unique([...$posted, ...$kept]));
         }
+        // „nur bearbeiten“: bestehende Blöcke dieser Typen ändern, keine neuen einfügen – nur sinnvoll bei eingeschränkter Auswahl
+        $blocksEdit = $blocks === null ? [] : array_values(array_diff(array_intersect(array_map('strval', (array) ($r->post['blocks_edit'] ?? [])), $known), $blocks));
         // Rolle nach dem Speichern prüfen wie beim Zuweisen – eine auf Tabellen beschränkte Rolle darf sich nicht selbst erweitern
         if ($mine !== null && !in_array('*', $mine['permissions'], true)
             && !\Core\Invites::assignable(['key' => $role['key'] ?? 'neu', 'permissions' => $perms, 'tables' => $tables === null ? null : json_decode($tables, true), 'blocks' => $blocks], $mine)) {
@@ -61,7 +63,7 @@ final class RoleController extends AdminController
         // Rechte, die die Oberfläche nicht zeigt (abgeschaltete Erweiterung), bleiben erhalten – entfernen nur mit roles:clean
         $data = ['name' => $name, 'description' => mb_substr(trim(strip_tags($r->str('description'))), 0, 200),
             'permissions_json' => json_encode(Permissions::keepHidden($perms, $role['permissions'] ?? [])), 'tables_json' => $tables,
-            'blocks_json' => $blocks === null ? null : json_encode($blocks)];
+            'blocks_json' => $blocks === null ? null : json_encode($blocks), 'blocks_edit_json' => $blocksEdit ? json_encode($blocksEdit) : null];
         if ($role) {
             app()->db->update('roles', $data, 'rkey = :k', ['k' => $role['key']]);
         } else {
@@ -109,5 +111,29 @@ final class RoleController extends AdminController
         app()->db->update('users', ['role' => $role['key']], 'id = :id', ['id' => (int) $id]);
         if ($old !== $role['key']) \Core\Extensions::emit(new \Core\Events\UserRoleChanged((int) $id, $role['key'], $old));   // Erweiterungen
         return $this->back('/admin/users/personen', 'success', __('Rolle geändert.'));
+    }
+
+    /** Zusatzrollen eines Kontos (users.roles_extra): Rechte addieren sich zur Hauptrolle – nur Rollen, die man selbst vergeben darf */
+    public function extra(Request $r, string $id): Response
+    {
+        $this->auth($r, 'users.manage');
+        if (UserController::isNetworkAccount((int) $id)) {
+            return $this->back('/admin/users/personen', 'error', __('Netzwerk-Konten werden zentral in der Netzwerk-Verwaltung verwaltet.'));
+        }
+        $main = UserController::roleOf((int) $id);
+        if ($main === '' || !UserController::mayManageRole($main)) {
+            return $this->back('/admin/users/personen', 'error', __('Diese Rolle bzw. dieses Konto hat Rechte, die Ihre eigene Rolle nicht hat – nur die Administration kann das ändern.'));
+        }
+        $keys = [];
+        foreach ((array) ($r->post['extra'] ?? []) as $k) {
+            $k = (string) $k;
+            if ($k === 'network' || $k === $main || !Permissions::role($k)) continue;
+            if (!UserController::mayManageRole($k)) {
+                return $this->back('/admin/users/personen', 'error', __('Diese Rolle bzw. dieses Konto hat Rechte, die Ihre eigene Rolle nicht hat – nur die Administration kann das ändern.'));
+            }
+            $keys[] = $k;
+        }
+        app()->db->update('users', ['roles_extra' => $keys ? json_encode(array_values(array_unique($keys))) : null], 'id = :id', ['id' => (int) $id]);
+        return $this->back('/admin/users/personen', 'success', $keys ? __('Zusatzrollen gespeichert.') : __('Zusatzrollen entfernt.'));
     }
 }

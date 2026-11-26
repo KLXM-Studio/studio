@@ -10,6 +10,12 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Verwaltung aus Sicht der Redaktion (Prüfbericht, Teil 3)
+- Rollen: Blöcke „zusätzlich nur bearbeiten“ (bestehende pflegen, keine neuen einfügen); mehrere Rollen je Konto (Zusatzrollen, Rechte addieren sich).
+- Blockauswahl: in der Listenansicht je Block eine Zeile Beschreibung.
+- Formulare: keine doppelte Überschrift, wenn Abschnitt und Feld gleich heißen; leere Verknüpfung (Zieltabelle ohne Einträge) ausgeblendet; „Erweiterte Wiederholung (RRULE)“; Aufgaben „vom System“ statt „Konsole“; Kontakte erklären Status gegenüber „Auf der Website zeigen“.
+- Begriffe: „Push-Mitteilungen“ (an Besucher) und „Benachrichtigungen“ (im Konto) getrennt.
+
 ### Verwaltung aus Sicht der Redaktion (Prüfbericht, Teil 2)
 - Status einheitlich: Sichtbarkeit „Online / Offline“ (nie veröffentlicht: „Offline · neu“), getrennt davon „Änderungen nicht veröffentlicht“ – Eintragsliste, Formular, Werkzeugleiste, Entwürfe-Seite (mit Erklärung). Der Zähler im Menü zählt nur „Zur Prüfung“.
 - „Veröffentlichen“ ist nur aktiv, wenn etwas offen ist; „Vorschau“ fragt vor dem Speichern.
