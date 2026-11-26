@@ -205,6 +205,35 @@ final class HeroSlider
         self::$pageCache = [];
     }
 
+    /**
+     * Bearbeiten-Modus: Liste der Folien unter der Vorschau (die nur die erste zeigt) – je Folie Titel und Herkunft, bei hervorgehobenen
+     * Einträgen „Nicht mehr hervorheben“ und (Sortierung nach Reihenfolge) weiter vorne/hinten (Core\Data\Featured::editControls).
+     */
+    private static function editList(Block $b, array $slides): string
+    {
+        $d = $b->data;
+        $picked = \Core\Data\EntryPick::clean(['max' => 48], $d['slides_picked'] ?? []);
+        $orderable = ($d['slides_sort'] ?? 'date') === 'order';
+        $lead = ($d['slides_lead'] ?? 'block') !== 'none';
+        $h = '';
+        foreach ($slides as $i => $s) {
+            $title = trim(str_replace('*', '', strip_tags((string) ($s['data']['title'] ?? '')))) ?: __('(ohne Titel)');
+            $ctl = '';
+            if ($s['key'] === null) {
+                $from = $i === 0 && $lead ? __('Inhalt des Einstiegs') : __('Eigene Folie');
+            } else {
+                [$hd, $eid] = explode(':', $s['key'], 2);
+                $t = \Core\Data\Tables::findContent($hd);
+                $isPicked = in_array($s['key'], $picked, true);
+                $from = ($t ? (string) $t['name'] : $hd) . ' · ' . ($isPicked ? __('ausgewählt') : __('hervorgehoben'));
+                if ($t && !$isPicked && ($e = \Core\Data\Entries::find($t, (int) $eid))) $ctl = Featured::editControls($t, $e, $orderable);
+            }
+            $h .= '<li><span class="hs-editlist__t">' . e($title) . '</span> <small>' . e($from) . '</small>' . $ctl . '</li>';
+        }
+        return '<div class="hs-editnote"><p>' . e(__('Slider mit {n} Folien – die Vorschau zeigt die erste. Übergänge und Steuerung sehen Besucher.', ['n' => count($slides)])) . '</p>'
+            . '<ol class="hs-editlist">' . $h . '</ol>' . Featured::editHint((array) ($d['slides_sources'] ?? []), (string) ($d['slides_sort'] ?? 'date')) . '</div>';
+    }
+
     /** Folie aus einem hervorgehobenen Eintrag: Zuordnung wie Einstieg „Felder des Eintrags“, Button zur Detailseite */
     private static function entryData(array $clean, array $def, array $it, string $button, string $badge): array
     {
@@ -242,8 +271,7 @@ final class HeroSlider
         if (app()->editing || app()->entryEdit) {
             if (!app()->editing) return null;
             $first = $slides[0]['data'];
-            return $theme->renderBlock(new Block($b->id, $b->type, ['slider' => false] + $first, $b->tunes, $b->def, $b->prev))
-                . '<p class="hs-editnote">' . e(__('Slider mit {n} Folien – die Vorschau zeigt die erste. Übergänge und Steuerung sehen Besucher.', ['n' => count($slides)])) . '</p>';
+            return $theme->renderBlock(new Block($b->id, $b->type, ['slider' => false] + $first, $b->tunes, $b->def, $b->prev)) . self::editList($b, $slides);
         }
         $theme->markUsed('@heroslider');
         $d = $b->data;

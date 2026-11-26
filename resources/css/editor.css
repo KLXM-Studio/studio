@@ -401,4 +401,17 @@ td>.cms-entry-pencil .cms-entry-pencil__t{display:none}
 @media (prefers-reduced-motion:reduce){.cms-drag-band{transition:none}}
 
 /* Hinweis „Slider mit n Folien …“ im Bearbeiten-Modus (Core\Blocks\HeroSlider) – hero-slider.css lädt nur für Besucher */
-.hs-editnote{margin:.5rem auto;max-width:60rem;padding:.5rem 1rem;border-radius:8px;background:#EEF1F8;color:#1d2433;font:500 14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center}
+.hs-editnote{margin:.5rem auto;max-width:60rem;padding:.6rem 1rem;border-radius:8px;background:#EEF1F8;color:#1d2433;font:500 14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+.hs-editnote>p{margin:0 0 .4rem}
+.hs-editlist{display:grid;gap:4px;margin:0;padding-left:1.4rem}
+.hs-editlist li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.hs-editlist small{color:#5b6475}
+.hs-editlist .cms-feat{position:static;margin-left:auto}
+/* Hervorgehobene Einträge an Karten/Folien (Core\Data\Featured::editControls) – nur im Bearbeiten-Modus */
+.cms-feat{position:absolute;z-index:3;top:.6rem;left:.6rem;display:inline-flex;gap:2px;padding:2px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.25);font:600 12.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif}
+.cms-feat__b{min-height:28px;min-width:28px;padding:0 9px;border:0;border-radius:999px;background:none;color:#1d2433;font:inherit;cursor:pointer}
+.cms-feat__b:hover{background:#EEF1F8}
+.cms-feat__b:focus-visible{outline:2px solid #314164;outline-offset:1px}
+.cms-feat__b:disabled{opacity:.5}
+.cms-feat-hint{margin:0 0 1rem;padding:.5rem .8rem;border-radius:8px;background:#EEF1F8;color:#1d2433;font:500 13.5px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.hl-item{position:relative}

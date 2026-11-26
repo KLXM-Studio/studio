@@ -60,23 +60,7 @@ $status = $values['status'] ?? ($e['status'] ?? 'published');
           <p class="f-help" id="online_until-h"><?= e(__('Danach ist der Eintrag nicht mehr aufrufbar und erscheint nicht mehr in Listen, Suche und Sitemap. Leer = unbegrenzt.')) ?></p></div>
       </details>
       <?php endif; ?>
-      <?php // „Auf der Startseite hervorheben“ (Core\Data\Featured): Block „Highlights“ und Einstieg als Slider zeigen den Eintrag
-      if (\Core\Data\Featured::enabled($t) && can('data.publish', $t['handle'])):
-        $fOn = in_array($values[\Core\Data\Featured::COL] ?? 0, [1, '1', true, 'on'], true); $fOrder = (string) ($values[\Core\Data\Featured::ORDER] ?? ''); $fUntil = (string) ($values[\Core\Data\Featured::UNTIL] ?? '');
-        $fErr = fn(string $k) => isset($errors[$k]) ? '<p class="f-error">' . e($errors[$k]) . '</p>' : ''; ?>
-      <details class="dt-plan dt-featured"<?= $fOn || isset($errors[\Core\Data\Featured::UNTIL]) || isset($errors[\Core\Data\Featured::ORDER]) ? ' open' : '' ?>>
-        <summary><?= icon('star') ?> <?= e(__('Hervorheben')) ?><?php if (($fl = \Core\Data\Featured::label($values)) !== ''): ?> <span class="dt-plan__sum"><?= e($fl) ?></span><?php endif; ?></summary>
-        <input type="hidden" name="_featured_form" value="1">
-        <div class="f f--bool"><label class="f-check"><input type="checkbox" name="<?= \Core\Data\Featured::COL ?>" value="1"<?= $fOn ? ' checked' : '' ?>> <span><?= e(__('Auf der Startseite hervorheben')) ?></span></label>
-          <p class="f-help"><?= e(__('Erscheint im Block „Highlights“ und als Folie eines Einstiegs mit Slider, der diese Tabelle nutzt.')) ?></p></div>
-        <div class="f<?= isset($errors[\Core\Data\Featured::ORDER]) ? ' f--error' : '' ?>"><label for="f-featured-order"><?= e(__('Reihenfolge (optional)')) ?></label>
-          <input type="number" id="f-featured-order" name="<?= \Core\Data\Featured::ORDER ?>" value="<?= e($fOrder) ?>" step="1" aria-describedby="f-featured-order-h"><?= $fErr(\Core\Data\Featured::ORDER) ?>
-          <p class="f-help" id="f-featured-order-h"><?= e(__('Kleinere Zahl zuerst – gilt, wenn der Block nach Reihenfolge sortiert. Leer = nach den nummerierten.')) ?></p></div>
-        <div class="f<?= isset($errors[\Core\Data\Featured::UNTIL]) ? ' f--error' : '' ?>"><label for="f-featured-until"><?= e(__('Hervorheben bis (optional)')) ?></label>
-          <input type="date" id="f-featured-until" name="<?= \Core\Data\Featured::UNTIL ?>" value="<?= e($fUntil) ?>" aria-describedby="f-featured-until-h"><?= $fErr(\Core\Data\Featured::UNTIL) ?>
-          <p class="f-help" id="f-featured-until-h"><?= e(__('Einschließlich. Danach erscheint der Eintrag nicht mehr hervorgehoben, bleibt aber online. Leer = unbegrenzt.')) ?></p></div>
-      </details>
-      <?php endif; ?>
+      <?= \Core\Theme::capture(__DIR__ . '/_featured.php', ['t' => $t, 'values' => $values, 'errors' => $errors]) ?>
       <?php if (\Core\Lang::multi()): $elang = $isNew ? (\Core\Lang::valid($_GET['lang'] ?? '') ? $_GET['lang'] : \Core\Lang::default()) : \Core\Lang::norm($e['lang'] ?? null); ?>
       <?php if ($isNew): ?><input type="hidden" name="lang" value="<?= e($elang) ?>"><?php endif; ?>
       <div class="dt-langbox"><strong><?= e(__('Sprache')) ?>: <?= e(\Core\Lang::all()[$elang] ?? $elang) ?></strong>

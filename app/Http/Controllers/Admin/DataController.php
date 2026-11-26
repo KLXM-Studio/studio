@@ -679,9 +679,15 @@ final class DataController extends AdminController
                     'occ' => \Core\Data\Calendar::occurrences($t, $gridStart, $gridEnd, ['status' => $status, 'lang' => $lang, 'q' => $r->str('q'), 'source' => 'own'])];
             }
         }
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured): Stern je Zeile, Ansicht „Hervorgehoben“ (?hervorgehoben=1, nach Reihenfolge)
+        $feat = \Core\Data\Featured::enabled($t) && can('data.publish', $handle) && !Tables::isInbox($t);
+        $featView = $feat && $r->str('hervorgehoben') === '1';
+        if ($feat) \Core\Data\Featured::ensure($t);
+        if ($featView) $o['featured'] = 'order';
         $total = Entries::count($t, $o);
         $rows = Entries::query($t, $o + ['limit' => $per, 'offset' => ($page - 1) * $per]);
-        return $this->view('data/entries', ['t' => $t, 'rows' => $rows, 'total' => $total, 'status' => $status,
+        return $this->view('data/entries', ['t' => $t, 'rows' => $rows, 'total' => $total, 'status' => $status, 'feat' => $feat, 'featView' => $featView,
+            'featCount' => $feat ? Entries::count($t, ['status' => 'all', 'featured' => 'order', 'lang' => $lang, 'source' => 'own']) : 0,
             'q' => $r->str('q'), 'sort' => $sort, 'dir' => $dir, 'page' => $page, 'pages' => (int) ceil($total / $per), 'lang' => $lang, 'cal' => $cal,
             'counts' => ['all' => Entries::count($t, ['status' => 'all', 'lang' => $lang, 'source' => 'own']), 'published' => Entries::count($t, ['status' => 'published', 'lang' => $lang, 'source' => 'own']), 'draft' => Entries::count($t, ['status' => 'draft', 'lang' => $lang, 'source' => 'own'])],
         ]);
@@ -957,6 +963,47 @@ final class DataController extends AdminController
         [$id, $err] = Entries::quickCreate($t, (string) ($r->post['title'] ?? ''));
         return $id ? Response::json(['ok' => true, 'id' => $id, 'title' => Entries::title($t, Entries::find($t, $id))])
             : Response::fail($err);
+    }
+
+    /** „Auf der Startseite hervorheben“ umschalten bzw. Reihenfolge setzen (JSON: on 0|1, order Zahl|'') – Recht data.publish */
+    public function featured(Request $r, string $handle, string $id): Response
+    {
+        $this->auth($r);
+        if (!can('data.publish', $handle)) return Response::fail(__('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'), 403);
+        $t = $this->table($handle);
+        if (Tables::isInbox($t) || !\Core\Data\Featured::enabled($t)) return Response::fail(__('Diese Tabelle kann Einträge nicht hervorheben.'), 400);
+        $on = array_key_exists('on', $r->post) ? in_array($r->post['on'], [1, '1', true, 'true', 'on'], true) : null;
+        $order = null;
+        if (array_key_exists('order', $r->post)) {
+            $ov = trim((string) $r->post['order']);
+            if ($ov !== '' && !preg_match('~^-?\d{1,6}$~', $ov)) return Response::fail(__('Bitte eine ganze Zahl angeben.'), 422);
+            $order = $ov === '' ? '' : (int) $ov;
+        }
+        $e = Entries::setFeatured($t, (int) $id, $on, $order);
+        if (!$e) return Response::fail(__('Eintrag nicht gefunden.'), 404);
+        \Core\Activity::log('settings', 'entry', (int) $id, Entries::title($t, $e), ['tbl' => $t['handle'], 'detail' => $on === null ? __('Reihenfolge der Hervorhebung') : ($on ? __('Auf der Startseite hervorgehoben') : __('Nicht mehr hervorgehoben'))]);
+        return Response::json(['ok' => true, 'on' => \Core\Data\Featured::active($e), 'order' => $e[\Core\Data\Featured::ORDER] ?? null, 'label' => \Core\Data\Featured::label($e),
+            'count' => Entries::count($t, ['status' => 'all', 'featured' => 'order', 'source' => 'own'])]);
+    }
+
+    /**
+     * Hervorgehobene Einträge an Folien und Karten (Bearbeiten-Modus, Highlights/Slider): action 'off' + key „tabelle:id“ bzw.
+     * action 'order' + keys (gewünschte Reihenfolge, setzt 10, 20, 30 …). Recht data.publish je Tabelle.
+     */
+    public function featuredApi(Request $r): Response
+    {
+        $this->auth($r);
+        $act = $r->str('action');
+        $keys = $act === 'off' ? [$r->str('key')] : array_values(array_filter(array_map('strval', (array) ($r->post['keys'] ?? []))));
+        if (!in_array($act, ['off', 'order'], true) || !$keys || count($keys) > 60) return Response::fail(__('Ungültige Anfrage.'), 400);
+        $done = 0;
+        foreach ($keys as $i => $k) {
+            if (!preg_match('~^([a-z][a-z0-9_]{0,40}):(\d+)$~', $k, $m) || !can('data.publish', $m[1])) continue;
+            $t = Tables::findContent($m[1]);
+            if (!$t || !\Core\Data\Featured::enabled($t)) continue;
+            if (Entries::setFeatured($t, (int) $m[2], $act === 'off' ? false : null, $act === 'order' ? ($i + 1) * 10 : null)) $done++;
+        }
+        return $done ? Response::json(['ok' => true, 'done' => $done]) : Response::fail(__('Für diese Aktion fehlt Ihrer Rolle die Berechtigung.'), 403);
     }
 
     /** Auswahlfenster: Einträge suchen und filtern (JSON, Core\Data\Picker) */

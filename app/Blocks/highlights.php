@@ -72,6 +72,7 @@ foreach ($items as $it) $tones[$it['table']['handle']] ??= 'dl-tone-' . (count($
     <?php if (!empty($d['intro'])): ?><p class="muted dl-intro"<?= $b->edit('intro') ?>><?= emphasis((string) $d['intro']) ?></p><?php endif; ?>
   </header>
   <?php endif; ?>
+  <?= Featured::editHint($sources, (string) $q['sort']) ?>
   <?php if ($gap): ?>
   <p class="dl-empty hl-note"><small><?= e(__('Für volle Reihen 1 + {a} bzw. 1 + {b} Einträge hervorheben (Anzahl gesamt oder je Tabelle anpassen).', ['a' => $cols, 'b' => (int) $cols - 1])) ?></small></p>
   <?php endif; ?>
@@ -96,7 +97,7 @@ foreach ($items as $it) $tones[$it['table']['handle']] ??= 'dl-tone-' . (count($
           $when = \Core\Data\Calendar::enabled($t) ? Entries::html($t, $e, '_when') : Entries::html($t, $e, 'published_at');
           if ($when !== '') $meta[] = $when;
       } ?>
-    <li class="dl-item hl-item<?= $lead ? ' hl-lead' : '' ?>" data-reveal="up"><?= \Core\Data\EntryEdit::button($t, $e, $title) ?>
+    <li class="dl-item hl-item<?= $lead ? ' hl-lead' : '' ?>" data-reveal="up"><?= \Core\Data\EntryEdit::button($t, $e, $title) ?><?= !in_array($t['handle'] . ':' . (int) $e['id'], $picked, true) ? Featured::editControls($t, $e, ($q['sort'] ?? '') === 'order') : '' ?>
       <?php if ($img !== ''): $r = $lead ? '4:3' : $ratio; $pic = Entries::html($t, $e, $img, ['ratio' => $r, 'sizes' => $lead ? '(min-width: 1080px) 720px, 100vw' : '(min-width: 1080px) 400px, 100vw']); ?>
       <div class="dl-img<?= $lead ? ' hl-lead__img' : ' ratio-' . e(str_replace(':', '-', $r)) ?>"><?= $pic ?: '<span class="dl-ph" aria-hidden="true"></span>' ?></div>
       <?php endif; ?>

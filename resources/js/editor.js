@@ -245,6 +245,31 @@ async function api(url, body) {
   return json;
 }
 
+// Hervorgehobene Einträge an Karten/Folien (Highlights, Slider; Core\Data\Featured::editControls): nicht mehr hervorheben, weiter
+// vorne/hinten – speichert sofort am Eintrag (nicht in der Seite) und stellt Highlights und Einstiege neu dar
+d.addEventListener('click', async e => {
+  const b = e.target.closest?.('[data-feat-act]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const box = b.closest('[data-feat-key]'), key = box?.dataset.featKey; if (!key) return;
+  const url = cfg.endpoints.preview.replace(/\/admin\/api\/.*$/, '/admin/api/featured');
+  let body;
+  if (b.dataset.featAct === 'off') body = { action: 'off', key };
+  else {
+    const list = b.closest('.hs-editlist, .dl--highlights');
+    const keys = [...new Set([...(list || d).querySelectorAll('[data-feat-key]')].map(x => x.dataset.featKey))];
+    const i = keys.indexOf(key), j = i + (b.dataset.featAct === 'up' ? -1 : 1);
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+    body = { action: 'order', keys };
+  }
+  b.disabled = true;
+  try {
+    await api(url, body);
+    CMSAdmin.toast?.(body.action === 'off' ? CMSAdmin.t('Nicht mehr hervorgehoben.') : CMSAdmin.t('Reihenfolge gespeichert.'));
+    tools.forEach(t => { if (t.type === 'highlights' || t.type === 'hero') t.loadPreview(); });
+  } catch (err) { alert(err.message); b.disabled = false; }
+}, true);
+
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
 function setPath(obj, path, value) {

@@ -872,6 +872,28 @@ if (entries) {
     say(t(online ? '„{title}“ ist online.' : '„{title}“ ist offline.', { title }));
     btn.focus();
   });
+  // „Auf der Startseite hervorheben“: Stern je Zeile (POST …/featured on=0|1), in der Ansicht „Hervorgehoben“ die Reihenfolge als Zahl
+  const featPost = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-Token': csrf() }, body: JSON.stringify(body) })
+    .then(r => r.json()).catch(() => ({ ok: false }));
+  const featCount = n => { const c = $('[data-feat-count]', entries); if (c && typeof n === 'number') c.textContent = n; };
+  entries.addEventListener('click', async e => {
+    const b = e.target.closest('[data-feat-star]'); if (!b || b.getAttribute('aria-busy') === 'true') return;
+    const on = b.getAttribute('aria-pressed') !== 'true', title = b.dataset.title || '';
+    b.setAttribute('aria-busy', 'true');
+    const res = await featPost(b.dataset.url, { on: on ? 1 : 0 });
+    b.removeAttribute('aria-busy');
+    if (!res?.ok) { statusFlash(entries, 'error', res?.error || t('Hervorheben konnte nicht geändert werden.')); return; }
+    b.setAttribute('aria-pressed', res.on ? 'true' : 'false');
+    b.title = res.on ? t('Hervorgehoben – klicken zum Entfernen') : t('Auf der Startseite hervorheben');
+    featCount(res.count);
+    say(t(res.on ? '„{title}“ wird auf der Startseite hervorgehoben.' : '„{title}“ ist nicht mehr hervorgehoben.', { title }));
+  });
+  entries.addEventListener('change', async e => {
+    const i = e.target.closest('[data-feat-order]'); if (!i) return;
+    const res = await featPost(i.dataset.url, { order: i.value.trim() });
+    if (!res?.ok) { statusFlash(entries, 'error', res?.error || t('Reihenfolge konnte nicht gespeichert werden.')); return; }
+    say(t('Reihenfolge gespeichert.'));
+  });
   entries.addEventListener('click', async e => {
     const b = e.target.closest('[data-bulk-action]'); if (!b) return;
     const ids = checked();
@@ -1458,6 +1480,11 @@ initEntryEdit();
 // Karten und Kacheln: Ziel (Seite/Eintrag) bearbeiten – mit Rückfrage der Werkzeugleiste bei ungespeicherten Änderungen
 initTargetEdit(bar_);
 
+// Eintragsformular: „Auf der Startseite hervorheben“ – Reihenfolge und „bis“ erst nach dem Einschalten
+d.addEventListener('change', e => {
+  const c = e.target.closest?.('[data-featured-toggle]'); if (!c) return;
+  const more = c.closest('.dt-featured')?.querySelector('[data-featured-more]'); if (more) more.hidden = !c.checked;
+});
 // Mehrfachauswahl filtern (Core\Fields: input[data-multi-filter] über langen Listen, z. B. „Zugehörige Termine“)
 document.addEventListener('input', e => {
   const q = e.target.closest?.('[data-multi-filter]'); if (!q) return;

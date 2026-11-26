@@ -53,12 +53,13 @@ $thumb = function (?int $id, string $cls = '') use ($listImg): string {
 };
 $base = '/admin/data/' . $t['handle'];
 $multi = \Core\Lang::multi();
-$qs = fn(array $o) => url($base) . '?' . http_build_query(array_filter(array_merge(['lang' => $multi && $lang !== \Core\Lang::default() ? $lang : '', 'status' => $status === 'all' ? '' : $status, 'q' => $q, 'sort' => $sort, 'dir' => $dir], $o), fn($v) => $v !== '' && $v !== null));
+$qs = fn(array $o) => url($base) . '?' . http_build_query(array_filter(array_merge(['lang' => $multi && $lang !== \Core\Lang::default() ? $lang : '', 'status' => $status === 'all' ? '' : $status, 'q' => $q, 'sort' => $sort, 'dir' => $dir, 'hervorgehoben' => !empty($featView) ? '1' : ''], $o), fn($v) => $v !== '' && $v !== null));
 $sortLink = function (string $key, string $label) use ($sort, $dir, $qs) {
     $active = $sort === $key;
     return '<a href="' . e($qs(['sort' => $key, 'dir' => $active && $dir === 'asc' ? 'desc' : 'asc', 'seite' => null])) . '" class="' . ($active ? 'is-sorted' . ($dir === 'desc' ? ' is-desc' : '') : '') . '">' . e($label) . '</a>';
 };
-$manual = $sort === 'sort' && $q === '' && $status === 'all';
+$feat ??= false; $featView ??= false; $featCount ??= 0;
+$manual = $sort === 'sort' && $q === '' && $status === 'all' && !$featView;
 // Geteilte Tabellen (Mitglieder): Entscheidung der Eigentümer-Website über Vorschläge
 $ownerPicks = \Core\Data\Tables::isShared($t) && !\Core\Data\Shared::isOwner($t) ? \Core\Data\Shared::picks($t, array_column($rows, 'id'), $t['shared']['owner']) : [];
 // Externe Quellen (Core\Sources): Einträge aus einem Feed/einer API – nur lesbar, Badge mit Name der Quelle
@@ -115,6 +116,9 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <a href="<?= e($qs(['status' => $k === 'all' ? '' : $k, 'seite' => null])) ?>"<?= $status === $k ? ' aria-current="true"' : '' ?>><?= $l ?> <small data-count="<?= $k ?>"><?= $counts[$k] ?></small></a>
       <?php endforeach; ?>
     </nav>
+    <?php if ($feat): // Ansicht „Hervorgehoben“: nur gerade hervorgehobene, nach Reihenfolge – Zahl direkt änderbar ?>
+    <nav class="fx-seg dt-seg" aria-label="<?= e(__('Auf der Startseite hervorheben')) ?>"><a href="<?= e($qs(['hervorgehoben' => $featView ? '' : '1', 'seite' => null])) ?>"<?= $featView ? ' aria-current="true"' : '' ?>><?= icon('star') ?> <?= e(__('Hervorgehoben')) ?> <small data-feat-count><?= (int) $featCount ?></small></a></nav>
+    <?php endif; ?>
     <form class="fx-search dt-search" method="get" action="<?= e(url($base)) ?>" role="search">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 2a5 5 0 1 0 3 9l3.3 3.3 1-1L11 10A5 5 0 0 0 7 2zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg>
       <input type="search" name="q" value="<?= e($q) ?>" placeholder="Suchen" aria-label="Einträge durchsuchen">
@@ -145,6 +149,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
     <thead><tr>
       <th class="dt-c-check"><input type="checkbox" data-checkall data-rm-checkall aria-label="<?= e(__('Alle auswählen')) ?>"></th>
       <?php if ($manual): ?><th class="dt-c-grip"><span class="sr-only">Reihenfolge</span></th><?php endif; ?>
+      <?php if ($feat): ?><th scope="col" class="dt-c-feat"><span class="sr-only"><?= e(__('Auf der Startseite hervorheben')) ?></span><?php if ($featView): ?><?= e(__('Reihenfolge')) ?><?php endif; ?></th><?php endif; ?>
       <th scope="col"><?= $sortLink($t['settings']['title_field'] ?: 'id', Tables::field($t, $t['settings']['title_field'])['label'] ?? 'Titel') ?></th>
       <?php if ($perEntry): ?><th scope="col" data-prio="1"><?= $sortLink(\Core\Data\Kinds::PUBLIC_FIELD, __('Website')) ?></th><?php endif; ?>
       <?php foreach ($cols as $ci => $c): ?><th scope="col" data-prio="<?= $prio($ci) ?>"><?= $sortLink($c['name'], $c['label']) ?></th><?php endforeach; ?>
@@ -159,6 +164,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <tr data-id="<?= (int) $e['id'] ?>"<?= \Core\RowMenu::host('dt-menu-' . (int) $e['id']) ?><?= $manual ? ' draggable="true"' : '' ?>>
         <td class="dt-c-check"><input type="checkbox" data-check data-rm-check value="<?= (int) $e['id'] ?>" aria-label="<?= e(Entries::title($t, $e)) ?> auswählen"></td>
         <?php if ($manual): ?><td class="dt-c-grip" aria-hidden="true">⋮⋮</td><?php endif; ?>
+        <?php if ($feat): $fa = \Core\Data\Featured::active($e); $ft = Entries::title($t, $e); ?><td class="dt-c-feat"><button type="button" class="dt-star" data-feat-star data-url="<?= e(url($base . '/' . (int) $e['id'] . '/featured')) ?>" data-title="<?= e($ft) ?>" aria-pressed="<?= $fa ? 'true' : 'false' ?>" aria-label="<?= e(__('„{title}“ auf der Startseite hervorheben', ['title' => $ft])) ?>" title="<?= e($fa ? __('Hervorgehoben – klicken zum Entfernen') : __('Auf der Startseite hervorheben')) ?>"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z"/></svg></button><?php if ($featView): ?><input type="number" class="dt-forder" step="1" value="<?= e((string) ($e[\Core\Data\Featured::ORDER] ?? '')) ?>" data-feat-order data-url="<?= e(url($base . '/' . (int) $e['id'] . '/featured')) ?>" aria-label="<?= e(__('Reihenfolge von „{title}“ (kleinere Zahl = weiter vorne)', ['title' => $ft])) ?>" placeholder="–"><?php endif; ?></td><?php endif; ?>
         <td class="dt-c-title"><div class="dt-c-title__in<?= isset($knDepth[(int) $e['id']]) ? ' dt-knsub' : '' ?>"<?= isset($knDepth[(int) $e['id']]) ? ' style="--dt-depth:' . $knDepth[(int) $e['id']] . '"' : '' ?> data-presence-slot>
           <?php if (isset($knDepth[(int) $e['id']])): ?><span class="dt-knsub__mark" aria-hidden="true">↳</span><span class="sr-only"><?= e(__('Unterkapitel')) ?>: </span><?php endif; ?>
           <?php if ($img && !empty($e[$img]) && ($m = \Core\Media::find((int) $e[$img]))): ?><img src="<?= e(\Core\Media::url($m, 480)) ?>" alt="" class="dt-thumb<?= $listImg === 'large' ? ' dt-thumb--l' : '' ?>" loading="lazy"><?php elseif ($listImg !== 'none'): ?><span class="dt-thumb dt-thumb--ph<?= $listImg === 'large' ? ' dt-thumb--l' : '' ?>" aria-hidden="true"><?= icon($t['icon']) ?></span><?php endif; ?>
@@ -170,7 +176,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
           <?= $rowMenu($e) ?>
         </div></td>
         <?php if ($perEntry): ?><td class="dt-c-vis" data-prio="1" data-label="<?= e(__('Website')) ?>"><?= $visTag($e) ?></td><?php endif; ?>
-        <?php foreach ($cols as $ci => $c): ?><td data-prio="<?= $prio($ci) ?>" data-label="<?= e($c['label']) ?>"><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : $clamp(strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>')))) ?></td><?php endforeach; ?>
+        <?php foreach ($cols as $ci => $c): ?><td data-prio="<?= $prio($ci) ?>" data-label="<?= e($c['label']) ?>"<?= in_array($c['type'], ['date', 'datetime', 'time', 'number', 'tel', 'iban'], true) ? ' class="dt-c-nowrap"' : '' ?>><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : $clamp(strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>')))) ?></td><?php endforeach; ?>
         <?php if ($t['settings']['workflow']): ?><td class="dt-c-status" data-label="Status"><?= $statusCell($e) ?></td><?php endif; ?>
         <td class="adm-muted dt-c-date" data-prio="5" data-label="Geändert"><?= e(\Core\Format::admin()->date(strtotime((string) ($e['updated_at'] ?: $e['created_at'])))) ?></td>
       </tr>

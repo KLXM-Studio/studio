@@ -86,6 +86,12 @@ final class EntryEditController extends AdminController
             $in[\Core\Data\Network::COL] = $r->str('share_level');
             $in[\Core\Data\Network::COL_SITES] = array_map('strval', (array) ($r->post['share_sites'] ?? []));
         }
+        // „Auf der Startseite hervorheben“ (Core\Data\Featured, Teil data/_featured.php): nur mit Veröffentlichungsrecht
+        if (!$partial && \Core\Data\Featured::enabled($t) && can('data.publish', $handle) && array_key_exists('_featured_form', $r->post)) {
+            $in[\Core\Data\Featured::COL] = $r->str(\Core\Data\Featured::COL);
+            $in[\Core\Data\Featured::ORDER] = $r->str(\Core\Data\Featured::ORDER);
+            $in[\Core\Data\Featured::UNTIL] = $r->str(\Core\Data\Featured::UNTIL);
+        }
         [$newId, $errors] = Entries::save($t, $e ? (int) $e['id'] : null, $in);
         if ($errors) {
             $values = $in + ($e ?? []);

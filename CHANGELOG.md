@@ -10,6 +10,12 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Hervorheben leicht pflegen
+- Eintragsliste: Stern je Zeile schaltet „Auf der Startseite hervorheben“ direkt um; Filter „Hervorgehoben (n)“ mit Reihenfolge als Zahl.
+- Formular und Seitenleiste „Eintrag bearbeiten“: sichtbarer Schalter unter dem Status, Reihenfolge und „bis“ erst nach dem Einschalten.
+- Bearbeiten-Modus: Karten in „Highlights“ und die Folienliste unter dem Slider mit „☆ Entfernen“ und ← → (bei Sortierung nach Reihenfolge), Hinweis, woher die Einträge kommen.
+- Eintragslisten: Datum, Zahlen und kurze Werte brechen nicht mehr mitten im Wert um.
+
 ### Datenliste: kompakte Filterleiste
 - Neue Darstellung der Besucherfilter (Standard für neue Listen): Suchfeld mit Lupe und je Filter ein Aufklapp-Knopf mit Anzahl, gewählte Werte als entfernbare Chips, Trefferzahl, „Filter zurücksetzen“; Telefon: Suche volle Breite. Bestehende Listen behalten die Chip-Reihen.
 - Menü aus Feldwerten: Menüpunkte springen per Anker zur gefilterten Datenliste.

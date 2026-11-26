@@ -144,6 +144,32 @@ final class Featured
         return $limit ? array_slice($items, 0, $limit) : $items;
     }
 
+    /**
+     * Bedienung an einer Karte bzw. Folie im Bearbeiten-Modus (Highlights, Slider): „Weiter vorne/hinten“ (nur bei Sortierung nach
+     * Reihenfolge) und „Nicht mehr hervorheben“ – resources/js/editor.js, POST /admin/api/featured. '' ohne Bearbeiten oder ohne Recht.
+     */
+    public static function editControls(array $t, array $e, bool $orderable): string
+    {
+        if (!is_editing() || !can('data.publish', $t['handle'])) return '';
+        $key = $t['handle'] . ':' . (int) $e['id'];
+        $title = Entries::title($t, $e);
+        return '<span class="cms-feat" data-feat-key="' . e($key) . '" contenteditable="false">'
+            . ($orderable ? '<button type="button" class="cms-feat__b" data-feat-act="up" aria-label="' . e(__('„{title}“ weiter nach vorne', ['title' => $title])) . '" title="' . e(__('Weiter nach vorne')) . '">←</button>'
+                . '<button type="button" class="cms-feat__b" data-feat-act="down" aria-label="' . e(__('„{title}“ weiter nach hinten', ['title' => $title])) . '" title="' . e(__('Weiter nach hinten')) . '">→</button>' : '')
+            . '<button type="button" class="cms-feat__b cms-feat__off" data-feat-act="off" aria-label="' . e(__('„{title}“ nicht mehr hervorheben', ['title' => $title])) . '" title="' . e(__('Nicht mehr auf der Startseite hervorheben')) . '">☆ ' . e(__('Entfernen')) . '</button></span>';
+    }
+
+    /** Hinweis im Bearbeiten-Modus: woher die Einträge kommen und wie man weitere hinzufügt */
+    public static function editHint(array $sources, string $sort): string
+    {
+        if (!is_editing()) return '';
+        $names = [];
+        foreach ($sources as $s) if (is_array($s) && ($t = Tables::findContent((string) ($s['table'] ?? ''))) && self::enabled($t)) $names[] = (string) $t['name'];
+        if (!$names) return '';
+        return '<p class="cms-feat-hint">' . e(__('Hervorgehobene Einträge aus {tables} – weitere am Eintrag mit ★ „Auf der Startseite hervorheben“ hinzufügen.', ['tables' => implode(', ', array_unique($names))]))
+            . ($sort !== 'order' ? ' ' . e(__('Reihenfolge ändern: in der Seitenleiste die Sortierung auf „Reihenfolge“ stellen.')) : '') . '</p>';
+    }
+
     /** Tabellen, deren Einträge sich hervorheben lassen (Auswahl im Block, Hinweise) – [handle => Name] */
     public static function tables(): array
     {

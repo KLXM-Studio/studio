@@ -44,6 +44,7 @@ $readonly = $reason !== null;
   <?php if ($e && ($plan = \Core\Schedule::label($e)) !== ''): // Zeitplan (Core\Schedule) – geändert wird er in der Verwaltung ?>
   <p class="cms-epanel__hint"><?= icon('clock') ?> <?= e(__('Zeitplan') . ': ' . $plan) ?></p>
   <?php endif; ?>
+  <?php if (!$readonly && $e): ?><?= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_featured.php', ['t' => $t, 'values' => $values, 'errors' => $errors]) ?><?php endif; ?>
   <?= /* Sichtbarkeit: „Auf der Website: …“ (Core\Data\Exposure, wie in der Verwaltung) */ \Core\Theme::capture(ROOT . '/app/Admin/views/data/_visibility.php', ['t' => $t, 'values' => $values, 'status' => $isNew ? ($publish ? 'published' : ($workflow ? 'draft' : 'published')) : (string) $status]) ?>
   <fieldset class="adm-fields cms-epanel__fields"<?= $readonly ? ' disabled' : '' ?>><legend class="adm-sr"><?= e(__('Felder')) ?></legend><?= Fields::renderForm(Entries::formSchema($t), $values, $errors, 'f') ?></fieldset>
   <?php if (!$readonly && \Core\Data\Tables::isShared($t)): // Netzwerk (Core\Data\Network): Zusatzfelder dieser Website und Weitergabe-Stufe (nur mit data.publish änderbar) ?>

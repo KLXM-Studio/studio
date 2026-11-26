@@ -115,7 +115,12 @@ const Panel = (() => {
     });
     el.addEventListener('focusin', e => { if (e.target.matches('[list=cms-links]')) loadLinks(); });
     el.addEventListener('input', () => touch());
-    el.addEventListener('change', () => touch());
+    el.addEventListener('change', e => {
+      touch();
+      // „Auf der Startseite hervorheben“: Reihenfolge und „bis“ erst nach dem Einschalten (data/_featured.php)
+      const c = e.target.closest?.('[data-featured-toggle]');
+      const more = c?.closest('.dt-featured')?.querySelector('[data-featured-more]'); if (more) more.hidden = !c.checked;
+    });
     el.addEventListener('keydown', e => {
       if (e.key === 'Escape' && !openDialog()) { e.preventDefault(); close(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); e.stopPropagation(); q('[data-panel-save]')?.click(); }

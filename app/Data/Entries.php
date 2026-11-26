@@ -913,6 +913,29 @@ final class Entries
         return [$id, $errors ? implode(' ', $errors) : null];
     }
 
+    /**
+     * „Auf der Startseite hervorheben“ direkt setzen (Stern in der Liste, Werkzeugleiste, Folien) – ohne das ganze Formular.
+     * $on: null = unverändert; $order: null = unverändert, '' = leeren, Zahl = setzen. Nur eigene Einträge (geteilte Tabellen).
+     * @return ?array der Eintrag danach (null: nicht gefunden)
+     */
+    public static function setFeatured(array $table, int $id, ?bool $on, int|string|null $order = null): ?array
+    {
+        self::guard($table);
+        if (!Featured::enabled($table)) return null;
+        Featured::ensure($table);
+        $db = Tables::db($table);
+        [$own, $op] = Tables::isShared($table) ? [' AND origin_site = :origin', ['origin' => site()->key]] : ['', []];
+        $set = [];
+        $p = ['id' => $id] + $op;
+        if ($on !== null) { $set[] = Featured::COL . ' = :on'; $p['on'] = $on ? 1 : 0; }
+        if ($order !== null) { $set[] = Featured::ORDER . ' = :ord'; $p['ord'] = $order === '' ? null : (int) $order; }
+        if ($set) {
+            $db->query("UPDATE {$table['table']} SET " . implode(', ', $set) . ", updated_at = :now WHERE id = :id$own", $p + ['now' => now()]);
+            self::changed($table);
+        }
+        return self::find($table, $id);
+    }
+
     public static function setStatus(array $table, array $ids, string $status): void
     {
         self::guard($table);

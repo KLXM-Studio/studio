@@ -4002,3 +4002,17 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .rv-diff__val--rich>:first-child{margin-top:0}.rv-diff__val--rich>:last-child{margin-bottom:0}
 .rv-diff__words{margin:6px 0 0;font-size:13px}
 .rv-diff__words summary{cursor:pointer;color:var(--adm-t2)}
+/* „Auf der Startseite hervorheben“ (Core\Data\Featured): Schalter im Formular, Stern und Reihenfolge in der Eintragsliste */
+.dt-featured{margin:0 0 14px;border-top:1px solid var(--adm-line);padding-top:12px}
+.dt-featured .f-check--switch svg{width:16px;height:16px;vertical-align:-2px;color:var(--adm-warn,#b7791f)}
+.dt-featured__more{margin-top:8px}
+.dt-c-feat{width:1%;white-space:nowrap}
+.dt-star{display:inline-grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:8px;background:none;color:var(--adm-t3);cursor:pointer}
+.dt-star svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+.dt-star:hover{background:var(--adm-hover,rgba(0,0,0,.05));color:var(--adm-ink)}
+.dt-star:focus-visible{outline:2px solid var(--adm-a);outline-offset:1px}
+.dt-star[aria-pressed=true]{color:#d99a00}
+.dt-star[aria-pressed=true] svg{fill:currentColor}
+.dt-star[aria-busy=true]{opacity:.5}
+.dt-forder{width:4.5rem;min-height:32px;margin-left:4px;padding:2px 6px;text-align:right;font-variant-numeric:tabular-nums}
+.dt-c-nowrap,.dt-c-date{white-space:nowrap}   /* kurze Werte (Datum, Zahl) nie mitten im Wert umbrechen */
