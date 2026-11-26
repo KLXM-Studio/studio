@@ -451,7 +451,8 @@ final class Entries
                 // Ziel mit Datum (Kalender): Datum in der Auswahl, kommende zuerst, vergangene erst auf Wunsch (Fields: 'past')
                 if ($target && Calendar::enabled($target)) [$def['options'], $def['past']] = self::calendarChoices($target);
                 if ($target) {
-                    $def['relation'] = ['table' => $target['name'], 'singular' => $target['singular'], 'create' => url('/admin/data/' . $target['handle'] . '/quick')];
+                    $def['relation'] = ['table' => $target['name'], 'singular' => $target['singular'], 'create' => url('/admin/data/' . $target['handle'] . '/quick'),
+                        'handle' => $target['handle'], 'picker' => url('/admin/api/picker/' . $target['handle'])];
                 }
             }
             $out[] = $def;

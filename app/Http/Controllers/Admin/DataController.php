@@ -959,6 +959,31 @@ final class DataController extends AdminController
             : Response::fail($err);
     }
 
+    /** Auswahlfenster: Einträge suchen und filtern (JSON, Core\Data\Picker) */
+    public function picker(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        if (!can('data.edit', $handle)) return Response::fail(__('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'), 403);
+        $t = $this->table($handle);
+        if (Tables::isInbox($t)) return Response::fail(__('Eingangs-Tabelle: Anfragen im „Eingang“ bearbeiten.'), 403);
+        $ids = $r->str('ids');
+        $o = ['q' => mb_substr($r->str('q'), 0, 80), 'status' => $r->str('status'), 'page' => (int) $r->str('page'),
+            'filter' => is_array($r->query['f'] ?? null) ? array_map('strval', (array) $r->query['f']) : []];
+        if ($r->str('when') !== '') $o['when'] = $r->str('when');
+        if ($ids !== '') $o['ids'] = array_slice(array_filter(array_map('intval', explode(',', $ids))), 0, 200);
+        return Response::json(['ok' => true, 'table' => ['handle' => $t['handle'], 'name' => $t['name'], 'singular' => $t['singular']]] + \Core\Data\Picker::list($t, $o));
+    }
+
+    /** Auswahlfenster: Vorschau eines Eintrags (JSON) */
+    public function pickerPreview(Request $r, string $handle, string $id): Response
+    {
+        $this->auth($r);
+        if (!can('data.edit', $handle)) return Response::fail(__('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'), 403);
+        $t = $this->table($handle);
+        if (Tables::isInbox($t) || !($e = Entries::find($t, (int) $id))) return Response::fail(__('Eintrag nicht gefunden.'), 404);
+        return Response::json(['ok' => true] + \Core\Data\Picker::preview($t, $e));
+    }
+
     /** Sammelaktionen und Sortierung (JSON) */
     public function bulk(Request $r, string $handle): Response
     {

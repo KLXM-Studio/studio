@@ -10,6 +10,11 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
+### Auswahlfenster für Einträge
+- Verknüpfungsfelder zeigen gewählte Einträge als Liste mit Datum bzw. Kategorie; Reihenfolge per Ziehen (Alt+Pfeil), sie wird gespeichert.
+- „+ … wählen“ öffnet ein Fenster mit Suche, Filtern (Kommende/Vergangene/Monat, Status, Auswahlfelder der Tabelle), Mehrfachauswahl und Vorschau; „Suchen …“ bei Verknüpfung mit einem Eintrag.
+- Neuer Feldtyp `entrypick`: einzelne Einträge aus mehreren Tabellen – in „Highlights“ (Ausgewählte Einträge) und im Einstieg als Slider (Folien aus ausgewählten Einträgen), zuerst und ohne Doppelte.
+
 ### Support über MCP und CLI lesen und beantworten
 - Neue MCP-Werkzeuge `support_list`, `support_get`, `support_reply`, `support_status`: Meldungen mit Umgebung, Verlauf und Anhängen lesen, antworten, interne Notizen, Status – in der Sicht und mit den Rechten des Token-Benutzers.
 - CLI `support:list`, `support:show`, `support:reply` (`--as=E-Mail`, `--json`).

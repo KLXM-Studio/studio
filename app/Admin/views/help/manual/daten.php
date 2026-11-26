@@ -52,7 +52,7 @@
     <tr><td>Autor/in</td><td>Autor/in → Tabelle „Team“ (ein Eintrag)</td><td>Auf der Seite einer Person stehen „Beiträge von …“.</td></tr>
   </table>
   <ul>
-    <li>Im Formular wählen Sie verknüpfte Einträge aus – oder legen mit <b>+ … neu</b> direkt einen neuen an (z. B. ein neues Schlagwort), ohne die Seite zu verlassen.</li>
+    <li>Im Formular stehen gewählte Einträge als Liste mit Datum bzw. Kategorie. <b>+ … wählen</b> öffnet das <b>Auswahlfenster</b>: Suche, Filter (bei Terminen <b>Kommende</b>, <b>Vergangene</b> oder ein Monat; Status; Auswahlfelder der Tabelle wie Kategorie oder Thema), Häkchen für mehrere Einträge und rechts eine <b>Vorschau</b> mit Bild und Anriss. Die Reihenfolge ändern Sie durch Ziehen am Griff (Tastatur: Alt+Pfeil hoch/runter) – sie wird gespeichert. Mit <b>+ … neu</b> legen Sie direkt einen neuen Eintrag an (z. B. ein neues Schlagwort), ohne die Seite zu verlassen. Bei „ein Eintrag“ öffnet <b>Suchen …</b> neben der Auswahlliste dasselbe Fenster.</li>
     <li>Rechts im Formular zeigt <b>Verknüpft mit</b>, wo ein Eintrag verwendet wird (z. B. alle Beiträge einer Person).</li>
     <li>Wird ein Eintrag gelöscht, verschwinden die Verknüpfungen automatisch – es bleiben keine toten Verweise.</li>
     <li><b>Auch im öffentlichen Formular:</b> Besucher wählen aus zentral gepflegten Einträgen – z. B. Ort, Kategorie oder Thema. „Ein Eintrag“ erscheint als Auswahlliste, „mehrere“ als Ankreuzfelder; angeboten werden nur <b>veröffentlichte</b> Einträge der verknüpften Tabelle. Neue Orte oder Themen legen Sie einfach in dieser Tabelle an – sie stehen sofort im Formular. (Nicht in verschlüsselten Eingängen.)</li>
@@ -144,6 +144,7 @@
     <li>Im Eintrag erscheint rechts der Abschnitt <b>Hervorheben</b>: „Auf der Startseite hervorheben“ anhaken, optional eine <b>Reihenfolge</b> (kleinere Zahl zuerst) und <b>Hervorheben bis</b> (einschließlich – danach erscheint der Eintrag nicht mehr hervorgehoben, bleibt aber online).</li>
     <li>Auf der Startseite den Block <b>Highlights</b> einfügen bzw. den Einstieg als Slider einstellen und die Tabellen wählen.</li>
   </ol>
+  <p><b>Einzelne Einträge gezielt zeigen:</b> In „Highlights“ (<b>Ausgewählte Einträge</b>) und im Slider (<b>Folien aus ausgewählten Einträgen</b>) wählen Sie über das Auswahlfenster einzelne Einträge aus beliebigen Tabellen – auch ohne „Hervorheben“. Sie erscheinen zuerst und in der Reihenfolge, die Sie per Ziehen festlegen; danach folgen die hervorgehobenen Einträge der gewählten Tabellen, ohne Doppelte.</p>
   <p>Es erscheinen nur veröffentlichte Einträge, die Besucher sehen dürfen (Zeitplan, geschützte Bereiche, „Nie öffentlich“). Bei geteilten Tabellen im Netzwerk zeigt jede Website nur die Einträge, die sie auch sonst zeigt – ausgeblendete Einträge anderer Websites bleiben weg. Hervorheben dürfen Rollen mit dem Recht „Veröffentlichen“ für die Tabelle.</p>
 
   <h3 id="menue">Einträge im Menü</h3>

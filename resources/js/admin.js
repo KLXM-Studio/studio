@@ -56,7 +56,8 @@ import { initFonts } from './_fonts.js';   // Grundeinstellungen → Schriften: 
 import { Rich } from './_rte.js';   // Formatierungsleiste: Stile, Farben, Marker, Link, Menüs, Tastatur
 import * as Markdown from './_markdown.js';   // Markdown einfügen/importieren (Rich-Text-Felder, Seiten-Editor)
 import { pickLink, openLinkPicker, initLinkFields } from './_links.js';   // Linkauswahl (Rich-Text und Feldtyp „link“)
-import { initPagesFields, openPagesPicker } from './_pages.js';   // Seitenauswahl (Feldtyp „pages“, Core\PagePicker)
+import { initPagesFields, openPagesPicker } from './_pages.js';
+import { openEntryPicker, entryInfo, initEntryPickFields } from './_picker.js';   // Auswahlfenster für Einträge (Core\Data\Picker)   // Seitenauswahl (Feldtyp „pages“, Core\PagePicker)
 import { initAssistant } from './_assistant.js';
 import { esc, csrf } from './_html.js';
 import { initPush } from './_push.js';   // Push-Benachrichtigungen: Konto → Benachrichtigungen, Abo auffrischen (Core\Push)
@@ -1151,7 +1152,99 @@ function initRelations(scope = d) {
     if (!res.ok) { alert(res.error || 'Anlegen nicht möglich.'); return null; }
     return res;
   };
-  $$('fieldset[data-relation]', scope).forEach(fs => {
+  const tableOf = el => ({ handle: el.dataset.table, name: el.dataset.tname || el.dataset.singular, singular: el.dataset.singular, url: el.dataset.picker, create: el.dataset.relation });
+  // Mit Auswahlfenster (data-picker, Core\Data\Picker): Chips in gewählter Reihenfolge (ziehen oder Alt+Pfeil), „wählen …“ öffnet das Fenster.
+  // Die Kästchen bleiben verborgen im Formular – ihre Reihenfolge im DOM ist die gespeicherte Reihenfolge (Pivot-Spalte sort).
+  $$('fieldset[data-relation][data-picker]', scope).forEach(fs => {
+    if (fs._init) return; fs._init = true;
+    const box = $('.f-multi', fs), tb = tableOf(fs);
+    box.hidden = true;
+    const own = $('.f-multi__tools', fs); if (own) own.hidden = true;
+    const wrap = d.createElement('div'); wrap.className = 'f-relpick';
+    wrap.innerHTML = `<ul class="pgf__chips relp__chips" aria-label="${esc(t('Ausgewählt'))}"></ul><p class="pgf__empty f-help" hidden>${esc(t('Nichts ausgewählt.'))}</p>`
+      + `<p class="pgf__actions"><button type="button" class="adm-btn adm-btn--small" data-rel-pick aria-haspopup="dialog">+ ${esc(t('{singular} wählen …', { singular: tb.singular }))}</button>`
+      + `<button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-rel-new>+ ${esc(t('{singular} neu', { singular: tb.singular }))}</button>`
+      + `<span class="pgf__count f-help" aria-live="polite"></span></p>`;
+    box.before(wrap);
+    const chips = $('ul', wrap), info = new Map();
+    const checked = () => $$('input[type=checkbox]', box).filter(c => c.checked);
+    const labelOf = cb => cb.closest('label');
+    const titleOf = cb => info.get(cb.value)?.title || $('span', labelOf(cb))?.textContent || cb.value;
+    const render = () => {
+      const list = checked();
+      chips.innerHTML = list.map(cb => {
+        const it = info.get(cb.value) || {}, title = titleOf(cb), meta = [it.sub, it.status === 'draft' ? t('Entwurf') : ''].filter(Boolean).join(' · ');
+        return `<li class="pgf__chip relp__chip" draggable="true" data-id="${esc(cb.value)}">`
+          + `<button type="button" class="relp__grip" data-rel-move aria-label="${esc(t('„{label}“ verschieben (Alt+Pfeil hoch/runter)', { label: title }))}" title="${esc(t('Ziehen oder Alt+Pfeil hoch/runter'))}">⋮⋮</button>`
+          + (it.thumb ? `<img class="relp__thumb" src="${esc(it.thumb)}" alt="" loading="lazy">` : '')
+          + `<span class="pgf__txt"><span class="pgf__label">${esc(title)}</span>${meta ? `<span class="pgf__trail">${esc(meta)}</span>` : ''}</span>`
+          + `<button type="button" class="pgf__x" data-rel-remove aria-label="${esc(t('„{label}“ entfernen', { label: title }))}" title="${esc(t('Entfernen'))}">×</button></li>`;
+      }).join('');
+      $('.pgf__empty', wrap).hidden = list.length > 0;
+      $('.pgf__count', wrap).textContent = list.length ? t('{n} ausgewählt', { n: list.length }) : '';
+    };
+    // Reihenfolge der Kästchen = Reihenfolge der IDs (gewählte zuerst)
+    const apply = ids => {
+      const want = ids.map(String);
+      $$('input[type=checkbox]', box).forEach(cb => { cb.checked = want.includes(cb.value); });
+      [...want].reverse().forEach(id => { const cb = $(`input[value="${CSS.escape(id)}"]`, box); if (cb) box.prepend(labelOf(cb)); });
+      render();
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const ensure = it => {
+      const id = String(it.id);
+      if (!$(`input[value="${CSS.escape(id)}"]`, box)) box.insertAdjacentHTML('beforeend', `<label class="f-check"><input type="checkbox" name="${esc(fs.dataset.name)}" value="${esc(id)}"> <span>${esc(it.title)}</span></label>`);
+      info.set(id, it);
+    };
+    const ids = () => $$('li', chips).map(li => li.dataset.id);
+    wrap.addEventListener('click', async e => {
+      const rm = e.target.closest('[data-rel-remove]');
+      if (rm) {
+        const li = rm.closest('li'), nid = (li.nextElementSibling || li.previousElementSibling)?.dataset.id || '';
+        apply(ids().filter(x => x !== li.dataset.id));
+        ($(`li[data-id="${CSS.escape(nid)}"] [data-rel-remove]`, chips) || $('[data-rel-pick]', wrap)).focus();
+        return;
+      }
+      if (e.target.closest('[data-rel-new]')) {
+        const res = await create(fs.dataset.relation, fs.dataset.singular); if (!res) return;
+        ensure({ id: res.id, title: res.title, status: 'draft' });
+        apply([...ids(), String(res.id)]);
+        return;
+      }
+      if (!e.target.closest('[data-rel-pick]')) return;
+      const sel = checked().map(cb => ({ table: tb.handle, id: cb.value, title: titleOf(cb), ...(info.get(cb.value) || {}) }));
+      const r = await openEntryPicker({ tables: [tb], multiple: true, selected: sel, title: fs.querySelector('legend')?.textContent?.trim() });
+      $('[data-rel-pick]', wrap).focus();
+      if (!r) return;
+      r.forEach(ensure);
+      apply(r.map(it => String(it.id)));
+    });
+    // Ziehen (Maus) und Alt+Pfeil (Tastatur)
+    let drag = null;
+    chips.addEventListener('dragstart', e => { drag = e.target.closest('li'); if (!drag) return; drag.classList.add('is-drag'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', drag.dataset.id); });
+    chips.addEventListener('dragover', e => {
+      if (!drag) return; e.preventDefault();
+      const over = e.target.closest('li'); if (!over || over === drag) return;
+      const r = over.getBoundingClientRect();
+      over[(e.clientY - r.top) > r.height / 2 ? 'after' : 'before'](drag);
+    });
+    chips.addEventListener('drop', e => { if (drag) e.preventDefault(); });
+    chips.addEventListener('dragend', () => { if (!drag) return; drag.classList.remove('is-drag'); drag = null; apply(ids()); });
+    chips.addEventListener('keydown', e => {
+      const g = e.target.closest('[data-rel-move]'); if (!g || !e.altKey || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      e.preventDefault();
+      const id = g.closest('li').dataset.id, list = ids(), i = list.indexOf(id), j = i + (e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 1);
+      if (j < 0 || j >= list.length) return;
+      [list[i], list[j]] = [list[j], list[i]];
+      apply(list);
+      $(`li[data-id="${CSS.escape(id)}"] [data-rel-move]`, chips)?.focus();
+    });
+    render();
+    const cur = checked().map(cb => cb.value);
+    if (cur.length) entryInfo(tb.url, cur).then(m => { m.forEach((v, k) => info.set(k, v)); render(); });
+  });
+  // Ohne Auswahlfenster (ältere Felder): Filterfeld über den Kästchen + „neu“
+  $$('fieldset[data-relation]:not([data-picker])', scope).forEach(fs => {
     if (fs._init) return; fs._init = true;
     const box = $('.f-multi', fs);
     const tools = d.createElement('div'); tools.className = 'f-reltools';
@@ -1173,8 +1266,19 @@ function initRelations(scope = d) {
   $$('.f-relselect[data-relation]', scope).forEach(w => {
     if (w._init) return; w._init = true;
     const sel = $('select', w);
-    w.insertAdjacentHTML('beforeend', `<button type="button" class="adm-btn adm-btn--small adm-btn--ghost">+ ${esc(w.dataset.singular)} neu</button>`);
-    $('button', w).addEventListener('click', async () => {
+    if (w.dataset.picker) {
+      w.insertAdjacentHTML('beforeend', `<button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-rel-pick aria-haspopup="dialog">${esc(t('Suchen …'))}</button>`);
+      $('[data-rel-pick]', w).addEventListener('click', async () => {
+        const r = await openEntryPicker({ tables: [tableOf(w)], multiple: false, selected: sel.value ? [{ table: w.dataset.table, id: sel.value, title: sel.selectedOptions[0]?.text || '' }] : [] });
+        $('[data-rel-pick]', w).focus();
+        if (!r?.length) return;
+        const it = r[0];
+        if (!$(`option[value="${it.id}"]`, sel)) sel.insertAdjacentHTML('beforeend', `<option value="${it.id}">${esc(it.title)}</option>`);
+        sel.value = String(it.id); sel.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+    w.insertAdjacentHTML('beforeend', `<button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-rel-new>+ ${esc(w.dataset.singular)} neu</button>`);
+    $('[data-rel-new]', w).addEventListener('click', async () => {
       const res = await create(w.dataset.relation, w.dataset.singular); if (!res) return;
       if (!$(`option[value="${res.id}"]`, sel)) sel.insertAdjacentHTML('beforeend', `<option value="${res.id}">${esc(res.title)}</option>`);
       sel.value = String(res.id); sel.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1286,7 +1390,7 @@ function initDt(scope) {
 }
 if (IN_ADMIN) watchDatetime(d, dtOpts());
 onRoot(r => watchDatetime(r, dtOpts()));
-function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initHotspots(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initQuickConfig(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
+function init(scope = d) { initDt(scope); initBlockFields(scope); initIban(scope); initGeo(scope); initHotspots(scope); initRRule(scope); initBinding(scope); initRelations(scope); initRepeaters(scope); initRepeaterCollapse(scope); initRte(scope); initLinkFields(scope); initPagesFields(scope); initEntryPickFields(scope); initMedia(scope); initMediaText(scope); initCollectionFields(scope); initShowIf(scope); initSecCount(scope); initExposure(scope); initQuickConfig(scope); initRowMenus(); initDateOnly(scope); initCounters(scope); initDataFields(scope); initListTemplates(scope); initIconPickers(scope); initIconGallery(scope); initTiles(scope); initAi(scope); /* KI-Assistent */ }
 init();
 flushToast();   // Meldung von der vorherigen Seite (toastNext), z. B. nach dem Wiederherstellen
 

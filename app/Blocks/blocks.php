@@ -303,6 +303,8 @@ return [
             ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'width' => 'half', 'default' => 'Highlights'],
             ['name' => 'intro', 'label' => 'Einleitung (optional)', 'type' => 'textarea', 'rows' => 2, 'max' => 400],
             ['type' => 'heading', 'label' => 'Einträge'],
+            ['name' => 'picked', 'label' => 'Ausgewählte Einträge (optional)', 'type' => 'entrypick', 'max' => 12,
+                'help' => 'Erscheinen zuerst und in dieser Reihenfolge (ziehen zum Umsortieren) – auch ohne „Hervorheben“. Danach folgen die hervorgehobenen Einträge der Tabellen unten.'],
             ['name' => 'sources', 'label' => 'Tabellen', 'type' => 'repeater', 'item_label' => 'Tabelle', 'title_field' => 'badge', 'max_items' => 8,
                 'help' => 'Nur Tabellen mit eingeschaltetem „Hervorheben“. Je Tabelle höchstens so viele Einträge wie angegeben.', 'fields' => [
                 ['name' => 'table', 'label' => 'Tabelle', 'type' => 'datatable', 'required' => true, 'width' => 'half'],

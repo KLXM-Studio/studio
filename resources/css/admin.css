@@ -18,6 +18,7 @@
 @import "./_prefs.css";   /* Sammelseiten Einstellungen/Statistiken (Core\AdminPages) */
 @import "./_markdown.css";   /* Markdown einfügen/importieren: Dialog und Hinweis (resources/js/_markdown.js) */
 @import "./_pages.css";   /* Feldtyp „pages“ (Core\PagePicker) + aufklappbare Abschnitte in Formularen */
+@import "./_picker.css";   /* Auswahlfenster für Einträge (Core\Data\Picker) */
 @import "./_aiset.css";   /* Grundeinstellungen → KI: Verbindungen, Verwendung, Modelle (Core\AI\Profiles) */
 @import "./_pushadmin.css";   /* Verwaltung → Mitteilungen (Core\Push, app/Admin/views/push/*) */
 @import "./_requests.css";   /* Anfragen als Posteingang (app/Admin/views/requests/*, resources/js/_requests.js) */

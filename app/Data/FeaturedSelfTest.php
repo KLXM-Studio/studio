@@ -151,6 +151,13 @@ final class FeaturedSelfTest
                 app()->editing = false;
                 $ck($theme->renderBlock($blk(['sources' => [['table' => $plain['handle']]]])) === '', 'Nichts hervorgehoben: Abschnitt entfällt');
                 $ck(str_contains($theme->renderBlock($blk(['sources' => [['table' => $plain['handle']]], 'hide_empty' => false])), 'dl-empty'), 'Nichts hervorgehoben: Hinweistext, wenn gewünscht');
+                // Ausgewählte Einträge (Feldtyp „entrypick“): zuerst, in gewählter Reihenfolge, auch ohne Hervorheben, nicht doppelt
+                $ck(EntryPick::clean([], [$plain['handle'] . ':' . $pid, 'x', $plain['handle'] . ':' . $pid, 'a:b']) === [$plain['handle'] . ':' . $pid], 'Auswahl: bereinigt (gültig, ohne Doppelte)');
+                $pk = $theme->renderBlock($blk(['picked' => [$plain['handle'] . ':' . $pid, $a['handle'] . ':' . $a1], 'sources' => $src, 'limit' => 0]));
+                $pp = strpos($pk, 'Nicht hervorhebbar');
+                $ck($pp !== false && $pp < (int) strpos($pk, 'Musterfest') && substr_count($pk, '>Musterfest im Park<') === 1, 'Ausgewählte zuerst, auch ohne Hervorheben, nicht doppelt');
+                $pl = Picker::list($a, ['q' => 'muster']);
+                $ck($pl['total'] === 1 && $pl['items'][0]['id'] === $a1 && Picker::list($a, ['ids' => [$a1, $a3]])['total'] === 2, 'Auswahlfenster: Suche und Nachladen nach IDs');
                 $css = implode(' ', $theme->conditionalCss(['highlights']));
                 $ck(str_contains($css, 'highlights.css') && str_contains($css, 'data.css'), 'Stylesheets: Datenliste + highlights.css');
                 $ck(!str_contains(implode(' ', $theme->conditionalCss(['richtext'])), 'highlights.css'), 'Ohne Block kein highlights.css');

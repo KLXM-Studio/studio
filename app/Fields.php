@@ -25,7 +25,7 @@ namespace Core;
 final class Fields
 {
     public const TYPES = ['text', 'textarea', 'richtext', 'inline', 'email', 'tel', 'url', 'link', 'number',
-        'bool', 'select', 'multiselect', 'iban', 'datatable', 'datafield', 'datafields', 'listtemplate', 'date', 'datetime', 'time', 'recurrence', 'color', 'icon', 'geo', 'page', 'pages', 'media', 'file', 'collection', 'mediatext', 'blocks', 'repeater', 'group', 'hotspots', 'hidden', 'secret', 'heading'];
+        'bool', 'select', 'multiselect', 'iban', 'datatable', 'datafield', 'datafields', 'listtemplate', 'date', 'datetime', 'time', 'recurrence', 'color', 'icon', 'geo', 'page', 'pages', 'entrypick', 'media', 'file', 'collection', 'mediatext', 'blocks', 'repeater', 'group', 'hotspots', 'hidden', 'secret', 'heading'];
 
     /** Standardwerte eines Schemas als flaches Array */
     public static function defaults(array $fields): array
@@ -44,7 +44,7 @@ final class Fields
     {
         return match ($f['type'] ?? 'text') {
             'bool' => false,
-            'repeater', 'group', 'multiselect', 'datafields', 'blocks' => [],
+            'repeater', 'group', 'multiselect', 'datafields', 'blocks', 'entrypick' => [],
             'hotspots' => Hotspots::empty(),
             'pages' => ($f['store'] ?? 'ids') === 'paths' ? '' : [],
             'number', 'media', 'file', 'page', 'collection' => null,
@@ -309,6 +309,8 @@ final class Fields
                 return [array_values(array_filter(array_map('strval', is_array($raw) ? $raw : []), fn($v) => (bool) preg_match('~^[a-z][a-z0-9_]*\.[a-z_][a-z0-9_]*$~', $v))), null];
             case 'pages':
                 return [PagePicker::clean($f, $raw), null];
+            case 'entrypick':
+                return [\Core\Data\EntryPick::clean($f, $raw), null];
             case 'multiselect':
                 $opts = self::options($f);
                 $vals = array_values(array_unique(array_filter(array_map('strval', is_array($raw) ? $raw : ($s === '' ? [] : explode(',', $s))), fn($v) => $v !== '' && array_key_exists($v, $opts))));
@@ -345,6 +347,12 @@ final class Fields
     }
 
     /** Optionen: ['a'=>'A'] oder ['a','b'] */
+    /** Auswahlfenster für Einträge (resources/js/_picker.js, Core\Data\Picker) an Verknüpfungsfeldern */
+    private static function pickerAttrs(array $rel): string
+    {
+        return !empty($rel['picker']) ? ' data-picker="' . e((string) $rel['picker']) . '" data-table="' . e((string) ($rel['handle'] ?? '')) . '" data-tname="' . e((string) $rel['table']) . '"' : '';
+    }
+
     public static function options(array $f): array
     {
         $o = $f['options'] ?? [];
@@ -735,8 +743,11 @@ final class Fields
 
         if ($type === 'multiselect') {
             $sel = array_map('strval', is_array($value) ? $value : []);
-            $rel = !empty($f['relation']) ? ' data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '" data-name="' . e($inputName) . '[]"' : '';
+            $rel = !empty($f['relation']) ? ' data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '" data-name="' . e($inputName) . '[]"'
+                . self::pickerAttrs($f['relation']) : '';
             $opts = self::options($f);
+            // Verknüpfungen: gewählte zuerst in gespeicherter Reihenfolge (Chips im Skript, Reihenfolge = Pivot-Spalte sort)
+            if ($rel) $opts = array_replace(array_intersect_key(array_flip($sel), $opts), $opts);
             $past = array_flip(array_map('strval', (array) ($f['past'] ?? [])));   // vergangene Termine (Entries::calendarChoices)
             $h = '<fieldset class="f f--multi' . ($rel ? ' f--relation' : '') . $width . ($err ? ' f--error' : '') . '"' . $rel . ($describedBy ? ' aria-describedby="' . $describedBy . '"' : '') . '><legend>' . $label . '</legend>'
                 . '<input type="hidden" name="' . $inputName . '[]" value="">';
@@ -751,6 +762,10 @@ final class Fields
                     . (in_array((string) $k, $sel, true) ? ' checked' : '') . '> <span>' . e((string) $l) . '</span></label>';
             }
             return $h . '</div>' . $help . $errHtml . '</fieldset>';
+        }
+
+        if ($type === 'entrypick') {
+            return \Core\Data\EntryPick::render($f, $value, $id, $inputName, $label, $help, $errHtml, $describedBy, $width);
         }
 
         if ($type === 'pages') {
@@ -786,7 +801,7 @@ final class Fields
                 . '</div><div class="rte-area" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="' . $id . '-l">' . $shown . '</div>'
                 . '<input type="hidden" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '"></div>',
             'select' => !empty($f['relation'])
-                ? '<span class="f-relselect" data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '">' . self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req) . '</span>'
+                ? '<span class="f-relselect" data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '"' . self::pickerAttrs($f['relation']) . '>' . self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req) . '</span>'
                 : (!empty($f['tiles']) ? self::renderTiles($id, $inputName, self::options($f), (array) $f['tiles'], $v, $aria) : self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req)),
             'color' => !empty($f['transparent'])
                 ? '<span class="f-color' . ($v === 'transparent' ? ' is-transparent' : '') . '"><input type="color" value="' . e($v && $v !== 'transparent' ? $v : '#FFFFFF') . '" aria-hidden="true" tabindex="-1" data-color-for="' . $id . '">'

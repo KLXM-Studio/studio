@@ -20,11 +20,22 @@ $sources = array_values(array_filter((array) ($d['sources'] ?? []), fn($s) => is
 // Folien eines Einstiegs als Slider auf dieser Seite stehen (Core\Blocks\HeroSlider::pageEntries, unabhängig von der Reihenfolge)
 $ctx = app()->entry;
 $exclude = $ctx ? [$ctx['table']['handle'] => [(int) $ctx['entry']['id']]] : [];
-$inSlider = $sources ? \Core\Blocks\HeroSlider::pageEntries() : [];
+// Ausgewählte Einträge (Feldtyp „entrypick“, Core\Data\EntryPick): zuerst, in gewählter Reihenfolge – dann die hervorgehobenen
+$picked = \Core\Data\EntryPick::clean(['max' => 24], $d['picked'] ?? []);
+$inSlider = $sources || $picked ? \Core\Blocks\HeroSlider::pageEntries() : [];
 $q = ['sort' => (string) ($d['sort'] ?? 'date'), 'limit' => (int) ($d['limit'] ?? 6)];
 $skip = $exclude;
 if (!empty($d['exclude_slider'])) foreach ($inSlider as $h => $ids) $skip[$h] = [...($skip[$h] ?? []), ...$ids];
-$items = Featured::items($sources, $q + ['exclude' => $skip]);
+$items = \Core\Data\EntryPick::items($picked, $skip);
+if ($items) {
+    // Etikett wie bei der Tabelle unter „Tabellen“, sonst ihr Name; ausgewählte nicht doppelt als hervorgehobene
+    $badgeOf = [];
+    foreach ($sources as $s) $badgeOf[(string) $s['table']] ??= trim((string) ($s['badge'] ?? ''));
+    foreach ($items as &$it) { $it['badge'] = ($badgeOf[$it['table']['handle']] ?? '') ?: $it['badge']; $skip[$it['table']['handle']][] = (int) $it['entry']['id']; }
+    unset($it);
+}
+$items = [...$items, ...Featured::items($sources, ['sort' => $q['sort'], 'exclude' => $skip])];
+if ($q['limit'] > 0) $items = array_slice($items, 0, $q['limit']);
 // Hinweis im Editor: Überschneidung mit dem Slider dieser Seite (ausgelassen bzw. doppelt)
 $overlap = 0;
 if (is_editing() && $inSlider) {
@@ -51,6 +62,7 @@ $titleClamp = Clamp::titleClass($d);
 // Farbton des Etiketts je Tabelle (Reihenfolge der gewählten Tabellen) – dl-tone-1 … 5 wie die Etiketten im Verzeichnis
 $tones = [];
 foreach ($sources as $s) $tones[(string) $s['table']] ??= 'dl-tone-' . (count($tones) % 5 + 1);
+foreach ($items as $it) $tones[$it['table']['handle']] ??= 'dl-tone-' . (count($tones) % 5 + 1);
 ?>
 <div class="<?= e($wrap) ?> dl dl--cards dl--highlights hl--<?= e($layout) ?><?= e($restCls) ?>">
   <?php if (!empty($d['eyebrow']) || !empty($d['title']) || !empty($d['intro'])): ?>
@@ -71,7 +83,7 @@ foreach ($sources as $s) $tones[(string) $s['table']] ??= 'dl-tone-' . (count($t
   <?php if (!$items): ?>
   <p class="dl-empty"><?= e((string) ($d['empty_text'] ?? '') ?: lt('Zurzeit ist nichts hervorgehoben.')) ?><?php if (is_editing()): ?> <small><?= e(!Featured::tables()
       ? __('Schalten Sie zuerst in einer Tabelle „Einträge auf der Startseite hervorheben können“ ein (Tabelle → Auf der Website → Detailseiten).')
-      : (!$sources ? __('Bitte in der Seitenleiste Tabellen wählen.') : __('Nur veröffentlichte Einträge mit „Hervorheben“ erscheinen.'))) ?></small><?php endif; ?></p>
+      : (!$sources && !$picked ? __('Bitte in der Seitenleiste Tabellen oder einzelne Einträge wählen.') : __('Nur veröffentlichte Einträge mit „Hervorheben“ erscheinen.'))) ?></small><?php endif; ?></p>
   <?php else: ?>
   <ul class="dl-items dl-cols-<?= e($cols) ?>" role="list">
     <?php foreach ($items as $i => $it): $t = $it['table']; $e = $it['entry']; $url = $it['href']; $title = Entries::title($t, $e);

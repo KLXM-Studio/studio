@@ -81,6 +81,8 @@ final class HeroSlider
                 'options' => ['own' => 'Eigene Folien, dann Einträge', 'entries' => 'Einträge, dann eigene Folien']],
             ['name' => 'slides', 'label' => 'Eigene Folien', 'type' => 'repeater', 'item_label' => 'Folie', 'title_field' => 'title', 'max_items' => 8,
                 'show_if' => $on, 'fields' => $slide],
+            ['name' => 'slides_picked', 'label' => 'Folien aus ausgewählten Einträgen', 'type' => 'entrypick', 'max' => 8, 'show_if' => $on,
+                'help' => 'Einzelne Einträge in dieser Reihenfolge (ziehen zum Umsortieren) – auch ohne „Hervorheben“. Sie stehen vor den hervorgehobenen Einträgen.'],
             ['name' => 'slides_sources', 'label' => 'Folien aus Einträgen (hervorgehoben)', 'type' => 'repeater', 'item_label' => 'Tabelle', 'title_field' => 'table', 'max_items' => 6,
                 'show_if' => $on, 'help' => 'Einträge mit „Auf der Startseite hervorheben“ – Bild, Titel, Dachzeile und Text wie beim Einstieg mit Quelle „Felder des Eintrags“, Button zur Detailseite.',
                 'fields' => [
@@ -124,7 +126,7 @@ final class HeroSlider
         $d = $b->data;
         $base = $d;
         $base['slider'] = false;
-        unset($base['_bind'], $base['slides'], $base['slides_sources']);
+        unset($base['_bind'], $base['slides'], $base['slides_sources'], $base['slides_picked']);
         $names = array_column((array) $b->def['fields'], 'name');
         $content = array_values(array_intersect(self::CONTENT, $names));
         $clean = $base;
@@ -149,8 +151,12 @@ final class HeroSlider
         foreach ((array) ($d['slides_sources'] ?? []) as $src) {
             if (is_array($src) && ($st = \Core\Data\Tables::findContent((string) ($src['table'] ?? '')))) $badges[$st['handle']] ??= trim((string) ($src['badge'] ?? ''));
         }
-        foreach (Featured::items((array) ($d['slides_sources'] ?? []), ['sort' => (string) ($d['slides_sort'] ?? 'date'),
-            'exclude' => $ctx ? [$ctx['table']['handle'] => (int) $ctx['entry']['id']] : []]) as $it) {
+        $skip = $ctx ? [$ctx['table']['handle'] => [(int) $ctx['entry']['id']]] : [];
+        // Ausgewählte Einträge (Core\Data\EntryPick) zuerst, dann die hervorgehobenen ohne diese
+        $picked = \Core\Data\EntryPick::items((array) ($d['slides_picked'] ?? []), $skip);
+        foreach ($picked as $it) $skip[$it['table']['handle']][] = (int) $it['entry']['id'];
+        foreach ([...$picked, ...Featured::items((array) ($d['slides_sources'] ?? []), ['sort' => (string) ($d['slides_sort'] ?? 'date'),
+            'exclude' => $skip])] as $it) {
             $entries[] = ['data' => self::entryData($clean, $b->def, $it, $button, $badges[$it['table']['handle']] ?? ''),
                 'key' => $it['table']['handle'] . ':' . (int) $it['entry']['id']];
         }

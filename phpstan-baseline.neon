@@ -199,7 +199,7 @@ parameters:
 			path: app/Fields.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between mixed~\(''blocks''\|''bool''\|''collection''\|''color''\|''datafield''\|''datafields''\|''datatable''\|''datetime''\|''file''\|''geo''\|''group''\|''heading''\|''hidden''\|''hotspots''\|''iban''\|''icon''\|''inline''\|''link''\|''listtemplate''\|''media''\|''mediatext''\|''multiselect''\|''page''\|''pages''\|''recurrence''\|''repeater''\|''richtext''\|''secret''\|''select''\|''textarea''\|null\) and ''link'' will always evaluate to false\.$#'
+			message: '#^Strict comparison using \=\=\= between mixed~\(''blocks''\|''bool''\|''collection''\|''color''\|''datafield''\|''datafields''\|''datatable''\|''datetime''\|''entrypick''\|''file''\|''geo''\|''group''\|''heading''\|''hidden''\|''hotspots''\|''iban''\|''icon''\|''inline''\|''link''\|''listtemplate''\|''media''\|''mediatext''\|''multiselect''\|''page''\|''pages''\|''recurrence''\|''repeater''\|''richtext''\|''secret''\|''select''\|''textarea''\|null\) and ''link'' will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Fields.php

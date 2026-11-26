@@ -285,6 +285,8 @@ return function (Router $r): void {
     $r->post('/admin/data/{handle}/einsetzen', [Admin\DataController::class, 'placeSave']);
     $r->post('/admin/data/{handle}/bulk', [Admin\DataController::class, 'bulk']);
     $r->post('/admin/data/{handle}/quick', [Admin\DataController::class, 'quick']);
+    $r->get('/admin/api/picker/{handle}', [Admin\DataController::class, 'picker']);            // Auswahlfenster für Einträge (Core\Data\Picker)
+    $r->get('/admin/api/picker/{handle}/{id}', [Admin\DataController::class, 'pickerPreview']);
     // Adressbuch-Ansicht (Core\Data\AddressBook): Listen zuordnen, vCard-Export – vor /{id}; Menüpunkt „Kontakte“
     $r->get('/admin/kontakte', [Admin\AddressBookController::class, 'home']);
     $r->post('/admin/data/{handle}/listen', [Admin\AddressBookController::class, 'assign']);
