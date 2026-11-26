@@ -56,8 +56,10 @@ final class MenuEntries
     {
         $out = [];
         foreach ((array) ($t['fields'] ?? []) as $f) {
-            if (!in_array($f['type'] ?? '', ['relation', 'relations'], true)) continue;
-            $tt = Tables::findContent((string) ($f['target'] ?? ''));
+            // Verknüpfung bzw. Auswahl aus einer Liste (OptionSource) – Ziel mit eigenen Detailseiten (Themenseiten)
+            $isRel = in_array($f['type'] ?? '', ['relation', 'relations'], true);
+            if (!$isRel && !(in_array($f['type'] ?? '', ['select', 'multiselect'], true) && !empty($f['options_from']))) continue;
+            $tt = Tables::findContent((string) ($isRel ? ($f['target'] ?? '') : $f['options_from']));
             if ($tt && !empty($tt['settings']['detail_page_id']) && trim((string) ($tt['settings']['route'] ?? ''), '/') !== '') $out[] = (string) $f['name'];
         }
         return $out;
@@ -172,6 +174,10 @@ final class MenuEntries
         $options = $rel ? Entries::relationOptions($fd) : (array) $fd['options'];
         $target = $rel ? Tables::findContent((string) $fd['target']) : null;
         $toDetail = $target && ($cfg['link'] ?? '') === 'detail' && in_array($field, self::detailCapable($t), true);
+        // Auswahl aus einer Liste mit Detailseiten: Menüpunkt führt auf die Themenseite des Listen-Eintrags
+        $listDetail = !$rel && !empty($fd['options_from']) && ($cfg['link'] ?? '') === 'detail' && in_array($field, self::detailCapable($t), true);
+        $ctxL = $listDetail ? app()->entry : null;
+        $curList = $ctxL && ($ctxL['table']['handle'] ?? '') === (string) $fd['options_from'] ? (string) ($ctxL['entry']['slug'] ?? '') : '';
         $ctxT = app()->entry;
         $curTarget = $toDetail && $ctxT && ($ctxT['table']['handle'] ?? '') === $target['handle'] ? (string) (int) $ctxT['entry']['id'] : '';
         $req = app()->request;
@@ -195,8 +201,9 @@ final class MenuEntries
             }
             $href = $base . '?' . http_build_query([$field => $key]) . $anchor;
             if ($toDetail && ($te = Entries::find($target, (int) $key)) && ($dh = Entries::href($target, $te))) $href = $dh;
+            if ($listDetail && ($lh = Entries::listHref((string) $fd['options_from'], $key))) $href = $lh;
             $out[] = ['id' => 'v-' . $field . '-' . $key, 'label' => $rel ? (string) $label : Tables::optionLabel($fd, $key), 'href' => $href,
-                'active' => in_array($key, array_map('strval', $sel), true) || in_array($key, $entryVals, true) || $key === $curTarget, 'children' => $kids, 'draft' => false];
+                'active' => in_array($key, array_map('strval', $sel), true) || in_array($key, $entryVals, true) || $key === $curTarget || ($curList !== '' && $key === $curList), 'children' => $kids, 'draft' => false];
         }
         return $out;
     }

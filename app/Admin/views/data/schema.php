@@ -252,10 +252,10 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
           </select></div>
         <?php if (\Core\Data\MenuEntries::detailCapable($table)): ?>
         <div class="f f--inline"><label for="t-menu-link"><?= e(__('Menüpunkte einer Verknüpfung führen')) ?></label>
-          <p class="f-help"><?= e(__('Gilt nur für „Werte von …“ einer Verknüpfung, deren Tabelle eigene Detailseiten hat.')) ?></p>
+          <p class="f-help"><?= e(__('Gilt für „Werte von …“ einer Verknüpfung bzw. einer Auswahlliste, deren Tabelle eigene Detailseiten hat (Themenseiten).')) ?></p>
           <select id="t-menu-link" name="settings[menu_entries][link]">
             <option value=""><?= e(__('zur Übersicht mit Filter')) ?></option>
-            <option value="detail"<?= ($me['link'] ?? '') === 'detail' ? ' selected' : '' ?>><?= e(__('zur Detailseite des verknüpften Eintrags')) ?></option>
+            <option value="detail"<?= ($me['link'] ?? '') === 'detail' ? ' selected' : '' ?>><?= e(__('zur Detailseite (Themenseite) des Eintrags')) ?></option>
           </select></div>
         <?php endif; ?>
         <?php endif; ?>
