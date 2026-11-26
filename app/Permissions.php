@@ -257,7 +257,13 @@ final class Permissions
         // Tabellenauswahl der Rolle gilt für Daten-Rechte und für Anfragen (Eingangs-Tabellen, z. B. nur „Rezeptanfragen“)
         if ($table !== null && is_array($role['tables'])
             && ((str_starts_with($perm, 'data.') && $perm !== 'data.schema') || str_starts_with($perm, 'requests.'))) {
-            return in_array($table, $role['tables'], true);
+            if (in_array($table, $role['tables'], true)) return true;
+            // Auswahlliste einer Tabelle (Core\Data\OptionSource): wer die Haupttabelle bearbeiten darf, pflegt auch ihre Liste –
+            // außer die Liste ist gesperrt (Einstellung „Liste nur über Felder & Einstellungen ändern“)
+            if (in_array($perm, ['data.edit', 'data.delete', 'data.publish'], true)) {
+                foreach (Data\OptionSource::parentsOf($table) as $parent) if (in_array($parent, $role['tables'], true)) return true;
+            }
+            return false;
         }
         return true;
     }

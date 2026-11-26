@@ -593,6 +593,8 @@ final class Tables
         // Version des Grundschemas (nur additiv; data:convert/Upgrade ergänzen neue Grundfelder) und Stand einer Umwandlung
         if (Kinds::isSpecial($kind)) $settings['kind_version'] = $kindVersion;
         // Wissen (Core\Data\Knowledge): Layout-Modus, Kapitelnummern, Vor/Zurück – ohne Formularabschnitt bleibt die bisherige Einstellung
+        // Auswahlliste (Core\Data\OptionSource): nur über „Felder & Einstellungen“ pflegbar – nur gespeichert, wenn gesetzt
+        if (!empty($s['list_locked'])) $settings['list_locked'] = true;
         // Einträge im Menü unter der Übersichtsseite (Core\Data\MenuEntries) – nur gespeichert, wenn gesetzt (Bestand bleibt unverändert)
         if (isset($s['menu_entries']) || isset($existing['settings']['menu_entries'])) $settings['menu_entries'] = MenuEntries::validate((array) ($s['menu_entries'] ?? $existing['settings']['menu_entries']));
         // Filter der Eintragsliste in der Verwaltung (Core\Data\ListFilters) – nur gespeichert, wenn gesetzt

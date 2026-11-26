@@ -10399,4 +10399,13 @@ return [
     'Übersetze die neuesten drei Einträge, die noch keine englische Fassung haben.' => 'Translate the three newest entries that have no English version yet.',
     'ändert' => 'changes',
     'ändert direkt' => 'changes directly',
+    'Als eigene Liste anlegen – die Redaktion ergänzt und benennt die Möglichkeiten dann selbst' => 'Create as a list of its own – editors then add and rename the choices themselves',
+    'Auswahlliste für {fields}. Wer dort Einträge bearbeiten darf, pflegt auch diese Liste.' => 'Choice list for {fields}. Anyone allowed to edit entries there also maintains this list.',
+    'Auswahllisten' => 'Choice lists',
+    'Feste Liste: nur Personen mit Recht auf diese Tabelle ändern sie' => 'Fixed list: only people with permission for this table change it',
+    'Neue Auswahllisten: {names}.' => 'New choice lists: {names}.',
+    'Tabelle gespeichert.' => 'Table saved.',
+    'Verwendet' => 'Used',
+    'nicht benutzt' => 'not used',
+    'Neue Möglichkeiten in „{name}“ darf Ihre Rolle nicht anlegen.' => 'Your role may not add new choices to “{name}”.',
 ];

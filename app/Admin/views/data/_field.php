@@ -84,6 +84,9 @@ $type = $f['type'] ?? 'text';
       </select></label>
       <?php endif; ?>
       <label class="dt-in" data-options-own<?= $from !== '' ? ' hidden' : '' ?>><span>Auswahlmöglichkeiten (eine pro Zeile)</span><textarea name="<?= $n ?>[options]" rows="3" placeholder="Neuigkeiten&#10;Hinweise&#10;Veranstaltungen"><?= e($from !== '' ? '' : $opts) ?></textarea></label>
+      <?php if ($from === '' && empty($f['id']) && !$inbox): // neues Feld: Möglichkeiten gleich als eigene Liste (Tabelle) anlegen ?>
+      <label class="f-check" data-options-own-flag><input type="checkbox" name="<?= $n ?>[options_new_table]" value="1"<?= !empty($f['options_new_table']) ? ' checked' : '' ?>> <span><?= e(__('Als eigene Liste anlegen – die Redaktion ergänzt und benennt die Möglichkeiten dann selbst')) ?></span></label>
+      <?php endif; ?>
       <?php if ($from !== ''): ?>
       <p class="f-help"><?= e(__('Neue Möglichkeiten legen Sie als Eintrag in dieser Tabelle an; umbenennen = Titel ändern.')) ?> <a href="<?= e(url('/admin/data/' . $from)) ?>"><?= e(__('Liste bearbeiten')) ?></a></p>
       <?php elseif (!$inbox && !empty($f['id']) && $self !== '' && ($can ?? false)): ?>

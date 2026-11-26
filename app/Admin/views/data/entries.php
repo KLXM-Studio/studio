@@ -183,6 +183,8 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
       <th scope="col"><?= $sortLink($t['settings']['title_field'] ?: 'id', Tables::field($t, $t['settings']['title_field'])['label'] ?? 'Titel') ?></th>
       <?php if ($perEntry): ?><th scope="col" data-prio="1"><?= $sortLink(\Core\Data\Kinds::PUBLIC_FIELD, __('Website')) ?></th><?php endif; ?>
       <?php foreach ($cols as $ci => $c): ?><th scope="col" data-prio="<?= $prio($ci) ?>"><?= $sortLink($c['name'], $c['label']) ?></th><?php endforeach; ?>
+      <?php $useN = \Core\Data\OptionSource::isList($t) ? \Core\Data\OptionSource::useCounts($t) : null; // Auswahlliste: wie oft benutzt ?>
+      <?php if ($useN !== null): ?><th scope="col" class="dt-c-nowrap"><?= e(__('Verwendet')) ?></th><?php endif; ?>
       <?php if ($t['settings']['workflow']): ?><th scope="col"><?= $sortLink('status', 'Status') ?></th><?php endif; ?>
       <th scope="col" data-prio="5"><?= $sortLink('updated_at', 'Geändert') ?></th>
     </tr></thead>
@@ -207,6 +209,7 @@ $extTbl = \Core\Extensions::tableActions($t);   // Erweiterungen: Knöpfe im Kop
         </div></td>
         <?php if ($perEntry): ?><td class="dt-c-vis" data-prio="1" data-label="<?= e(__('Website')) ?>"><?= $visTag($e) ?></td><?php endif; ?>
         <?php foreach ($cols as $ci => $c): ?><td data-prio="<?= $prio($ci) ?>" data-label="<?= e($c['label']) ?>"<?= in_array($c['type'], ['date', 'datetime', 'time', 'number', 'tel', 'iban', 'select', 'bool'], true) ? ' class="dt-c-nowrap"' : '' ?>><?= \Core\Combo::isMulti($c['type']) ? $multiCell($c, $e) : ($c['type'] === 'group' ? e(Entries::groupSummary($c, $e[$c['name']] ?? [])) : (in_array($c['type'], ['media', 'file'], true) ?$thumb(isset($e[$c['name']]) && $e[$c['name']] !== '' ? (int) $e[$c['name']] : null) : $clamp(strip_tags(Entries::html($t, $e, $c['name'], ['link' => false]), '<br>')))) ?></td><?php endforeach; ?>
+        <?php if ($useN !== null): $un = (int) ($useN[(string) ($e['slug'] ?? '')] ?? 0); ?><td class="dt-c-nowrap" data-label="<?= e(__('Verwendet')) ?>"><?= $un ? e($un === 1 ? __('1 Eintrag') : __('{n} Einträge', ['n' => $un])) : '<span class="adm-muted">' . e(__('nicht benutzt')) . '</span>' ?></td><?php endif; ?>
         <?php if ($t['settings']['workflow']): ?><td class="dt-c-status" data-label="Status"><?= $statusCell($e) ?></td><?php endif; ?>
         <td class="adm-muted dt-c-date" data-prio="5" data-label="Geändert"><?= e(\Core\Format::admin()->date(strtotime((string) ($e['updated_at'] ?: $e['created_at'])))) ?></td>
       </tr>

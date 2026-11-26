@@ -763,7 +763,7 @@ final class Fields
                 $h .= '<label class="f-check' . (isset($past[(string) $k]) ? ' f-check--past' : '') . '"><input type="checkbox" name="' . $inputName . '[]" value="' . e((string) $k) . '"'
                     . (in_array((string) $k, $sel, true) ? ' checked' : '') . '> <span>' . e((string) $l) . '</span></label>';
             }
-            return $h . '</div>' . $help . $errHtml . '</fieldset>';
+            return $h . '</div>' . self::optSrcTools($f) . $help . $errHtml . '</fieldset>';
         }
 
         if ($type === 'entrypick') {
@@ -804,7 +804,7 @@ final class Fields
                 . '<input type="hidden" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '"></div>',
             'select' => !empty($f['relation'])
                 ? '<span class="f-relselect" data-relation="' . e($f['relation']['create']) . '" data-singular="' . e($f['relation']['singular']) . '"' . self::pickerAttrs($f['relation']) . '>' . self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req) . '</span>'
-                : (!empty($f['tiles']) || !empty($f['previews']) ? self::renderTiles($id, $inputName, self::options($f), (array) ($f['tiles'] ?? []), $v, $aria, (array) ($f['previews'] ?? [])) : self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req)),
+                : (!empty($f['tiles']) || !empty($f['previews']) ? self::renderTiles($id, $inputName, self::options($f), (array) ($f['tiles'] ?? []), $v, $aria, (array) ($f['previews'] ?? [])) : self::renderSelect($id, $inputName, self::options($f), $v, $aria, !$req) . self::optSrcTools($f)),
             'color' => !empty($f['transparent'])
                 ? '<span class="f-color' . ($v === 'transparent' ? ' is-transparent' : '') . '"><input type="color" value="' . e($v && $v !== 'transparent' ? $v : '#FFFFFF') . '" aria-hidden="true" tabindex="-1" data-color-for="' . $id . '">'
                     . '<input type="text" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '" maxlength="11" pattern="#[0-9A-Fa-f]{6}|transparent" spellcheck="false"' . $aria . '>'
@@ -983,6 +983,22 @@ final class Fields
                 . '<span class="f-vpick__lbl">' . e((string) ($opts[$cur] ?? '')) . '</span></span><span class="f-vpick__chg">' . e(__('Ändern')) . '</span></summary>' . $h . '</details>';
         }
         return $h . '<div class="f-tiles__select">' . self::renderSelect($id, $name, $opts, $v, $aria, false) . '</div>';
+    }
+
+    /**
+     * Auswahl aus einer Liste (Core\Data\OptionSource, options_from): „+ … neu“ und „Liste bearbeiten“ am Feld – nur in der Verwaltung
+     * und mit Recht auf die Liste; resources/js/_optsrc.js öffnet beides im Dialog und lädt danach die Möglichkeiten neu.
+     */
+    private static function optSrcTools(array $f): string
+    {
+        $src = (string) ($f['options_from'] ?? '');
+        if ($src === '' || !app()->auth->check() || !str_starts_with((string) (app()->request->path ?? ''), '/admin') || !can('data.edit', $src)) return '';
+        $st = \Core\Data\Tables::findContent($src);
+        if (!$st) return '';
+        $sing = (string) ($st['singular'] ?? $st['name']);
+        return '<span class="f-optsrc" data-optsrc="' . e($src) . '" data-optsrc-api="' . e(url('/admin/api/optionen/' . $src)) . '">'
+            . '<a class="adm-btn adm-btn--small adm-btn--ghost" data-optsrc-new href="' . e(url('/admin/data/' . $src . '/new')) . '">+ ' . e(__('{singular} neu', ['singular' => $sing])) . '</a>'
+            . '<a class="adm-btn adm-btn--small adm-btn--ghost" data-optsrc-list href="' . e(url('/admin/data/' . $src)) . '">' . e(__('Liste bearbeiten')) . '</a></span>';
     }
 
     private static function renderSelect(string $id, string $name, array $opts, string $v, string $aria, bool $empty): string

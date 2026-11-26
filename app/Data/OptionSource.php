@@ -23,9 +23,46 @@ final class OptionSource
     /** @var array<string, bool> */
     private static array $busy = [];
 
+    /** @var ?array<string, list<string>> Quelle => Tabellen, die daraus beziehen (je Anfrage) */
+    private static ?array $parents = null;
+
     public static function flush(): void
     {
         self::$memo = [];
+        self::$parents = null;
+    }
+
+    /**
+     * Haupttabellen einer Auswahlliste: Tabellen, deren Felder ihre Optionen aus $handle beziehen. Leer, wenn die Liste gesperrt ist
+     * (settings.list_locked – nur über „Felder & Einstellungen“ pflegbar). @return list<string>
+     */
+    public static function parentsOf(string $handle): array
+    {
+        if (self::$parents === null) {
+            self::$parents = [];
+            try {
+                foreach (Tables::content() as $t) {
+                    foreach ($t['fields'] as $f) {
+                        $src = (string) ($f['options_from'] ?? '');
+                        if ($src !== '' && in_array($f['type'], ['select', 'multiselect'], true)) self::$parents[$src][$t['handle']] = $t['handle'];
+                    }
+                }
+                foreach (array_keys(self::$parents) as $src) {
+                    $st = Tables::find($src);
+                    if (!$st || !empty($st['settings']['list_locked'])) unset(self::$parents[$src]);
+                    else self::$parents[$src] = array_values(self::$parents[$src]);
+                }
+            } catch (\Throwable) {
+                self::$parents = [];
+            }
+        }
+        return self::$parents[$handle] ?? [];
+    }
+
+    /** Ist die Tabelle eine Auswahlliste (Quelle für mindestens ein Feld)? – auch gesperrte */
+    public static function isList(array $t): bool
+    {
+        return self::usedBy($t) !== [];
     }
 
     /** Taugt die Tabelle als Quelle? */
@@ -92,6 +129,22 @@ final class OptionSource
     public static function isSource(array $t): bool
     {
         return self::usedBy($t) !== [];
+    }
+
+    /** Wie oft wird jeder Kurzname benutzt (alle nutzenden Felder zusammen)? @return array<string, int> */
+    public static function useCounts(array $source): array
+    {
+        $n = [];
+        foreach (self::usedBy($source) as [$t, $f]) {
+            $p = [];
+            $w = self::own($t, $p);
+            $col = $f['name'];
+            foreach (Tables::db($t)->fetchAll("SELECT {$col} AS v FROM {$t['table']} WHERE {$col} IS NOT NULL AND {$col} != ''" . $w, $p) as $r) {
+                $vals = $f['type'] === 'select' ? [(string) $r['v']] : array_map('strval', (array) (json_decode((string) $r['v'], true) ?: []));
+                foreach (array_unique($vals) as $v) if ($v !== '') $n[$v] = ($n[$v] ?? 0) + 1;
+            }
+        }
+        return $n;
     }
 
     /** SQL-Bedingung „Wert enthält slug“ für ein Feld */

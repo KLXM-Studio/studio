@@ -808,6 +808,17 @@ final class Knowledge
         $have = [];
         foreach ((array) ($f['options'] ?? []) as $k => $l) $have[mb_strtolower((string) $l)] = (string) $k;
         $new = array_values(array_filter($labels, fn($l) => !isset($have[mb_strtolower($l)])));
+        // Möglichkeiten aus einer Liste (Core\Data\OptionSource): neuen Eintrag in der Liste anlegen statt das Schema zu ändern
+        if ($new && !empty($f['options_from']) && ($src = Tables::findContent((string) $f['options_from']))) {
+            if (!can('data.edit', $src['handle']) && app()->auth->check()) return ['keys' => [], 'error' => __('Neue Möglichkeiten in „{name}“ darf Ihre Rolle nicht anlegen.', ['name' => $src['name']])];
+            foreach ($new as $l) {
+                [$nid] = Entries::save($src, null, [(string) $src['settings']['title_field'] => $l, 'status' => 'published']);
+                if ($nid && ($ne = Entries::find($src, (int) $nid))) $have[mb_strtolower($l)] = (string) $ne['slug'];
+            }
+            OptionSource::flush();
+            Tables::flush();
+            $new = [];
+        }
         if ($new) {
             if (isset($t['shared']) && !Shared::isOwner($t)) return ['keys' => [], 'error' => __('Die Felder dieser geteilten Tabelle ändert nur die Eigentümer-Website.')];
             $in = Tables::toInput($t);

@@ -59,8 +59,9 @@ import { Rich } from './_rte.js';   // Formatierungsleiste: Stile, Farben, Marke
 import * as Markdown from './_markdown.js';   // Markdown einfügen/importieren (Rich-Text-Felder, Seiten-Editor)
 import { pickLink, openLinkPicker, initLinkFields } from './_links.js';   // Linkauswahl (Rich-Text und Feldtyp „link“)
 import { initPagesFields, openPagesPicker } from './_pages.js';
-import { openEntryPicker, entryInfo, initEntryPickFields } from './_picker.js';
-import { askDelete } from './_reassign.js';   // Löschen mit Neuzuordnung (Core\Data\Reassign)   // Auswahlfenster für Einträge (Core\Data\Picker)   // Seitenauswahl (Feldtyp „pages“, Core\PagePicker)
+import { openEntryPicker, entryInfo, initEntryPickFields } from './_picker.js';   // Auswahlfenster für Einträge (Core\Data\Picker)
+import { askDelete } from './_reassign.js';   // Löschen mit Neuzuordnung (Core\Data\Reassign)
+import { initOptSrc } from './_optsrc.js';   // Auswahl aus einer Liste: „+ neu“, „Liste bearbeiten“ (Core\Data\OptionSource)
 import { initAssistant } from './_assistant.js';
 import { esc, csrf } from './_html.js';
 import { initPush } from './_push.js';   // Push-Benachrichtigungen: Konto → Benachrichtigungen, Abo auffrischen (Core\Push)
@@ -90,7 +91,7 @@ if (IN_ADMIN) initAssistant();
 
 // ------------------------------------------------------------ Administration: aufklappbare Gruppen „Einstellungen“, „Werkzeuge“ (_navgroups.js)
 initNavGroups();
-initBacklinks(o => bar_.ask(o), toast);
+initBacklinks(o => bar_.ask(o), toast); initOptSrc();
 initSideMini();
 // ------------------------------------------------------------ Bereichsnavigation (Daten): serverseitig in der Seitenleiste
 {
@@ -632,6 +633,8 @@ d.addEventListener('change', e => {
   const s = e.target.closest?.('[data-options-from]');
   const own = s?.closest('.dt-field__extra')?.querySelector('[data-options-own]');
   if (own) own.hidden = s.value !== '';
+  const flag = s?.closest('.dt-field__extra')?.querySelector('[data-options-own-flag]');
+  if (flag) flag.hidden = s.value !== '';
 });
 d.addEventListener('click', e => {
   const c = e.target.closest('[data-copy]');

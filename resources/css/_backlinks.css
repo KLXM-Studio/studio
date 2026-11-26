@@ -58,3 +58,13 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-optask__row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
 .dt-optask__row label{flex:1 1 16rem;min-width:0}
 .dt-optask__row select{flex:0 1 20rem;max-width:100%}
+
+/* Daten-Navigation: Auswahllisten unter ihrer Haupttabelle bzw. als Gruppe (app/Admin/views/data/_nav.php) */
+.dt-nav__child>.dt-nav__item{margin-left:22px;font-size:.94em}
+.dt-nav__child>.dt-nav__item .dt-nav__ico{opacity:.75}
+.dt-nav__group{margin:12px 0 2px;padding:0 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--adm-t2)}
+.adm--mini:not(.is-side-peek) .dt-nav__child>.dt-nav__item{margin-left:0}
+
+/* Auswahl aus einer Liste: „+ neu“ und „Liste bearbeiten“ am Feld (resources/js/_optsrc.js) */
+.f-optsrc{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.f-optsrc .adm-btn{font-size:13px}

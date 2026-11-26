@@ -9,6 +9,23 @@ use Core\Data\Tables;
 
 $schema = can('data.schema');
 $tables = array_filter(Tables::content(), fn($t) => $schema || can('data.edit', $t['handle']));
+// Auswahllisten (Core\Data\OptionSource): direkt unter ihrer Haupttabelle eingerückt; von mehreren Tabellen genutzt → Gruppe „Auswahllisten“ am Ende
+$byHandle = array_column($tables, null, 'handle');
+$childOf = $shared = [];
+foreach ($tables as $t) {
+    $users = array_values(array_unique(array_map(fn($x) => $x[0]['handle'], \Core\Data\OptionSource::usedBy($t))));
+    if (count($users) === 1 && isset($byHandle[$users[0]]) && $users[0] !== $t['handle']) $childOf[$users[0]][] = $t;
+    elseif ($users) $shared[] = $t;
+}
+$skip = array_merge(array_column(array_merge(...array_values($childOf ?: [[]])), 'handle'), array_column($shared, 'handle'));
+$ordered = [];
+foreach ($tables as $t) {
+    if (in_array($t['handle'], $skip, true)) continue;
+    $ordered[] = $t;
+    foreach ($childOf[$t['handle']] ?? [] as $c) $ordered[] = $c + ['_navchild' => true];
+}
+foreach ($shared as $i => $c) $ordered[] = $c + ['_navchild' => true, '_navgroup' => $i === 0];
+$tables = $ordered;
 $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '';
 ?>
 <nav class="dt-nav" data-drill-panel aria-label="<?= e(__('Daten')) ?>">
@@ -51,7 +68,8 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
       // Nur ein Unterpunkt (z. B. „Liste“): kein eigenes Untermenü, die Tabelle selbst ist die Seite
       $single = count($subs) < 2 && !$tpl;
     ?>
-    <li<?= $on ? ' class="is-open"' : '' ?>>
+    <?php if (!empty($t['_navgroup'])): ?><li class="dt-nav__group" role="presentation"><?= e(__('Auswahllisten')) ?></li><?php endif; ?>
+    <li class="<?= trim(($on ? 'is-open' : '') . (!empty($t['_navchild']) ? ' dt-nav__child' : '')) ?>">
       <a class="dt-nav__item<?= $on ? ' is-active' : '' ?>" href="<?= e(url($edit ? $base : $base . '/schema')) ?>"<?= $ac($on, $single && in_array($cur, ['list', 'calendar', 'schema'], true) ? 'page' : 'true') ?>>
         <span class="dt-nav__ico" aria-hidden="true"><?= icon($t['icon']) ?></span><span class="dt-nav__name"><?= e($t['name']) ?><?php if ($shared): ?> <span class="dt-nav__shared" title="<?= e(__('Geteilt mit anderen Websites dieser Installation')) ?>"><?= e(__('geteilt')) ?></span><?php endif; ?></span>
         <small class="dt-nav__count"><?php $n = Entries::count($t, ['status' => 'all', 'source' => 'own']); ?><span aria-hidden="true"><?= $n ?></span><span class="sr-only"><?= e($n === 1 ? __('1 Eintrag') : __('{n} Einträge', ['n' => $n])) ?></span></small>

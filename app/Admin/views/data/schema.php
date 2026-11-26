@@ -132,6 +132,10 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
         <?php if ($inbox): ?>
         <div class="set-row"><div class="set-row__main"><span class="set-row__sub"><?= e(__('„Nur per E-Mail“ und „Anfragen sammeln“ folgen der Wahl im Bereich „Verschlüsselung“.')) ?></span></div></div>
         <?php endif; ?>
+        <?php if (!$isNew && $table && ($lu = \Core\Data\OptionSource::usedBy($table))): // Auswahlliste anderer Tabellen (Core\Data\OptionSource) ?>
+        <div class="set-row"><div class="set-row__main"><span class="set-row__sub"><?= e(__('Auswahlliste für {fields}. Wer dort Einträge bearbeiten darf, pflegt auch diese Liste.', ['fields' => implode(', ', array_map(fn($x) => '„' . $x[0]['name'] . ' · ' . $x[1]['label'] . '“', $lu))])) ?></span></div></div>
+        <div class="f f--bool"><label class="f-check"><input type="checkbox" name="settings[list_locked]" value="1"<?= !empty($s['list_locked']) ? ' checked' : '' ?>> <span><?= e(__('Feste Liste: nur Personen mit Recht auf diese Tabelle ändern sie')) ?></span></label></div>
+        <?php endif; ?>
         <?php // Tabellenart mit Grundschema (Core\Data\Kinds, z. B. Adressbuch) bleibt beim Speichern erhalten ?>
         <input type="hidden" name="settings[kind]" value="<?= $inbox ? 'inbox' : e(\Core\Data\Kinds::isSpecial((string) ($def['settings']['kind'] ?? '')) ? (string) $def['settings']['kind'] : 'content') ?>">
       </div>

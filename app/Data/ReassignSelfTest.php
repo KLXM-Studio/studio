@@ -115,6 +115,15 @@ final class ReassignSelfTest
             [$again, $aerr] = Tables::validate(Tables::toInput($wi), $wi);
             $ak = array_values(array_filter($again['fields'], fn($x) => $x['name'] === 'kat'))[0] ?? [];
             $ck($aerr === [] && ($ak['options_from'] ?? '') === $kt['handle'], 'Erneut speichern: Quelle bleibt');
+            OptionSource::flush();
+            $role = ['permissions' => ['data.edit'], 'tables' => [$wi['handle']]];
+            $ck(OptionSource::parentsOf($kt['handle']) === [$wi['handle']] && \Core\Permissions::allows($role, 'data.edit', $kt['handle']), 'Recht auf die Haupttabelle gilt auch für ihre Liste');
+            $ck(isset(OptionSource::useCounts($kt)[$xy]) && OptionSource::useCounts($kt)[$xy] === 1, 'Verwendung je Möglichkeit gezählt');
+            app()->db->query('UPDATE data_tables SET settings_json = json_set(settings_json, \'$.list_locked\', json(\'true\')) WHERE handle = ?', [$kt['handle']]);
+            Tables::flush();
+            $ck(!\Core\Permissions::allows($role, 'data.edit', $kt['handle']), 'Feste Liste: kein geerbtes Recht');
+            app()->db->query('UPDATE data_tables SET settings_json = json_remove(settings_json, \'$.list_locked\') WHERE handle = ?', [$kt['handle']]);
+            Tables::flush();
             [$neu] = Entries::save($kt, null, ['titel' => 'Neu dazu', 'status' => 'published']);
             $ck(in_array('Neu dazu', Tables::field(Tables::find($wi['handle']), 'kat')['options'], true), 'Neuer Eintrag = neue Option');
             $wid = (int) app()->db->fetchValue("SELECT id FROM {$kt['table']} WHERE slug = 'wald'");

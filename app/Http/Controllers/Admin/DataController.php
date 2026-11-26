@@ -441,13 +441,22 @@ final class DataController extends AdminController
             return $this->view('data/schema', ['table' => $t, 'def' => $def + ['handle' => $t['handle']], 'errors' => $errors, 'askDrop' => $askDrop, 'askOpts' => $askOpts], 422);
         }
         $t = $this->table($handle);
+        // Neue Auswahlfelder mit Haken „Als eigene Liste anlegen“: Möglichkeiten in eine Tabelle auslagern (Core\Data\OptionSource)
+        $made = [];
+        foreach ((array) ($r->post['fields'] ?? []) as $pf) {
+            if (!is_array($pf) || empty($pf['options_new_table']) || !empty($pf['options_from']) || !empty($pf['id'])) continue;
+            $fname = (string) ($pf['name'] ?? '') !== '' ? (string) $pf['name'] : Tables::normName((string) ($pf['label'] ?? ''));
+            $nf = Tables::field($t, $fname);
+            if (!$nf || !in_array($nf['type'], ['select', 'multiselect'], true)) continue;
+            try { $made[] = \Core\Data\OptionSource::extract($t, $fname)['table']['name']; $t = $this->table($handle); } catch (\RuntimeException) {}
+        }
         if (\Core\Data\Jobs::is($t) && \Core\Data\Jobs::config($t)['form'] === '_new') {
             \Core\Data\Jobs::linkForm($t, \Core\Data\Jobs::ensureForm('bewerbungen')['handle'] ?? '');
         }
         $this->changed();
         // Zurück in den zuletzt offenen Bereich (Seitenleiste „Felder & Einstellungen“)
         $tab = preg_match('~^[a-z]{3,20}$~', $r->str('_tab')) ? '#' . $r->str('_tab') : '';
-        return $this->back('/admin/data/' . $handle . '/schema' . $tab, 'success', 'Tabelle gespeichert.');
+        return $this->back('/admin/data/' . $handle . '/schema' . $tab, 'success', __('Tabelle gespeichert.') . ($made ? ' ' . __('Neue Auswahllisten: {names}.', ['names' => implode(', ', $made)]) : ''));
     }
 
     /**
@@ -940,6 +949,17 @@ final class DataController extends AdminController
             if (preg_match('~^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$~', (string) $k) && (int) $v > 0) $out[(string) $k] = (int) $v;
         }
         return $out;
+    }
+
+    /** Auswahlliste (Core\Data\OptionSource): aktuelle Möglichkeiten [[kurzname, titel], …] für resources/js/_optsrc.js */
+    public function optionsApi(Request $r, string $handle): Response
+    {
+        $this->auth($r);
+        if (!can('data.edit', $handle)) return Response::fail(__('Für diese Tabelle fehlt Ihrer Rolle die Berechtigung.'), 403);
+        $this->table($handle);
+        \Core\Data\OptionSource::flush();
+        $o = \Core\Data\OptionSource::load($handle)[0];
+        return Response::json(['ok' => true, 'options' => array_map(fn($k, $v) => [(string) $k, (string) $v], array_keys($o), $o)]);
     }
 
     /** Wer verweist auf diese Einträge? (JSON für die Rückfrage beim Löschen) ?ids=1,2 */

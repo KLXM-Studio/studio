@@ -471,6 +471,7 @@ final class Entries
                 'help' => $f['help'] ?? '', 'width' => $f['width'] ?? ''];
             if (in_array($f['type'], ['select', 'multiselect'], true)) {
                 $def['options'] = $f['options'] ?? [];
+                if (!empty($f['options_from'])) $def['options_from'] = (string) $f['options_from'];   // Liste: „+ neu“, „Liste bearbeiten“ (Core\Fields)
             }
             if ($f['type'] === 'group') {
                 $def = self::groupSchema($f) + $def;
@@ -553,7 +554,7 @@ final class Entries
             elseif (isset($f['name'], $data[$f['name']])) {
                 $out[] = $data[$f['name']];
                 // Wissen (Core\Data\Knowledge::addOptions): neue Bereiche/Schlagworte direkt beim Eintrag anlegen – vorhandene sind Vorschläge
-                if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true)) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
+                if (Kinds::isKnowledge($table) && in_array($f['name'], ['bereich', 'schlagworte'], true) && empty($f['options_from'])) $out[] = ['name' => Knowledge::NEW_PREFIX . $f['name'], 'type' => 'text',
                     'label' => $f['name'] === 'bereich' ? __('Neuer Bereich') : __('Neue Schlagworte'), 'width' => 'half', 'maxlength' => 300,
                     'help' => $f['name'] === 'bereich' ? __('Nur ausfüllen, wenn der Bereich oben noch fehlt – er wird angelegt und gewählt.') : __('Durch Komma getrennt, z. B. „Beratung, Veranstaltung“. Vorhandene Schlagworte oben ankreuzen.')];
             }

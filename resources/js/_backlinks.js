@@ -76,7 +76,7 @@ export function initBacklinks(ask, toast) {
 }
 
 // Formular der anderen Tabelle im Dialog; „gespeichert“, sobald das iframe auf der Seite eines Eintrags (…/{table}/{id}) landet
-function openNew(href, singular, table) {
+export function openNew(href, singular, table) {
   return new Promise(resolve => {
     const dlg = d.createElement('dialog');
     dlg.className = 'adm-dialog dt-bl-dlg';
