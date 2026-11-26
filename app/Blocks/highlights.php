@@ -97,11 +97,13 @@ foreach ($items as $it) $tones[$it['table']['handle']] ??= 'dl-tone-' . (count($
           $when = \Core\Data\Calendar::enabled($t) ? Entries::html($t, $e, '_when') : Entries::html($t, $e, 'published_at');
           if ($when !== '') $meta[] = $when;
       } ?>
-    <li class="dl-item hl-item<?= $lead ? ' hl-lead' : '' ?>" data-reveal="up"><?= \Core\Data\EntryEdit::button($t, $e, $title) ?><?= !in_array($t['handle'] . ':' . (int) $e['id'], $picked, true) ? Featured::editControls($t, $e, ($q['sort'] ?? '') === 'order') : '' ?>
+    <li class="dl-item hl-item<?= $lead ? ' hl-lead' : '' ?>" data-reveal="up"><?= \Core\Data\EntryEdit::button($t, $e, $title) ?>
       <?php if ($img !== ''): $r = $lead ? '4:3' : $ratio; $pic = Entries::html($t, $e, $img, ['ratio' => $r, 'sizes' => $lead ? '(min-width: 1080px) 720px, 100vw' : '(min-width: 1080px) 400px, 100vw']); ?>
       <div class="dl-img<?= $lead ? ' hl-lead__img' : ' ratio-' . e(str_replace(':', '-', $r)) ?>"><?= $pic ?: '<span class="dl-ph" aria-hidden="true"></span>' ?></div>
       <?php endif; ?>
       <div class="dl-body">
+        <?php // Hervorheben-Knöpfe im Textbereich – oben links auf dem Bild sitzt „Bild bearbeiten“ ?>
+        <?= !in_array($t['handle'] . ':' . (int) $e['id'], $picked, true) ? Featured::editControls($t, $e, ($q['sort'] ?? '') === 'order') : '' ?>
         <?php if ($meta): ?><p class="dl-meta"><?= implode('<span aria-hidden="true"> · </span>', $meta) ?></p><?php endif; ?>
         <<?= $hTag ?> class="dl-name<?= $titleClamp ?>"><?= $url ? '<a href="' . e($url) . '" class="dl-link">' . e($title) . '</a>' : e($title) ?></<?= $hTag ?>>
         <?php if (!empty($d['show_text']) && $desc !== '' && $desc !== ($t['settings']['title_field'] ?? '')): [$clamp, $html] = Clamp::text($t, $e, $desc, $d); if ($html !== ''): ?>

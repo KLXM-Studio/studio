@@ -418,3 +418,5 @@ td>.cms-entry-pencil .cms-entry-pencil__t{display:none}
 /* Gesperrte Blöcke (Core\BlockGuard, .cms-block.is-locked): keine Handlungsaufforderungen in der Vorschau – z. B. „Einträge auslassen …“ in
    Highlights, Hinweise und Knöpfe zum Hervorheben; die Rolle kann den Block ohnehin nicht ändern */
 .cms-block.is-locked :is(.hl-note,.cms-feat,.cms-feat-hint,.cms-empty__btn){display:none!important}
+/* Hervorheben-Knöpfe in Highlights-Karten: im Textbereich statt auf dem Bild (dort liegen „Bild bearbeiten“ und „Datensatz“) */
+.hl-item .dl-body>.cms-feat{position:static;align-self:flex-start;margin:0 0 .6rem;width:max-content;max-width:100%}
