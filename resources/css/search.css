@@ -76,12 +76,12 @@
 .srch-pager__gap{display:inline-flex;align-items:center;padding:0 4px;color:var(--se-muted)}
 
 /* Vorschläge beim Tippen (search.js) */
-.ssug{position:absolute;z-index:60;top:calc(100% + 6px);left:0;right:0;min-width:min(22rem,86vw);margin:0;padding:6px;list-style:none;border:1px solid var(--se-line);border-radius:var(--se-radius);background:var(--se-bg);color:var(--b-ink,var(--c-ink,#16201e));box-shadow:0 12px 32px rgba(0,0,0,.16);text-align:left}
+.ssug{position:absolute;z-index:60;top:calc(100% + 6px);left:0;right:0;min-width:min(22rem,86vw);margin:0;padding:6px;list-style:none;border:1px solid var(--se-line);border-radius:var(--se-radius);background:var(--se-bg);color:var(--kit-ink,var(--b-ink,var(--c-ink,#16201e)));box-shadow:0 12px 32px rgba(0,0,0,.16);text-align:left}
 .ssug[hidden]{display:none}
 .ssug li{margin:0}
 .ssug a{display:grid;gap:2px;padding:9px 12px;border-radius:calc(var(--se-radius) - 4px);color:inherit;text-decoration:none;line-height:1.3}
 .ssug a small{color:var(--se-muted);font-size:.78rem}
 .ssug [aria-selected=true] a,.ssug a:hover{background:var(--se-surface)}
-.ssug__all a{font-weight:600;color:var(--se-accent)}
+.ssug__all a{font-weight:600;color:var(--kit-link,var(--se-accent))}   /* Ink/Link aus dem Kit: im farbigen Kopf mit dem Hintergrund (--kit-bg) umdefiniert */
 @media (max-width:560px){.sf__btn{padding:0 14px}.srch-hit__title{font-size:1.1rem}}
 @media (forced-colors:active){.srch-badge,.srch mark,.ssug mark{border:1px solid}.srch__types a[aria-current],.srch-pager a[aria-current]{border-width:3px}}

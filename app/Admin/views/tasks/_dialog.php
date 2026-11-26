@@ -13,7 +13,7 @@
       <button type="submit" formmethod="dialog" formnovalidate class="adm-btn adm-btn--small adm-btn--ghost" aria-label="<?= e(__('Schließen')) ?>"><?= icon('x') ?></button></div>
     <?= \Core\Theme::capture(__DIR__ . '/_form.php', ['form' => $form, 'idp' => $id]) ?>
     <div class="tk-dialog__actions">
-      <button type="submit" class="adm-btn adm-btn--primary"><?= icon('plus') ?> <?= e(__('Aufgabe anlegen')) ?></button>
+      <button type="submit" class="adm-btn adm-btn--primary"><?= icon('check') ?> <?= e(__('Aufgabe anlegen')) ?></button>
       <button type="submit" formmethod="dialog" formnovalidate class="adm-btn adm-btn--ghost"><?= e(__('Abbrechen')) ?></button>
     </div>
   </form>

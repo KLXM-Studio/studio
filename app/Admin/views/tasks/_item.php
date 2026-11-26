@@ -36,7 +36,7 @@ $tid = 'tk-t-' . $n;
     <a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url(Tasks::url($t))) ?>"><?= e(__('In Entwürfe öffnen')) ?><span class="sr-only">: <?= e((string) $t['title']) ?></span></a>
     <?php elseif ($canDone && !$done): ?>
     <details class="tk-done">
-      <summary class="adm-btn adm-btn--small"><?= icon('check') ?> <?= e(__('Erledigt')) ?><span class="sr-only">: <?= e((string) $t['title']) ?></span></summary>
+      <summary class="adm-btn adm-btn--small"><?= icon('check') ?> <?= e(__('Abhaken …')) ?><span class="sr-only">: <?= e((string) $t['title']) ?></span></summary>
       <form method="post" action="<?= e(url('/admin/aufgaben/' . (int) $t['id'] . '/erledigt')) ?>" class="tk-done__form">
         <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>">
         <label for="tk-c-<?= $n ?>"><?= e(__('Kommentar (optional)')) ?></label>

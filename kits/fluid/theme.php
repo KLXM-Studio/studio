@@ -477,6 +477,9 @@ return [
                     ['name' => 'label', 'label' => 'Bezeichnung', 'type' => 'text', 'required' => true, 'max' => 50, 'width' => 'half'],
                     ['name' => 'text', 'label' => 'Erläuterung (optional)', 'type' => 'text', 'max' => 140],
                 ]],
+                ['name' => 'cols', 'label' => 'Höchstens nebeneinander', 'type' => 'select', 'default' => '', 'width' => 'half',
+                    'options' => ['' => 'Automatisch', '2' => '2', '3' => '3', '4' => '4', '5' => '5'],
+                    'help' => 'Bei schmaler Spalte rücken die Kacheln trotzdem untereinander.'],
             ],
         ],
         'quote' => [

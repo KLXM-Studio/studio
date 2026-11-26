@@ -2,11 +2,12 @@
 /** Kennzahlen: row (große Zahlen, Trennlinien) · cards · split (Überschrift neben den Zahlen, Sidebar-Muster). @var \Core\Block $b  @var array $d */
 $v = $b->variant() ?: 'row';
 $items = array_values((array) ($d['items'] ?? []));
+$cols = in_array((string) ($d['cols'] ?? ''), ['2', '3', '4', '5'], true) ? (string) $d['cols'] : '';   // höchstens so viele nebeneinander
 ?>
 <div class="wrap<?= $v === 'split' ? ' stats-split' : '' ?>">
   <?= fluid_head($b) ?>
   <?php if ($items): ?>
-  <dl class="grid stats stats--<?= e($v) ?>">
+  <dl class="grid stats stats--<?= e($v) ?><?= $cols !== '' ? ' stats--max' . $cols : '' ?>">
     <?php foreach ($items as $i => $it): ?>
     <div class="stat<?= $v === 'cards' ? ' card' : '' ?>" data-reveal>
       <dt class="stat__label"<?= $b->edit("items.$i.label") ?>><?= fluid_title((string) $it['label']) ?></dt>

@@ -10035,4 +10035,6 @@ return [
     'Aus „{list}“ entfernen' => 'Remove from “{list}”',
     'Nur aus dieser Liste nehmen – der Kontakt bleibt im Adressbuch' => 'Only take out of this list – the contact stays in the address book',
     'Unterkapitel' => 'Sub-chapter',
+    'Abhaken …' => 'Check off …',
+    'Seitenleiste mit allen Angaben des Eintrags: Datum, Kategorie, Bild …' => 'Sidebar with all details of the entry: date, category, image …',
 ];

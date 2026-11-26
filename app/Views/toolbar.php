@@ -124,7 +124,7 @@ $toolWhen = function (array $tl) use ($kind, $edit): string {
     <?php if ($kind === 'entry' && $b['entryEditable']): ?>
     <span class="cms-bar__grp cms-bar__edit" data-bar-group="edit"<?= $edit ? '' : ' hidden' ?>>
       <?php if (!empty($b['panel']) && in_array($kind, ['entry', 'content'], true)): // „Alle Felder“ sichtbar beim Bearbeiten (vorher nur im Menü ⋯ – wurde übersehen) ?>
-      <button type="button" class="cms-btn cms-btn--ghost cms-btn--fields" data-entry-edit="<?= e($b['panel']) ?>" aria-haspopup="dialog" title="<?= e(__('Seitenleiste mit allen Feldern des Eintrags')) ?>"><?= icon('sidebar-simple') ?><span><?= e(__('Alle Felder')) ?></span></button>
+      <button type="button" class="cms-btn cms-btn--ghost cms-btn--fields" data-entry-edit="<?= e($b['panel']) ?>" aria-haspopup="dialog" title="<?= e(__('Seitenleiste mit allen Angaben des Eintrags: Datum, Kategorie, Bild …')) ?>"><?= icon('sidebar-simple') ?><span><?= e(__('Weitere Angaben')) ?></span></button>
       <?php endif; ?>
       <button type="button" class="cms-btn cms-btn--ghost" data-bar-cancel aria-keyshortcuts="Escape"><?= e(__('Abbrechen')) ?></button>
       <?php if ($b['entryPub']): /* Freigabe-Ablauf: Entwurf = Speichern + Veröffentlichen; veröffentlicht = Speichern (sofort online), „Als Entwurf“ im Menü „⋯“.
@@ -142,7 +142,7 @@ $toolWhen = function (array $tl) use ($kind, $edit): string {
         <button type="button" class="cms-btn cms-btn--ghost cms-btn--sq cms-redo" data-editor-redo aria-disabled="true" aria-keyshortcuts="Meta+Shift+Z Control+Y" aria-label="<?= e(__('Wiederholen')) ?>" title="<?= e(__('Wiederholen')) ?> (⇧⌘Z / Strg+Y)"><?= icon('arrow-counter-clockwise') ?></button>
       </span>
       <?php if (!empty($b['panel']) && in_array($kind, ['entry', 'content'], true)): // „Alle Felder“ sichtbar beim Bearbeiten (vorher nur im Menü ⋯ – wurde übersehen) ?>
-      <button type="button" class="cms-btn cms-btn--ghost cms-btn--fields" data-entry-edit="<?= e($b['panel']) ?>" aria-haspopup="dialog" title="<?= e(__('Seitenleiste mit allen Feldern des Eintrags')) ?>"><?= icon('sidebar-simple') ?><span><?= e(__('Alle Felder')) ?></span></button>
+      <button type="button" class="cms-btn cms-btn--ghost cms-btn--fields" data-entry-edit="<?= e($b['panel']) ?>" aria-haspopup="dialog" title="<?= e(__('Seitenleiste mit allen Angaben des Eintrags: Datum, Kategorie, Bild …')) ?>"><?= icon('sidebar-simple') ?><span><?= e(__('Weitere Angaben')) ?></span></button>
       <?php endif; ?>
       <button type="button" class="cms-btn cms-btn--ghost" data-bar-cancel aria-keyshortcuts="Escape"><?= e(__('Abbrechen')) ?></button>
       <?php if ($b['canPublish'] && $kind !== 'content'): /* Modus „Inhalt“: Einträge haben keinen Entwurf – nur Speichern */ ?>
