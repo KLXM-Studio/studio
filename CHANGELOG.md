@@ -60,7 +60,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Die Auswahl „Variante“ in der Seitenleiste zeigt die gewählte Variante als Zeile mit Schemabild; „Ändern“ klappt kleine Kacheln mit Strichzeichnung des Aufbaus auf (Text/Bild, vollflächig, Karten, Collage, Vorher/Nachher …); Kits ordnen per `variant_previews` zu, ohne Zuordnung nach dem Schlüssel der Variante, sonst bleibt die Liste.
 
 ### Auswahlfenster für Einträge
-- Feste Höhe für Liste und Vorschau, Vorschau beim Darüberfahren erst nach 200 ms Ruhe (Telefon: Liste und Vorschau ebenfalls fest hoch) – der Dialog springt nicht mehr (Liste rutschte unter dem Zeiger weg).
+- Feste Höhe für Liste und Vorschau, Vorschau beim Darüberfahren erst nach 200 ms Ruhe (Telefon: Liste und Vorschau ebenfalls fest hoch); Vorschau nur mit Grunddaten – Bild 16:10, Name, Metazeile, bei Personen Funktion/E-Mail/Telefon, sonst Kurztext auf 3 Zeilen – der Dialog springt nicht mehr (Liste rutschte unter dem Zeiger weg).
 
 ### Versionen
 - Einträge gegenübergestellt: beide Spalten scrollen gemeinsam (Abgleich an derselben Feldzeile); beim Wechsel des Stands bleibt die Position.

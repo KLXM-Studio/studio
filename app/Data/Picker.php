@@ -124,15 +124,37 @@ final class Picker
             'status_label' => $st === 'published' ? __('Online') : __('Entwurf'), 'past' => $past, 'thumb' => self::thumb($t, $e)];
     }
 
+    private static function textRank(array $f): int
+    {
+        $n = mb_strtolower($f['name'] . ' ' . ($f['label'] ?? ''));
+        if (preg_match('~anrei|teaser|kurz|excerpt|summary|einleitung|intro|abstract~u', $n)) return 0;
+        return $f['type'] === 'textarea' ? 1 : 2;
+    }
+
     /** Vorschau eines Eintrags */
     public static function preview(array $t, array $e): array
     {
         $it = self::item($t, $e);
-        $text = '';
+        // Nur Grunddaten: Kontaktangaben (Funktion, E-Mail, Telefon) bzw. Kurztext/Anreißer – kein langer Profil- oder Fließtext
+        $facts = [];
         foreach ($t['fields'] as $f) {
-            if (!in_array($f['type'], ['textarea', 'richtext', 'inline'], true)) continue;
-            $plain = trim(preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags(str_replace(['</p>', '<br>'], ' ', (string) ($e[$f['name']] ?? ''))), ENT_QUOTES | ENT_HTML5)) ?? '');
-            if ($plain !== '') { $text = mb_strimwidth($plain, 0, 320, '…'); break; }
+            $v = $e[$f['name']] ?? null;
+            if (!is_scalar($v) || trim((string) $v) === '') continue;
+            $n = mb_strtolower($f['name'] . ' ' . ($f['label'] ?? ''));
+            if (in_array($f['type'], ['email', 'tel', 'phone'], true) || preg_match('~\b(e-?mail|telefon|phone|mobil|funktion|position|rolle)\b~u', $n) && in_array($f['type'], ['text', 'email', 'tel', 'phone', 'select'], true)) {
+                $facts[] = $f['type'] === 'select' ? Tables::optionLabel($f, (string) $v) : mb_strimwidth(trim((string) $v), 0, 80, '…');
+            }
+            if (count($facts) >= 3) break;
+        }
+        $text = '';
+        if (!$facts) {
+            $cands = array_values(array_filter($t['fields'], fn($f) => in_array($f['type'], ['textarea', 'richtext', 'inline'], true)));
+            // Kurztexte zuerst (Anreißer, Teaser, Kurzbeschreibung, Einleitung), dann einfache Textfelder, zuletzt Rich-Text
+            usort($cands, fn($a, $b) => self::textRank($a) <=> self::textRank($b));
+            foreach ($cands as $f) {
+                $plain = trim(preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags(str_replace(['</p>', '<br>', '</li>'], ' ', (string) ($e[$f['name']] ?? ''))), ENT_QUOTES | ENT_HTML5)) ?? '');
+                if ($plain !== '') { $text = mb_strimwidth($plain, 0, 240, '…'); break; }
+            }
         }
         $img = '';
         foreach ($t['fields'] as $f) {
@@ -141,7 +163,7 @@ final class Picker
                 break;
             }
         }
-        return $it + ['text' => $text, 'image' => $img, 'edit' => url('/admin/data/' . $t['handle'] . '/' . (int) $e['id']), 'view' => Entries::href($t, $e)];
+        return $it + ['text' => $text, 'facts' => $facts, 'image' => $img, 'edit' => url('/admin/data/' . $t['handle'] . '/' . (int) $e['id']), 'view' => Entries::href($t, $e)];
     }
 
     private static function thumb(array $t, array $e): string

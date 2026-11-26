@@ -179,9 +179,10 @@ async function preview(o) {
     s.prev.set(o.dataset.key, p);
   }
   if (s.active && s.active !== o && s.hover !== o) return;
-  box.innerHTML = (p.image ? `<img class="epk__img" src="${esc(p.image)}" alt="">` : '')
+  box.innerHTML = (p.image ? `<img class="epk__img" src="${esc(p.image)}" alt="">` : '<span class="epk__img epk__img--none" aria-hidden="true"></span>')
     + `<h3 class="epk__pt">${esc(p.title)}</h3>`
     + `<p class="epk__pm">${esc([p.sub, p.status_label].filter(Boolean).join(' · '))}</p>`
+    + (p.facts?.length ? `<ul class="epk__facts">${p.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : '')
     + (p.text ? `<p class="epk__px">${esc(p.text)}</p>` : '')
     + `<p class="epk__pl"><a href="${esc(p.edit)}" target="_blank" rel="noopener">${esc(t('Bearbeiten'))}</a>`
     + (p.view ? ` · <a href="${esc(p.view)}" target="_blank" rel="noopener">${esc(t('Ansehen'))}</a>` : '') + '</p>';
