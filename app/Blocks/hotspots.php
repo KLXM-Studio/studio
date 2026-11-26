@@ -44,7 +44,7 @@ if ($html === '' && $hint === '') return;
 <div class="<?= e($wrap) ?>">
   <?= MediaBlocks::head($b) ?>
   <?php if ($html !== ''): ?>
-  <div class="cms-hs-wrap<?= ($d['width'] ?? '') === 'text' ? ' cms-hs-wrap--text' : '' ?>"><?= $html ?></div>
+  <div class="cms-hs-wrap<?= ($d['width'] ?? '') === 'text' ? ' cms-hs-wrap--text' : '' ?>"><?= \Core\Blocks\Caption::figure($html, $b, $d, $media) ?></div>
   <?php else: ?>
   <p class="cms-empty-hint"><?= e($hint) ?></p>
   <?php endif; ?>

@@ -84,6 +84,7 @@
   <?php endif; ?>
   <?php if (isset($blocks['gallery'])): ?>
   <h3 id="galerie-einzelbild"><?= e($blocks['gallery']['label']) ?> mit einem Bild</h3>
+  <p id="bildunterschrift"><b>Bildunterschrift:</b> Blöcke mit einem einzeln stehenden Bild – Text + Bild, Reiter, Scrollytelling und Interaktives Bild – haben das Feld <b>Bildunterschrift (optional)</b>. Bleibt es leer, zeigt <b>Sonst Bildnachweis zeigen</b> den Bildnachweis aus der Mediathek unter dem Bild. Galerie, Slider, Video und Vorher/Nachher haben eigene Unterschriften.</p>
   <p>Enthält eine Galerie genau ein Bild und ist <b>Einzelnes Bild groß zeigen</b> an (Standard für neue Galerien; bei älteren Galerien aus, damit sie unverändert bleiben), erscheint es als <b>Einzelbild in voller Inhaltsbreite</b> im Originalformat – mit Bildunterschrift darunter und, wenn eingeschaltet, per Klick groß (Lightbox). Anordnung, Spalten und Bildformat gelten erst ab zwei Bildern. Sehr hohe Bilder werden höchstens etwa so hoch wie das Browserfenster und stehen dann mittig. Kommt ein zweites Bild hinzu, zeigt der Block wieder die gewählte Anordnung.</p>
   <?php endif; ?>
   <?php if (isset($blocks['hotspots'])): ?>

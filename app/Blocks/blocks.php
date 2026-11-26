@@ -403,6 +403,7 @@ return [
             ['name' => 'image', 'label' => 'Bild', 'type' => 'media', 'show_if' => ['source' => ['here']],
                 'help' => 'Alt-Text aus der Mediathek. Auch Grafiken (SVG) sind möglich.'],
             ['name' => 'hotspots', 'label' => 'Markierungen', 'type' => 'hotspots', 'image_field' => 'image', 'show_if' => ['source' => ['here']]],
+            ...\Core\Blocks\Caption::fields(),
             ['type' => 'heading', 'label' => 'Darstellung', 'collapse' => true, 'summary' => 'Liste unter dem Bild, Breite'],
             ['name' => 'list', 'label' => 'Liste der Markierungen unter dem Bild', 'type' => 'select', 'required' => true, 'default' => 'auto', 'width' => 'half',
                 'options' => ['auto' => 'Auf schmalen Bildschirmen (Telefon)', 'always' => 'Immer'],

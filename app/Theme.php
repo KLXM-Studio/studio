@@ -911,6 +911,8 @@ final class Theme
             $out[] = $this->coreCss('media.css');
         }
         if ($mediaText) $out[] = $this->coreCss('mediatext.css');
+        // Bildunterschriften (Core\Blocks\Caption): Blöcke mit einzeln stehendem Bild
+        if ($types === null || array_intersect(['media_text', 'tabs', 'scrolly', 'hotspots'], $types)) $out[] = $this->coreCss('caption.css');
         if ($highlights) $out[] = $this->coreCss('highlights.css');
         // Kombifelder (Core\Combo: Ansprechperson, Fragen & Antworten, Adresse, Downloads) – Kit kann css/combo.css mitbringen
         if (($types === null || array_intersect(['data_list', 'data_fields'], $types)) && array_filter(\Core\Combo::TYPES, fn($c) => \Core\Data\Tables::usesType($c))) $out[] = $this->coreCss('combo.css');

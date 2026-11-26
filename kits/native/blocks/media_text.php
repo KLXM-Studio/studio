@@ -42,7 +42,7 @@ $body = fluid_head($b, 'nv-mt__head')
     . fluid_checks(fluid_lines($d['list'] ?? ''))
     . fluid_buttons($b);
 $pic = fluid_image(!empty($d['image']) ? (int) $d['image'] : null, '(min-width: 1080px) 600px, 100vw', $ratio);
-$media = $pic !== '' ? '<div class="ncss-split-media">' . $pic . '</div>' : '';
+$media = $pic !== '' ? '<div class="ncss-split-media">' . \Core\Blocks\Caption::figure($pic, $b, $d, !empty($d['image']) ? (int) $d['image'] : null) . '</div>' : '';   // Bildunterschrift (Core\Blocks\Caption)
 $split = in_array($d['split'] ?? 'even', ['text', 'media', 'mediaxl'], true) ? ' nv-mt--s-' . $d['split'] : '';
 ?>
 <div class="wrap">

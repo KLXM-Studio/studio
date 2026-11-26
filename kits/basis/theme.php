@@ -359,6 +359,7 @@ return [
                     ['name' => 'label', 'label' => 'Beschriftung des Reiters', 'type' => 'text', 'required' => true, 'max' => 40],
                     ['name' => 'text', 'label' => 'Inhalt', 'type' => 'richtext'],
                     ['name' => 'image', 'label' => 'Bild (optional, 4:3)', 'type' => 'media'],
+                    ...\Core\Blocks\Caption::fields(),
                 ]],
             ],
         ],

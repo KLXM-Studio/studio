@@ -25,6 +25,3 @@
 @container (min-width:52rem){.mt-over__card{grid-area:1/1;align-self:end;justify-self:end;width:min(34rem,55%);margin:var(--f-s-xl)}}
 
 .mt-over>*{min-width:0}
-/* Bildunterschrift (Feld „caption“ bzw. Bildnachweis): figure statt des Bildrahmens als Spalte */
-.mt__fig{margin:0;display:grid;gap:var(--f-s-xs);align-content:start}
-.mt__cap{color:var(--f-muted);font-size:var(--f-t-1);line-height:1.45}

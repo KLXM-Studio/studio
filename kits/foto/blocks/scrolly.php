@@ -32,14 +32,14 @@ foreach ($items as $i => $it) {
     <div class="scrolly__stage">
       <div class="scrolly__frame <?= $auto ? 'scrolly__frame--auto' : 'r-' . e(str_replace(':', '-', $ratio)) ?>">
         <?php foreach ($stage as $i => $pic): ?>
-        <div class="scrolly__img<?= $i === 0 ? ' is-active' : '' ?>" data-step-img="<?= $i ?>"><?= $pic ?></div>
+        <div class="scrolly__img<?= $i === 0 ? ' is-active' : '' ?>" data-step-img="<?= $i ?>"><?= \Core\Blocks\Caption::figure($pic, $b, $items[$i], (int) $items[$i]['image'], "items.$i.") ?></div>
         <?php endforeach; ?>
       </div>
     </div>
     <ol class="scrolly__steps" role="list">
       <?php foreach ($items as $i => $it): $text = (string) ($it['text'] ?? ''); ?>
       <li class="scrolly__step<?= $i === 0 ? ' is-active' : '' ?>" data-step="<?= $i ?>" data-img="<?= $show[$i] ?? '' ?>">
-        <?php if (isset($stage[$i])): ?><?= $auto ? '<div class="scrolly__inline scrolly__inline--auto">' . img((int) $it['image'], '100vw') . '</div>' : foto_image((int) $it['image'], '100vw', $ratio, 'scrolly__inline') ?><?php endif; ?>
+        <?php if (isset($stage[$i])): ?><?= \Core\Blocks\Caption::figure($auto ? '<div class="scrolly__inline scrolly__inline--auto">' . img((int) $it['image'], '100vw') . '</div>' : foto_image((int) $it['image'], '100vw', $ratio, 'scrolly__inline'), $b, $it, (int) $it['image'], "items.$i.", 'scrolly__inline-fig') ?><?php endif; ?>
         <span class="scrolly__num" aria-hidden="true"><?= str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) ?></span>
         <?php if (trim((string) ($it['eyebrow'] ?? '')) !== ''): ?><p class="eyebrow"<?= $b->edit("items.$i.eyebrow") ?>><?= foto_title((string) $it['eyebrow']) ?></p><?php endif; ?>
         <<?= $tag ?> class="scrolly__title"<?= $b->edit("items.$i.title") ?>><?= foto_title((string) ($it['title'] ?? '')) ?></<?= $tag ?>>

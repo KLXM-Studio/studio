@@ -20,8 +20,10 @@ $stage = $variant === 'stage';
     </div>
     <div class="tabs__panels">
       <?php foreach ($items as $i => $it):
-          $pic = !empty($it['image']) ? ($stage ? fluid_image((int) $it['image'], '(min-width: 1080px) 820px, 100vw', '16:9', 'tabs__media')
-              : fluid_image((int) $it['image'], '(min-width: 1080px) 480px, 100vw', '4:3', 'tabs__media')) : ''; ?>
+          $capOn = !empty($it['image']) && \Core\Blocks\Caption::text($it, (int) $it['image']) !== '';
+          $pic = !empty($it['image']) ? ($stage ? fluid_image((int) $it['image'], '(min-width: 1080px) 820px, 100vw', '16:9', $capOn ? '' : 'tabs__media')
+              : fluid_image((int) $it['image'], '(min-width: 1080px) 480px, 100vw', '4:3', $capOn ? '' : 'tabs__media')) : '';
+          $pic = \Core\Blocks\Caption::figure($pic, $b, $it, (int) ($it['image'] ?? 0) ?: null, "items.$i.", 'tabs__media'); ?>
       <section class="tabs__panel<?= $pic !== '' ? ' tabs__panel--media' : '' ?>" id="<?= e("$id-panel-$i") ?>" aria-labelledby="<?= e("$id-tab-$i") ?>">
         <div class="tabs__text">
           <h3 class="tabs__title h3"<?= $b->edit("items.$i.label") ?>><?= fluid_title((string) $it['label']) ?></h3>

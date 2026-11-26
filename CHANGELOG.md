@@ -13,7 +13,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 ### Rückmeldungen aus dem Testsystem (Kennzahlen, Pakete, Text + Bild, Blöcke, Aufgaben, Suche)
 - Kennzahlen: „Höchstens nebeneinander“ (2–5); Werte brechen nicht mehr mitten im Wert um, Karten mit etwas breiterer Mindestbreite.
 - Wissensbereich: Inhalte nutzen die volle Breite der Kapitelspalte (Karten und Kacheln standen links, rechts blieb Platz).
-- Text + Bild: optionale Bildunterschrift, auf Wunsch aus dem Bildnachweis der Mediathek.
+- Bildunterschriften in allen Kits (`Core\Blocks\Caption`, Stile `css/caption.css`): Text + Bild, Reiter, Scrollytelling und Interaktives Bild – eigener Text oder auf Wunsch der Bildnachweis aus der Mediathek.
 - Blöcke im Eintragsformular: Entfernen fragt nach, wenn der Block Inhalt hat.
 - Verknüpfungen zu Kalender-Tabellen (z. B. „Zugehörige Termine“): Datum in der Auswahl, kommende zuerst, vergangene erst mit „Auch vergangene zeigen“; lange Auswahllisten mit Filterfeld.
 - Aufgaben: „Abhaken …“ statt „Erledigt“ bei offenen Aufgaben; „Aufgabe anlegen“ ohne Plus.

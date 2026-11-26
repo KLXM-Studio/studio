@@ -285,6 +285,7 @@ return [
                 ['name' => 'list', 'label' => 'Aufzählung (ein Punkt pro Zeile, optional)', 'type' => 'textarea', 'rows' => 3],
                 ...$buttons,
                 ['name' => 'image', 'label' => 'Bild', 'type' => 'media', 'width' => 'half', 'help' => 'Min. 1200 px breit.'],
+                ...\Core\Blocks\Caption::fields(),
                 ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => '4:3', 'width' => 'half', 'options' => $ratios],
                 ['name' => 'valign', 'label' => 'Bild ausrichten', 'type' => 'select', 'required' => true, 'default' => 'follow', 'width' => 'half', 'variants' => ['auto', 'right', 'left'],
                     'options' => ['follow' => 'Mitlaufen', 'top' => 'Oben', 'center' => 'Mitte'],

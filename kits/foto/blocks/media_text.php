@@ -32,6 +32,6 @@ $body = foto_head($b, 'mt__head')
 <?php else: ?>
 <div class="wrap mt mt--<?= e($side) ?> mt--va-<?= e($valign) ?>">
   <div class="mt__text"><?= $body ?></div>
-  <?= foto_image($d['image'] ?? null, '(min-width: 1080px) 600px, 100vw', $ratio, 'mt__media') ?>
+  <?= \Core\Blocks\Caption::figure(foto_image($d['image'] ?? null, '(min-width: 1080px) 600px, 100vw', $ratio, \Core\Blocks\Caption::text($d, (int) ($d['image'] ?? 0) ?: null) === '' ? 'mt__media' : ''), $b, $d, (int) ($d['image'] ?? 0) ?: null, '', 'mt__media') ?>
 </div>
 <?php endif;

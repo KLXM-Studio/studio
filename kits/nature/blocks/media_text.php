@@ -13,7 +13,8 @@ if ($v === 'auto') {
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:3';
 // Bild ausrichten: mitlaufen (Standard für neue Blöcke, Feld-Standard) · oben · mitte – ältere Blöcke ohne Wert bleiben „mitte“ (unverändert)
 $valign = in_array($d['valign'] ?? '', ['follow', 'top', 'center'], true) ? $d['valign'] : 'center';
-$pic = nature_image(!empty($d['image']) ? (int) $d['image'] : null, '(min-width: 1080px) 560px, 100vw', $ratio, 'mt__media');
+$capImg = !empty($d['image']) ? (int) $d['image'] : null;
+$pic = \Core\Blocks\Caption::figure(nature_image($capImg, '(min-width: 1080px) 560px, 100vw', $ratio, \Core\Blocks\Caption::text($d, $capImg) === '' ? 'mt__media' : ''), $b, $d, $capImg, '', 'mt__media');   // Bildunterschrift (Core\Blocks\Caption)
 ?>
 <div class="wrap mt mt--<?= e($v) ?> mt--va-<?= e($valign) ?><?= $pic !== '' ? ' mt--has-media' : '' ?>">
   <div class="mt__text">

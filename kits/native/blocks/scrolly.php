@@ -34,8 +34,8 @@ $img = 0;
       <?php endforeach; ?>
     </ol>
     <div class="ncss-scrolly-media" aria-hidden="true">
-      <?php foreach ($items as $it): $img = !empty($it['image']) ? (int) $it['image'] : $img; ?>
-      <figure class="ncss-scrolly-figure"><?= $img ? img($img, '(min-width: 1080px) 560px, 90vw', $fmt + ['alt' => '']) : '' ?></figure>
+      <?php foreach ($items as $ci => $it): $own = !empty($it['image']); $img = $own ? (int) $it['image'] : $img; if ($own) $capIt = $it; ?>
+      <figure class="ncss-scrolly-figure"><?= $img ? img($img, '(min-width: 1080px) 560px, 90vw', $fmt + ['alt' => '']) : '' ?><?= $img && isset($capIt) ? \Core\Blocks\Caption::html($b, $capIt, $img) : '' ?></figure>
       <?php endforeach; ?>
     </div>
   </ncss-scrolly>
