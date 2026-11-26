@@ -59,7 +59,7 @@ final class Tags
     }
 
     /** Beteiligte Felder je Vokabular (aus data_tables, ohne Tables::find) */
-    private static function members(): array
+    public static function members(): array
     {
         if (self::$members !== null) return self::$members;
         self::$members = [];
@@ -114,6 +114,7 @@ final class Tags
      */
     public static function publicCounts(): array
     {
+        if (isset(self::$memo['public'])) return self::$memo['public'];
         $n = [];
         $label = [];
         foreach (self::members() as $fields) {
@@ -138,7 +139,45 @@ final class Tags
         $out = [];
         foreach ($n as $k => $c) $out[$label[$k]] = $c;
         uksort($out, fn($a, $b) => strnatcasecmp($a, $b));
-        return $out;
+        return self::$memo['public'] = $out;
+    }
+
+    /** Einstellung: Weiterleitungen umbenannter/zusammengeführter Schlagworte (Vergleichsform alt => neuer Name) für Links tag:… */
+    public const ALIASES = 'tags.aliases';
+
+    /**
+     * Aktuelle Schreibweise eines öffentlich vergebenen Schlagworts (Link tag:… in Core\Links) – folgt Umbenennungen und
+     * Zusammenführungen; null = nicht (mehr) vergeben (Seite wäre 404).
+     */
+    public static function resolve(string $tag): ?string
+    {
+        $have = [];
+        foreach (array_keys(self::publicCounts()) as $l) $have[self::fold((string) $l)] ??= (string) $l;
+        $aliases = (array) (app()->settings->get(self::ALIASES) ?: []);
+        $k = self::fold($tag);
+        for ($i = 0; $i < 6 && $k !== ''; $i++) {
+            if (isset($have[$k])) return $have[$k];
+            if (!isset($aliases[$k])) return null;
+            $k = self::fold((string) $aliases[$k]);
+        }
+        return null;
+    }
+
+    /** Weiterleitung alt → neu merken (replace); entfernen ('') löscht nur die eigene Weiterleitung */
+    private static function alias(array $from, string $to): void
+    {
+        try {
+            $a = (array) (app()->settings->get(self::ALIASES) ?: []);
+            foreach ($from as $x) {
+                $k = self::fold((string) $x);
+                if ($k === '' || $k === self::fold($to)) continue;
+                if ($to === '') unset($a[$k]);
+                else $a[$k] = $to;
+            }
+            unset($a[self::fold($to)]);   // zurück umbenannt: keine Schleife
+            app()->settings->set(self::ALIASES, array_slice($a, -500, null, true));
+        } catch (\Throwable) {
+        }
     }
 
     /** Adresse der Seite eines Schlagworts (TagPageController) */
@@ -284,6 +323,7 @@ final class Tags
                 else $changed++;
             }
         }
+        if ($changed) self::alias($from, $to);   // Links tag:{alt} führen weiter zum neuen Namen
         self::flush();
         Tables::flush();
         return ['changed' => $changed, 'errors' => $errors];

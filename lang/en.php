@@ -10484,4 +10484,8 @@ return [
     '„Zum Thema“ zeigt auf der Detailseite eines Themas bzw. einer Kategorie die zugeordneten Einträge – bitte in die Detailseiten-Vorlage einer Auswahlliste einsetzen.' => '“On this topic” shows the assigned entries on the detail page of a topic or category – please add it to the detail page template of a choice list.',
     'Gilt für „Werte von …“ einer Verknüpfung bzw. einer Auswahlliste, deren Tabelle eigene Detailseiten hat (Themenseiten).' => 'Applies to “Values of …” of a relation or a choice list whose table has its own detail pages (topic pages).',
     'zur Detailseite (Themenseite) des Eintrags' => 'to the entry’s detail page (topic page)',
+    'Alle Schlagworte' => 'All tags',
+    'Liste nicht gefunden' => 'List not found',
+    'nicht vergeben' => 'not in use',
+    'Übersichten & Schlagworte' => 'Overviews & tags',
 ];

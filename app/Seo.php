@@ -110,7 +110,8 @@ final class Seo
         // Detailvorlage „nicht in Suchmaschinen“ oder nicht veröffentlicht: Einträge ebenso (wie die Sitemap, die sie dann weglässt)
         $seo['noindex'] = $entry['status'] !== 'published' || noindex_site() || !empty($table['settings']['noindex'])   // Tabelle „Nicht indexieren“ (Core\Indexing)
             || !empty($template['noindex']) || ($template['status'] ?? 'published') !== 'published'
-            || (Data\Jobs::is($table) && Data\Jobs::expired($table, $entry));
+            || (Data\Jobs::is($table) && Data\Jobs::expired($table, $entry))
+            || Data\TopicIndexing::topicReason($table, $entry) !== null;   // Themenseite: Inhalt schon auf einer Seite bzw. zu dünn
         $seo['alternates'] = [];
         if (Lang::multi()) {
             foreach (Data\Entries::translations($table, $entry) as $l => $tr) {

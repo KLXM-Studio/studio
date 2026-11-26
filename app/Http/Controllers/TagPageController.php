@@ -31,7 +31,8 @@ final class TagPageController
         if (!$groups) return $site->page($r, $path);   // unbekanntes Schlagwort: 404 der Website
         $label = $groups[0]['tag'];
         $one = array_sum(array_map(fn($g) => count($g['items']), $groups)) < 2;   // einzelne Treffer nicht indexieren
+        $dup = \Core\Data\TopicIndexing::tag($label);   // kein doppelter Inhalt: Thema gleichen Namens, Seite mit Liste, Synonym
         return (new TopicIndexController())->page($r, [['id' => 'auto-tag', 'type' => 'tag_page', 'data' => ['tag' => $label]]], lt('Schlagwort: {tag}', ['tag' => $label]),
-            lt('Alles zum Thema „{tag}“', ['tag' => $label]), ['noindex' => $one, 'canonical' => absolute_url(Tags::url($label))]);
+            lt('Alles zum Thema „{tag}“', ['tag' => $label]), ['noindex' => $one || $dup['noindex'], 'canonical' => absolute_url(Tags::url($dup['canonical'] ?? $label))]);
     }
 }

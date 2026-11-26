@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Core;
 
 use Core\Data\Entries;
+use Core\Data\OptionSource;
 use Core\Data\Tables;
+use Core\Data\Tags;
 use Core\Glossary\Glossary;
 
 /**
@@ -14,6 +16,8 @@ use Core\Glossary\Glossary;
  *   page:12            Seite 12              page:12#anker   Anker auf Seite 12
  *   entry:news:5       Eintrag 5 der Tabelle „news“ (Detailseite)
  *   media:9            Datei 9 (direkt, als Download)      media:9:viewer  PDF 9 im PDF-Viewer (/pdf/9)
+ *   list:themen        Übersicht der Auswahlliste „themen“ unter ihrer Adresse (/thema) – folgt einer geänderten Adresse
+ *   tags               alle Schlagworte (/schlagwort)      tag:Rehwild     Seite des Schlagworts – folgt Umbenennen/Zusammenführen
  */
 final class Links
 {
@@ -21,7 +25,7 @@ final class Links
     private static ?\Closure $testCanEdit = null;
     private static ?bool $testGlossary = null;
 
-    public const REF = '~^(page:\d+(#[\w-]{1,80})?|entry:[a-z][a-z0-9_]{0,40}:\d+|media:\d+(:viewer)?)$~';
+    public const REF = '~^(page:\d+(#[\w-]{1,80})?|entry:[a-z][a-z0-9_]{0,40}:\d+|media:\d+(:viewer)?|list:[a-z][a-z0-9_]{0,40}|tags|tag:[^\x00-\x1f"<>]{1,60})$~u';
 
     public static function isRef(string $v): bool
     {
@@ -32,7 +36,10 @@ final class Links
     public static function href(string $ref): ?string
     {
         if (!preg_match(self::REF, $ref)) return null;
+        if ($ref === 'tags') return Tags::publicCounts() || Pages::byPath('schlagwort') ? url('/schlagwort') : null;
         [$kind, $rest] = explode(':', $ref, 2);
+        if ($kind === 'list') return ($t = self::overviewTable($rest)) ? url('/' . self::route($t)) : null;
+        if ($kind === 'tag') return ($tag = Tags::resolve($rest)) !== null ? Tags::url($tag) : null;
         if ($kind === 'page') {
             [$id, $anchor] = array_pad(explode('#', $rest, 2), 2, '');
             $p = Pages::find((int) $id);
@@ -62,9 +69,17 @@ final class Links
         if ($v === '') return $out;
         if (self::isRef($v)) {
             $href = self::href($v);
-            [$kind, $rest] = explode(':', $v, 2);
             $out['href'] = (string) $href;
             $out['missing'] = $href === null;
+            if ($v === 'tags') return ['kind' => 'overview', 'type' => __('Übersicht'), 'label' => __('Alle Schlagworte'), 'icon' => 'tag'] + $out;
+            [$kind, $rest] = explode(':', $v, 2);
+            if ($kind === 'list') {
+                $t = Tables::findContent($rest);
+                return ['kind' => 'overview', 'type' => __('Übersicht'), 'label' => $t ? (string) $t['name'] : __('Liste nicht gefunden'), 'icon' => (string) ($t['icon'] ?? '')] + $out;
+            }
+            if ($kind === 'tag') {
+                return ['kind' => 'tag', 'type' => __('Schlagwort'), 'label' => Tags::resolve($rest) ?? ($rest . ' – ' . __('nicht vergeben'))] + $out;
+            }
             if ($kind === 'page') {
                 [$id, $anchor] = array_pad(explode('#', $rest, 2), 2, '');
                 $p = Pages::find((int) $id);
@@ -99,7 +114,7 @@ final class Links
     }
 
     /** Gruppen, die sich mit offset/limit weiterblättern lassen („Weitere laden“) */
-    public const PAGED = ['pages', 'page-anchors', 'recent-entries', 'files'];
+    public const PAGED = ['pages', 'page-anchors', 'recent-entries', 'files', 'overviews'];
 
     /**
      * Quellen für die Linkauswahl, nach Art gruppiert.
@@ -179,6 +194,36 @@ final class Links
                 if ($total === null) continue;
                 $group('entries:' . $t['handle'], self::sourceLabel($t), (string) ($t['icon'] ?? ''), $items, $total);
             }
+        }
+
+        // Übersichten der Auswahllisten (/thema), alle Schlagworte (/schlagwort) und Seiten je Schlagwort (nur mit Suche: Schlagwort
+        // passt, oder die Suche nennt „Schlagwort“ → alle). Nur Ziele, die es gibt: Liste mit Adresse + Vorlage, Schlagwort vergeben.
+        if ($want('overviews')) {
+            $items = [];
+            foreach (Tables::content() as $t) {
+                if (!self::overviewTable((string) $t['handle'])) continue;
+                $route = self::route($t);
+                if ($match((string) $t['name'], (string) $t['singular'], (string) $t['handle'], $route, __('Übersicht'))) {
+                    $items[] = ['value' => 'list:' . $t['handle'], 'href' => url('/' . $route), 'label' => (string) $t['name'],
+                        'meta' => __('Übersicht') . ' · /' . $route, 'kind' => 'overview', 'icon' => (string) ($t['icon'] ?? '')];
+                }
+            }
+            $tags = Tags::publicCounts();
+            if ($tags) {
+                $allWord = $q !== '' && $match(__('Schlagworte'), __('Schlagwort'), 'schlagwort');
+                if ($match(__('Alle Schlagworte'), __('Schlagworte'), 'schlagwort', __('Übersicht'))) {
+                    $items[] = ['value' => 'tags', 'href' => url('/schlagwort'), 'label' => __('Alle Schlagworte'), 'meta' => __('Übersicht') . ' · /schlagwort', 'kind' => 'overview', 'icon' => 'tag'];
+                }
+                if ($q !== '' || $only === 'overviews') {
+                    foreach ($tags as $tag => $n) {
+                        $tag = (string) $tag;
+                        if (!$allWord && !$match($tag)) continue;
+                        $items[] = ['value' => 'tag:' . $tag, 'href' => Tags::url($tag), 'label' => $tag,
+                            'meta' => __('Schlagwort') . ' · ' . ($n === 1 ? __('1 Eintrag') : __('{n} Einträge', ['n' => $n])), 'kind' => 'tag'];
+                    }
+                }
+            }
+            $group('overviews', __('Übersichten & Schlagworte'), 'tag', $items);
         }
 
         // Dateien: ohne Suche die neuesten Dokumente, mit Suche alle Arten
@@ -272,6 +317,18 @@ final class Links
     }
 
     /** Anzeigename einer Quelle: Name der Tabelle, beim Glossar immer „Glossar“ */
+    /** Auswahlliste mit eigener Übersicht (Adresse + Themenseiten-Vorlage)? */
+    private static function overviewTable(string $handle): ?array
+    {
+        $t = Tables::findContent($handle);
+        return $t && self::route($t) !== '' && !empty($t['settings']['detail_page_id']) && OptionSource::isList($t) ? $t : null;
+    }
+
+    private static function route(array $t): string
+    {
+        return trim((string) ($t['settings']['route'] ?? ''), '/');
+    }
+
     private static function sourceLabel(array $t): string
     {
         return self::isGlossary($t) ? __('Glossar') : (string) $t['name'];
@@ -434,6 +491,12 @@ final class Links
             app()->currentPage = Pages::find($anch);
             $eq('Anker der Seite bleibt relativ', link_href('#lnk-sprung'), '#lnk-sprung');
             $eq('Anker ohne Sprungmarke (Überschrift, Inhaltsverzeichnis) bleibt relativ', link_href('#lnk-nirgends-' . bin2hex(random_bytes(3)))[0], '#');
+
+            // Übersichten und Schlagworte: stabile Verweise, unbekannte Ziele fehlen (kein toter Link auf eine 404-Seite)
+            $eq('Verweise list:/tags/tag:', array_map([self::class, 'isRef'], ['list:themen', 'tags', 'tag:Rehwild', 'tag:Jagd & Wald', 'tag:', 'tag:<b>', 'list:Themen']),
+                [true, true, true, true, false, false, false]);
+            $eq('Unbekannte Liste/Schlagwort → fehlt', [self::href('list:lnk_gibtsnicht'), self::href('tag:lnk-gibtsnicht-' . bin2hex(random_bytes(3))),
+                self::describe('tag:lnk-gibtsnicht')['missing'], self::describe('list:lnk_gibtsnicht')['kind']], [null, null, true, 'overview']);
             app()->currentPage = $prevCur;
 
             $tree = self::tree($lang);

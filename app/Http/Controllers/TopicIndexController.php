@@ -26,7 +26,8 @@ final class TopicIndexController
 {
     public function listIndex(Request $r, array $t): Response
     {
-        return $this->page($r, [['id' => 'auto-list', 'type' => 'list_index', 'data' => ['table' => $t['handle']]]], (string) $t['name'], (string) ($t['description'] ?? ''));
+        return $this->page($r, [['id' => 'auto-list', 'type' => 'list_index', 'data' => ['table' => $t['handle']]]], (string) $t['name'], (string) ($t['description'] ?? ''),
+            ['noindex' => \Core\Data\TopicIndexing::listIndexReason($t) !== null]);   // Seite zeigt die Liste schon → nur eine Adresse für Suchmaschinen
     }
 
     public function tagIndex(Request $r): Response

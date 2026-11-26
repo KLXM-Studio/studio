@@ -17,7 +17,7 @@
  *  - Bearbeiten: zeigt das aktuelle Ziel, „Link entfernen“; Optionen „In neuem Tab öffnen“ und Linktitel (nur Rich-Text)
  *  - Tastatur: ↑/↓ in der Ergebnisliste (Suche und Daten), Enter übernimmt, Esc bricht ab, ←/→ zwischen den Reitern;
  *    im Baum ↑/↓ bewegen, → aufklappen/erstes Kind, ← zuklappen/Elternseite, Pos1/Ende, Enter übernimmt, Buchstabe → Suche
- *  - Stabile Verweise: page:ID, page:ID#anker, entry:{tabelle}:{id}, media:{id}[:viewer] (Core\Links) – im Rich-Text als
+ *  - Stabile Verweise: page:ID, page:ID#anker, entry:{tabelle}:{id}, media:{id}[:viewer], list:{liste}, tags, tag:{schlagwort} (Core\Links) – im Rich-Text als
  *    data-link am <a>, im Feld als Wert. Zuletzt verwendete Ziele: localStorage (nur Komfort, pro Browser).
  * Website: Dialog in der Shadow-DOM-Ebene (_shadow.js layerBox()), Verwaltung: im Dokument.
  */
@@ -33,8 +33,8 @@ const VIEW_KEY = 'cms-links-view';   // zuletzt gewählte Ansicht: search | tree
 const SRC_KEY = 'cms-links-source';  // zuletzt gewählte Quelle der Ansicht „Daten“ (z. B. entries:news)
 const VIEWS = ['search', 'tree', 'data'];
 const MORE = 30;                     // „Weitere laden“: so viele auf einmal
-const REF = /^(page:\d+(#[\w-]{1,80})?|entry:[a-z][a-z0-9_]{0,40}:\d+|media:\d+(:viewer)?)$/;
-const KIND = { page: 'Seite', anchor: 'Anker', entry: 'Eintrag', file: 'Datei', keyword: 'Sonderziel', url: 'Externe Adresse', mail: 'E-Mail', tel: 'Telefon', path: 'Interner Pfad' };
+const REF = /^(page:\d+(#[\w-]{1,80})?|entry:[a-z][a-z0-9_]{0,40}:\d+|media:\d+(:viewer)?|list:[a-z][a-z0-9_]{0,40}|tags|tag:[^\x00-\x1f"<>]{1,60})$/u;
+const KIND = { page: 'Seite', anchor: 'Anker', entry: 'Eintrag', file: 'Datei', keyword: 'Sonderziel', overview: 'Übersicht', tag: 'Schlagwort', url: 'Externe Adresse', mail: 'E-Mail', tel: 'Telefon', path: 'Interner Pfad' };
 
 /** Adresse der Link-API (Verwaltung: <datalist data-endpoint>, Website: Editor- bzw. Eintrags-Konfiguration) */
 export function linksUrl() {
@@ -675,7 +675,7 @@ function treeKey(e) {
   if (n) activate(n);
 }
 function kindIcon(it, g) {
-  return { page: 'file-text', anchor: 'hash', entry: it.icon || g.icon || 'database', file: it.pdf ? 'file-pdf' : 'file', keyword: 'star', url: 'globe', mail: 'at', tel: 'phone' }[it.kind] || 'link';
+  return { page: 'file-text', anchor: 'hash', entry: it.icon || g.icon || 'database', file: it.pdf ? 'file-pdf' : 'file', keyword: 'star', overview: it.icon || 'list', tag: 'tag', url: 'globe', mail: 'at', tel: 'phone' }[it.kind] || 'link';
 }
 function guessDirect(qs) {
   const v = qs.trim();

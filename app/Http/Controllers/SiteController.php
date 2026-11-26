@@ -453,7 +453,8 @@ final class SiteController
                 $loc = site_url() . Entries::url($t, $e);
                 if (Tables::isShared($t) && Entries::absUrl($t, $e) !== $loc) continue;
                 if (!$live($e)) continue;
-                if (\Core\Data\Knowledge::is($t) && \Core\Data\Knowledge::refUrl($t, $e) !== null) continue;   // Verweis-Kapitel: Adresse leitet weiter, die Seite steht selbst in der Sitemap
+                if (\Core\Data\Knowledge::is($t) && \Core\Data\Knowledge::refUrl($t, $e) !== null) continue;
+                if (\Core\Data\TopicIndexing::topicReason($t, $e) !== null) continue;   // Themenseite ohne eigenen Inhalt (Core\Data\TopicIndexing)   // Verweis-Kapitel: Adresse leitet weiter, die Seite steht selbst in der Sitemap
                 $urls[] = ['loc' => $loc, 'lastmod' => $mod($e['updated_at'] ?? $e['published_at']),
                     'images' => self::sitemapImages(array_map(fn($f) => (int) ($e[$f] ?? 0), $mediaFields))];
             }
@@ -461,11 +462,12 @@ final class SiteController
         // Übersichten der Auswahllisten (/thema …) ohne eigene Seite und Seiten je Schlagwort mit mindestens zwei Einträgen
         foreach (Tables::content() as $t) {
             $route = trim((string) ($t['settings']['route'] ?? ''), '/');
-            if ($route === '' || empty($t['settings']['detail_page_id']) || !empty($t['settings']['noindex']) || Pages::byPath($route) || !\Core\Data\OptionSource::isList($t)) continue;
+            if ($route === '' || empty($t['settings']['detail_page_id']) || !empty($t['settings']['noindex']) || Pages::byPath($route) || !\Core\Data\OptionSource::isList($t)
+                || \Core\Data\TopicIndexing::listIndexReason($t) !== null) continue;
             $urls[] = ['loc' => site_url() . url('/' . $route)];
         }
         if (!Pages::byPath('schlagwort')) {
-            foreach (\Core\Data\Tags::publicCounts() as $tag => $n) if ($n >= 2) $urls[] = ['loc' => site_url() . \Core\Data\Tags::url((string) $tag)];
+            foreach (\Core\Data\Tags::publicCounts() as $tag => $n) if ($n >= 2 && \Core\Data\TopicIndexing::tagIndexable((string) $tag)) $urls[] = ['loc' => site_url() . \Core\Data\Tags::url((string) $tag)];
         }
         return $this->sitemapXml($urls);
     }
