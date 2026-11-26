@@ -145,6 +145,7 @@ final class MenuEntries
         $page = self::overviewPage($t);
         if (!$fd || !$page) return [];
         $base = Pages::url($page);
+        $anchor = self::listAnchor($page, $t);
         $o = ['status' => 'published'];
         $counts = (array) (Entries::facets($t, [$field], $o)['counts'][$field] ?? []);
         $req = app()->request;
@@ -165,10 +166,28 @@ final class MenuEntries
                     $kids[] = ['id' => 'e-' . (int) $e['id'], 'label' => Entries::title($t, $e), 'href' => $href, 'active' => (int) $e['id'] === $curId, 'children' => [], 'draft' => false];
                 }
             }
-            $out[] = ['id' => 'v-' . $field . '-' . $key, 'label' => Tables::optionLabel($fd, $key), 'href' => $base . '?' . http_build_query([$field => $key]),
+            $out[] = ['id' => 'v-' . $field . '-' . $key, 'label' => Tables::optionLabel($fd, $key), 'href' => $base . '?' . http_build_query([$field => $key]) . $anchor,
                 'active' => in_array($key, array_map('strval', $sel), true) || in_array($key, $entryVals, true), 'children' => $kids, 'draft' => false];
         }
         return $out;
+    }
+
+    /**
+     * Anker der ersten Datenliste dieser Tabelle auf der Übersichtsseite („#b-…“ bzw. eigener Anker des Abschnitts) – der Menüpunkt
+     * springt so zur gefilterten Liste statt zum Einstieg; den festen Kopf berücksichtigt scroll-padding-top des Kits. '' ohne Liste.
+     */
+    private static function listAnchor(array $page, array $t): string
+    {
+        try {
+            foreach (Pages::blocks($page, false) as $raw) {
+                if (!is_array($raw) || ($raw['type'] ?? '') !== 'data_list' || (string) ($raw['data']['table'] ?? '') !== $t['handle']) continue;
+                $a = trim((string) ($raw['tunes']['section']['anchor'] ?? ''));
+                $id = $a !== '' ? $a : 'b-' . (string) ($raw['id'] ?? '');
+                return $id !== 'b-' ? '#' . rawurlencode($id) : '';
+            }
+        } catch (\Throwable) {
+        }
+        return '';
     }
 
     /** Selbsttest ohne Datenbank: Einstellungen */
