@@ -10525,4 +10525,6 @@ return [
     '{n} offene im Team' => '{n} open in the team',
     '{n} überfällig' => '{n} overdue',
     'Bild hinzufügen …' => 'Add image …',
+    'Erinnerung an Aufgaben' => 'Task reminders',
+    'Erinnerung an fällige Aufgaben per E-Mail' => 'Email reminders for due tasks',
 ];

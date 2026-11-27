@@ -109,6 +109,10 @@ final class AdminPages
                     return ['n' => $b['n'], 'warn' => $b['warn'], 'dot' => !$b['n'] && $b['others'] > 0,
                         'label' => $b['n'] ? __('{n} offen', ['n' => $b['n']]) . ($b['overdue'] ? ', ' . __('{n} überfällig', ['n' => $b['overdue']]) : '') : __('offene Aufgaben im Team')];
                 }], 'core', __('Funktionen')),
+            // Einstellung der Aufgaben (Erinnerung an fällige) – steht auf der Aufgabenseite, ist über Einrichtung und Suche erreichbar
+            self::normalize(['id' => 'tasks-settings', 'href' => '/admin/aufgaben#tk-set-h', 'label' => __('Erinnerung an Aufgaben'), 'icon' => 'list-checks', 'kind' => 'settings',
+                'description' => __('Erinnerung an fällige Aufgaben per E-Mail'),
+                'visible' => fn() => ($u = app()->auth->user()) && \Core\Tasks\Tasks::manager($u)], 'core', __('Funktionen')),
             // Schnittstellen: Tokens für REST-API und MCP
             self::normalize(['id' => 'api', 'href' => '/admin/api-tokens', 'label' => __('API & MCP'), 'icon' => 'api', 'kind' => 'settings', 'perm' => 'api.manage',
                 'description' => __('Zugänge (Tokens) für Automatisierungen und KI-Assistenten')], 'core', __('Funktionen')),
@@ -186,15 +190,17 @@ final class AdminPages
                 ['/admin/landingpages', __('Landingpages'), 'landings', Features::on('landings') && can('system.manage')],
                 ['/admin/weiterleitungen', __('Weiterleitungen'), 'redirects', Features::on('redirects') && can('redirects.manage')],
             ]],
-            // System: Betrieb der Installation – Grundeinstellungen, Funktionen, Personen
+            // Funktionen & Erweiterungen: an/aus und – direkt im Menü, nicht nur auf der Sammelseite – jede Einstellungsseite (kind settings)
+            // von Funktionen und Erweiterungen; redaktionelle Bereiche bleiben oben im Hauptmenü
+            ['key' => 'funktionen', 'label' => __('Funktionen & Erweiterungen'), 'icon' => 'features', 'items' => [
+                ['/admin/funktionen', __('Ein- und ausschalten'), 'features', Features::canView()],
+                ...array_map(fn($p) => [$p['href'], $p['label'], 'prefs-' . $p['id'], true], self::ofKind('settings')),
+            ]],
+            // System: Betrieb der Installation – Grundeinstellungen, Personen
             ['key' => 'einstellungen', 'label' => __('System'), 'icon' => 'gear', 'items' => [
                 ['/admin/system', __('Grundeinstellungen'), 'system', can('system.manage')],
                 // Domain (Core\Domains): nur Einzel-Installation ohne Netzwerk – sonst verwaltet die Netzwerk-Administration die Domains
                 ['/admin/system/domain', __('Domain'), 'domain', can('system.manage') && \Core\Domains::available()],
-                // Funktionen & Erweiterungen (Core\Features): Haupt-Admin schaltet, im Netzwerk liest die Website-Administration mit
-                ['/admin/funktionen', __('Funktionen & Erweiterungen'), 'features', Features::canView()],
-                // Sammelseite (kind settings): Einstellungen der Funktionen & Erweiterungen – nur wenn es etwas zu zeigen gibt
-                [self::HUB, __('Einstellungen der Funktionen'), 'prefs', self::hasSettings()],
                 ['/admin/users', __('Benutzer & Rollen'), 'users', can('users.manage')],
                 // Branding der Agentur (Core\Branding): Einzel-Installation Administration, Netzwerk nur Netzwerk-Administration
                 // – mit mehreren Websites im Netzwerk-Bereich (Core\Network\Area), nicht in der Website-Verwaltung

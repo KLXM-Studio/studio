@@ -115,13 +115,14 @@ final class SearchController extends AdminController
                 $actions[] = [$label, $g['label'], $href, $key, ($kwAdmin[$key] ?? '') . ' ' . mb_strtolower($g['label'])];
             }
         }
-        // Einstellungs- und Statistikseiten (Core\AdminPages) stehen nicht im Menü – über die Suche bleiben sie direkt erreichbar
-        foreach (\Core\AdminPages::ofKind('settings', 'stats') as $ap) {
-            $actions[] = [$ap['label'], $ap['description'] !== '' ? $ap['description'] : ($ap['kind'] === 'stats' ? __('Statistiken') : __('Einstellungen der Funktionen')),
-                $ap['href'], $ap['icon'], ($ap['kind'] === 'stats' ? 'statistik bericht ' : 'einstellungen konfiguration ') . $ap['description'] . ' ' . $ap['href']];
-        }
         // Einstellungen im Detail: Bereiche der Grundeinstellungen (mit ihren Feldern als Suchwörtern), Funktionen, Konto, Handbuch
         $more = [];
+        // Einstellungs- und Statistikseiten der Funktionen und Erweiterungen (Core\AdminPages kind settings/stats): Treffer unter
+        // „Einstellungen & Hilfe“ – „Newsletter Einstellungen“ findet die Einstellungen des Newsletters
+        foreach (\Core\AdminPages::ofKind('settings', 'stats') as $ap) {
+            $more[] = [$ap['label'] . ($ap['kind'] === 'stats' ? '' : ' › ' . __('Einstellungen')), $ap['description'] !== '' ? $ap['description'] : ($ap['kind'] === 'stats' ? __('Statistiken') : __('Funktionen & Erweiterungen')),
+                $ap['href'], $ap['icon'], ($ap['kind'] === 'stats' ? 'statistik bericht ' : 'einstellungen konfiguration ') . $ap['description'] . ' ' . $ap['href']];
+        }
         if (can('system.manage')) {
             $sysIco = ['website' => 'gear-six', 'index' => 'tree-structure', 'app' => 'device-mobile', 'proxy' => 'map-trifold', 'sprachen' => 'translate',
                 'mail' => 'envelope-simple', 'spam' => 'shield-check', 'suche' => 'magnifying-glass', 'ki' => 'sparkle'];
@@ -225,8 +226,8 @@ final class SearchController extends AdminController
             foreach (app()->theme->settingsGroups() as $g) {
                 foreach ($g['fields'] as $f) {
                     if (!isset($f['label']) || ($f['type'] ?? '') === 'heading') continue;
-                    $s = self::score($q, $f['label'] . ' ' . $g['label']);
-                    if ($s) $items[] = ['title' => $f['label'], 'sub' => app()->theme->settingsTitle() . ' › ' . $g['label'], 'url' => url('/admin/settings') . '#' . $g['id'], 'icon' => 'gear', 's' => $s];
+                    $s = self::score($q, $f['label'] . ' ' . $g['label'] . ' ' . (string) ($f['name'] ?? ''));
+                    if ($s) $items[] = ['title' => $f['label'], 'sub' => app()->theme->settingsTitle() . ' › ' . $g['label'], 'url' => url('/admin/settings') . '#' . $g['id'], 'icon' => 'gear', 's' => $s + 5];
                 }
             }
             if ($isAdmin) {
@@ -259,6 +260,28 @@ final class SearchController extends AdminController
         }
 
         $groups = array_values(array_filter($groups, fn($g) => $g['items']));
+        // Reihenfolge: Einstellungs-Treffer direkt nach den Aktionen; sucht man ausdrücklich Einstellungen („Newsletter Einstellungen“,
+        // „Logo“ …), stehen sie vor allem anderen (nach den Favoriten)
+        if ($q !== '') {
+            $isSet = fn($g) => in_array($g['label'], [__('Einstellungen'), __('Einstellungen & Hilfe')], true);
+            $setFirst = (bool) preg_match('~einstell|konfig|setting~iu', $q);
+            $set = array_values(array_filter($groups, $isSet));
+            $rest = array_values(array_filter($groups, fn($g) => !$isSet($g)));
+            $at = 0;
+            foreach ($rest as $i => $g) {
+                if ($g['label'] === __('Favoriten')) $at = $i + 1;
+                if (!$setFirst && $g['label'] === __('Aktionen')) { $at = $i + 1; break; }
+            }
+            $groups = [...array_slice($rest, 0, $at), ...$set, ...array_slice($rest, $at)];
+            // „Assistent fragen …“ nicht vor die echten Treffer: hinter Einstellungen und Aktionen
+            $ai = array_values(array_filter($groups, fn($g) => ($g['items'][0]['cmd'] ?? '') === 'assistant'));
+            if ($ai) {
+                $groups = array_values(array_filter($groups, fn($g) => ($g['items'][0]['cmd'] ?? '') !== 'assistant'));
+                $pos = 0;
+                foreach ($groups as $i => $g) if ($isSet($g) || $g['label'] === __('Aktionen') || $g['label'] === __('Favoriten')) $pos = $i + 1;
+                array_splice($groups, $pos, 0, $ai);
+            }
+        }
         foreach ($groups as &$g) {
             foreach ($g['items'] as &$i) {
                 unset($i['s']);
@@ -288,6 +311,27 @@ final class SearchController extends AdminController
     /** Quellen der Suche (?scope=…) – siehe Klassenkommentar */
     public const SCOPES = ['f', 'c', 'p', 'd', 'k', 't', 'm'];
 
+    /**
+     * Synonyme der Suche: Suchwort (Anfang) → weitere Wörter, die als Treffer gelten (Englisch/Deutsch, Alltagsbegriffe der Redaktion).
+     * Gilt für jedes Wort einzeln; das Wort selbst zählt immer.
+     */
+    private const SYNONYMS = [
+        'footer' => ['fußbereich', 'fuß', 'fusszeile', 'fußzeile'], 'fuß' => ['footer'], 'fuss' => ['fuß', 'footer'],
+        'header' => ['kopfbereich', 'kopf', 'kopfzeile'], 'kopf' => ['header'],
+        'cookie' => ['einwilligung', 'consent'], 'consent' => ['cookie', 'einwilligung'], 'einwilligung' => ['cookie', 'consent'],
+        'logo' => ['bildmarke', 'wortmarke', 'website-angaben'],
+        'kategorie' => ['auswahlliste', 'liste', 'thema', 'themen'], 'kategorien' => ['auswahlliste', 'liste', 'themen'],
+        'menü' => ['navigation'], 'menu' => ['menü', 'navigation'], 'navigation' => ['menü'],
+        'favicon' => ['app-icon', 'icon'], 'icon' => ['symbol'],
+        'mail' => ['e-mail', 'smtp'], 'email' => ['e-mail', 'mail', 'smtp'], 'smtp' => ['e-mail'],
+        'farbe' => ['design', 'farben'], 'farben' => ['design'], 'schrift' => ['font', 'schriften'], 'font' => ['schrift'],
+        'einstellung' => ['konfiguration', 'grundeinstellung'], 'einstellungen' => ['einstellung', 'konfiguration', 'grundeinstellung'],
+        'settings' => ['einstellung', 'konfiguration'], 'konfiguration' => ['einstellung'],
+        'benutzer' => ['nutzer', 'konto', 'rollen'], 'user' => ['benutzer', 'konto'], 'passwort' => ['anmeldedaten', 'kennwort'],
+        'redirect' => ['weiterleitung'], 'weiterleitung' => ['redirect'], 'seo' => ['suchmaschine', 'meta'],
+        'spam' => ['schutz', 'honeypot'], 'backup' => ['sicherung'], 'sicherung' => ['backup'], 'domain' => ['adresse'],
+    ];
+
     private static function score(string $q, string $hay): int
     {
         if ($q === '') return 1;
@@ -295,9 +339,16 @@ final class SearchController extends AdminController
         $s = 0;
         foreach (preg_split('~\s+~', mb_strtolower($q)) as $w) {
             if ($w === '') continue;
-            $pos = mb_strpos($hay, $w);
-            if ($pos === false) return 0;
-            $s += $pos === 0 ? 30 : (preg_match('~(^|[\s/\-›(])' . preg_quote($w, '~') . '~u', $hay) ? 20 : 8);
+            // bestes Vorkommen des Worts oder eines Synonyms (Synonyme etwas schwächer)
+            $best = 0;
+            foreach ([$w, ...(self::SYNONYMS[$w] ?? [])] as $k => $alt) {
+                $pos = mb_strpos($hay, $alt);
+                if ($pos === false) continue;
+                $v = $pos === 0 ? 30 : (preg_match('~(^|[\s/\-›(])' . preg_quote($alt, '~') . '~u', $hay) ? 20 : 8);
+                $best = max($best, $k === 0 ? $v : $v - 2);
+            }
+            if ($best === 0) return 0;
+            $s += $best;
         }
         return $s;
     }

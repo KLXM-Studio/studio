@@ -12,7 +12,7 @@ $__brand = \Core\AI\Assist::brand();
   </div>
   <p><b><a href="<?= e(url('/admin/hilfe/agent')) ?>">Mit KI-Agenten arbeiten (MCP)</a></b> zeigt, was ein Agent auf dieser Website für Sie tun kann – nach Aufgaben, mit Beispiel-Aufträgen zum Kopieren und der Verbindung für verbreitete Programme (Claude, ChatGPT, Gemini, Cursor, VS Code, LM Studio, Open WebUI mit Ollama).</p>
   <ul>
-    <li>Die Einrichtung übernimmt die Administration unter <b>Einrichtung › System › Einstellungen der Funktionen → API &amp; MCP</b> (Zugangstoken erzeugen, Assistent verbinden).</li>
+    <li>Die Einrichtung übernimmt die Administration unter <b>Einrichtung › Funktionen &amp; Erweiterungen → API &amp; MCP</b> (Zugangstoken erzeugen, Assistent verbinden).</li>
     <li>Seitenänderungen des Assistenten landen als <b>Entwurf</b> – Sie prüfen und veröffentlichen. Änderungen an <?= e($settingsTitle) ?> und Einträgen wirken sofort, sofern der Zugang nicht „Zur Freigabe“ eingestellt ist (siehe unten).</li>
     <li>Jede Änderung erscheint unter <b>Versionen</b> mit dem Namen des Zugangs („API „Claude – Redaktion““).</li>
     <li>Online-Anfragen bleiben verschlüsselt: Der Assistent sieht nur, <i>dass</i> Anfragen vorliegen, nie deren Inhalt.</li>
