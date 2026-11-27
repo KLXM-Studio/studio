@@ -649,4 +649,7 @@ return [
     'Dichte des Fußbereichs' => 'Footer density',
     'Kompakt – weniger Abstand, Links als Zeilen, Adresse in einer Zeile' => 'Compact – less spacing, links in rows, address on one line',
     '„Kompakt“ halbiert etwa die Höhe des Fußbereichs auf dem Telefon: Seiten und Social Media stehen nebeneinander statt untereinander, Copyright und Rechtliches in einer Zeile. Auf Touch-Geräten bleiben die Links groß genug zum Tippen.' => '“Compact” roughly halves the footer height on phones: pages and social media sit side by side instead of stacked, copyright and legal links on one line. On touch devices the links stay large enough to tap.',
+    'Button (dezent)' => 'Button (subtle)',
+    'Auffälliger Knopf in Akzentfarbe' => 'Prominent button in the accent colour',
+    'Knopf mit Rahmen' => 'Outlined button',
 ];

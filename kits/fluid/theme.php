@@ -44,6 +44,10 @@ return [
     // Abstand „Groß“ für Abschnitte (Klassen pt-large/pb-large, assets/css/_base.css) – im Editor auch per Ziehen am Abschnittsrand
     'space_large' => true,
     'space_xl' => true,
+    // Textformate (Core\TextFormats): zusätzlich zu den Formaten des Kerns Links als Button im Fließtext (.btn aus _base.css)
+    'text' => [
+        'links' => ['btn btn--primary' => ['label' => 'Button', 'hint' => 'Auffälliger Knopf in Akzentfarbe'], 'btn btn--secondary' => ['label' => 'Button (dezent)', 'hint' => 'Knopf mit Rahmen']],
+    ],
     'description' => 'Breakpointlos: Schrift, Abstände und Raster wachsen stufenlos mit der Bildschirmbreite – sehr viel über den Style-Editor einstellbar.',
     'description_en' => 'Breakpoint-free: type, spacing and grid scale fluidly with the screen width – a lot can be set in the style editor.',
     'category' => 'general',   // Willkommen-Bildschirm: general (Allgemein) | branch (Branchen & Themen) | dev (Entwickler)
