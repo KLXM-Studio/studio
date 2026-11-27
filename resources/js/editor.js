@@ -1861,7 +1861,7 @@ function renderTuneForm(tool) {
     <div class="f" role="group" aria-labelledby="t-bgi-l"><span class="f-label" id="t-bgi-l">Hintergrundbild</span>
       <div class="media-field" data-accept="image"><input type="hidden" name="bgImage" value="${E(t.bgImage || '')}">
       <div class="media-field-preview">${t.bgImage ? (bgThumb ? `<img src="${E(bgThumb)}" alt="" width="120">` : '') + '<span>Bild gewählt</span>' : '<span class="media-empty">Kein Bild gewählt</span>'}</div>
-      <button type="button" class="btn btn--small" data-media-pick>Auswählen …</button> <button type="button" class="btn btn--small btn--ghost" data-media-clear>Entfernen</button></div></div>
+      <div class="mf-actions"><button type="button" class="btn btn--small" data-media-pick>Auswählen …</button><button type="button" class="btn btn--small btn--ghost mf-clear" data-media-clear title="Entfernen">${CMSAdmin.ico ? CMSAdmin.ico('trash') : '×'}<span class="sr-only">Entfernen</span></button></div></div></div>
     <div class="f"><label for="t-ov">Bild abdunkeln oder aufhellen</label><select id="t-ov" name="overlay">${opt({ none: 'Nein', dark: 'Abdunkeln (helle Schrift)', light: 'Aufhellen (dunkle Schrift)' }, t.overlay)}</select></div>
     ${t.row ? `<div class="f"><input type="hidden" name="row" value="${E(t.row)}"><p class="f-help" id="t-row-h">${E(T('Dieser Block steht noch in einer alten Reihe neben dem vorigen Block. Für Spalten gibt es jetzt den Block „Layout“ – die Umstellung erledigt php bin/console layout:migrate-rows.'))}</p>
       <button type="button" class="btn btn--small" data-row-clear aria-describedby="t-row-h">${E(T('Aus der Reihe lösen (eigener Abschnitt)'))}</button></div>` : ''}

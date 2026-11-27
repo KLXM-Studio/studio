@@ -386,7 +386,10 @@ const Inline = (() => {
     if (!ui_) return;
     const r = n.getBoundingClientRect();
     ui_.hidden = !r.width;
-    ui_.style.top = (scrollY + r.top + 10) + 'px';
+    // nie unter einem festen/klebenden Kopf der Website (fluid: Kopf über dem Einstieg) oder der Werkzeugleiste
+    const cover = [...d.querySelectorAll('body > header, header, [role="banner"]')].filter(h => !h.closest('.cms-emedia') && /fixed|sticky/.test(getComputedStyle(h).position))
+      .reduce((m, h) => Math.max(m, h.getBoundingClientRect().bottom), barHost()?.getBoundingClientRect().bottom || 0);
+    ui_.style.top = (scrollY + Math.max(r.top, Math.min(cover, r.bottom - 60)) + 10) + 'px';
     ui_.style.left = Math.max(8, scrollX + r.right - ui_.offsetWidth - 10) + 'px';
   }
   function setMedia(n, m) {

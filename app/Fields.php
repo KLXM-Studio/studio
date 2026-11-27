@@ -844,8 +844,8 @@ final class Fields
             'media', 'file' => '<div class="media-field" data-accept="' . ($type === 'media' ? (($f['accept'] ?? '') === 'visual' ? 'visual' : 'image') : 'file') . '">'
                 . '<input type="hidden" id="' . $id . '" name="' . $inputName . '" value="' . e($v) . '">'
                 . '<div class="media-field-preview">' . self::mediaPreview($v === '' ? null : (int) $v) . '</div>'
-                . '<button type="button" class="btn btn--small" data-media-pick>Auswählen …</button> '
-                . '<button type="button" class="btn btn--small btn--ghost" data-media-clear>Entfernen</button></div>',
+                . '<div class="mf-actions"><button type="button" class="btn btn--small" data-media-pick>' . e(__('Auswählen …')) . '</button>'
+                . '<button type="button" class="btn btn--small btn--ghost mf-clear" data-media-clear title="' . e(__('Entfernen')) . '">' . icon('trash') . '<span class="sr-only">' . e(__('Entfernen')) . '</span></button></div></div>',
             'link' => !empty($f['pick']) && $f['pick'] === 'entry' ? self::renderEntryLink($f, $id, $inputName, $v) : self::renderLink($id, $inputName, $v, $aria . $ph),
             'secret' => '<input type="password" id="' . $id . '" name="' . $inputName . '" value="" autocomplete="new-password"'
                 . ' placeholder="' . ($v !== '' ? '•••••••• (gespeichert – leer lassen = unverändert)' : '') . '"' . $aria . '>',

@@ -253,9 +253,20 @@ a.adm-stat:hover{box-shadow:0 0 0 2px var(--adm-a);color:inherit}
 .rte-group:last-child{border-right:0}
 
 /* Medien */
-.media-field{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-.media-field-preview{display:flex;align-items:center;gap:10px;flex:1 1 100%;min-height:44px;font-size:13px;color:var(--adm-t3)}
-.media-field-preview img{width:120px;height:auto;border-radius:6px;background:var(--adm-fill)}
+/* Bild-/Dateifeld als ruhige Karte: Vorschau links (feste Größe, Ausschnitt), daneben Name (2 Zeilen) und darunter die Knöpfe;
+   Entfernen als Symbol am Ende. Schmal (Seitenleiste): gleiche Anordnung, Knöpfe brechen um */
+.media-field{display:grid;grid-template-columns:104px minmax(0,1fr);gap:6px 12px;align-items:center;padding:8px;border:1px solid var(--adm-line);border-radius:10px;background:var(--adm-bg,#fff)}
+.media-field>input[type=hidden]{display:none}
+.media-field-preview{display:contents;font-size:12.5px;color:var(--adm-t3)}
+.media-field-preview>img,.media-field-preview>.media-vthumb,.media-field-preview>.fx-vthumb,.media-field-preview>.media-empty{grid-column:1;grid-row:1/span 2;width:104px;height:70px;border-radius:7px;background:var(--adm-fill)}
+.media-field-preview>img,.media-field-preview>.media-vthumb{object-fit:cover}
+.media-field-preview>span:not(.media-empty):not(.fx-vthumb){grid-column:2;grid-row:1;align-self:end;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.35;overflow-wrap:anywhere}
+.media-field-preview>.media-empty{display:grid;place-items:center;padding:6px;border:1.5px dashed var(--adm-in);background:transparent;text-align:center;font-size:11.5px;line-height:1.25}
+.mf-actions{grid-column:2;grid-row:2;align-self:start;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.media-field-preview:has(>.media-empty)+.mf-actions,.media-field:not(:has(.media-field-preview>span:not(.media-empty))) .mf-actions{grid-row:1/span 2;align-self:center}
+.mf-actions .mf-clear{order:9;margin-left:auto;padding:0 8px!important}
+.mf-actions .mf-clear svg{width:15px;height:15px}
+.mf-actions .mf-tools{display:contents}
 .adm-filter{display:flex;gap:6px;margin:0 0 14px}
 .adm-filter a{padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:600;color:var(--adm-t2)}
 .adm-filter a[aria-current]{background:var(--adm-ink);color:var(--adm-on-ink)}

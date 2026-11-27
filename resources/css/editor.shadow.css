@@ -798,14 +798,8 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
   .cms-drawer__form,.cms-drawer [data-drawer-tunes],.cms-drawer .adm-fields,.cms-drawer .rep-fields,.cms-drawer .f-sec__body{grid-template-columns:minmax(0,1fr)}
   .cms-drawer__form>.f--half,.cms-drawer__form>.f-vis>.f--half,.cms-drawer [data-drawer-tunes]>.f--half,.cms-drawer .adm-fields>.f--half,.cms-drawer .rep-fields>.f--half,.cms-drawer .rep-fields>.f-vis>.f--half,.cms-drawer .f-sec__body>.f--half,.cms-drawer .f-sec__body>.f-vis>.f--half{grid-column:1/-1}
 }
-/* Bildfeld: Beschreibung unter das Bild, sobald daneben kein Platz ist */
-.cms-drawer .media-field{container-type:inline-size}
-@container (max-width:360px){
-  .cms-drawer .media-field-preview{flex-direction:column;align-items:flex-start;gap:6px}
-  .cms-drawer .media-field-preview img{width:100%;max-width:280px}
-}
-.cms-drawer .media-field-preview{line-height:1.4}
-.cms-drawer .media-field-preview>span,.cms-drawer .media-field-preview>small{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* Bildfeld: Karte wie in der Verwaltung (admin.css .media-field) – Vorschau links, Name und Knöpfe daneben */
+.cms-drawer .media-field-preview>small{display:none}
 
 /* Rückgängig / Wiederholen im Seiten-Editor (editor.js → History) */
 .cms-undo{display:inline-flex;gap:2px}
