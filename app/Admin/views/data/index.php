@@ -1,10 +1,10 @@
-<?php /** Daten: Übersicht der Tabellen. @var array $tables  @var array $inboxes  @var array $presets  @var array $user */
+<?php /** Daten: Übersicht der Tabellen. @var array $tables  @var array $inboxes  @var array $user */
 $inboxes ??= [];
 $isAdmin = can('data.schema'); ?>
 <header class="adm-head dt-head">
   <h1>Daten</h1>
   <?php if ($isAdmin): ?><div class="adm-row">
-    <?php if (\Core\AI\Assist::available('text') && can('data.schema') && \Core\Features::on('data.schema')): ?><a class="adm-btn kia-btn" href="<?= e(url('/admin/ai/tabellen')) ?>"><span class="kia-spark" aria-hidden="true"><?= icon('sparkle') ?></span> <?= e(__('Tabelle generieren')) ?></a><?php endif; ?>
+    <?php // Ein Einstieg: der Assistent fragt Art, Vorlage (auch „Mit KI beschreiben“) und Grundeinstellungen ?>
     <a class="adm-btn adm-btn--primary" href="<?= e(url('/admin/data/new')) ?>">+ <?= e(__('Neue Tabelle oder Formular')) ?></a></div><?php endif; ?>
 </header>
 
@@ -90,19 +90,4 @@ $isAdmin = can('data.schema'); ?>
   </article>
   <?php endforeach; ?>
 </div>
-<?php endif; ?>
-
-<?php if ($isAdmin): ?>
-<section class="adm-card dt-presets">
-  <h2><?= $tables ? 'Weitere Tabelle aus Vorlage' : 'Mit einer Vorlage starten' ?></h2>
-  <p class="adm-muted">Vorlagen enthalten sinnvolle Felder – alles lässt sich danach anpassen.</p>
-  <div class="dt-preset-grid">
-    <?php foreach ($presets as $key => $p): ?>
-    <a class="dt-preset" href="<?= e(url('/admin/data/new?preset=' . $key)) ?>"><span class="dt-icon" aria-hidden="true"><?= icon($p['icon']) ?></span><strong><?= e($p['name']) ?></strong>
-      <small><?= e(implode(', ', array_column(array_slice($p['fields'], 0, 4), 'label'))) ?> …</small></a>
-    <?php endforeach; ?>
-    <?php if (\Core\AI\Assist::available('text') && can('data.schema')): ?><a class="dt-preset dt-preset--ai" href="<?= e(url('/admin/ai/tabellen')) ?>"><span class="dt-icon" aria-hidden="true"><?= icon('sparkle') ?></span><strong><?= e(__('Mit KI generieren')) ?></strong><small><?= e(__('Beschreiben, was Sie brauchen')) ?></small></a><?php endif; ?>
-    <a class="dt-preset dt-preset--empty" href="<?= e(url('/admin/data/new')) ?>"><span class="dt-icon" aria-hidden="true"><?= icon('plus') ?></span><strong><?= e(__('Mit dem Assistenten')) ?></strong><small><?= e(__('Art wählen, Grundeinstellungen, einsetzen')) ?></small></a>
-  </div>
-</section>
 <?php endif; ?>

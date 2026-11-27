@@ -15,6 +15,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Unterpunkte der geöffneten Tabelle: oben die Ansichten zum Pflegen, darunter abgesetzt „Einrichten“ (Felder & Einstellungen, Einsetzen, Detailseite gestalten, Detailseiten-Vorlagen, Listen-Vorlagen, Einstellungsseiten zur Tabelle).
 - Detailseiten gestalten auch für die Redaktion mit „Seiten bearbeiten“ und dem Recht an den Einträgen der Tabelle (`Core\Data\DetailTemplates::canDesign`).
 - „Tabelle löschen“ steht unter Allgemein statt Erweitert.
+- Daten-Übersicht kompakter: „Einträge“ als erster Knopf, „Website“ (Seite mit der Liste) statt „Ansehen“, Einrichten und RSS als Knöpfe. Neue Tabellen nur noch über „+ Neue Tabelle oder Formular“ (Assistent mit Vorlagen und KI) – das Vorlagen-Raster der Übersicht entfällt.
 - Daten-Übersicht: „Ansehen“ führt zur Seite mit der Liste (Unterseiten vor der Startseite) bzw. zur eigenen Übersicht von Wissen und Glossar – nicht mehr zur Detail-Adresse ohne Übersicht (404); ohne veröffentlichte Seite kein Knopf.
 
 ### Bilder aus dem Chat (MCP)

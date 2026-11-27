@@ -205,7 +205,7 @@ final class DataController extends AdminController
         // Eingangs-Tabellen: nur Anzahl (Metadaten); Felder ändern mit data.schema, lesen unter „Anfragen“
         $inboxes = array_map(fn($t) => $t + ['count' => \Core\Data\Inbox::count($t), 'new' => \Core\Data\Inbox::count($t, 'neu')],
             array_values(array_filter(\Core\Data\Inbox::tables(), fn($t) => can('data.schema') || can('requests.read', $t['handle']))));
-        return $this->view('data/index', ['tables' => $tables, 'inboxes' => $inboxes, 'presets' => self::presets()]);
+        return $this->view('data/index', ['tables' => $tables, 'inboxes' => $inboxes]);
     }
 
     /**
