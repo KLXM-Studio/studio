@@ -22,6 +22,15 @@ use Core\Pages;
  */
 final class DetailTemplates
 {
+    /**
+     * Detailseiten gestalten (Vorlage im Editor, mehrere Vorlagen verwalten): mit „Tabellen und Felder ändern“ oder als Redaktion mit
+     * „Seiten bearbeiten“ und dem Recht an den Einträgen dieser Tabelle – die Vorlage ist eine Seite, die Inhalte kommen aus den Einträgen.
+     */
+    public static function canDesign(array $t): bool
+    {
+        return can('data.schema') || (can('pages.edit') && can('data.edit', (string) $t['handle']));
+    }
+
     public const SETTING = 'data.detail_templates.';
     /** Höchstzahl an Regeln je Tabelle */
     public const MAX_RULES = 200;

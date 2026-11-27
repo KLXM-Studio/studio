@@ -10551,4 +10551,7 @@ return [
     'Von mehreren Tabellen genutzt.' => 'Used by several tables.',
     'ohne Detailseiten' => 'without detail pages',
     'zuletzt geändert {when}' => 'last changed {when}',
+    'Verknüpft' => 'Linked',
+    'Verknüpft mit {table}' => 'Linked with {table}',
+    'für {tables}' => 'for {tables}',
 ];

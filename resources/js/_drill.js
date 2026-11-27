@@ -64,7 +64,7 @@ export function drill({ panel, title, label = '', back = '', home, box = null, a
     mark();
   }
   // Schmal: Ansichten der aktuellen Tabelle zusätzlich über dem Inhalt (Kopie der Links, ohne Formulare)
-  const links = [...panel.querySelectorAll('.is-open > .dt-nav__sub > li > a')];
+  const links = [...panel.querySelectorAll('.is-open > .dt-nav__sub > li:not(.dt-nav__links) > a')];
   if (links.length > 1 && home) {
     const tabs = d.createElement('nav');
     tabs.className = 'adm-subtabs';

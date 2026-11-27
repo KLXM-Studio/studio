@@ -62,12 +62,19 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 /* Daten-Navigation: Auswahllisten unter ihrer Haupttabelle bzw. als Gruppe (app/Admin/views/data/_nav.php) */
 /* Auswahllisten unter ihrer Tabelle: ruhige Baumzeile (Führungslinie, kleines Symbol, gedämpft) – klar getrennt von den
    Unterseiten der geöffneten Tabelle (Liste, Schlagworte …) */
-.dt-nav__child>.dt-nav__item{position:relative;margin-left:30px;min-height:28px;padding-block:2px;font-size:.88em;color:var(--adm-side-t2,rgba(255,255,255,.72))}
-.dt-nav__child>.dt-nav__item::before{content:"";position:absolute;left:-14px;top:-4px;bottom:50%;width:9px;border-left:1px solid currentColor;border-bottom:1px solid currentColor;border-bottom-left-radius:4px;opacity:.35}
-.dt-nav__child>.dt-nav__item .dt-nav__ico{transform:scale(.8);opacity:.6}
-.dt-nav__child>.dt-nav__item.is-active,.dt-nav__child>.dt-nav__item[aria-current]{color:inherit}
+/* Auswahllisten (data/_nav.php): eigener Abschnitt, zweite Zeile „für …“; Punkt = mit der geöffneten Tabelle verknüpft */
+.dt-nav__list-t>.dt-nav__item{flex-wrap:wrap;row-gap:0}
+.dt-nav__list-t>.dt-nav__item .dt-nav__name{flex:1 1 0}
+.dt-nav__for{order:3;flex:1 0 100%;padding-left:26px;margin-top:-3px;font-size:11.5px;color:var(--adm-t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-nav__dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--adm-mint,#3ec7a0)}
+/* Unterpunkte: „Einrichten“ abgesetzt; „Verknüpft“ mit Links zu den Listen */
+.adm-side .dt-nav__subhead{margin:8px 0 2px;padding:6px 8px 0;border-top:1px solid var(--adm-line);font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--adm-t3)}
+.adm-side .dt-nav__links{margin-top:6px;padding:0 8px;font-size:12px;line-height:1.5;color:var(--adm-t3)}
+.adm-side .dt-nav__links .ico{width:13px;height:13px;vertical-align:-2px}
+.adm-side .dt-nav .dt-nav__links a{display:inline;min-height:0;padding:0;width:auto;color:var(--adm-t2);font:inherit;text-decoration:underline;text-underline-offset:2px}
+.adm-main > .dt-nav .dt-nav__subhead,.adm-main > .dt-nav .dt-nav__links,.adm-main > .dt-nav .dt-nav__for{display:none}
 .dt-nav__group{margin:12px 0 2px;padding:0 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--adm-t2)}
-.adm--mini:not(.is-side-peek) .dt-nav__child>.dt-nav__item{margin-left:0}
+.adm--mini:not(.is-side-peek) .dt-nav__for{display:none}
 
 /* Auswahl aus einer Liste: „+ neu“ und „Liste bearbeiten“ am Feld (resources/js/_optsrc.js) */
 .f-optsrc{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
@@ -106,3 +113,4 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-assign__mode legend{width:100%;margin-bottom:4px;font-weight:600}
 .dt-assign [data-av] label{display:grid;gap:4px}
 .dt-assign__foot{justify-content:flex-end}
+.dt-listrows{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}

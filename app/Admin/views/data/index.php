@@ -19,16 +19,18 @@ $isAdmin = can('data.schema'); ?>
 </details>
 
 <?php if ($tables):
-  // Auswahllisten (Core\Data\OptionSource) nicht als eigene Karten: als Chips unter der Tabelle, die sie nutzt; von mehreren genutzte
-  // Listen gesammelt darunter. Karten zeigen zuerst, was die Redaktion braucht (Einträge, zuletzt geändert); Technik nur mit data.schema
+  // Auswahllisten (Core\Data\OptionSource) sind normale Tabellen, aber keine eigenen Karten: als Chips an jeder Tabelle, die sie nutzt,
+  // und gesammelt im Abschnitt „Auswahllisten“ mit „für …“. Karten zeigen zuerst, was die Redaktion braucht (Einträge, zuletzt geändert)
   $byH = array_column($tables, null, 'handle');
-  $listsOf = $sharedLists = [];
+  $listsOf = $usersOf = $sharedLists = [];
   foreach ($tables as $t) {
-      $users = array_values(array_unique(array_map(fn($x) => $x[0]['handle'], \Core\Data\OptionSource::usedBy($t))));
-      if (count($users) === 1 && isset($byH[$users[0]]) && $users[0] !== $t['handle']) $listsOf[$users[0]][] = $t;
-      elseif ($users && \Core\Data\OptionSource::isList($t)) $sharedLists[] = $t;
+      $users = array_values(array_unique(array_filter(array_map(fn($x) => $x[0]['handle'], \Core\Data\OptionSource::usedBy($t)), fn($h) => $h !== $t['handle'])));
+      if (!$users) continue;
+      $usersOf[$t['handle']] = $users;
+      $sharedLists[] = $t;
+      foreach ($users as $u) $listsOf[$u][] = $t;
   }
-  $isList = array_flip(array_merge(array_column(array_merge(...array_values($listsOf ?: [[]])), 'handle'), array_column($sharedLists, 'handle')));
+  $isList = $usersOf;
   $last = function (array $t): string {
       $e = \Core\Data\Entries::query($t, ['status' => 'all', 'sort' => 'updated_at', 'dir' => 'desc', 'limit' => 1])[0] ?? null;
       return $e && !empty($e['updated_at']) ? __('zuletzt geändert {when}', ['when' => fmt()->relative((string) $e['updated_at'])]) : '';
@@ -53,7 +55,8 @@ $isAdmin = can('data.schema'); ?>
   <?php endforeach; ?>
 </div>
 <?php if ($sharedLists): ?>
-<section class="dt-shared-lists"><h2 class="dt-section-title"><?= e(__('Auswahllisten')) ?></h2><p class="adm-muted"><?= e(__('Von mehreren Tabellen genutzt.')) ?></p><p><?= implode(' ', array_map($chip, $sharedLists)) ?></p></section>
+<section class="dt-shared-lists"><h2 class="dt-section-title"><?= e(__('Auswahllisten')) ?></h2>
+  <ul class="dt-listrows"><?php foreach ($sharedLists as $l): ?><li><?= $chip($l) ?> <span class="adm-muted"><?= e(__('für {tables}', ['tables' => implode(', ', array_map(fn($h) => $byH[$h]['name'] ?? $h, $usersOf[$l['handle']]))])) ?></span></li><?php endforeach; ?></ul></section>
 <?php endif; ?>
 <?php endif; ?>
 

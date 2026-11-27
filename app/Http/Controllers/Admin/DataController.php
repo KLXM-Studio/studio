@@ -564,8 +564,9 @@ final class DataController extends AdminController
     /** Detailseiten-Vorlage anlegen und im Editor öffnen */
     public function template(Request $r, string $handle): Response
     {
-        $this->auth($r, 'data.schema');
+        $this->auth($r);
         $t = $this->table($handle);
+        if (!\Core\Data\DetailTemplates::canDesign($t)) throw new HttpException(403);   // auch Redaktion: Seiten bearbeiten + Einträge
         $this->noInbox($t, $r);
         if ($t['settings']['route'] === '') {
             return $this->back('/admin/data/' . $handle . '/schema', 'error', 'Bitte zuerst eine Adresse (URL-Basis) festlegen.');
@@ -584,8 +585,9 @@ final class DataController extends AdminController
     /** Detailseiten-Vorlagen der Tabelle: Liste, Standard, neue Vorlage (leer, Kopie, mitgeliefert), Zuordnung (Core\Data\DetailTemplates) */
     public function detailTemplates(Request $r, string $handle): Response
     {
-        $this->auth($r, 'data.schema');
+        $this->auth($r);
         $t = $this->table($handle);
+        if (!\Core\Data\DetailTemplates::canDesign($t)) throw new HttpException(403);   // auch Redaktion: Seiten bearbeiten + Einträge
         $this->noInbox($t, $r);
         if ($t['settings']['route'] === '') return $this->back('/admin/data/' . $handle . '/schema', 'error', __('Bitte zuerst eine Adresse (URL-Basis) festlegen.'));
         return $this->view('data/detail_templates', ['t' => $t, 'list' => \Core\Data\DetailTemplates::all($t), 'rules' => \Core\Data\DetailTemplates::rules($t),
@@ -594,8 +596,9 @@ final class DataController extends AdminController
 
     public function detailTemplatesSave(Request $r, string $handle): Response
     {
-        $this->auth($r, 'data.schema');
+        $this->auth($r);
         $t = $this->table($handle);
+        if (!\Core\Data\DetailTemplates::canDesign($t)) throw new HttpException(403);   // auch Redaktion: Seiten bearbeiten + Einträge
         $this->noInbox($t, $r);
         $back = '/admin/data/' . $handle . '/detailvorlagen';
         $id = (int) $r->str('id');
