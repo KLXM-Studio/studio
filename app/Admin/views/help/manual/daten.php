@@ -1,8 +1,9 @@
 <?php /** Handbuch · Kapitel „Eigene Daten“ · @var callable $anchor */ ?>
   <p class="lead">Unter <a href="<?= e(url('/admin/data')) ?>">Daten</a> legen Sie eigene Inhaltstypen an – etwa Aktuelles, Team, Produkte, Termine oder Fragen &amp; Antworten. Ohne Programmieren, mit eigener Übersicht, Detailseiten und Ausgabe an beliebiger Stelle der Website.</p>
+  <p><b>Pflegen und Einrichten sind getrennt:</b> Unter <b>Daten</b> (Hauptmenü) pflegt die Redaktion die Einträge – Liste, Kalender, Schlagworte, Import. Eingerichtet werden Tabellen unter <a href="<?= e(url('/admin/datenmodell')) ?>"><b>Einrichtung → Datenmodell</b></a> (Recht „Tabellen und Felder ändern“): Die Übersicht zeigt alle Tabellen und Eingänge mit Art, Anzahl Felder und Einträge, Detailseite und Verwendung, Auswahllisten eingerückt unter ihrer Tabelle. Ein Klick auf eine Tabelle öffnet ihr Untermenü mit <b>Felder &amp; Einstellungen</b>, <b>Einsetzen</b>, <b>Listen-Vorlagen</b>, <b>Detailseite gestalten</b> und <b>Detailseiten-Vorlagen</b>. Unten im Menü wechseln Sie jeweils hinüber: <b>Tabelle einrichten</b> (unter Daten) bzw. <b>Zu den Einträgen</b> (im Datenmodell).</p>
 
   <h3 id="assistent">1. Tabelle oder Formular anlegen – mit dem Assistenten <small>(Recht „Tabellen und Felder ändern“, Standard: Administration)</small></h3>
-  <p><b>Daten → + Neue Tabelle oder Formular</b> öffnet einen Assistenten in vier Schritten. Er fragt zuerst, <em>was</em> Sie anlegen möchten, und richtet die passenden Grundeinstellungen ein – so müssen Sie sich nicht durch alle Einstellungen arbeiten.</p>
+  <p><b>Einrichtung → Datenmodell → + Neue Tabelle oder Formular</b> öffnet einen Assistenten in vier Schritten. Er fragt zuerst, <em>was</em> Sie anlegen möchten, und richtet die passenden Grundeinstellungen ein – so müssen Sie sich nicht durch alle Einstellungen arbeiten.</p>
   <ol class="doc-steps">
     <li><b>Art wählen</b> – eine Karte anklicken:
       <table class="doc-table">

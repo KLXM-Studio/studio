@@ -159,15 +159,15 @@ final class DataController extends AdminController
     }
 
     /**
-     * Alle Daten-Seiten (außer Eingängen) bekommen die Bereichsnavigation „Daten“ (views/data/_nav.php):
-     * das Layout stellt sie links anstelle der Hauptnavigation dar (Drill-down, resources/js/_drill.js).
+     * Alle Daten-Seiten bekommen die Bereichsnavigation „Daten“ bzw. „Datenmodell“ (views/data/_nav.php, Core\Data\AdminNav):
+     * das Layout stellt sie links anstelle der Hauptnavigation dar (Drill-down, resources/js/_drill.js). Eingänge nur im Datenmodell.
      */
     protected function view(string $view, array $vars = [], int $status = 200): Response
     {
         $t = $vars['t'] ?? $vars['table'] ?? null;
-        if (!$t || !Tables::isInbox($t)) {
-            $cur = match ($view) {
+        $cur = match ($view) {
                 'data/index' => 'index',
+                'data/model' => 'model',
                 'data/entries' => empty($vars['cal']) ? 'list' : 'calendar',
                 'data/entry' => $vars['e'] === null ? 'new-entry' : 'entry',
                 'data/schema' => $t ? 'schema' : 'new',
@@ -181,10 +181,11 @@ final class DataController extends AdminController
                 'data/tags' => 'tags',
                 'data/external_entry' => 'entry',
                 default => '',
-            };
+        };
+        if (!$t || !Tables::isInbox($t) || \Core\Data\AdminNav::isModel($cur)) {
             // Adressbücher (Kontakte-Tabellen): Formular und Tabellenansicht wie das Adressbuch mit dem Hauptmenü („Kontakte“)
             if ($t && in_array($view, ['data/entry', 'data/entries'], true) && \Core\Data\AddressBook::enabled($t)) { $vars['drill'] ??= ''; $vars['navContacts'] = true; }
-            $vars['drill'] ??= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_nav.php', ['cur' => $cur, 'active' => $t]);
+            if (!isset($vars['drill'])) $vars += \Core\Data\AdminNav::vars($cur, $t);
             $vars['drillTitle'] ??= __('Daten');
         }
         return parent::view($view, $vars, $status);
@@ -205,7 +206,19 @@ final class DataController extends AdminController
         // Eingangs-Tabellen: nur Anzahl (Metadaten); Felder ändern mit data.schema, lesen unter „Anfragen“
         $inboxes = array_map(fn($t) => $t + ['count' => \Core\Data\Inbox::count($t), 'new' => \Core\Data\Inbox::count($t, 'neu')],
             array_values(array_filter(\Core\Data\Inbox::tables(), fn($t) => can('data.schema') || can('requests.read', $t['handle']))));
-        return $this->view('data/index', ['tables' => $tables, 'inboxes' => $inboxes, 'presets' => self::presets()]);
+        return $this->view('data/index', ['tables' => $tables, 'inboxes' => $inboxes]);
+    }
+
+    /**
+     * Einrichtung › Datenmodell: alle Tabellen und Eingänge mit Art, Feldern, Detailseite und Verwendung (Auswahllisten eingerückt
+     * unter ihrer Tabelle), neue Tabelle aus Vorlage – das Einrichten einer Tabelle liegt in ihrer Bereichsnavigation (Core\Data\AdminNav).
+     */
+    public function model(Request $r): Response
+    {
+        $this->auth($r, 'data.schema');
+        $tables = array_map(fn($t) => $t + ['count' => Tables::isInbox($t) ? \Core\Data\Inbox::count($t) : Entries::count($t, ['status' => 'all', 'source' => 'own'])],
+            array_values(array_merge(Tables::content(), \Core\Data\Inbox::tables())));
+        return $this->view('data/model', ['tables' => $tables, 'presets' => self::presets(), 'title' => __('Datenmodell')]);
     }
 
     /**

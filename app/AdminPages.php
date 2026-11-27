@@ -191,6 +191,10 @@ final class AdminPages
                 ['/admin/landingpages', __('Landingpages'), 'landings', Features::on('landings') && can('system.manage')],
                 ['/admin/weiterleitungen', __('Weiterleitungen'), 'redirects', Features::on('redirects') && can('redirects.manage')],
             ]],
+            // Datenmodell (Core\Data\AdminNav): Tabellen einrichten – Felder, Detailseiten, Einsetzen; „Daten“ oben bleibt für die Inhalte
+            ['key' => 'datenmodell', 'label' => __('Datenmodell'), 'icon' => 'datamodel', 'items' => [
+                [\Core\Data\AdminNav::MODEL_PATH, __('Datenmodell'), 'datamodel', can('data.schema')],
+            ]],
             // Funktionen & Erweiterungen: an/aus und – direkt im Menü, nicht nur auf der Sammelseite – jede Einstellungsseite (kind settings)
             // von Funktionen und Erweiterungen; redaktionelle Bereiche bleiben oben im Hauptmenü
             ['key' => 'funktionen', 'label' => __('Funktionen & Erweiterungen'), 'icon' => 'features', 'items' => [
