@@ -114,3 +114,16 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-assign [data-av] label{display:grid;gap:4px}
 .dt-assign__foot{justify-content:flex-end}
 .dt-listrows{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+/* Daten-Übersicht: kompakte Karten – Name + Anzahl, Listen, eine Technikzeile, Aktionen (Einträge zuerst) */
+.dt-card--c{gap:10px;padding:14px 16px}
+.dt-card--c .dt-card__main{gap:12px}
+.dt-card--c .dt-icon{width:36px;height:36px;border-radius:8px}
+.dt-card--c .dt-icon .ico{width:19px;height:19px}
+.dt-card__head{flex:1;min-width:0}
+.dt-card--c .dt-card__main strong{font-size:16px;line-height:1.25}
+.dt-card--c .dt-card__main small{display:block;margin-top:2px;font-size:12.5px;line-height:1.35}
+.dt-card--c .dt-card__main small b{color:var(--adm-ink);font-weight:700;font-variant-numeric:tabular-nums}
+.dt-card--c .dt-card__meta{margin:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-card--c .dt-card__meta code{font-size:11.5px;padding:1px 5px}
+.dt-card--c .dt-card__actions{gap:6px}
+.dt-card--c .dt-card__actions .ico{width:15px;height:15px}

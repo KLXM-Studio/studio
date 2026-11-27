@@ -10554,4 +10554,5 @@ return [
     'Verknüpft' => 'Linked',
     'Verknüpft mit {table}' => 'Linked with {table}',
     'für {tables}' => 'for {tables}',
+    'Seite mit dieser Liste auf der Website öffnen (neuer Tab)' => 'Open the page with this list on the website (new tab)',
 ];

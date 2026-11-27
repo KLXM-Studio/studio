@@ -48,17 +48,21 @@ $isAdmin = can('data.schema'); ?>
 ?>
 <div class="dt-grid">
   <?php foreach ($tables as $t): if (isset($isList[$t['handle']])) continue; $site = $viewUrl($t); ?>
-  <article class="dt-card">
-    <a class="dt-card__main" href="<?= e(url('/admin/data/' . $t['handle'])) ?>">
+  <article class="dt-card dt-card--c">
+    <?php $base = url('/admin/data/' . $t['handle']); $n = (int) $t['count']; $lc = $last($t); ?>
+    <a class="dt-card__main" href="<?= e($base) ?>">
       <span class="dt-icon" aria-hidden="true"><?= icon($t['icon']) ?></span>
-      <span><strong><?= e($t['name']) ?></strong><small><?= e((int) $t['count'] === 1 ? __('1 Eintrag') : __('{n} Einträge', ['n' => (int) $t['count']])) ?><?php $lc = $last($t); ?><?= $lc !== '' ? ' · ' . e($lc) : '' ?></small></span>
+      <span class="dt-card__head"><strong><?= e($t['name']) ?></strong><small><b><?= $n ?></b> <?= e($n === 1 ? __('Eintrag') : __('Einträge')) ?><?= $lc !== '' ? ' · ' . e($lc) : '' ?></small></span>
     </a>
-    <?php if ($isAdmin): ?><p class="dt-card__meta"><?= e(\Core\Data\Purpose::label(\Core\Data\Purpose::of($t))) ?> · <?= count($t['fields']) ?> <?= e(__('Felder')) ?> · <?= $t['settings']['route'] !== '' ? 'Detailseiten unter <code>/' . e($t['settings']['route']) . '/…</code>' : e(__('ohne Detailseiten')) ?><?php if (\Core\Data\Feed::available($t)): ?> · <a class="dt-feed" href="<?= e(url(\Core\Data\Feed::path($t))) ?>" target="_blank" rel="noopener" title="<?= e(__('RSS-Feed dieser Tabelle (öffnet in neuem Tab)')) ?>"><?= icon('rss') ?> RSS</a><?php endif; ?></p><?php endif; ?>
     <?php if (!empty($listsOf[$t['handle']])): ?><p class="dt-card__lists"><span class="dt-card__listsl"><?= e(__('Listen')) ?>:</span> <?= implode(' ', array_map($chip, $listsOf[$t['handle']])) ?></p><?php endif; ?>
+    <?php // Technik nur für Admins, eine Zeile ?>
+    <?php if ($isAdmin): ?><p class="dt-card__meta"><?= e(\Core\Data\Purpose::label(\Core\Data\Purpose::of($t))) ?> · <?= count($t['fields']) ?> <?= e(__('Felder')) ?><?= $t['settings']['route'] !== '' ? ' · <code>/' . e($t['settings']['route']) . '/…</code>' : '' ?></p><?php endif; ?>
     <div class="dt-card__actions">
-      <a class="adm-btn adm-btn--small" href="<?= e(url('/admin/data/' . $t['handle'] . '/new')) ?>">+ <?= e($t['singular']) ?></a>
-      <?php if ($site !== ''): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e($site) ?>" target="_blank" rel="noopener"><?= icon('globe') ?> <?= e(__('Ansehen')) ?></a><?php endif; ?>
-      <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $t['handle'] . '/schema')) ?>"><?= e(__('Felder & Einstellungen')) ?></a><?php endif; ?>
+      <a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e($base) ?>"><?= icon('list-bullets') ?> <?= e(__('Einträge')) ?></a>
+      <a class="adm-btn adm-btn--small" href="<?= e($base . '/new') ?>">+ <?= e($t['singular']) ?></a>
+      <?php if ($site !== ''): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e($site) ?>" target="_blank" rel="noopener" title="<?= e(__('Seite mit dieser Liste auf der Website öffnen (neuer Tab)')) ?>"><?= icon('arrow-square-out') ?> <?= e(__('Website')) ?></a><?php endif; ?>
+      <?php if (\Core\Data\Feed::available($t)): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url(\Core\Data\Feed::path($t))) ?>" target="_blank" rel="noopener" title="<?= e(__('RSS-Feed dieser Tabelle (öffnet in neuem Tab)')) ?>"><?= icon('rss') ?> RSS</a><?php endif; ?>
+      <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e($base . '/schema') ?>" title="<?= e(__('Felder & Einstellungen')) ?>"><?= icon('gear-six') ?> <?= e(__('Einrichten')) ?></a><?php endif; ?>
     </div>
   </article>
   <?php endforeach; ?>
@@ -73,16 +77,15 @@ $isAdmin = can('data.schema'); ?>
 <h2 class="dt-section-title"><?= e(__('Eingänge (verschlüsselte Anfragen)')) ?></h2>
 <div class="dt-grid">
   <?php foreach ($inboxes as $t): ?>
-  <article class="dt-card">
+  <article class="dt-card dt-card--c">
     <a class="dt-card__main" href="<?= e(url('/admin/requests?table=' . $t['handle'])) ?>">
       <span class="dt-icon" aria-hidden="true"><?= icon($t['icon']) ?></span>
       <span><strong><?= e($t['name']) ?></strong><small><?= e(__('{n} Anfragen · {new} neu', ['n' => (int) $t['count'], 'new' => (int) $t['new']])) ?></small></span>
     </a>
     <p class="dt-card__meta"><?= icon(\Core\Data\Purpose::of($t) === 'mail' ? 'paper-plane-tilt' : 'lock') ?> <?= e(\Core\Data\Purpose::of($t) === 'mail' ? __('Nur per E-Mail · nichts gespeichert') : __('Ende-zu-Ende verschlüsselt · nur über das Formular')) ?></p>
     <div class="dt-card__actions">
-      <?php if (can('requests.read', $t['handle'])): ?><a class="adm-btn adm-btn--small" href="<?= e(url('/admin/requests?table=' . $t['handle'])) ?>"><?= e(__('Im Eingang lesen')) ?></a><?php endif; ?>
-      <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $t['handle'] . '/schema')) ?>">Felder &amp; Einstellungen</a>
-      <a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $t['handle'] . '/einsetzen')) ?>"><?= e(__('Einsetzen')) ?></a><?php endif; ?>
+      <?php if (can('requests.read', $t['handle'])): ?><a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e(url('/admin/requests?table=' . $t['handle'])) ?>"><?= icon('tray') ?> <?= e(__('Im Eingang lesen')) ?></a><?php endif; ?>
+      <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $t['handle'] . '/schema')) ?>" title="<?= e(__('Felder & Einstellungen')) ?>"><?= icon('gear-six') ?> <?= e(__('Einrichten')) ?></a><?php endif; ?>
     </div>
   </article>
   <?php endforeach; ?>
