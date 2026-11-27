@@ -60,8 +60,12 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-optask__row select{flex:0 1 20rem;max-width:100%}
 
 /* Daten-Navigation: Auswahllisten unter ihrer Haupttabelle bzw. als Gruppe (app/Admin/views/data/_nav.php) */
-.dt-nav__child>.dt-nav__item{margin-left:22px;font-size:.94em}
-.dt-nav__child>.dt-nav__item .dt-nav__ico{opacity:.75}
+/* Auswahllisten unter ihrer Tabelle: ruhige Baumzeile (Führungslinie, kleines Symbol, gedämpft) – klar getrennt von den
+   Unterseiten der geöffneten Tabelle (Liste, Schlagworte …) */
+.dt-nav__child>.dt-nav__item{position:relative;margin-left:30px;min-height:28px;padding-block:2px;font-size:.88em;color:var(--adm-side-t2,rgba(255,255,255,.72))}
+.dt-nav__child>.dt-nav__item::before{content:"";position:absolute;left:-14px;top:-4px;bottom:50%;width:9px;border-left:1px solid currentColor;border-bottom:1px solid currentColor;border-bottom-left-radius:4px;opacity:.35}
+.dt-nav__child>.dt-nav__item .dt-nav__ico{transform:scale(.8);opacity:.6}
+.dt-nav__child>.dt-nav__item.is-active,.dt-nav__child>.dt-nav__item[aria-current]{color:inherit}
 .dt-nav__group{margin:12px 0 2px;padding:0 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--adm-t2)}
 .adm--mini:not(.is-side-peek) .dt-nav__child>.dt-nav__item{margin-left:0}
 

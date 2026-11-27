@@ -10548,4 +10548,7 @@ return [
     'Doppelklick auf einen Abschnitt öffnet ihn im Editor.' => 'Double-click a section to open it in the editor.',
     'Tablet' => 'Tablet',
     'Vorschau der markierten Seite als Seitenleiste – Pfeiltasten wechseln die Seite' => 'Preview of the selected page as a sidebar – arrow keys switch pages',
+    'Von mehreren Tabellen genutzt.' => 'Used by several tables.',
+    'ohne Detailseiten' => 'without detail pages',
+    'zuletzt geändert {when}' => 'last changed {when}',
 ];
