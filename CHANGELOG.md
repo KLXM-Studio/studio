@@ -15,6 +15,7 @@ die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsberei
 - Unterpunkte der geöffneten Tabelle: oben die Ansichten zum Pflegen, darunter abgesetzt „Einrichten“ (Felder & Einstellungen, Einsetzen, Detailseite gestalten, Detailseiten-Vorlagen, Listen-Vorlagen, Einstellungsseiten zur Tabelle).
 - Detailseiten gestalten auch für die Redaktion mit „Seiten bearbeiten“ und dem Recht an den Einträgen der Tabelle (`Core\Data\DetailTemplates::canDesign`).
 - „Tabelle löschen“ steht unter Allgemein statt Erweitert.
+- Daten-Übersicht: „Ansehen“ führt zur Seite mit der Liste (Unterseiten vor der Startseite) bzw. zur eigenen Übersicht von Wissen und Glossar – nicht mehr zur Detail-Adresse ohne Übersicht (404); ohne veröffentlichte Seite kein Knopf.
 
 ### Bilder aus dem Chat (MCP)
 - Neue MCP-Werkzeuge `media_upload_link` und `media_upload_status`: Hat die Person im Chat ein Bild angehängt, erzeugt der Assistent einen Upload-Link (30 Minuten, eine Datei); die Person lädt dort hoch, der Assistent bindet das Bild über seine Medien-ID ein. Die Anweisungen des MCP-Servers nennen den Weg.

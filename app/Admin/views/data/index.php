@@ -35,10 +35,19 @@ $isAdmin = can('data.schema'); ?>
       $e = \Core\Data\Entries::query($t, ['status' => 'all', 'sort' => 'updated_at', 'dir' => 'desc', 'limit' => 1])[0] ?? null;
       return $e && !empty($e['updated_at']) ? __('zuletzt geändert {when}', ['when' => fmt()->relative((string) $e['updated_at'])]) : '';
   };
+  // „Ansehen“: eigene Übersicht (Wissen, Glossar), sonst die Seite mit der Liste – Unterseiten vor der Startseite; die Detail-Adresse
+  // allein (/nachricht) hat keine Übersicht (404). Ohne veröffentlichte Seite kein Knopf.
+  $viewUrl = function (array $t): string {
+      if (\Core\Data\Knowledge::is($t) && $t['settings']['route'] !== '') return url('/' . trim((string) $t['settings']['route'], '/'));
+      if (($g = \Core\Glossary\Glossary::table()) && $g['handle'] === $t['handle'] && ($o = \Core\Glossary\Glossary::overviewUrl())) return $o;
+      $pages = array_values(array_filter(\Core\Data\Placement::usages($t), fn($u) => !$u['template'] && $u['status'] === 'published' && $u['url']));
+      usort($pages, fn($a, $b) => ($a['url'] === '/') <=> ($b['url'] === '/'));
+      return (string) ($pages[0]['url'] ?? '');
+  };
   $chip = fn(array $l) => '<a class="dt-listchip" href="' . e(url('/admin/data/' . $l['handle'])) . '">' . icon($l['icon'] ?: 'tag') . ' ' . e($l['name']) . ' <span class="dt-listchip__n">' . (int) $l['count'] . '</span></a>';
 ?>
 <div class="dt-grid">
-  <?php foreach ($tables as $t): if (isset($isList[$t['handle']])) continue; $site = $t['settings']['route'] !== '' ? url('/' . trim((string) $t['settings']['route'], '/')) : ''; ?>
+  <?php foreach ($tables as $t): if (isset($isList[$t['handle']])) continue; $site = $viewUrl($t); ?>
   <article class="dt-card">
     <a class="dt-card__main" href="<?= e(url('/admin/data/' . $t['handle'])) ?>">
       <span class="dt-icon" aria-hidden="true"><?= icon($t['icon']) ?></span>
