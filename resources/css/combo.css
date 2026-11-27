@@ -17,18 +17,18 @@
 .ct-person__line svg{flex:none;width:1em;height:1em;opacity:.7}
 .ct-person__note{margin-top:.5em!important;font-size:.92em;opacity:.85}
 
-/* Fragen & Antworten: <details> als Akkordeon */
-.faq{margin-block:1em;border-top:1px solid var(--cms-line,rgb(0 0 0/.12))}
-.faq__item{border-bottom:1px solid var(--cms-line,rgb(0 0 0/.12))}
-.faq__q{display:flex;justify-content:space-between;align-items:center;gap:1em;padding:.9em 0;font-weight:600;cursor:pointer;list-style:none}
-.faq__q::-webkit-details-marker{display:none}
-.faq__q::after{content:"";flex:none;width:.55em;height:.55em;margin:-.3em .25em 0 0;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s,margin .2s}
-.faq__item[open]>.faq__q::after{margin-top:.3em;transform:rotate(225deg)}
-.faq__q:focus-visible{outline:3px solid var(--cms-accent,currentColor);outline-offset:2px}
-.faq__a{padding:0 0 1em}
-.faq__a .prose>:first-child{margin-top:0}
-.faq__a .prose>:last-child{margin-bottom:0}
-@media (prefers-reduced-motion:reduce){.faq__q::after{transition:none}}
+/* Fragen & Antworten: <details> als Akkordeon – nur .faq--field (Combo), damit die FAQ-Blöcke der Kits (.faq__*) unberührt bleiben */
+.faq--field{margin-block:1em;border-top:1px solid var(--cms-line,rgb(0 0 0/.12))}
+.faq--field .faq__item{border-bottom:1px solid var(--cms-line,rgb(0 0 0/.12))}
+.faq--field .faq__q{display:flex;justify-content:space-between;align-items:center;gap:1em;padding:.9em 0;font-weight:600;cursor:pointer;list-style:none}
+.faq--field .faq__q::-webkit-details-marker{display:none}
+.faq--field .faq__q::after{content:"";flex:none;width:.55em;height:.55em;margin:-.3em .25em 0 0;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s,margin .2s}
+.faq--field .faq__item[open]>.faq__q::after{margin-top:.3em;transform:rotate(225deg)}
+.faq--field .faq__q:focus-visible{outline:3px solid var(--cms-accent,currentColor);outline-offset:2px}
+.faq--field .faq__a{padding:0 0 1em}
+.faq--field .faq__a .prose>:first-child{margin-top:0}
+.faq--field .faq__a .prose>:last-child{margin-bottom:0}
+@media (prefers-reduced-motion:reduce){.faq--field .faq__q::after{transition:none}}
 
 /* Adresse */
 .adr{display:grid;gap:.15em;font-style:normal}

@@ -12,7 +12,7 @@
 .sec-row{display:flex;flex-wrap:wrap;gap:var(--row-gap,clamp(28px,4vw,56px));align-items:var(--row-align,flex-start)}
 .sec-row>.sec-row__cell{flex-grow:var(--row-w,1);flex-shrink:1;flex-basis:calc((var(--row-stack,700px) - 100%) * 999);min-width:0;padding:0}
 /* Die Block-Vorlagen bringen ihre eigene .wrap mit – in der Zelle ohne Höchstbreite und Seitenrand */
-.sec-row>.sec-row__cell>.wrap{max-width:none;width:auto;margin-inline:0;padding-inline:0}
+.sec-row>.sec-row__cell>.wrap{max-width:none;width:auto;margin-inline:0;padding-inline:0;--cms-flush:1}
 /* Karte (Block mit anderem Hintergrund als die Reihe): Klassen sec + bg-{name} wie ein Abschnitt, aber kompakt.
    Innenabstand an der .wrap des Blocks (nicht an der Zelle) – so bleiben die Spaltenanteile exakt */
 .sec-row>.sec-row__cell--card{border-radius:var(--row-card-radius,16px);margin:0}

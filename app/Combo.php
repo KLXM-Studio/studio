@@ -300,7 +300,7 @@ final class Combo
     /** Akkordeon aus <details> (ohne Skript, Tastatur und Screenreader verstehen es) – schema.org FAQPage */
     private static function faq(array $items): string
     {
-        $h = '<div class="faq" itemscope itemtype="https://schema.org/FAQPage">';
+        $h = '<div class="faq faq--field" itemscope itemtype="https://schema.org/FAQPage">';
         foreach ($items as $i) {
             $q = trim((string) ($i['question'] ?? ''));
             if ($q === '') continue;

@@ -8,6 +8,13 @@
    Inhaltsbreite sicher) – sticky unter dem Kopf. Ist der Text kürzer als das Bild, bestimmt das Bild die Zeilenhöhe: sieht aus wie „Mitte“. */
 .mt:is(.mt--va-top,.mt--va-follow) .mt__media{align-self:flex-start}
 @container (min-width:50rem){.mt--va-follow .mt__media{position:sticky;top:var(--f-s-l)}.hdr-sticky .mt--va-follow .mt__media{top:calc(var(--hdr-h,4.25rem) + var(--f-s-l))}}
+/* Schmale Spalte (Container unter 64 rem, z. B. neben einer Seitenleiste): Bild nicht mittig neben langem Text (Löcher), sondern oben
+   und – solange beide nebeneinander stehen – mitlaufend; Bild bekommt mehr Anteil, damit es nicht zum Streifen wird */
+@container (min-width:52rem) and (max-width:64rem){
+  .mt .mt__media{align-self:flex-start;flex-basis:min(22rem,100%);position:sticky;top:var(--f-s-l)}
+  .hdr-sticky .mt .mt__media{top:calc(var(--hdr-h,4.25rem) + var(--f-s-l))}
+  .mt{column-gap:var(--f-s-xl)}
+}
 /* Aufteilung (Feld split): Wachstum der Hälften, solange sie nebeneinander stehen */
 .mt--s-text .mt__text{flex-grow:1.7}.mt--s-media .mt__media{flex-grow:1.6}.mt--s-mediaxl .mt__media{flex-grow:2.6}
 .mt__head,.mt-split .sec-head,.mt-over .sec-head{margin:0}

@@ -557,7 +557,7 @@ return [
             'label' => 'Fragen & Antworten', 'icon' => 'question', 'group' => 'Inhalt',
             'description' => 'Fragen mit aufklappbaren Antworten.',
             'help' => 'Aufklappbare Fragen (ohne JavaScript). Suchmaschinen erhalten die Fragen als strukturierte Daten (FAQPage).',
-            'variants' => ['split' => 'Überschrift links, Fragen rechts', 'stacked' => 'Untereinander, zentriert'],
+            'variants' => ['split' => 'Überschrift links, Fragen rechts', 'stacked' => 'Untereinander, zentriert', 'open' => 'Offen: alle Antworten sichtbar', 'cards' => 'Karten in zwei Spalten'],
             'jsonld' => ['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a'],
             'fields' => [
                 ...$head(true),

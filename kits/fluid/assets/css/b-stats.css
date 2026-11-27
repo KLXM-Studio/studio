@@ -19,3 +19,8 @@
 .stats--max3{--min:max(11rem,calc((100% - 2 * var(--f-s-xl)) / 3))}
 .stats--max4{--min:max(10rem,calc((100% - 3 * var(--f-s-xl)) / 4))}
 .stats--max5{--min:max(9rem,calc((100% - 4 * var(--f-s-xl)) / 5))}
+/* Schmale Spalte (Container unter 64 rem): vier Kennzahlen als 2 × 2 statt vier schmaler Kacheln, fünf/sechs als 3 + 3 */
+@container (max-width:64rem){
+  .stats:is(.stats--max4,:has(>.stat:nth-child(4):last-child)){--min:calc((100% - var(--f-s-xl)) / 2)}
+  .stats:is(.stats--max5,:has(>.stat:nth-child(5):last-child),:has(>.stat:nth-child(6):last-child)){--min:max(10rem,calc((100% - 2 * var(--f-s-xl)) / 3))}
+}

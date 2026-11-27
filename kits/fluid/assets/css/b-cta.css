@@ -26,9 +26,13 @@
 .cta-photo__media picture{display:contents}
 .cta-photo__media img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover}
 .cta-photo__inner{display:flex;padding-block:calc(var(--f-sec) * .8)}
+/* In schmalen Spalten (Seitenleiste, Spalten, Zeilen) hat .wrap keinen Seitenrand (--cms-flush: 1 vom Kern) – die Karte hält trotzdem
+   Abstand zum Bildrand; unter 30 rem Spaltenbreite mit schmalerem Rand */
+.cta-photo__card{--cta-in:calc(var(--cms-flush,0) * var(--f-s-l));margin-inline:var(--cta-in)}
+@container (max-width:30rem){.cta-photo__card{--cta-in:calc(var(--cms-flush,0) * var(--f-s-s))}}
 .cta-photo--right .cta-photo__inner{justify-content:flex-end}
 /* Karte deckend in Seitenfarbe – auch Schrift, Links und Buttons der Seite, unabhängig von der Fläche des Abschnitts (--f0-*: am :root) */
-.cta-photo__card{--f-ink:var(--f0-ink);--f-text:var(--f0-text);--f-muted:var(--f0-muted);--f-link:var(--f0-link);--f-fg:var(--f0-ink);--f-btn-bg:var(--f-a);--f-btn-ink:var(--f-a-on);--f-btn-hover:var(--f-a-strong);display:flex;flex-direction:column;gap:var(--f-s-s);max-width:min(30rem,100%);padding:var(--f-s-l) calc(var(--f-s-l) * 1.15);border-radius:var(--f-radius);background:var(--f-bg);color:var(--f-text);box-shadow:0 30px 60px -28px rgb(0 0 0 / .45)}
+.cta-photo__card{--f-ink:var(--f0-ink);--f-text:var(--f0-text);--f-muted:var(--f0-muted);--f-link:var(--f0-link);--f-fg:var(--f0-ink);--f-btn-bg:var(--f-a);--f-btn-ink:var(--f-a-on);--f-btn-hover:var(--f-a-strong);display:flex;flex-direction:column;gap:var(--f-s-s);max-width:min(30rem,100% - 2 * var(--cta-in,0px));padding:var(--f-s-l) calc(var(--f-s-l) * 1.15);border-radius:var(--f-radius);background:var(--f-bg);color:var(--f-text);box-shadow:0 30px 60px -28px rgb(0 0 0 / .45)}
 .cta-photo__card .cta__title{color:var(--f-ink)}
 .cta-photo__card .cta__actions{margin-top:var(--f-s-xs)}
 @media (prefers-reduced-motion:no-preference){

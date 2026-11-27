@@ -333,6 +333,8 @@ return [
     'Trennlinien und Rahmen (dekorativ).' => 'Dividers and borders (decorative).',
     'Typografie' => 'Typography',
     'Untereinander, zentriert' => 'Stacked, centred',
+    'Offen: alle Antworten sichtbar' => 'Open: all answers visible',
+    'Karten in zwei Spalten' => 'Cards in two columns',
     'Unterhalb gelten die kleinen Werte.' => 'Below this, the small values apply.',
     'Untertitel und Transkript pflegen Sie in der Mediathek an der Datei.' => 'Maintain subtitles and transcript on the file in the media library.',
     'Verein / gemeinnützige Organisation' => 'Club / non-profit',
