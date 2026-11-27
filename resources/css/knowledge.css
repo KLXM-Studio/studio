@@ -66,12 +66,26 @@ a.kn-nav__link:hover{background:var(--kn-soft)}
 .kn-main{min-width:0}
 .kn-main:focus{outline:none}
 /* Im Bearbeiten-Modus liegt jeder Abschnitt in einer Hülle .eb-entry – die Regeln gelten für beide Fälle */
-.kn .kn-content > section,.kn .kn-content > .eb-entry > section{padding-block:0 clamp(1rem,2.5vw,1.75rem)}
+/* Abschnitte der Kapitelspalte (oberste Ebene – im Editor stecken sie in Hüllen, darum über :not(.sec .sec) statt „>“): kompakte
+   Abstände. Ohne Tune oben 0, unten --kn-sb; die Stufen pt-…/pb-… (Abstand oben/unten) bilden auf diese Skala ab statt überschrieben
+   zu werden – Editor und Website gleich */
+.kn .kn-content .sec:not(.sec .sec){--kn-sb:clamp(1rem,2.5vw,1.75rem);padding-block:0 var(--kn-sb)}
+.kn .kn-content .sec:not(.sec .sec).pt-none{padding-top:0}.kn .kn-content .sec:not(.sec .sec).pb-none{padding-bottom:0}
+.kn .kn-content .sec:not(.sec .sec).pt-small{padding-top:calc(var(--kn-sb) * .5)}.kn .kn-content .sec:not(.sec .sec).pb-small{padding-bottom:calc(var(--kn-sb) * .5)}
+.kn .kn-content .sec:not(.sec .sec).pt-large{padding-top:calc(var(--kn-sb) * 2)}.kn .kn-content .sec:not(.sec .sec).pb-large{padding-bottom:calc(var(--kn-sb) * 2)}
+.kn .kn-content .sec:not(.sec .sec).pt-xl{padding-top:calc(var(--kn-sb) * 3)}.kn .kn-content .sec:not(.sec .sec).pb-xl{padding-bottom:calc(var(--kn-sb) * 3)}
 .kn .kn-content .wrap{width:100%;max-width:none;margin-inline:0;padding-inline:0;--cms-flush:1}   /* volle Breite der Kapitelspalte (sonst schmaler als die Fläche und links bündig) */
 /* Abschnitte mit Hintergrund (bg-muted, bg-tint, bg-accent …; bg-white = ohne) in der Kapitelspalte als Karte: Innenabstand und Radius
    wie die Karten des Kits, keine Ausdehnung über die Spalte – sonst klebt der Text an der Kante der Fläche */
-.kn .kn-content > section[class*="bg-"]:not(.bg-white),.kn .kn-content > .eb-entry > section[class*="bg-"]:not(.bg-white){padding:clamp(1.25rem,3vw,2rem);border-radius:var(--kit-radius,var(--f-radius,12px));margin-block-end:clamp(1rem,2.5vw,1.75rem)}
-.kn .kn-content > section[class*="bg-"]:not(.bg-white) .wrap,.kn .kn-content > .eb-entry > section[class*="bg-"]:not(.bg-white) .wrap{padding-inline:0}
+/* Karte (Abschnitt mit Hintergrund): Innenabstand = Füllung (Tune fill: fill-compact … fill-xl → --kn-fill), oben/unten zusätzlich
+   nach den Abstandsstufen (pt-…/pb-…, Mindestmaß bleibt, damit der Text nie an der Kante klebt) */
+.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white){--kn-pad:calc(clamp(1.25rem,3vw,2rem) * var(--kn-fill,1));padding:var(--kn-pad);border-radius:var(--kit-radius,var(--f-radius,12px));margin-block-end:clamp(1rem,2.5vw,1.75rem)}
+.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white):is(.pt-none,.pt-small){padding-top:calc(var(--kn-pad) * .6)}
+.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white):is(.pb-none,.pb-small){padding-bottom:calc(var(--kn-pad) * .6)}
+.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white).pt-large{padding-top:calc(var(--kn-pad) * 1.6)}.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white).pb-large{padding-bottom:calc(var(--kn-pad) * 1.6)}
+.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white).pt-xl{padding-top:calc(var(--kn-pad) * 2.2)}.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white).pb-xl{padding-bottom:calc(var(--kn-pad) * 2.2)}
+.kn .kn-content .sec:not(.sec .sec)[class*="bg-"]:not(.bg-white) .wrap{padding-inline:0}
+.kn .fill-compact{--kn-fill:.55}.kn .fill-large{--kn-fill:1.6}.kn .fill-xl{--kn-fill:2.2}
 .kn-crumbs ol{display:flex;flex-wrap:wrap;gap:.25rem .5rem;margin:0 0 1rem;padding:0;list-style:none;font-size:.88rem;color:var(--kn-muted)}
 .kn-crumbs li+li::before{content:"›";margin-right:.5rem;opacity:.7}
 .kn-crumbs a{color:inherit}

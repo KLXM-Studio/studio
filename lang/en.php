@@ -10512,4 +10512,7 @@ return [
     'Breit' => 'Wide',
     'Schmal' => 'Narrow',
     'Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), blau = Inhaltsbreite links/rechts, pink/orange = Aufteilung bzw. Breite im Block. Immer in Stufen, auch per Pfeiltasten am Griff.' => 'Tip – handles in a section: purple = spacing top/bottom (drag the whole area), blue = content width left/right, pink/orange = split or width within the block. Always in steps, also with the arrow keys on the handle.',
+    'Großzügig' => 'Generous',
+    'Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), grün = Füllung eines Kastens (Innenabstand), orange = Breite, pink = Aufteilung. Immer in Stufen, auch per Pfeiltasten am Griff.' => 'Tip – handles in a section: purple = spacing top/bottom (drag the whole area), green = padding of a box, orange = width, pink = split. Always in steps, also with the arrow keys on the handle.',
+    'Füllung' => 'Padding',
 ];

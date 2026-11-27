@@ -30,6 +30,8 @@ final class Theme
         'spaceTop' => 'normal', 'spaceBottom' => 'normal', 'divider' => false,
         // Inhaltsbreite des Abschnitts (Stufen aus Theme::sectionWidths, Klasse sw-{wert}) – nur wenn das Kit sie anbietet
         'width' => 'normal',
+        // Füllung (Innenabstand) der Kästen im Abschnitt – Karten, Boxen, Wissen-Karte (Klasse fill-{wert}, Kit-Vertrag)
+        'fill' => 'normal',
         'height' => 'auto', 'bgImage' => null, 'overlay' => 'none', 'align' => 'center', 'row' => '',
         // Glossar (Core\Glossary): in diesem Abschnitt keine Begriffe markieren
         'noGlossary' => false,
@@ -429,6 +431,7 @@ final class Theme
         $out['spaceTop'] = in_array($t['spaceTop'] ?? '', $sp, true) ? $t['spaceTop'] : 'normal';
         $out['spaceBottom'] = in_array($t['spaceBottom'] ?? '', $sp, true) ? $t['spaceBottom'] : 'normal';
         $out['width'] = isset($this->sectionWidths()[$t['width'] ?? '']) ? (string) $t['width'] : 'normal';
+        $out['fill'] = isset($this->fills()[$t['fill'] ?? '']) ? (string) $t['fill'] : 'normal';
         $out['divider'] = filter_var($t['divider'] ?? false, FILTER_VALIDATE_BOOL);
         // Vollbild-Abschnitt, Hintergrundbild mit Abdunkelung/Aufhellung, vertikale Ausrichtung
         $out['height'] = ($t['height'] ?? '') === 'screen' ? 'screen' : 'auto';
@@ -1097,6 +1100,17 @@ final class Theme
     }
 
     /**
+     * Füllung (Innenabstand) der sichtbaren Kästen eines Abschnitts in Stufen – Klasse fill-{wert} am Abschnitt (normal = ohne).
+     * Kits setzen damit ihre Kasten-Innenabstände (fluid: --f-pad), der Kern die Karte im Wissensbereich (--kn-fill). Der Editor
+     * zeigt den Greifer nur, wo sich sichtbar etwas ändert.
+     * @return array<string, string>
+     */
+    public function fills(): array
+    {
+        return ['compact' => __('Kompakt'), 'normal' => __('Normal'), 'large' => __('Großzügig'), 'xl' => __('Sehr groß')];
+    }
+
+    /**
      * Inhaltsbreite eines Abschnitts in Stufen (Klassen sw-narrow, sw-wide, sw-full am Abschnitt; normal = ohne Klasse) – nur, wenn
      * das Kit sie anbietet (theme.php → 'section_width' => true und CSS für .sw-* > .wrap). Leer = keine Breiten-Greifer.
      * @return array<string, string>
@@ -1178,7 +1192,7 @@ final class Theme
             ];
         }
         // rows: nur noch Darstellung alter Reihen (Tune row) – die Option ist im Editor abgeschafft (Block „Layout“)
-        return ['blocks' => $blocks, 'usage' => self::blockUsage(), 'backgrounds' => $this->backgrounds(), 'rows' => ($this->def['rows'] ?? true) !== false, 'spacing' => $this->spacing(), 'widths' => $this->sectionWidths(),
+        return ['blocks' => $blocks, 'usage' => self::blockUsage(), 'backgrounds' => $this->backgrounds(), 'rows' => ($this->def['rows'] ?? true) !== false, 'spacing' => $this->spacing(), 'widths' => $this->sectionWidths(), 'fills' => $this->fills(),
             // Vorlagen der Erweiterungen (Extension::blockPresets) – vorbelegte Blöcke in der Blockauswahl
             'presets' => Extensions::blockPresets(array_keys(array_filter($blocks, fn($b) => !empty($b['insertable'])))),
             'layout' => isset($this->blocks[Layout::TYPE]) ? ['presets' => Layout::PRESETS] : null,

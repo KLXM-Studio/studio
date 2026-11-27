@@ -26,7 +26,7 @@ namespace Core;
 final class BlockGuard
 {
     /** Abschnitts-Optionen, die als Gestaltung gelten – Anker, Sichtbarkeit, Navigation, Suche und Glossar sind Inhalt */
-    public const DESIGN_TUNES = ['background', 'spaceTop', 'spaceBottom', 'width', 'divider', 'height', 'bgImage', 'overlay', 'align', 'reveal'];
+    public const DESIGN_TUNES = ['background', 'spaceTop', 'spaceBottom', 'width', 'fill', 'divider', 'height', 'bgImage', 'overlay', 'align', 'reveal'];
     public const NOTE_MAX = 120;
 
     /** Stufe der Gestaltung: full (design.blocks oder alle Rechte) | basic (design.blocks.basic) | none */

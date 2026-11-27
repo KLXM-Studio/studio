@@ -143,6 +143,7 @@ final class Block
         if ($this->tunes['spaceTop'] !== 'normal') $c[] = 'pt-' . $this->tunes['spaceTop'];
         if ($this->tunes['spaceBottom'] !== 'normal') $c[] = 'pb-' . $this->tunes['spaceBottom'];
         if (($this->tunes['width'] ?? 'normal') !== 'normal') $c[] = 'sw-' . $this->tunes['width'];
+        if (($this->tunes['fill'] ?? 'normal') !== 'normal') $c[] = 'fill-' . $this->tunes['fill'];
         if ($this->tunes['divider']) $c[] = 'sec--divider';
         if ($this->rowLead) $c[] = 'sec--row';
         if (!$this->tunes['visible']) $c[] = 'is-hidden-block';

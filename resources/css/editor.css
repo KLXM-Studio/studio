@@ -396,6 +396,10 @@ td>.cms-entry-pencil .cms-entry-pencil__t{display:none}
 .cms-drag-band{position:absolute;left:0;right:0;z-index:7;cursor:ns-resize;touch-action:none;opacity:0;transition:opacity .15s,height .15s;background:repeating-linear-gradient(-45deg,rgba(124,58,237,.16) 0 6px,rgba(124,58,237,.06) 6px 12px)}
 .cms-drag-band--top{top:0;border-bottom:1px dashed rgba(124,58,237,.6)}
 .cms-drag-band--bottom{bottom:0;border-top:1px dashed rgba(124,58,237,.6)}
+/* Füllung (Innenabstand eines Kastens): grün schraffiert innen an der linken bzw. rechten Kante, Lage per CSSOM (editor.js) */
+.cms-drag-band--fill{cursor:ew-resize;background:repeating-linear-gradient(-45deg,rgba(5,150,105,.2) 0 6px,rgba(5,150,105,.07) 6px 12px)}
+.cms-drag-band--fill-left{border-right:1px dashed rgba(5,150,105,.7)}
+.cms-drag-band--fill-right{border-left:1px dashed rgba(5,150,105,.7)}
 /* Beim Zeigen auf den Abschnitt: Abstände leicht schraffiert (ganze Fläche ziehbar), beim Zeigen auf Griff/Fläche bzw. Ziehen kräftig */
 :hover>.cms-drag-band{opacity:.5}
 .cms-drag-band:hover,.cms-drag-band.is-on{opacity:1}

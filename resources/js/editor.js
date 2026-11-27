@@ -90,7 +90,7 @@ const DESIGN_TUNES = cfg.designTunes || [];
 const guardOf = (type, lock) => DESIGN === 'full' ? null : (lock ? 'lock' : (cfg.blocks[type]?.guarded ? 'type' : null));
 const guardNote = (why, lock) => why === 'lock' ? ((lock && lock.note) || CMSAdmin.t('Dieser Block ist von der Agentur gestaltet')) : CMSAdmin.t('Diese Blockart kann Ihre Rolle nicht bearbeiten');
 const lockIco = () => (CMSAdmin.ico ? CMSAdmin.ico('lock') : '');
-const TUNE_DEFAULTS = { background: 'white', anchor: '', visible: true, showInNav: false, navLabel: '', spaceTop: 'normal', spaceBottom: 'normal', width: 'normal', divider: false, height: 'auto', bgImage: null, overlay: 'none', align: 'center', row: '', noGlossary: false, noSearch: false, reveal: '' };
+const TUNE_DEFAULTS = { background: 'white', anchor: '', visible: true, showInNav: false, navLabel: '', spaceTop: 'normal', spaceBottom: 'normal', width: 'normal', fill: 'normal', divider: false, height: 'auto', bgImage: null, overlay: 'none', align: 'center', row: '', noGlossary: false, noSearch: false, reveal: '' };
 let editor, dirty = false, drawerFor = null, drawerSnap = null;
 let History = null;   // Rückgängig/Wiederholen (unten)
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -1241,24 +1241,31 @@ function makeTool(type, def) {
             commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, [key]: v }; markDirty(); this.refresh(); } });
         }
       });
-      // Inhaltsbreite (cfg.widths): Griffe links und rechts an der Kante des Inhalts (.wrap), beide Seiten ziehen gleich weit
-      const wrap = sec?.querySelector(':scope > .wrap, :scope > [class*="wrap"]');
-      if (sec && wrap && cfg.widths && Object.keys(cfg.widths).length > 1 && DESIGN !== 'none') requestAnimationFrame(() => {
+      // Füllung (cfg.fills, Tune fill): Innenabstand des sichtbaren Kastens im Abschnitt (Karte, Box, Wissen-Karte) – Griffe links und
+      // rechts an dessen Kante, beide Seiten gleich. Kasten = äußerstes Element, dessen Innenabstand sich mit der Füllung ändert; ohne
+      // solchen Kasten (Abschnitt ohne Fläche, Kit ohne Füllung) kein Griff. Nur Stufen, die sichtbar etwas ändern.
+      if (sec && cfg.fills && DESIGN !== 'none') requestAnimationFrame(() => {
         if (!sec.isConnected) return;
-        // Nur Stufen anbieten, die hier sichtbar etwas ändern (schmale Spalte, Fenster schmaler als „Breit“): gleiche Breite = eine Stufe
-        const keep = sec.className, seen = new Map(), opts = {}, cur = this.tuneData.width || 'normal';
-        for (const v of ['narrow', 'normal', 'wide', 'full'].filter(k => k in cfg.widths)) {
-          sec.classList.remove(...Object.keys(cfg.widths).map(x => 'sw-' + x)); if (v !== 'normal') sec.classList.add('sw-' + v);
-          const w = Math.round(wrap.getBoundingClientRect().width);
-          if (!seen.has(w) || v === cur) { if (seen.has(w)) delete opts[seen.get(w)]; seen.set(w, v); opts[v] = cfg.widths[v]; }
+        const all = Object.keys(cfg.fills), keep = sec.className, cur = this.tuneData.fill || 'normal';
+        const setFill = v => { sec.classList.remove(...all.map(x => 'fill-' + x)); if (v !== 'normal') sec.classList.add('fill-' + v); };
+        const cands = [sec, ...[...sec.querySelectorAll('*')].filter(n => !n.closest('.cms-drag,.cms-drag-band')).slice(0, 600)];
+        const pad = n => { const c = getComputedStyle(n); return Math.round(parseFloat(c.paddingLeft) + parseFloat(c.paddingTop)); };
+        setFill(all[0]); const a = cands.map(pad);
+        setFill(all[all.length - 1]); const b = cands.map(pad);
+        const box = cands.find((n, k) => a[k] !== b[k] && n.getBoundingClientRect().width > 40);
+        const opts = {}, seen = new Map();
+        if (box) for (const v of all) {
+          setFill(v);
+          const w = pad(box);
+          if (!seen.has(w) || v === cur) { if (seen.has(w)) delete opts[seen.get(w)]; seen.set(w, v); opts[v] = cfg.fills[v]; }
         }
         sec.className = keep;
-        if (Object.keys(opts).length < 2) return;   // wirkt hier nicht (schmale Spalte, eigener Inhalt)
-        const group = [];   // beide Griffe: Lage gemeinsam neu messen (symmetrisch)
+        if (!box || Object.keys(opts).length < 2) return;
+        const group = [];
         for (const side of ['left', 'right']) {
-          this.dragHandle({ group, kind: 'secwidth', host: sec, target: wrap, apply: sec, axis: 'x', side, options: opts, order: ['narrow', 'normal', 'wide', 'full'],
-            get: () => this.tuneData.width || 'normal', cls: v => v === 'normal' ? 'sw-normal' : 'sw-' + v, label: T('Breite'),
-            commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, width: v }; markDirty(); this.refresh(); } });
+          this.dragHandle({ group, kind: 'fill', host: sec, target: box, apply: sec, axis: 'x', side, options: opts, order: all, invert: true, inner: true,
+            get: () => this.tuneData.fill || 'normal', cls: v => 'fill-' + v, label: T('Füllung'),
+            commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, fill: v }; markDirty(); this.refresh(); } });
         }
       });
       for (const g of def.drags || []) {
@@ -1277,6 +1284,7 @@ function makeTool(type, def) {
         // Abstand: Balken mit Pfeilen nach oben und unten · Inhaltsbreite: Kanten mit Pfeilen nach außen · Spalten: Spaltentrenner · Feldbreite
         space: '<svg viewBox="0 0 24 24"><path d="M4 12h16M12 9V3M9 6l3-3 3 3M12 15v6M9 18l3 3 3-3"/></svg>',
         secwidth: '<svg viewBox="0 0 24 24"><path d="M3 5v14M21 5v14M7 12h10M10 9l-3 3 3 3M14 9l3 3-3 3"/></svg>',
+        fill: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 12h3M8.5 10.5 10 12l-1.5 1.5M17 12h-3M15.5 10.5 14 12l1.5 1.5"/></svg>',
         split: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg>',
         width: '<svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>',
       };
@@ -1302,8 +1310,13 @@ function makeTool(type, def) {
           const t = o.target.getBoundingClientRect(), hr = o.host.getBoundingClientRect(), pr = (o.target.parentElement || o.target).getBoundingClientRect();
           if (!t.width) return;
           const leftEdge = o.side === 'left' ? true : o.side === 'right' ? false : (t.left + t.right) / 2 > (pr.left + pr.right) / 2 + 12;   // Element rechts → Griff links, nach links ziehen = größer
-          if (!drag) dir = leftEdge ? -1 : 1;
-          host.style.cssText = `position:absolute;top:${t.top - hr.top}px;height:${Math.max(48, t.height)}px;left:${(leftEdge ? t.left : t.right) - hr.left - 12}px;width:24px;z-index:8`;
+          if (!drag) dir = (leftEdge ? -1 : 1) * (o.invert ? -1 : 1);   // Füllung: nach innen ziehen = mehr
+          // Füllung (o.inner): Griff an der Innenkante des Kastens (wo der Inhalt beginnt), Füllung selbst innen schraffiert
+          const cs = o.inner ? getComputedStyle(o.target) : null;
+          const pl = cs ? parseFloat(cs.paddingLeft) || 0 : 0, prr = cs ? parseFloat(cs.paddingRight) || 0 : 0;
+          const x = leftEdge ? t.left + pl : t.right - prr;
+          host.style.cssText = `position:absolute;top:${t.top - hr.top}px;height:${Math.max(48, t.height)}px;left:${x - hr.left - 12}px;width:24px;z-index:8`;
+          if (o.inner && band) band.style.cssText = `top:${t.top - hr.top}px;height:${t.height}px;left:${(leftEdge ? t.left : t.right - prr) - hr.left}px;right:auto;width:${leftEdge ? pl : prr}px`;
         };
         o.host.addEventListener('pointerenter', () => { if (!drag) place(); });
         addEventListener('resize', () => place(), { passive: true });
@@ -1312,15 +1325,15 @@ function makeTool(type, def) {
       requestAnimationFrame(() => place());
       // Abstand: beim Zeigen/Ziehen leuchtet der zugehörige Abschnitt auf, der Abstand selbst ist schraffiert (wächst beim Ziehen mit)
       let band = null;
-      const sizeBand = () => { if (band) band.style.height = getComputedStyle(o.apply)[o.side === 'top' ? 'paddingTop' : 'paddingBottom']; };
+      const sizeBand = () => { if (band && o.axis === 'y') band.style.height = getComputedStyle(o.apply)[o.side === 'top' ? 'paddingTop' : 'paddingBottom']; };
       const own = on => { if (!band) return; if (on) sizeBand(); band.classList.toggle('is-on', on); o.host.classList.toggle('cms-drag-owner', on); };
-      if (o.axis === 'y') {
+      if (o.axis === 'y' || o.inner) {
         band = d.createElement('div');
-        band.className = 'cms-drag-band cms-drag-band--' + o.side; band.contentEditable = 'false'; band.setAttribute('aria-hidden', 'true');
+        band.className = 'cms-drag-band cms-drag-band--' + (o.inner ? 'fill cms-drag-band--fill-' + o.side : o.side); band.contentEditable = 'false'; band.setAttribute('aria-hidden', 'true');
         band.title = o.label + ' – ' + T('ziehen');
         o.host.append(band);
       }
-      const sr = S.shadowFor(host, `<button type="button" class="cms-drag__h cms-drag__h--${o.axis}" data-kind="${o.kind || 'width'}" data-side="${o.side}" role="slider" aria-orientation="${o.axis === 'y' ? 'vertical' : 'horizontal'}"><span class="cms-drag__stick"><span class="cms-drag__grip" aria-hidden="true">${GRIP_ICONS[o.kind === 'space' ? 'space' : o.kind === 'secwidth' ? 'secwidth' : o.kind === 'split' ? 'split' : 'width']}</span><span class="cms-drag__tip"></span></span></button>`);
+      const sr = S.shadowFor(host, `<button type="button" class="cms-drag__h cms-drag__h--${o.axis}" data-kind="${o.kind || 'width'}" data-side="${o.side}" role="slider" aria-orientation="${o.axis === 'y' ? 'vertical' : 'horizontal'}"><span class="cms-drag__stick"><span class="cms-drag__grip" aria-hidden="true">${GRIP_ICONS[o.kind in GRIP_ICONS ? o.kind : 'width']}</span><span class="cms-drag__tip"></span></span></button>`);
       const h = sr.querySelector('.cms-drag__h'), tip = sr.querySelector('.cms-drag__tip');
       const cur = () => Math.max(0, values.indexOf(o.get()));
       const show = i => {
@@ -1378,7 +1391,7 @@ function makeTool(type, def) {
             if (localStorage.getItem('cms-hint-spacing')) return;
             localStorage.setItem('cms-hint-spacing', '1');
           } catch { return; }
-          CMSAdmin.toast?.(T('Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), blau = Inhaltsbreite links/rechts, pink/orange = Aufteilung bzw. Breite im Block. Immer in Stufen, auch per Pfeiltasten am Griff.'), 'ok', 10000);
+          CMSAdmin.toast?.(T('Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), grün = Füllung eines Kastens (Innenabstand), orange = Breite, pink = Aufteilung. Immer in Stufen, auch per Pfeiltasten am Griff.'), 'ok', 10000);
         }, { once: true });
       }
       h.addEventListener('click', e => e.stopPropagation());
@@ -1836,6 +1849,7 @@ function renderTuneForm(tool) {
     <div class="f f--half"><label for="t-st">Abstand oben</label><select id="t-st" name="spaceTop">${opt(sp, t.spaceTop)}</select></div>
     <div class="f f--half"><label for="t-sb">Abstand unten</label><select id="t-sb" name="spaceBottom">${opt(sp, t.spaceBottom)}</select></div>
     ${cfg.widths && Object.keys(cfg.widths).length ? `<div class="f f--half"><label for="t-sw">Inhaltsbreite</label><select id="t-sw" name="width">${opt(cfg.widths, t.width || 'normal')}</select></div>` : ''}
+    ${cfg.fills ? `<div class="f f--half"><label for="t-fill">Füllung (Kästen, Karten)</label><select id="t-fill" name="fill">${opt(cfg.fills, t.fill || 'normal')}</select></div>` : ''}
     <div class="f"><label class="f-check"><input type="checkbox" name="divider"${t.divider ? ' checked' : ''}> <span>Trennlinie oben</span></label></div>
     <div class="f"><label class="f-check"><input type="checkbox" name="showInNav"${t.showInNav ? ' checked' : ''}> <span>In Hauptnavigation anzeigen (Anker erforderlich)</span></label></div>
     <div class="f"><label for="t-nav">Beschriftung in der Navigation</label><input id="t-nav" name="navLabel" value="${E(t.navLabel)}" maxlength="40"></div>
@@ -1868,7 +1882,7 @@ function renderTuneForm(tool) {
     const data = {
       background: f.background.value, anchor: f.anchor.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
       visible: tune?.data?.visible !== false, divider: f.divider.checked,   // Sichtbarkeit: Schalter oben (renderVis) showInNav: f.showInNav.checked,
-      navLabel: f.navLabel.value, spaceTop: f.spaceTop.value, spaceBottom: f.spaceBottom.value, width: f.width?.value || this.tuneData?.width || 'normal',
+      navLabel: f.navLabel.value, spaceTop: f.spaceTop.value, spaceBottom: f.spaceBottom.value, width: f.width?.value || tune?.data?.width || 'normal', fill: f.fill?.value || tune?.data?.fill || 'normal',
       height: f.height.value, align: f.align.value, bgImage: +f.bgImage.value || null, overlay: f.overlay.value,
       row: f.row ? f.row.value : '',
       noGlossary: f.noGlossary ? f.noGlossary.checked : !!tune?.data?.noGlossary,

@@ -822,8 +822,9 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-lay-resize__h{cursor:col-resize}
 .cms-drag__h[data-kind=width]{--k:#D97706}
 .cms-drag__h[data-kind=split]{--k:#DB2777}
-/* Inhaltsbreite des Abschnitts: blau (Abstand lila, Feldbreite orange, Aufteilung pink) */
+/* Inhaltsbreite blau (nur Kits mit section_width), Füllung grün – Abstand lila, Feldbreite orange, Aufteilung pink */
 .cms-drag__h[data-kind=secwidth]{--k:#2563EB}
+.cms-drag__h[data-kind=fill]{--k:#059669}
 .cms-lay-resize__h{--k:#0F9F74}
 .cms-drag__grip svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .cms-drag__grip{display:grid;place-items:center;border-radius:999px;background:var(--k);color:#fff;font:700 13px/1 system-ui,-apple-system,sans-serif;box-shadow:0 0 0 2px #fff,0 4px 12px rgb(0 0 0/.25);opacity:.7;transition:opacity .15s,scale .15s}
@@ -849,10 +850,10 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-drag__h--x .cms-drag__stick,.cms-lay-resize__h .cms-drag__stick{position:sticky;top:max(72px,30vh);bottom:30vh;display:grid;place-items:center}
 /* Inhaltsbreite: Griff am Abschnitt so hoch wie der Inhalt – Pille beginnt oben (nicht in der Mitte eines hohen Abschnitts außerhalb
    des Fensters) und läuft beim Scrollen im sichtbaren Bereich mit */
-.cms-drag__h[data-kind=secwidth]{align-items:start}
-.cms-drag__h[data-kind=secwidth] .cms-drag__stick{margin-top:min(24px,10%)}
+.cms-drag__h:is([data-kind=secwidth],[data-kind=fill]){align-items:start}
+.cms-drag__h:is([data-kind=secwidth],[data-kind=fill]) .cms-drag__stick{margin-top:min(24px,10%)}
 /* Handy: Bild und Text stehen untereinander – Aufteilung/Textbreite ohne Wirkung */
-@media (max-width:760px){.cms-drag__h[data-kind=width],.cms-drag__h[data-kind=split],.cms-drag__h[data-kind=secwidth]{display:none}}
+@media (max-width:760px){.cms-drag__h[data-kind=width],.cms-drag__h[data-kind=split],.cms-drag__h[data-kind=secwidth],.cms-drag__h[data-kind=fill]{display:none}}
 
 /* „Seiten“ (Core\PagesTool, js/pages-panel.mjs): Seitenstruktur auf der Website */
 .pp{display:grid;gap:12px;padding:4px 12px 16px}
