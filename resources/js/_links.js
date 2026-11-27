@@ -79,7 +79,8 @@ export function normalizeUrl(v) {
   let warn = '';
   if (/^http:\/\//i.test(v)) { v = 'https://' + v.slice(7); warn = t('Unverschlüsselte Adresse (http) – wird als https:// gespeichert. Bitte prüfen, ob die Seite so erreichbar ist.'); }
   else if (!/^https:\/\//i.test(v)) {
-    if (/^[\w.-]+\.[a-z]{2,}([/?#:].*)?$/i.test(v)) v = 'https://' + v.replace(/^\/\//, '');
+    // auch Umlaut-/IDN-Domains (müller.de, straße.berlin) – der Browser wandelt sie beim Aufruf selbst um
+    if (/^[\p{L}\p{N}_.-]+\.[\p{L}]{2,}([/?#:].*)?$/iu.test(v)) v = 'https://' + v.replace(/^\/\//, '');
     else return { error: t('Bitte eine vollständige Adresse eingeben, z. B. https://beispiel.de') };
   }
   try { const u = new URL(v); if (!u.hostname.includes('.')) throw 0; } catch { return { error: t('Das sieht nicht wie eine gültige Web-Adresse aus.') }; }
@@ -682,7 +683,7 @@ function guessDirect(qs) {
   if (!v) return null;
   if (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { const r = normalizeMail(v); return r.error ? null : { kind: 'mail', value: r.href, href: r.href, label: v, meta: r.href }; }
   if (/^(\+|00|0)[\d\s/()-]{5,}$/.test(v)) { const r = normalizeTel(v); return r.error ? null : { kind: 'tel', value: r.href, href: r.href, label: v, meta: r.href }; }
-  if (/^(https?:\/\/|www\.)\S+$/i.test(v) || /^[\w-]+(\.[\w-]+)+\.[a-z]{2,}(\/\S*)?$/i.test(v) || /^[\w-]+\.(de|com|org|net|eu|at|ch|info|io)(\/\S*)?$/i.test(v)) {
+  if (/^(https?:\/\/|www\.)\S+$/i.test(v) || /^[\p{L}\p{N}_-]+(\.[\p{L}\p{N}_-]+)+\.[\p{L}]{2,}(\/\S*)?$/iu.test(v) || /^[\p{L}\p{N}_-]+\.(de|com|org|net|eu|at|ch|info|io|berlin|nrw|ruhr|koeln|hamburg|bayern)(\/\S*)?$/iu.test(v)) {
     const r = normalizeUrl(v); return r.error ? null : { kind: 'url', value: r.href, href: r.href, label: r.href, meta: r.warn || t('Externe Adresse') };
   }
   return null;

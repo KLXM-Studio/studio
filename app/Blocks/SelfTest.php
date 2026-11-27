@@ -142,6 +142,8 @@ final class SelfTest
             [$V::$force, $V::$forceHint] = $prev;
         }
         // Rich-Text-Vertrag: nur data-video-lb="off" bleibt
+        // Umlaut-/IDN-Domains (Christian): Adressen wie https://müller.de bzw. straße.berlin gelten als gültig
+        $this->assert(\Core\Sanitizer::validHttpUrl('https://müller.de') && \Core\Sanitizer::validHttpUrl('https://straße.berlin/über-uns?x=ä') && !\Core\Sanitizer::validHttpUrl('https://example.org/a b'), 'IDN: Umlaut-Domains gültig, Leerzeichen nicht');
         // Textformate aus dem Kit (Core\TextFormats): eine Quelle für Leiste und Sanitizer – Kit-Klassen bleiben, fremde fallen weg
         try {
             \Core\TextFormats::useDefinition(['headings' => ['h-display' => 'Groß'], 'colors' => ['c-muted' => false, 'c-secondary' => 'Zweite'], 'lists' => ['steps' => ['label' => 'Schritte', 'list' => 'ol']], 'links' => ['btn btn--primary' => 'Button']]);

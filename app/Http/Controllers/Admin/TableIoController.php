@@ -88,7 +88,7 @@ final class TableIoController extends AdminController
         $opts = ['map' => array_map('strval', (array) ($r->post['map'] ?? [])), 'mode' => $r->str('mode'), 'match' => $r->str('match') ?: '_id', 'dry' => $r->str('step') !== 'run'];
         $res = TableImport::run($t, $rows, $opts);
         if (!$opts['dry']) {
-            @unlink($this->stashFile($token));
+            if (($sf = $this->stashFile($token)) !== '') @unlink($sf);
             \Core\Activity::log('updated', 'entry', 0, (string) $t['name'], ['tbl' => $t['handle'], 'detail' => __('Import: {new} neu, {up} aktualisiert, {err} Fehler', ['new' => $res['new'], 'up' => $res['updated'], 'err' => count($res['errors'])])]);
             app()->session->flash($res['errors'] ? 'error' : 'success', __('Import: {new} neu, {up} aktualisiert, {skip} übersprungen, {err} Zeilen mit Fehlern.', ['new' => $res['new'], 'up' => $res['updated'], 'skip' => $res['skipped'], 'err' => count(array_unique(array_column($res['errors'], 'row')))]));
             return Response::redirect(url('/admin/data/' . $handle));
@@ -96,16 +96,20 @@ final class TableIoController extends AdminController
         return $this->view('data/table_import', ['t' => $t, 'token' => $token, 'rows' => $rows, 'map' => $opts['map'], 'targets' => TableImport::targets($t), 'result' => $res, 'opts' => $opts]);
     }
 
+    /** Zwischenablage des Imports – Pfad aus dem Ordnerinhalt (nicht aus dem Token der Anfrage); '' = nicht vorhanden */
     private function stashFile(string $token): string
     {
-        return ROOT . '/storage/tmp/import-' . site()->key . '-' . (preg_match('~^[a-f0-9]{24}$~', $token) ? $token : 'x') . '.json';
+        if (!preg_match('~^[a-f0-9]{24}$~', $token)) return '';
+        $want = 'import-' . site()->key . '-' . $token . '.json';
+        foreach (scandir(ROOT . '/storage/tmp') ?: [] as $f) if ($f === $want) return ROOT . '/storage/tmp/' . $f;
+        return '';
     }
 
     /** Hochgeladene Zeilen (nur dieselbe Tabelle, dasselbe Konto, höchstens 2 Stunden alt) */
     private function unstash(array $t, string $token): ?array
     {
         $file = $this->stashFile($token);
-        if (!is_file($file)) return null;
+        if ($file === '' || !is_file($file)) return null;
         $d = json_decode((string) file_get_contents($file), true);
         if (!is_array($d) || ($d['table'] ?? '') !== $t['handle'] || (int) ($d['user'] ?? -1) !== (int) (app()->auth->user()['id'] ?? 0) || time() - (int) ($d['at'] ?? 0) > 7200) return null;
         return is_array($d['rows'] ?? null) ? $d['rows'] : null;

@@ -211,7 +211,7 @@ final class Sources
         $url = trim((string) ($in['url'] ?? ''));
         // Kalender-Abos: webcal:// ist https://
         if (preg_match('~^webcals?://~i', $url)) $url = (string) preg_replace('~^webcals?://~i', 'https://', $url);
-        if ($url !== '' && (!preg_match('~^https?://[^\s/$.?#][^\s]*$~i', $url) || !filter_var($url, FILTER_VALIDATE_URL))) {
+        if ($url !== '' && !\Core\Sanitizer::validHttpUrl($url)) {
             $errors['url'] = __('Bitte eine vollständige Adresse mit http:// oder https:// angeben.');
         } elseif ($url !== '' && (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null)) {
             $errors['url'] = __('Zugangsdaten gehören nicht in die Adresse – bitte unter „Anmeldung“ eintragen.');

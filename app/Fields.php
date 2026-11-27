@@ -245,7 +245,7 @@ final class Fields
             case 'url':
                 if ($s === '') return ['', null];
                 $s = preg_replace('~^http://~i', 'https://', $s);
-                $ok = str_starts_with(strtolower($s), 'https://') && filter_var($s, FILTER_VALIDATE_URL);
+                $ok = str_starts_with(strtolower($s), 'https://') && Sanitizer::validHttpUrl($s);   // auch Umlaut-/IDN-Domains
                 return [$s, $ok ? null : self::msg('„{label}“ muss mit https:// beginnen.', ['label' => $label])];
             case 'link':
                 if ($s === '') return ['', null];

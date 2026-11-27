@@ -74,14 +74,15 @@ const linkFormats = () => textCfg()?.links || [];
 const HEADINGS = ['h2', 'h3', 'h4'];
 const MARK = '#010203';   // Hilfsfarbe: execCommand('foreColor') markiert die Auswahl, danach Klasse statt <font>
 // E-Mail-, Web-Adressen und Telefonnummern erkennen: markiert + „Link“ → sofort Link; beim Tippen nach Leerzeichen/Satzzeichen/Enter automatisch
-const EMAIL = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}$/i;
-const URL_RE = /^(?:https?:\/\/[^\s<>"]+|www\.[\w-]+(?:\.[\w-]+)+(?:[/?#][^\s<>"]*)?)$/i;
-const DOMAIN = /^[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}(?:[/?#][^\s<>"]*)?$/i;   // nur bei Markierung: klxm.de/kit
+const EMAIL = /^[\p{L}\p{N}_.+-]+@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.[\p{L}]{2,}$/iu;
+// Umlaut-/IDN-Domains (müller.de) zählen mit – Buchstaben aller Schriften (\p{L})
+const URL_RE = /^(?:https?:\/\/[^\s<>"]+|www\.[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+(?:[/?#][^\s<>"]*)?)$/iu;
+const DOMAIN = /^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.[\p{L}]{2,}(?:[/?#][^\s<>"]*)?$/iu;   // nur bei Markierung: klxm.de/kit
 // Telefon: beginnt mit + oder 0 (auch „(0…)“), Ziffern mit Leerzeichen, / - . ( ) – 6 bis 15 Ziffern (keine Jahreszahlen, Preise o. Ä.)
 const TEL = /^(?:\+|00|\(?0)[\d\s/().-]*\d$/;
 const TEL_END = /(?:\+|\(?0)[\d\s/().-]*\d$/;
 const telOk = v => { const n = v.replace(/\D/g, '').length; return n >= 6 && n <= 15 && !/\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(v) && !/\s{2,}/.test(v); };
-const END = /(?:[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}|https?:\/\/[^\s<>"]+|www\.[\w-]+(?:\.[\w-]+)+(?:[/?#][^\s<>"]*)?)$/i;
+const END = /(?:[\p{L}\p{N}_.+-]+@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.[\p{L}]{2,}|https?:\/\/[^\s<>"]+|www\.[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+(?:[/?#][^\s<>"]*)?)$/iu;
 /** Link-Ziel zu einer Adresse im Text (E-Mail → mailto:, www./Domain → https://) – sonst null */
 function hrefFor(text, domains = false) {
   const v = String(text || '').trim();

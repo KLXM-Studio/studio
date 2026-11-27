@@ -656,4 +656,9 @@
       <code><![CDATA[rtrim(Media::dir(), '/') . '/' . $row['preview']]]></code>
     </TaintedFile>
   </file>
+  <file src="../../app/Http/Controllers/Admin/TableIoController.php">
+    <TaintedFile>
+      <code><![CDATA[(string) $f['tmp_name']]]></code>
+    </TaintedFile>
+  </file>
 </files>

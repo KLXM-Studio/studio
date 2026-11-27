@@ -63,7 +63,7 @@ final class Exchange
     {
         $url = trim($url);
         if (preg_match('~^webcals?://~i', $url)) $url = (string) preg_replace('~^webcals?://~i', 'https://', $url);
-        if (!preg_match('~^https?://[^\s/$.?#][^\s]*$~i', $url) || !filter_var($url, FILTER_VALIDATE_URL)) return null;
+        if (!\Core\Sanitizer::validHttpUrl($url)) return null;
         if (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null) return null;
         return $url;
     }

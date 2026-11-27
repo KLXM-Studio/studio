@@ -27,6 +27,7 @@ final class MediaPools
     private static array $dbs = [];
     private static array $rows = [];
 
+    /** @psalm-taint-specialize – Taint je Aufruf (der Schlüssel entscheidet), nicht über alle Aufrufer gemischt */
     public static function dir(?string $key = null): string
     {
         return ROOT . '/storage/pools' . ($key !== null ? '/' . $key : '');
@@ -34,6 +35,7 @@ final class MediaPools
 
     public const PROTECTED_PATH = '/geschuetzt';
 
+    /** @psalm-taint-specialize */
     public static function mediaDir(string $key): string
     {
         return self::isProtected($key) ? self::dir($key) . '/files' : ROOT . '/public/pools/' . $key;
@@ -307,6 +309,7 @@ final class MediaPools
      */
     public static function detach(string $key, bool $dry = false): array
     {
+        $key = self::known($key);
         $db = app()->db;
         $rows = $db->fetchAll('SELECT id, pool_ref FROM media WHERE pool_ref LIKE ?', [$key . ':%']);
         try {
@@ -342,6 +345,18 @@ final class MediaPools
     }
 
     /** Websites, deren Mediathek noch auf Dateien dieses Pools verweist (pool_ref) – Grundlage für pool:retire */
+    /**
+     * Schlüssel eines vorhandenen Pools – aus dem Ordnerinhalt von storage/pools, nicht aus der Eingabe (Pfade für Kopieren und
+     * Verschieben entstehen so nie aus Benutzerwerten). Unbekannt: Ausnahme.
+     */
+    private static function known(string $key): string
+    {
+        foreach (scandir(self::dir()) ?: [] as $d) {
+            if ($d === $key && $d[0] !== '.' && $d[0] !== '_' && preg_match('~^[a-z][a-z0-9-]{1,31}$~', $d)) return $d;
+        }
+        throw new \InvalidArgumentException('Unbekannter Pool.');
+    }
+
     public static function referencedBy(string $key): array
     {
         $out = [];
@@ -364,6 +379,7 @@ final class MediaPools
      */
     public static function archive(string $key): string
     {
+        $key = self::known($key);
         if (!is_file(self::dir($key) . '/pool.json')) throw new \InvalidArgumentException('Unbekannter Pool.');
         if ($refs = self::referencedBy($key)) throw new \InvalidArgumentException('Noch verwendet von: ' . implode(', ', $refs) . ' – dort zuerst pool:detach.');
         unset(self::$dbs[$key]);

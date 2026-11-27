@@ -116,7 +116,10 @@ final class Local
     public static function delete(string $name): bool
     {
         if ($name === '' || $name[0] === '.' || basename($name) !== $name || str_contains($name, '/') || str_contains($name, '\\')) return false;
-        $path = self::dir() . '/' . $name;
-        return is_file($path) && @unlink($path);
+        // Nur Dateien, die es im Ordner wirklich gibt – der Pfad entsteht aus dem Verzeichnisinhalt, nicht aus der Eingabe
+        foreach (scandir(self::dir()) ?: [] as $f) {
+            if ($f === $name && $f[0] !== '.' && is_file(self::dir() . '/' . $f)) return @unlink(self::dir() . '/' . $f);
+        }
+        return false;
     }
 }

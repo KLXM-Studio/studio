@@ -55,6 +55,24 @@ final class Sanitizer
         return self::clean((string) $html, array_merge(self::INLINE, self::BLOCK));
     }
 
+    /**
+     * Gültige http(s)-Adresse? Auch mit Umlaut-/IDN-Domain (https://müller.de): der Host wird für die Prüfung nach Punycode
+     * gewandelt (filter_var kennt nur ASCII); gespeichert bleibt die Adresse, wie sie eingegeben wurde.
+     */
+    public static function validHttpUrl(string $url): bool
+    {
+        if (!preg_match('~^https?://[^\s/$.?#][^\s]*$~iu', $url)) return false;
+        if (filter_var($url, FILTER_VALIDATE_URL)) return true;
+        // Host selbst herauslösen – parse_url zerlegt Mehrbyte-Zeichen (ß → „_“)
+        $host = preg_match('~^https?://(?:[^@/?#]*@)?([^/?#:]+)~iu', $url, $hm) ? $hm[1] : '';
+        if ($host === '' || !preg_match('~[^\x00-\x7F]~', $host) || !function_exists('idn_to_ascii')) return false;
+        $ascii = idn_to_ascii($host, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+        if ($ascii === false) return false;
+        // Pfad/Abfrage mit Umlauten ebenfalls zulassen: nur für die Prüfung prozentkodieren
+        $test = preg_replace_callback('~[^\x00-\x7F]+~', fn($m) => rawurlencode($m[0]), str_replace($host, $ascii, $url));
+        return (bool) filter_var($test, FILTER_VALIDATE_URL);
+    }
+
     public static function safeHref(string $href): ?string
     {
         $href = trim(html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
