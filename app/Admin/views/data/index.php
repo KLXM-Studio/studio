@@ -82,7 +82,7 @@ $isAdmin = can('data.schema'); ?>
       </div>
     </div>
     <?php // Seitenspalte: Auswahllisten der Tabelle und Seiten, auf denen sie steht ?>
-    <aside class="dt-card__side" aria-label="<?= e(__('Listen und Seiten von {table}', ['table' => $t['name']])) ?>">
+    <aside class="dt-card__side" aria-label="<?= e(__('Listen und Seiten von {table}', ['table' => $t['name']])) ?>"><div class="dt-card__sidein" tabindex="0">
       <?php if ($lists): ?>
       <h3><?= e(__('Listen')) ?></h3>
       <ul><?php foreach ($lists as $l): ?><li><a href="<?= e(url('/admin/data/' . $l['handle'])) ?>"><?= icon($l['icon'] ?: 'tag') ?><span><?= e($l['name']) ?></span><small><?= (int) $l['count'] ?></small></a></li><?php endforeach; ?></ul>
@@ -94,7 +94,7 @@ $isAdmin = can('data.schema'); ?>
       <?php else: ?>
       <p class="adm-muted"><?= e(__('Noch auf keiner Seite.')) ?><?php if ($isAdmin && \Core\Data\Placement::blockType($t) !== null): ?> <a href="<?= e($base . '/einsetzen') ?>"><?= e(__('Einsetzen')) ?></a><?php endif; ?></p>
       <?php endif; ?>
-    </aside>
+    </div></aside>
   </article>
   <?php endforeach; ?>
 </div>
