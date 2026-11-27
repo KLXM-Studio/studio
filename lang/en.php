@@ -10519,4 +10519,9 @@ return [
     'Bild ändern …' => 'Change image …',
     'Bilder, Videos und Buttons dieses Abschnitts hinzufügen oder ändern – den Text bearbeiten Sie direkt im Text.' => 'Add or change the images, videos and buttons of this section – edit the text directly in place.',
     'Mehr' => 'More',
+    'Nichts für Sie offen' => 'Nothing open for you',
+    'dazu {n} im Team' => 'plus {n} in the team',
+    'offene Aufgaben im Team' => 'open tasks in the team',
+    '{n} offene im Team' => '{n} open in the team',
+    '{n} überfällig' => '{n} overdue',
 ];

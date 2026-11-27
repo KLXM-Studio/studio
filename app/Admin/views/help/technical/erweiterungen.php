@@ -46,6 +46,9 @@ $x-&gt;adminPage(['href' =&gt; '/admin/shop/einstellungen', 'label' =&gt; 'Shop'
     'tableLabel' =&gt; 'Shop-Einstellungen', 'perm' =&gt; 'shop.edit']);          // auch als Knopf an der Tabelle „produkte“
 $x-&gt;adminPage(['href' =&gt; '/admin/matomo', 'label' =&gt; 'Besucher', 'kind' =&gt; 'stats', 'icon' =&gt; 'chart-line-up',
     'visible' =&gt; fn() =&gt; can('stats.view') &amp;&amp; Matomo::configured()]);
+// Zähler am Menüpunkt (Hauptmenü): 'badge' =&gt; fn(): ?array – ['n' =&gt; 3, 'warn' =&gt; true (Warnfarbe), 'dot' =&gt; true (nur Punkt),
+// 'label' =&gt; '3 offen' (Vorlesetext, aria-label „Seite, 3 offen“)] oder null; einmal je Anfrage berechnen (Ergebnis zwischenspeichern)
+$x-&gt;adminPage(['href' =&gt; '/admin/support', 'label' =&gt; 'Support', 'badge' =&gt; fn() =&gt; ($n = Support::open()) ? ['n' =&gt; $n, 'label' =&gt; $n . ' offen'] : null]);
 // Kurzform (gleiche Wirkung): nav($href, $label, $icon, $perm, $kindOderPlatz, $weitereAngaben)
 $x-&gt;nav('/admin/consent', 'Cookie-Einwilligung', 'cookie', 'consent.manage', 'settings', ['description' =&gt; '…']);</code></pre>
   <table class="doc-table">

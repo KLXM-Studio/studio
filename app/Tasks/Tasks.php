@@ -204,6 +204,25 @@ final class Tasks
             <=> [($b['status'] ?? 'open') === 'done' ? 1 : 0, $rank[$b['priority']] ?? 1, ($b['due'] ?? '') ?: '9999', -(int) strtotime((string) ($b['created_at'] ?? '')), -(int) ($b['id'] ?? 0)];
     }
 
+    /**
+     * Zähler am Menüpunkt „Aufgaben“ und auf der Übersicht (einmal je Anfrage): offene Aufgaben, für die die Person zuständig ist
+     * (persönlich, über ihre Rolle oder „alle“) inkl. Entwurfs-Notizen an sie; warn = davon überfällig oder Priorität hoch;
+     * others = offene Aufgaben anderer (nur für tasks.manage, als dezenter Punkt).
+     * @return array{n: int, warn: bool, overdue: int, others: int}
+     */
+    public static function badge(array $u): array
+    {
+        static $memo = [];
+        $k = (int) ($u['id'] ?? 0);
+        if (isset($memo[$k])) return $memo[$k];
+        $open = self::list($u, 'open');
+        $mine = array_filter($open, fn($t) => self::responsible($t, $u));
+        $over = count(array_filter($mine, fn($t) => self::dueState($t['due'] ?? null) === 'overdue'));
+        $high = count(array_filter($mine, fn($t) => ($t['priority'] ?? '') === 'high'));
+        return $memo[$k] = ['n' => count($mine), 'warn' => $over + $high > 0, 'overdue' => $over,
+            'others' => self::manager($u) ? count($open) - count($mine) : 0];
+    }
+
     /** Anzahl je Filter (für die Reiter) */
     public static function counts(array $u): array
     {

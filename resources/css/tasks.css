@@ -16,6 +16,7 @@
 .tk-item__meta svg{width:14px;height:14px;flex:none}
 .tk-item__target.is-missing{color:var(--adm-err)}
 .tk-item__body{margin:6px 0 0;font-size:13.5px;color:var(--adm-t2)}
+.tk-sum{margin:0 0 10px;font-size:14px;color:var(--adm-t2)}.tk-sum b{color:var(--adm-ink)}.tk-sum--warn b:last-of-type{color:var(--adm-warn,#B45309)}
 .tk-md>:first-child{margin-top:0}.tk-md>:last-child{margin-bottom:0}.tk-md p{margin:.35em 0}.tk-md a{color:var(--adm-a);text-decoration:underline;overflow-wrap:anywhere}
 .tk-item__more>summary{list-style:none;cursor:pointer}.tk-item__more>summary::-webkit-details-marker{display:none}
 .tk-item__morebtn{color:var(--adm-a);font-weight:600;font-size:13px}.tk-item__more[open] .tk-item__morebtn,.tk-item__more[open]>summary .tk-item__body{display:none}

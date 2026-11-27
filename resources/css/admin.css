@@ -2286,6 +2286,9 @@ html.adm-ui[data-theme=dark] .sp-dot,html.adm-ui[data-theme=dark] .sp-item.is-un
 /* Zähler in der dunklen Seitenleiste: Sand mit Navy-Schrift (Kontrast ≈ 11:1 statt Weiß auf Hellblau) */
 .adm-side .adm-count{background:#EDE9E3;color:#24314B;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:none}
 .adm-side a[aria-current] .adm-count{background:#fff;color:#24314B}
+/* Zähler mit Warnung (z. B. überfällige Aufgaben) und dezenter Punkt (offene Aufgaben anderer) – Core\AdminPages 'badge' */
+.adm-side .adm-count--warn,.adm-side a[aria-current] .adm-count--warn{background:var(--adm-warn,#B45309);color:#fff}
+.adm-navdot{display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:currentColor;opacity:.55;vertical-align:middle}
 /* Dunkelmodus: feste Hellfarben durch Tokens ersetzt (Kontextmenüs, Schalter, Vorschau-/Schritt-Flächen) */
 .fx-menu{background:var(--adm-glass,var(--adm-surface));color:var(--adm-ink);box-shadow:0 0 0 1px var(--adm-line),0 12px 32px rgba(0,0,0,.28)}
 .fx-menu button{color:var(--adm-ink)}

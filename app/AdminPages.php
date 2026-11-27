@@ -75,6 +75,8 @@ final class AdminPages
             'tableLabel' => trim((string) ($def['tableLabel'] ?? '')),
             'feature' => isset($def['feature']) && $def['feature'] !== '' ? (string) $def['feature'] : null,
             'visible' => is_callable($def['visible'] ?? null) ? $def['visible'] : null,
+            // Zähler am Menüpunkt: fn(): ?array ['n' => int, 'warn' => bool, 'dot' => bool, 'label' => 'Aufgaben, 3 offen'] (null = keiner)
+            'badge' => is_callable($def['badge'] ?? null) ? $def['badge'] : null,
             'source' => $source, 'sourceLabel' => $sourceLabel, 'legacy' => $legacy,
         ];
     }
@@ -98,7 +100,15 @@ final class AdminPages
                 'visible' => fn() => \Core\Chat\Chat::settingsVisible()], 'core', __('Funktionen')),
             // Aufgaben der Redaktion (Core\Tasks): jede angemeldete Person sieht ihre Aufgaben – im Hauptmenü nach den Inhalten
             self::normalize(['id' => 'tasks', 'href' => '/admin/aufgaben', 'label' => __('Aufgaben'), 'icon' => 'list-checks', 'kind' => 'content', 'place' => 'main',
-                'description' => __('Offene Fragen und To-dos der Redaktion mit Zuständigkeit, Fälligkeit und Verlauf')], 'core', __('Funktionen')),
+                'description' => __('Offene Fragen und To-dos der Redaktion mit Zuständigkeit, Fälligkeit und Verlauf'),
+                'badge' => function (): ?array {
+                    $u = app()->auth->user();
+                    if (!$u) return null;
+                    $b = \Core\Tasks\Tasks::badge($u);
+                    if (!$b['n'] && !$b['others']) return null;
+                    return ['n' => $b['n'], 'warn' => $b['warn'], 'dot' => !$b['n'] && $b['others'] > 0,
+                        'label' => $b['n'] ? __('{n} offen', ['n' => $b['n']]) . ($b['overdue'] ? ', ' . __('{n} überfällig', ['n' => $b['overdue']]) : '') : __('offene Aufgaben im Team')];
+                }], 'core', __('Funktionen')),
             // Schnittstellen: Tokens für REST-API und MCP
             self::normalize(['id' => 'api', 'href' => '/admin/api-tokens', 'label' => __('API & MCP'), 'icon' => 'api', 'kind' => 'settings', 'perm' => 'api.manage',
                 'description' => __('Zugänge (Tokens) für Automatisierungen und KI-Assistenten')], 'core', __('Funktionen')),
@@ -153,7 +163,7 @@ final class AdminPages
         $out = [];
         foreach (self::all() as $p) {
             if ($p['place'] !== $place || !in_array($p['kind'], ['content', 'tool'], true)) continue;
-            $out[] = [$p['href'], $p['source'] === 'core' ? $p['label'] : self::tr($p), $p['icon'], self::visible($p)];
+            $out[] = [$p['href'], $p['source'] === 'core' ? $p['label'] : self::tr($p), $p['icon'], self::visible($p), $p['badge']];
         }
         return $out;
     }
