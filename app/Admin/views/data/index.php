@@ -52,7 +52,7 @@ $isAdmin = can('data.schema'); ?>
     <?php $base = url('/admin/data/' . $t['handle']); $n = (int) $t['count']; $lc = $last($t); ?>
     <a class="dt-card__main" href="<?= e($base) ?>">
       <span class="dt-icon" aria-hidden="true"><?= icon($t['icon']) ?></span>
-      <span class="dt-card__head"><strong><?= e($t['name']) ?></strong><small><b><?= $n ?></b> <?= e($n === 1 ? __('Eintrag') : __('Einträge')) ?><?= $lc !== '' ? ' · ' . e($lc) : '' ?></small></span>
+      <span class="dt-card__head"><strong><?= e($t['name']) ?></strong><span class="dt-card__st<?= $n ? '' : ' is-empty' ?>"><?= e($n === 1 ? __('1 Eintrag') : __('{n} Einträge', ['n' => $n])) ?></span><?php if ($lc !== ''): ?><small><?= e($lc) ?></small><?php endif; ?></span>
     </a>
     <?php if (!empty($listsOf[$t['handle']])): ?><p class="dt-card__lists"><span class="dt-card__listsl"><?= e(__('Listen')) ?>:</span> <?= implode(' ', array_map($chip, $listsOf[$t['handle']])) ?></p><?php endif; ?>
     <div class="dt-card__actions">
