@@ -182,7 +182,8 @@ final class AdminPages
         $groups = [
             // Website: alles, was Auftritt und Aufbau der Website betrifft – Angaben, Gestaltung, Vorlagen, Bausteine, Adressen
             ['key' => 'website', 'label' => __('Website'), 'icon' => 'globe', 'items' => [
-                ['/admin/settings', SiteSettings::title(), 'settings', SiteSettings::canView()],   // nur settings.info: „Website-Angaben“
+                // Punkt heißt nie wie die Gruppe („Website › Website“ verwirrt) – dann „Website-Angaben“
+                ['/admin/settings', SiteSettings::title() === __('Website') ? __('Website-Angaben') : SiteSettings::title(), 'settings', SiteSettings::canView()],   // nur settings.info: „Website-Angaben“
                 ['/admin/design', __('Design'), 'design', Features::on('design') && can('design.edit')],
                 ['/admin/seitenvorlagen', __('Seitenvorlagen'), 'pagetemplates', can('system.manage')],
                 // Block-Designer (Core\Blocks\Custom), Landingpages (Core\Landings), Weiterleitungen und 404-Protokoll (Core\Redirects)

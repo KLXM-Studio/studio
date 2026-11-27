@@ -265,7 +265,9 @@ final class SearchController extends AdminController
         if ($q !== '') {
             $isSet = fn($g) => in_array($g['label'], [__('Einstellungen'), __('Einstellungen & Hilfe')], true);
             $setFirst = (bool) preg_match('~einstell|konfig|setting~iu', $q);
+            // Feld-Treffer („Einstellungen“) vor den Bereichs-Treffern („Einstellungen & Hilfe“)
             $set = array_values(array_filter($groups, $isSet));
+            usort($set, fn($a, $b) => ($a['label'] === __('Einstellungen') ? 0 : 1) <=> ($b['label'] === __('Einstellungen') ? 0 : 1));
             $rest = array_values(array_filter($groups, fn($g) => !$isSet($g)));
             $at = 0;
             foreach ($rest as $i => $g) {
@@ -273,6 +275,14 @@ final class SearchController extends AdminController
                 if (!$setFirst && $g['label'] === __('Aktionen')) { $at = $i + 1; break; }
             }
             $groups = [...array_slice($rest, 0, $at), ...$set, ...array_slice($rest, $at)];
+            // Genau so benannte Seite/Eintrag („Impressum“): ihre Gruppe ganz nach vorn (nach den Favoriten)
+            $ql = mb_strtolower($q);
+            foreach ($groups as $i => $g) {
+                if ($g['label'] === __('Favoriten') || !array_filter($g['items'], fn($it) => mb_strtolower((string) ($it['title'] ?? '')) === $ql)) continue;
+                $fav = $groups[0]['label'] === __('Favoriten') ? 1 : 0;
+                if ($i > $fav) { array_splice($groups, $i, 1); array_splice($groups, $fav, 0, [$g]); }
+                break;
+            }
             // „Assistent fragen …“ nicht vor die echten Treffer: hinter Einstellungen und Aktionen
             $ai = array_values(array_filter($groups, fn($g) => ($g['items'][0]['cmd'] ?? '') === 'assistant'));
             if ($ai) {

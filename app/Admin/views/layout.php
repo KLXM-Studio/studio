@@ -188,7 +188,9 @@ if ($user && ($req = app()->request) && $view !== 'error') {   // Fehlerseiten (
     <p class="adm-side__label" id="adm-admin-h"><?= e(__('Einrichtung')) ?></p>
     <ul class="adm-navgrps" aria-labelledby="adm-admin-h">
       <?php foreach ($adminGroups as $g): $gOpen = (bool) array_filter($g['items'], fn($n) => $isCur($n[2], $n[0])); ?>
-      <?php if (count($g['items']) === 1): [$href, $label, $key] = $g['items'][0]; $navSvg = \Core\Icons::nav($key, 'adm-nav__ico'); ?>
+      <?php if (count($g['items']) === 1): [$href, $label, $key] = $g['items'][0]; $navSvg = \Core\Icons::nav($key, 'adm-nav__ico');
+        // Einzelpunkt ohne eigenes Symbol (z. B. Einstellungsseite einer Funktion): Symbol der Gruppe
+        if ($navSvg === '' && ($navSvg = \Core\Icons::nav($g['icon'], 'adm-nav__ico')) !== '') $key = $g['icon']; ?>
       <li><a href="<?= e(url($href)) ?>"<?= $navSvg ? ' data-nav="' . e($key) . '"' : ' data-ico="' . e($key) . '"' ?><?= $gOpen ? ' aria-current="page"' : '' ?>><?= $navSvg ?><span><?= e($label) ?></span></a></li>
       <?php else: $gId = 'adm-grp-' . $g['key']; ?>
       <?php $gWarn = array_values(array_filter(array_map(fn($n) => $navWarn[$n[2]] ?? null, $g['items']))); ?>
