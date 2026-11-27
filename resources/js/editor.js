@@ -1296,11 +1296,12 @@ function makeTool(type, def) {
       if (getComputedStyle(o.host).position === 'static') o.host.style.position = 'relative';
       let dir = 1, drag = null, place = () => {};
       if (o.axis === 'y') {
-        // Griff mittig auf der Innenkante der Abstandsfläche (oben: Unterkante des oberen Abstands, unten: Oberkante des unteren) –
-        // mit Beschriftung „Abstand oben: Normal“; bei „Kein“ knapp innerhalb des Abschnitts. Mitte der Abschnittskante gehört „+ Block einfügen“.
+        // Griff auf der Innenkante der Abstandsfläche (oben: Unterkante des oberen Abstands, unten: Oberkante des unteren); bei „Kein“
+        // knapp innerhalb des Abschnitts. Beschriftung nur als Tooltip, Wert-Pille beim Ziehen.
         place = () => {
           const pad = parseFloat(getComputedStyle(o.apply)[o.side === 'top' ? 'paddingTop' : 'paddingBottom']) || 0;
-          host.style.cssText = `position:absolute;left:50%;margin-left:-22px;${o.side}:${Math.max(4, Math.round(pad - 12))}px;width:44px;height:24px;z-index:8`;
+          // links im ersten Viertel: rechts oben sitzt die Werkzeugleiste des Blocks, unten mittig „+ Block einfügen“
+          host.style.cssText = `position:absolute;left:max(8px,calc(25% - 22px));${o.side}:${Math.max(4, Math.round(pad - 12))}px;width:44px;height:24px;z-index:8`;
         };
         o.host.addEventListener('pointerenter', () => { if (!drag) { place(); sizeBand(); } });
       } else {
@@ -1341,11 +1342,12 @@ function makeTool(type, def) {
         h.setAttribute('aria-label', T('{label} ziehen – jetzt {v}. Pfeiltasten: kleiner/größer.', { label: o.label, v: o.options[values[i]] }));
         h.setAttribute('aria-valuenow', String(i)); h.setAttribute('aria-valuemin', '0'); h.setAttribute('aria-valuemax', String(values.length - 1));
         h.setAttribute('aria-valuetext', o.options[values[i]]);
+        h.title = `${o.label}: ${o.options[values[i]]}`;
       };
       o.group?.push(() => place());
       const preview = i => { values.forEach(v => o.apply.classList.remove(o.cls(v))); o.apply.classList.add(o.cls(values[i])); show(i); (o.group || [place]).forEach(f => f()); sizeBand(); };
       show(cur());
-      // Kein Browser-Tooltip: die Hinweis-Pille zeigt Wert und Aktion schon
+      // Tooltip (title) nennt Art und Wert; die Wert-Pille erscheint nur beim Ziehen bzw. per Pfeiltaste
       h.addEventListener('pointerenter', () => own(true));
       h.addEventListener('pointerleave', () => { if (!drag) own(false); });
       h.addEventListener('focus', () => own(true));
@@ -1402,6 +1404,7 @@ function makeTool(type, def) {
         if (!step) return;
         e.preventDefault();
         const i = Math.max(0, Math.min(values.length - 1, cur() + step));
+        h.classList.add('is-kbd'); clearTimeout(h._kbd); h._kbd = setTimeout(() => h.classList.remove('is-kbd'), 1600);
         if (i === cur()) return;
         preview(i);
         o.commit(values[i]);
