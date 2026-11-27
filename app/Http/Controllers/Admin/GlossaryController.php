@@ -45,8 +45,9 @@ final class GlossaryController extends AdminController
         $import = app()->session->get('_glossary_import');
         app()->session->forget('_glossary_import');
         // Einstellungsseite der Tabelle „glossar“ (Core\AdminPages): Bereichsnavigation „Daten“ mit der Tabelle geöffnet
-        $nav = can('data.schema') || ($t && can('data.edit', $t['handle'])) ? \Core\Data\AdminNav::vars('page:glossary', $t) : ['drill' => ''];
-        return $this->view('glossary/index', $nav + ['t' => $t, 'terms' => $terms, 'checks' => $t ? Glossary::checks($terms) : [], 'occ' => $occ,
+        $drill = can('data.schema') || ($t && can('data.edit', $t['handle']))
+            ? \Core\Theme::capture(ROOT . '/app/Admin/views/data/_nav.php', ['cur' => 'page:glossary', 'active' => $t]) : '';
+        return $this->view('glossary/index', ['drill' => $drill, 'drillTitle' => __('Daten'), 't' => $t, 'terms' => $terms, 'checks' => $t ? Glossary::checks($terms) : [], 'occ' => $occ,
             'settings' => Glossary::settings(), 'import' => $import, 'ai' => Glossary::aiAvailable(), 'overview' => Glossary::overviewUrl(),
             'sharing' => Sharing::available() ? Sharing::status() : null, 'hiddenCount' => $t && \Core\Data\Tables::isShared($t) ? count(Sharing::hidden()) : 0]);
     }
@@ -60,7 +61,8 @@ final class GlossaryController extends AdminController
         if (!Sharing::available()) throw new HttpException(404);
         $status = Sharing::status();
         $t = Glossary::table();
-        return $this->view('glossary/sharing', \Core\Data\AdminNav::vars('page:glossary', $t) + ['t' => $t, 'status' => $status, 'manage' => Sharing::canManage(),
+        $drill = \Core\Theme::capture(ROOT . '/app/Admin/views/data/_nav.php', ['cur' => 'page:glossary', 'active' => $t]);
+        return $this->view('glossary/sharing', ['drill' => $drill, 'drillTitle' => __('Daten'), 't' => $t, 'status' => $status, 'manage' => Sharing::canManage(),
             'plan' => in_array($status['role'], ['invited'], true) ? Sharing::plan() : null, 'hidden' => Sharing::hidden(),
             'canHide' => $t && can('data.publish', $t['handle'])]);
     }

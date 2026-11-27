@@ -271,7 +271,6 @@ return function (Router $r): void {
     $r->post('/admin/quellen/{id}/table', [Admin\SourceController::class, 'createTable']);
     $r->post('/admin/quellen/{id}/delete', [Admin\SourceController::class, 'delete']);
     $r->get('/admin/data', [Admin\DataController::class, 'index']);
-    $r->get('/admin/datenmodell', [Admin\DataController::class, 'model']);   // Einrichtung › Datenmodell (Core\Data\AdminNav)
     $r->get('/admin/data/new', [Admin\DataController::class, 'create']);
     $r->post('/admin/data/new', [Admin\DataController::class, 'wizard']);   // Assistent „Neue Tabelle“ (Core\Data\Wizard)
     $r->post('/admin/data', [Admin\DataController::class, 'store']);

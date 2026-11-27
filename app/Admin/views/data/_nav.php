@@ -1,17 +1,13 @@
 <?php
 /**
- * Bereichsnavigation der Tabellen in zwei Bereichen (Core\Data\AdminNav):
- *  - „Daten“: Tabellen (mit Anzahl Einträge), unter der aktuellen Tabelle ihre Ansichten zum Pflegen (Liste, Kalender, Schlagworte …)
- *  - „Datenmodell“ (Einrichtung, data.schema): alle Tabellen samt Eingängen (mit Anzahl Felder), unter der aktuellen Tabelle
- *    Felder & Einstellungen, Einsetzen, Listen-Vorlagen, Detailseiten, Einstellungsseiten zur Tabelle; neue Tabelle, externe Quellen
+ * Bereichsnavigation „Daten“: Tabellen (mit Anzahl Einträge), unter der aktuellen Tabelle ihre Ansichten und Einstellungen.
  * Das Layout zeigt sie links anstelle der Hauptnavigation (breite Bildschirme), sonst oben in der Seite (resources/js/_drill.js).
- * @var string $cur  index|list|calendar|entry|new-entry|model|schema|new|place|subscribe|import|templates|…  @var ?array $active  aktuelle Tabelle
+ * @var string $cur  index|list|calendar|entry|new-entry|schema|new|place|subscribe|import|templates  @var ?array $active  aktuelle Tabelle
  */
 use Core\Data\Entries;
 use Core\Data\Tables;
 
 $schema = can('data.schema');
-$model = $schema && \Core\Data\AdminNav::isModel($cur);
 $tables = array_filter(Tables::content(), fn($t) => $schema || can('data.edit', $t['handle']));
 // Auswahllisten (Core\Data\OptionSource): direkt unter ihrer Haupttabelle eingerückt; von mehreren Tabellen genutzt → Gruppe „Auswahllisten“ am Ende
 $byHandle = array_column($tables, null, 'handle');
@@ -28,29 +24,20 @@ foreach ($tables as $t) {
     $ordered[] = $t;
     foreach ($childOf[$t['handle']] ?? [] as $c) $ordered[] = $c + ['_navchild' => true];
 }
-foreach ($shared as $i => $c) $ordered[] = $c + ['_navchild' => true, '_navgroup' => __('Auswahllisten')];
-// Datenmodell: Eingänge (Formular-Anfragen) gehören dazu – eingerichtet wie Tabellen, gelesen unter „Anfragen“
-if ($model) foreach (array_values(\Core\Data\Inbox::tables()) as $i => $ib) $ordered[] = $ib + ['_navgroup' => $i === 0 ? __('Eingänge') : ''];
+foreach ($shared as $i => $c) $ordered[] = $c + ['_navchild' => true, '_navgroup' => $i === 0];
 $tables = $ordered;
 $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '';
 ?>
-<nav class="dt-nav<?= $model ? ' dt-nav--model' : '' ?>" data-drill-panel aria-label="<?= e($model ? __('Datenmodell') : __('Daten')) ?>">
+<nav class="dt-nav" data-drill-panel aria-label="<?= e(__('Daten')) ?>">
   <ul class="dt-nav__list">
-    <li><a class="dt-nav__item" href="<?= e(url($model ? \Core\Data\AdminNav::MODEL_PATH : '/admin/data')) ?>"<?= $ac($cur === ($model ? 'model' : 'index')) ?>><span class="dt-nav__ico" aria-hidden="true"><?= icon('squares-four') ?></span><span class="dt-nav__name"><?= e(__('Übersicht')) ?></span></a></li>
+    <li><a class="dt-nav__item" href="<?= e(url('/admin/data')) ?>"<?= $ac($cur === 'index') ?>><span class="dt-nav__ico" aria-hidden="true"><?= icon('squares-four') ?></span><span class="dt-nav__name"><?= e(__('Übersicht')) ?></span></a></li>
     <?php foreach ($tables as $t):
       $base = '/admin/data/' . $t['handle'];
       $edit = can('data.edit', $t['handle']);
       $on = $active && $active['handle'] === $t['handle'];
       $subs = [];
       $shared = \Core\Data\Tables::isShared($t);
-      $inbox = Tables::isInbox($t);
-      if ($on && $model) {
-          // Einrichten: Felder, Einsetzen, Listen-Vorlagen, Einstellungsseiten zur Tabelle; Detailseiten unten ($tpl)
-          if (\Core\Data\Shared::canSchema($t)) $subs[] = [url($base . '/schema'), __('Felder & Einstellungen'), $cur === 'schema'];
-          if (\Core\Data\Placement::blockType($t) !== null) $subs[] = [url($base . '/einsetzen'), __('Einsetzen'), $cur === 'place'];
-          if (!$inbox && can(\Core\Blocks\ListTemplates::PERMISSION) && \Core\Data\Placement::blockType($t) === 'data_list' && app()->theme->block('data_list')) $subs[] = [url($base . '/vorlagen'), __('Listen-Vorlagen'), $cur === 'templates'];
-          foreach (\Core\AdminPages::forTable($t['handle']) as $tp) $subs[] = [url($tp['href']), $tp['label'], $cur === 'page:' . $tp['id']];
-      } elseif ($on) {
+      if ($on) {
           // Kontakte (Core\Data\AddressBook): Adressbuch-Ansicht neben der Tabelle
           if ($edit && \Core\Data\AddressBook::enabled($t)) $subs[] = [url($base) . '?view=book', __('Adressbuch'), false];
           if ($edit) $subs[] = [url($base) . '?view=list', $shared ? __('Eigene') : (\Core\Data\AddressBook::enabled($t) ? __('Tabelle') : __('Liste')), $cur === 'list'];
@@ -70,29 +57,26 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
           if ($edit && \Core\AI\Classify::enabled($t)) $subs[] = [url($base . '/ki-vorschlaege'), __('KI: Schlagworte vorschlagen'), $cur === 'classify'];
           // Schlagworte (Core\Data\Tags): Verwaltung, sobald die Tabelle ein Feld mit freien Schlagworten hat
           if ($edit && array_filter($t['fields'], [\Core\Data\Tags::class, 'isFree'])) $subs[] = [url($base . '/schlagworte'), __('Schlagworte'), $cur === 'tags'];
-          // Einrichten (Felder, Einsetzen, Listen-Vorlagen, Detailseiten) steht unter „Einrichtung › Datenmodell“; Listen-Vorlagen ohne
-          // data.schema (nur Recht „Blöcke gestalten“) bleiben hier erreichbar
-          if (!$schema && can(\Core\Blocks\ListTemplates::PERMISSION) && \Core\Data\Placement::blockType($t) === 'data_list' && app()->theme->block('data_list')) $subs[] = [url($base . '/vorlagen'), __('Listen-Vorlagen'), $cur === 'templates'];
+          if ($schema && \Core\Data\Shared::canSchema($t)) $subs[] = [url($base . '/schema'), __('Felder & Einstellungen'), $cur === 'schema'];
+          // Einsetzen: Block auf einer Seite, Seite anlegen, Verwendungen (Core\Data\Placement) – nicht für interne Listen
+          if ($schema && \Core\Data\Placement::blockType($t) !== null) $subs[] = [url($base . '/einsetzen'), __('Einsetzen'), $cur === 'place'];
+          // Listen-Vorlagen (Core\Blocks\ListTemplates): gespeicherte Darstellungen der Datenliste – Recht „Blöcke gestalten“
+          if (can(\Core\Blocks\ListTemplates::PERMISSION) && \Core\Data\Placement::blockType($t) === 'data_list' && app()->theme->block('data_list')) $subs[] = [url($base . '/vorlagen'), __('Listen-Vorlagen'), $cur === 'templates'];
           // Abonnieren per App: Kalender- und Kontakte-Tabellen (Core\Data\Subscriptions)
           if (\Core\Data\Exchange::kind($t) !== null && can('data.import', $t['handle'])) $subs[] = [url($base . '/import'), \Core\Data\Exchange::kind($t) === 'ics' ? __('ICS importieren') : __('vCard importieren'), $cur === 'import'];
           if ($edit && \Core\Data\Subscriptions::kind($t) !== null) $subs[] = [url($base . '/abonnieren'), __('Abonnieren'), $cur === 'subscribe'];
-          // Einstellungsseiten von Funktionen/Erweiterungen zu dieser Tabelle (Core\AdminPages, 'table' => …), z. B. Glossar – mit
-          // data.schema im Datenmodell
-          if (!$schema) foreach (\Core\AdminPages::forTable($t['handle']) as $tp) $subs[] = [url($tp['href']), $tp['label'], $cur === 'page:' . $tp['id']];
+          // Einstellungsseiten von Funktionen/Erweiterungen zu dieser Tabelle (Core\AdminPages, 'table' => …), z. B. Glossar
+          foreach (\Core\AdminPages::forTable($t['handle']) as $tp) $subs[] = [url($tp['href']), $tp['label'], $cur === 'page:' . $tp['id']];
       }
-      $tpl = $on && $model && !$inbox && $t['settings']['route'] !== '';
+      $tpl = $on && $schema && $t['settings']['route'] !== '';
       // Nur ein Unterpunkt (z. B. „Liste“): kein eigenes Untermenü, die Tabelle selbst ist die Seite
       $single = count($subs) < 2 && !$tpl;
     ?>
-    <?php if (!empty($t['_navgroup'])): ?><li class="dt-nav__group" role="presentation"><?= e($t['_navgroup']) ?></li><?php endif; ?>
+    <?php if (!empty($t['_navgroup'])): ?><li class="dt-nav__group" role="presentation"><?= e(__('Auswahllisten')) ?></li><?php endif; ?>
     <li class="<?= trim(($on ? 'is-open' : '') . (!empty($t['_navchild']) ? ' dt-nav__child' : '')) ?>">
-      <a class="dt-nav__item<?= $on ? ' is-active' : '' ?>" href="<?= e(url($model || !$edit ? $base . '/schema' : $base)) ?>"<?= $ac($on, $single && in_array($cur, ['list', 'calendar', 'schema'], true) ? 'page' : 'true') ?>>
+      <a class="dt-nav__item<?= $on ? ' is-active' : '' ?>" href="<?= e(url($edit ? $base : $base . '/schema')) ?>"<?= $ac($on, $single && in_array($cur, ['list', 'calendar', 'schema'], true) ? 'page' : 'true') ?>>
         <span class="dt-nav__ico" aria-hidden="true"><?= icon($t['icon']) ?></span><span class="dt-nav__name"><?= e($t['name']) ?><?php if ($shared): ?> <span class="dt-nav__shared" title="<?= e(__('Geteilt mit anderen Websites dieser Installation')) ?>"><?= e(__('geteilt')) ?></span><?php endif; ?></span>
-        <?php if ($model): $n = count($t['fields']); // Datenmodell: Anzahl Felder ?>
-        <small class="dt-nav__count"><span aria-hidden="true"><?= $n ?></span><span class="sr-only"><?= e($n === 1 ? __('1 Feld') : __('{n} Felder', ['n' => $n])) ?></span></small>
-        <?php else: ?>
         <small class="dt-nav__count"><?php $n = Entries::count($t, ['status' => 'all', 'source' => 'own']); ?><span aria-hidden="true"><?= $n ?></span><span class="sr-only"><?= e($n === 1 ? __('1 Eintrag') : __('{n} Einträge', ['n' => $n])) ?></span></small>
-        <?php endif; ?>
       </a>
       <?php if (!$single): ?>
       <ul class="dt-nav__sub" aria-label="<?= e($t['name']) ?>">
@@ -108,17 +92,12 @@ $ac = fn(bool $on, string $v = 'page') => $on ? ' aria-current="' . $v . '"' : '
     </li>
     <?php endforeach; ?>
   </ul>
-  <?php if ($model && \Core\Sources\Sources::navVisible()): /* Externe Quellen (Core\Sources): Feeds, APIs, OpenImmo → Tabellen */ ?>
+  <?php if (\Core\Sources\Sources::navVisible()): /* Externe Quellen (Core\Sources): Feeds, APIs, OpenImmo → Tabellen */ ?>
   <ul class="dt-nav__list dt-nav__list--extra">
     <li><a class="dt-nav__item" href="<?= e(url('/admin/quellen')) ?>"<?= $ac($cur === 'sources') ?>><span class="dt-nav__ico" aria-hidden="true"><?= icon('plugs-connected') ?></span><span class="dt-nav__name"><?= e(__('Externe Quellen')) ?></span></a></li>
   </ul>
   <?php endif; ?>
-  <?php if ($model): ?>
+  <?php if ($schema): ?>
   <a class="dt-nav__new" href="<?= e(url('/admin/data/new')) ?>"<?= $ac($cur === 'new') ?>><?= icon('plus') ?> <?= e(__('Neue Tabelle')) ?></a>
-  <?php if ($active && !Tables::isInbox($active) && can('data.edit', $active['handle'])): // Rückweg zu den Einträgen der Tabelle ?>
-  <a class="dt-nav__new dt-nav__switch" href="<?= e(url('/admin/data/' . $active['handle'])) ?>"><?= icon('database') ?> <?= e(__('Zu den Einträgen')) ?></a>
-  <?php endif; ?>
-  <?php elseif ($schema): // Wechsel ins Datenmodell (Einrichtung) – an der aktuellen Tabelle direkt zu ihren Feldern ?>
-  <a class="dt-nav__new dt-nav__switch" href="<?= e(url($active ? '/admin/data/' . $active['handle'] . '/schema' : \Core\Data\AdminNav::MODEL_PATH)) ?>"><?= icon('tree-structure') ?> <?= e($active ? __('Tabelle einrichten') : __('Datenmodell')) ?></a>
   <?php endif; ?>
 </nav>

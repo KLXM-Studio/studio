@@ -23,7 +23,8 @@ final class SourceController extends AdminController
     /** Daten-Navigation links wie bei den Tabellen */
     protected function view(string $view, array $vars = [], int $status = 200): Response
     {
-        if (!isset($vars['drill'])) $vars += \Core\Data\AdminNav::vars('sources', null);
+        $vars['drill'] ??= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_nav.php', ['cur' => 'sources', 'active' => null]);
+        $vars['drillTitle'] ??= __('Daten');
         return parent::view($view, $vars, $status);
     }
 

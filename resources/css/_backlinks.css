@@ -106,21 +106,3 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-assign__mode legend{width:100%;margin-bottom:4px;font-weight:600}
 .dt-assign [data-av] label{display:grid;gap:4px}
 .dt-assign__foot{justify-content:flex-end}
-/* Datenmodell (data/model.php, Core\Data\AdminNav): alle Tabellen mit Art, Feldern, Detailseite, Verwendung; Listen eingerückt */
-.dm-lead{margin:-6px 0 16px}
-.dm-card{padding:0;overflow:hidden}
-.dm-table{width:100%}
-.dm-name{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
-.dm-name:hover strong,.dm-name:hover>span:last-child{text-decoration:underline}
-.dm-name small{display:block;color:var(--adm-t3);font:400 12px var(--adm-mono)}
-.dm-table .dm-ico{width:32px;height:32px;font-size:15px;border-radius:7px}
-.dm-table .dm-ico .ico{width:17px;height:17px}
-.dm-name>span:last-child{font-weight:600}
-.dm-num{text-align:right;font-variant-numeric:tabular-nums}
-.dm-row--child .dm-name{position:relative;margin-left:28px}
-.dm-row--child .dm-name::before{content:"";position:absolute;left:-16px;top:-6px;bottom:50%;width:10px;border-left:1px solid var(--adm-line);border-bottom:1px solid var(--adm-line);border-bottom-left-radius:4px}
-.dm-group th{padding-top:18px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--adm-t2)}
-.dm-group .adm-muted{text-transform:none;letter-spacing:0;font-weight:400}
-/* Wechsel Daten ↔ Datenmodell unten in der Bereichsnavigation */
-.adm-side .dt-nav__switch{margin-top:-6px}
-.dm-scroll{overflow-x:auto}

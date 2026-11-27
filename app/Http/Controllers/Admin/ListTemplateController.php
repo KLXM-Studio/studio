@@ -33,7 +33,8 @@ final class ListTemplateController extends AdminController
 
     protected function view(string $view, array $vars = [], int $status = 200): Response
     {
-        if (!isset($vars['drill'])) $vars += \Core\Data\AdminNav::vars('templates', $vars['t'] ?? null);   // Datenmodell (mit data.schema)
+        $vars['drill'] ??= \Core\Theme::capture(ROOT . '/app/Admin/views/data/_nav.php', ['cur' => 'templates', 'active' => $vars['t'] ?? null]);
+        $vars['drillTitle'] ??= __('Daten');
         return parent::view($view, $vars, $status);
     }
 

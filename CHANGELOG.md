@@ -10,11 +10,6 @@ Erste veröffentlichte Version von KLXM Studio (MIT). Installation mit `composer
 oder über das Installations-ZIP der GitHub-Releases (mit `vendor/` und gebauten Assets); Anforderungen: PHP ≥ 8.4.1 und
 die Erweiterungen im README. Die Abschnitte unten beschreiben die Funktionsbereiche dieses Stands.
 
-### Daten und Datenmodell getrennt
-- **Daten** (Hauptmenü) zeigt nur noch die Inhalte: Tabellen mit ihren Ansichten zum Pflegen (Liste, Kalender, Adressbuch, Schlagworte, Import, Abonnieren); die Übersicht ohne Technik und Vorlagen.
-- Neu **Einrichtung › Datenmodell** (`/admin/datenmodell`, Recht `data.schema`): alle Tabellen und Eingänge mit Art, Feldern, Einträgen, Detailseite und Verwendung, Auswahllisten eingerückt; Vorlagen für neue Tabellen. Je Tabelle ein Untermenü wie überall in der Seitenleiste: Felder & Einstellungen, Einsetzen, Listen-Vorlagen, Detailseite gestalten, Detailseiten-Vorlagen, Einstellungsseiten zur Tabelle (z. B. Glossar); dazu externe Quellen und „Neue Tabelle“.
-- Wechsel unten in der Bereichsnavigation: „Tabelle einrichten“ bzw. „Zu den Einträgen“. Technik: `Core\Data\AdminNav`, Layout-Variable `navSection`.
-
 ### Bilder aus dem Chat (MCP)
 - Neue MCP-Werkzeuge `media_upload_link` und `media_upload_status`: Hat die Person im Chat ein Bild angehängt, erzeugt der Assistent einen Upload-Link (30 Minuten, eine Datei); die Person lädt dort hoch, der Assistent bindet das Bild über seine Medien-ID ein. Die Anweisungen des MCP-Servers nennen den Weg.
 

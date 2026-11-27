@@ -51,8 +51,7 @@ if ($user && \Core\Extensions::filters('admin.nav')) {
 }
 if ($netArea) { $nav = []; $adminGroups = []; }   // Netzwerk-Bereich: nur die Seitenleiste des Netzwerks (unten)
 $adminNav = array_merge([], ...array_column($adminGroups, 'items'));
-// Bereich des Menüs: Verzeichnis der Ansicht, außer der Controller gibt ihn vor (z. B. Datenmodell, Core\Data\AdminNav::vars)
-$section = (string) ($navSection ?? explode('/', $view)[0]);
+$section = explode('/', $view)[0];
 // Seite einer Sammelseite (Einstellungen/Statistiken, Core\AdminPages)? Dann ist deren Menüpunkt der aktuelle
 $reqPath = $user && app()->request ? (string) app()->request->path : '';
 $hubKind = $reqPath !== '' ? (\Core\AdminPages::match($reqPath)['kind'] ?? '') : '';
