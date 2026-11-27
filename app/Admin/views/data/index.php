@@ -55,15 +55,20 @@ $isAdmin = can('data.schema'); ?>
       <span class="dt-card__head"><strong><?= e($t['name']) ?></strong><small><b><?= $n ?></b> <?= e($n === 1 ? __('Eintrag') : __('Einträge')) ?><?= $lc !== '' ? ' · ' . e($lc) : '' ?></small></span>
     </a>
     <?php if (!empty($listsOf[$t['handle']])): ?><p class="dt-card__lists"><span class="dt-card__listsl"><?= e(__('Listen')) ?>:</span> <?= implode(' ', array_map($chip, $listsOf[$t['handle']])) ?></p><?php endif; ?>
-    <?php // Technik nur für Admins, eine Zeile ?>
-    <?php if ($isAdmin): ?><p class="dt-card__meta"><?= e(\Core\Data\Purpose::label(\Core\Data\Purpose::of($t))) ?> · <?= count($t['fields']) ?> <?= e(__('Felder')) ?><?= $t['settings']['route'] !== '' ? ' · <code>/' . e($t['settings']['route']) . '/…</code>' : '' ?></p><?php endif; ?>
     <div class="dt-card__actions">
       <a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e($base) ?>"><?= icon('list-bullets') ?> <?= e(__('Einträge')) ?></a>
       <a class="adm-btn adm-btn--small" href="<?= e($base . '/new') ?>">+ <?= e($t['singular']) ?></a>
-      <?php if ($site !== ''): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e($site) ?>" target="_blank" rel="noopener" title="<?= e(__('Seite mit dieser Liste auf der Website öffnen (neuer Tab)')) ?>"><?= icon('arrow-square-out') ?> <?= e(__('Website')) ?></a><?php endif; ?>
-      <?php if (\Core\Data\Feed::available($t)): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url(\Core\Data\Feed::path($t))) ?>" target="_blank" rel="noopener" title="<?= e(__('RSS-Feed dieser Tabelle (öffnet in neuem Tab)')) ?>"><?= icon('rss') ?> RSS</a><?php endif; ?>
-      <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e($base . '/schema') ?>" title="<?= e(__('Felder & Einstellungen')) ?>"><?= icon('gear-six') ?> <?= e(__('Einrichten')) ?></a><?php endif; ?>
     </div>
+    <?php // Weitere Wege als Textlinks in einer Fußzeile; Technik (Art, Felder, Adresse) als Tooltip an „Einrichten“
+    $feed = \Core\Data\Feed::available($t);
+    $tech = \Core\Data\Purpose::label(\Core\Data\Purpose::of($t)) . ' · ' . count($t['fields']) . ' ' . __('Felder') . ($t['settings']['route'] !== '' ? ' · /' . $t['settings']['route'] . '/…' : '');
+    if ($site !== '' || $feed || $isAdmin): ?>
+    <p class="dt-card__foot">
+      <?php if ($site !== ''): ?><a href="<?= e($site) ?>" target="_blank" rel="noopener" title="<?= e(__('Seite mit dieser Liste auf der Website öffnen (neuer Tab)')) ?>"><?= icon('arrow-square-out') ?> <?= e(__('Website')) ?></a><?php endif; ?>
+      <?php if ($feed): ?><a href="<?= e(url(\Core\Data\Feed::path($t))) ?>" target="_blank" rel="noopener" title="<?= e(__('RSS-Feed dieser Tabelle (öffnet in neuem Tab)')) ?>"><?= icon('rss') ?> RSS</a><?php endif; ?>
+      <?php if ($isAdmin): ?><a class="dt-card__setup" href="<?= e($base . '/schema') ?>" title="<?= e($tech) ?>"><?= icon('gear-six') ?> <?= e(__('Einrichten')) ?></a><?php endif; ?>
+    </p>
+    <?php endif; ?>
   </article>
   <?php endforeach; ?>
 </div>
@@ -85,8 +90,8 @@ $isAdmin = can('data.schema'); ?>
     <p class="dt-card__meta"><?= icon(\Core\Data\Purpose::of($t) === 'mail' ? 'paper-plane-tilt' : 'lock') ?> <?= e(\Core\Data\Purpose::of($t) === 'mail' ? __('Nur per E-Mail · nichts gespeichert') : __('Ende-zu-Ende verschlüsselt · nur über das Formular')) ?></p>
     <div class="dt-card__actions">
       <?php if (can('requests.read', $t['handle'])): ?><a class="adm-btn adm-btn--small adm-btn--primary" href="<?= e(url('/admin/requests?table=' . $t['handle'])) ?>"><?= icon('tray') ?> <?= e(__('Im Eingang lesen')) ?></a><?php endif; ?>
-      <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url('/admin/data/' . $t['handle'] . '/schema')) ?>" title="<?= e(__('Felder & Einstellungen')) ?>"><?= icon('gear-six') ?> <?= e(__('Einrichten')) ?></a><?php endif; ?>
     </div>
+    <?php if ($isAdmin): ?><p class="dt-card__foot"><a class="dt-card__setup" href="<?= e(url('/admin/data/' . $t['handle'] . '/schema')) ?>" title="<?= e(__('Felder & Einstellungen')) ?>"><?= icon('gear-six') ?> <?= e(__('Einrichten')) ?></a></p><?php endif; ?>
   </article>
   <?php endforeach; ?>
 </div>
