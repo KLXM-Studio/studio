@@ -35,6 +35,7 @@ $ruleFields = array_map(fn($f) => ['name' => (string) ($f['name'] ?? ''), 'label
 // Zweck und Bereiche
 $purpose = Purpose::valid($s['purpose'] ?? null) ? (string) $s['purpose'] : Purpose::derive($s);
 [$main, $more] = Purpose::sections($purpose, $inbox);
+if ($inbox && !$isNew) { $main = array_values(array_diff($main, ['erweitert'])); $more = array_values(array_diff($more, ['erweitert'])); }   // nur noch „Löschen“ → steht unter Allgemein
 if ($isNew) { $main = array_values(array_diff($main, ['einsetzen'])); $more = array_values(array_diff($more, ['einsetzen'])); }
 if (!$inbox && !\Core\Features::on('calendar')) { $main = array_values(array_diff($main, ['kalender'])); $more = array_values(array_diff($more, ['kalender'])); }
 $secLabel = ['allgemein' => __('Allgemein'), 'felder' => __('Felder'), 'website' => __('Auf der Website'), 'formular' => $inbox ? __('Formular & Eingang') : __('Formular'),
@@ -155,6 +156,17 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
       </div>
     </section>
     <?php endif; ?>
+<?php if (!$isNew && !$sharedT): // Löschen gehört zur Tabelle selbst – unter „Allgemein“, nicht „Erweitert“ ?>
+    <section class="set-group dt-danger" aria-labelledby="t-g-del">
+      <h3 class="set-group__title" id="t-g-del"><?= e($inbox ? __('Eingang löschen') : __('Tabelle löschen')) ?></h3>
+      <div class="set-list">
+        <div class="set-row set-row--stack"><div class="set-row__body">
+          <p><?= $inbox ? e(__('Löscht den Eingang mit allen (verschlüsselten) Anfragen. Formulare auf Seiten zeigen dann nichts mehr an. Zum Bestätigen den Kurznamen eintippen:')) : 'Löscht die Tabelle mit <b>allen Einträgen</b> und die Detailseiten-Vorlage. Datenlisten auf Seiten bleiben leer. Zum Bestätigen den Kurznamen eintippen:' ?></p>
+          <div class="adm-row"><input form="dt-delete" name="confirm" placeholder="<?= e($table['handle']) ?>" aria-label="Kurzname zur Bestätigung" autocomplete="off"><button class="adm-btn adm-btn--danger" form="dt-delete" type="submit">Endgültig löschen</button></div>
+        </div></div>
+      </div>
+    </section>
+<?php endif; ?>
   </section>
 
   <?php /* ================================================================ Felder */ ?>
@@ -531,17 +543,7 @@ $fm = (array) ($s['form'] ?? []) + \Core\Data\DataForms::DEFAULTS;
       </div>
     </section>
 <?php endif; ?>
-<?php if (!$isNew && !$sharedT): ?>
-    <section class="set-group dt-danger" aria-labelledby="t-g-del">
-      <h3 class="set-group__title" id="t-g-del"><?= e($inbox ? __('Eingang löschen') : __('Tabelle löschen')) ?></h3>
-      <div class="set-list">
-        <div class="set-row set-row--stack"><div class="set-row__body">
-          <p><?= $inbox ? e(__('Löscht den Eingang mit allen (verschlüsselten) Anfragen. Formulare auf Seiten zeigen dann nichts mehr an. Zum Bestätigen den Kurznamen eintippen:')) : 'Löscht die Tabelle mit <b>allen Einträgen</b> und die Detailseiten-Vorlage. Datenlisten auf Seiten bleiben leer. Zum Bestätigen den Kurznamen eintippen:' ?></p>
-          <div class="adm-row"><input form="dt-delete" name="confirm" placeholder="<?= e($table['handle']) ?>" aria-label="Kurzname zur Bestätigung" autocomplete="off"><button class="adm-btn adm-btn--danger" form="dt-delete" type="submit">Endgültig löschen</button></div>
-        </div></div>
-      </div>
-    </section>
-<?php elseif ($isNew && $inbox): ?>
+<?php if ($isNew && $inbox): ?>
     <p class="set-page__lead"><?= e(__('Weitere Einstellungen gibt es nach dem Anlegen.')) ?></p>
 <?php endif; ?>
   </section>
