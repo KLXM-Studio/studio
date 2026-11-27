@@ -1254,8 +1254,9 @@ function makeTool(type, def) {
         }
         sec.className = keep;
         if (Object.keys(opts).length < 2) return;   // wirkt hier nicht (schmale Spalte, eigener Inhalt)
+        const group = [];   // beide Griffe: Lage gemeinsam neu messen (symmetrisch)
         for (const side of ['left', 'right']) {
-          this.dragHandle({ kind: 'secwidth', host: sec, target: wrap, apply: sec, axis: 'x', side, options: opts, order: ['narrow', 'normal', 'wide', 'full'],
+          this.dragHandle({ group, kind: 'secwidth', host: sec, target: wrap, apply: sec, axis: 'x', side, options: opts, order: ['narrow', 'normal', 'wide', 'full'],
             get: () => this.tuneData.width || 'normal', cls: v => v === 'normal' ? 'sw-normal' : 'sw-' + v, label: T('Breite'),
             commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, width: v }; markDirty(); this.refresh(); } });
         }
@@ -1328,7 +1329,8 @@ function makeTool(type, def) {
         h.setAttribute('aria-valuenow', String(i)); h.setAttribute('aria-valuemin', '0'); h.setAttribute('aria-valuemax', String(values.length - 1));
         h.setAttribute('aria-valuetext', o.options[values[i]]);
       };
-      const preview = i => { values.forEach(v => o.apply.classList.remove(o.cls(v))); o.apply.classList.add(o.cls(values[i])); show(i); place(); sizeBand(); };
+      o.group?.push(() => place());
+      const preview = i => { values.forEach(v => o.apply.classList.remove(o.cls(v))); o.apply.classList.add(o.cls(values[i])); show(i); (o.group || [place]).forEach(f => f()); sizeBand(); };
       show(cur());
       // Kein Browser-Tooltip: die Hinweis-Pille zeigt Wert und Aktion schon
       h.addEventListener('pointerenter', () => own(true));
