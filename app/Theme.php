@@ -752,6 +752,10 @@ final class Theme
         if (!empty($block->tunes['noGlossary']) && !app()->editing) {
             $html = (string) preg_replace('~^(\s*<[a-zA-Z][a-zA-Z0-9-]*)(?=[\s>/])~', '$1 data-glossary="off"', $html, 1);
         }
+        // Detailseite im Bearbeiten-Modus: an das Bildfeld des Eintrags gebundenes Bild (Einstieg) → „Bild ändern …“ (Core\Data\EntryEdit)
+        if (!app()->editing && app()->entryEdit && ($sm = \Core\Data\EntryEdit::sectionMedia($block)) !== '') {
+            $html = (string) preg_replace('~^(\s*<[a-zA-Z][a-zA-Z0-9-]*)(?=[\s>/])~', '$1' . str_replace(['\\', '$'], ['\\\\', '\\$'], $sm), $html, 1);
+        }
         if (isset(self::$vdiff[$block->id])) {
             $html = (string) preg_replace('~^(\s*<[a-zA-Z][a-zA-Z0-9-]*)(?=[\s>/])~', '$1 data-vdiff="' . e(self::$vdiff[$block->id]) . '"', $html, 1);
         }

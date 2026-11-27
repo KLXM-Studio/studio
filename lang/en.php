@@ -10524,4 +10524,5 @@ return [
     'offene Aufgaben im Team' => 'open tasks in the team',
     '{n} offene im Team' => '{n} open in the team',
     '{n} überfällig' => '{n} overdue',
+    'Bild hinzufügen …' => 'Add image …',
 ];

@@ -418,7 +418,7 @@ const Inline = (() => {
     const box = d.createElement('div');
     box.className = 'cms-emedia'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', n.dataset.entryLabel || '');
     const M = window.CMSMedia;
-    box.innerHTML = `<button type="button" class="cms-emedia__btn" data-emedia-pick>${ico('arrows-clockwise')}<span>${tx('mediaPick')}</span></button>`
+    box.innerHTML = `<button type="button" class="cms-emedia__btn" data-emedia-pick>${ico('arrows-clockwise')}<span>${tx(+(n.dataset.entryValue || 0) ? 'mediaChange' : 'mediaAdd')}</span></button>`
       + (M?.adjustAll ? `<button type="button" class="cms-emedia__btn" data-emedia-fx title="${tx('mediaFxHint')}">${ico('sliders-horizontal')}<span>${tx('mediaFx')}</span></button>` : '')
       + (M?.fitAll ? `<button type="button" class="cms-emedia__btn" data-emedia-fit title="${tx('mediaFitHint')}">${ico('image')}<span>${tx('mediaFit')}</span></button>` : '')
       + `<button type="button" class="cms-emedia__btn" data-emedia-crop hidden>${ico('crop')}<span>${tx('mediaCrop')}</span></button>`
@@ -569,6 +569,31 @@ const Inline = (() => {
     });
   }
 
+  // An das Bildfeld des Eintrags gebundenes Bild eines Abschnitts (Einstieg/Hero, Core\Data\EntryEdit::sectionMedia): Kits markieren
+  // ihr Bild nicht – größtes Bild des Abschnitts wird zum Bildfeld („Bild ändern …“, Zuschnitt, Fokus); ohne Bild „Bild hinzufügen …“
+  // (Seitenleiste direkt am Feld)
+  function sectionMedia() {
+    $$('[data-entry-sectmedia]').forEach(sec => {
+      let m; try { m = JSON.parse(sec.dataset.entrySectmedia); } catch { return; }
+      const area = i => { const r = i.getBoundingClientRect(); return r.width * r.height; };
+      const img = [...sec.querySelectorAll('img')].filter(i => !i.closest('[data-entry-field]')).sort((a, b) => area(b) - area(a))[0];
+      if (img) {
+        const n = img.closest('picture')?.parentElement || img.parentElement;
+        if (!n || n.dataset.entryField) return;
+        Object.assign(n.dataset, { entryField: m.field, entryMode: 'media', entryValue: String(m.value || 0), entryKind: 'visual', entryLabel: m.label });
+        if (m.optional) n.dataset.entryOptional = '';
+        return;
+      }
+      const b = d.createElement('button');
+      b.type = 'button'; b.className = 'cms-mt-edit';
+      b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><circle cx="8" cy="10" r="1.5"/><path d="m4 18 4.5-4.5 3 3L14 14l3 3M19 3v6M16 6h6"/></svg><span>' + window.CMSAdmin.esc(tx('mediaAdd')) + '</span>';
+      b.setAttribute('aria-label', tx('mediaAdd') + ': ' + m.label);
+      b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); Panel.open(cfg.endpoint, b, { field: m.field }); });
+      sec.classList.add('cms-mt-target');
+      sec.prepend(b);
+    });
+  }
+
   // Schwebende Formatierungsleiste (gleiche Befehle wie im Seiten-Editor)
   function showBar(n) {
     const R = window.CMSAdmin?.Rich;
@@ -698,6 +723,7 @@ const Inline = (() => {
 
   return {
     init() {
+      sectionMedia();
       $$('[data-entry-field][data-entry-mode]').forEach(bind);
       // Modus „Bearbeiten“ mit Inhaltsblöcken (?edit=inhalt): Felder sofort bearbeitbar, Speichern/Verwerfen/⌘S über den
       // Seiten-Editor (editor.js fragt CMSAdmin.entryInline) – eine Leiste, ein „Speichern“ für Felder und Blöcke

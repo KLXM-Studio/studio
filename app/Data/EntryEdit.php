@@ -123,6 +123,26 @@ final class EntryEdit
         return $mode === '' ? '' : self::attr($t, $ctx['entry'], $field, $mode);
     }
 
+    /**
+     * Bildfeld des Eintrags, das ein Block an ein eigenes Bildfeld bindet (z. B. Einstieg mit Quelle „Eintrag“: Bild = Bildfeld) –
+     * Kits markieren das Bild nicht selbst. Attribut für den Abschnitt: data-entry-sectmedia='{"field","value","label","optional"}';
+     * js/_entry_edit.js setzt daraus „Bild ändern …“ an das größte Bild des Abschnitts bzw. „Bild hinzufügen …“ (Seitenleiste am Feld).
+     */
+    public static function sectionMedia(Block $b): string
+    {
+        $ctx = app()->entry;
+        if (!app()->entryEdit || !$ctx || !self::canEdit($ctx['table'], $ctx['entry'])) return '';
+        $t = $ctx['table'];
+        foreach ((array) ($b->data['_bind'] ?? []) as $path => $src) {
+            if (!is_string($src) || $src === '' || $src === '_title' || self::mode($t, $src) !== 'media') continue;
+            $f = Tables::field($t, $src);
+            $json = json_encode(['field' => $src, 'value' => (int) ($ctx['entry'][$src] ?? 0), 'label' => (string) ($f['label'] ?? $src),
+                'optional' => empty($f['required'])], JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP);
+            return " data-entry-sectmedia='" . $json . "'";
+        }
+        return '';
+    }
+
     /** Weiße Bubble „Datensatz“ (mit Stift) – „Eintrag bearbeiten“ in Listen (Link zur Verwaltung als Rückfall ohne Skript) */
     public static function button(array $t, array $e, string $title = ''): string
     {
@@ -198,7 +218,7 @@ final class EntryEdit
             'saveExit' => __('Speichern & beenden'),
             'panel' => __('Eintrag bearbeiten'),
             'format' => __('Formatierung'),
-            'mediaPick' => __('Bild oder Video wählen …'),
+            'mediaPick' => __('Bild oder Video wählen …'), 'mediaChange' => __('Bild ändern …'), 'mediaAdd' => __('Bild hinzufügen …'),
             'mediaFx' => __('Anpassen'), 'mediaFit' => __('Rahmen'), 'mediaCrop' => __('Zuschneiden'), 'mediaEdit' => __('Bild bearbeiten'),
             'mediaFxHint' => __('Effekte, Helligkeit, Kontrast – gilt für alle Verwendungen des Bildes'),
             'mediaFitHint' => __('Darstellung im Rahmen – gilt für alle Verwendungen des Bildes'),
