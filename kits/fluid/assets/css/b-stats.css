@@ -24,5 +24,12 @@
   .stats:is(.stats--max4,:has(>.stat:nth-child(4):last-child)){--min:calc((100% - var(--f-s-xl)) / 2)}
   .stats:is(.stats--max5,:has(>.stat:nth-child(5):last-child),:has(>.stat:nth-child(6):last-child)){--min:max(10rem,calc((100% - 2 * var(--f-s-xl)) / 3))}
 }
-/* Telefon bzw. schmale Spalte (Container unter 30 rem): zwei Kennzahlen nebeneinander statt einer langen Spalte – Werte skalieren mit der Zelle (cqi) */
-@container (max-width:30rem){.stats:not(.stats--max1){--min:calc((100% - var(--f-s-xl)) / 2)}}
+/* Telefon bzw. schmale Spalte: ab 21 rem zwei Kennzahlen nebeneinander (kompakt, Beschriftung ohne Silbentrennung), darunter
+   eine Spalte kompakt – lieber einspaltig als Silbenbrei. Werte skalieren mit der Zelle (cqi) */
+@container (min-width:21rem) and (max-width:30rem){
+  .stats:not(.stats--max1){--min:calc((100% - var(--f-s-m)) / 2);--gap:var(--f-s-m)}
+  .stats--cards .stat{padding:var(--f-s-s) var(--f-s-m)}
+  .stat__label,.stat__text{hyphens:manual;-webkit-hyphens:manual;overflow-wrap:break-word}
+  .stat__value{font-size:max(var(--f-t0),min(var(--f-t4),22cqi))}
+}
+@container (max-width:21rem){.stats--cards .stat{padding:var(--f-s-s) var(--f-s-m)}.stats{--gap:var(--f-s-s)}}

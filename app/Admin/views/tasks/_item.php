@@ -26,12 +26,24 @@ $tid = 'tk-t-' . $n;
       <?php if ($target): ?><span class="tk-item__target<?= $target['missing'] ? ' is-missing' : '' ?>"><?= icon('link-simple') ?> <?= e($target['type']) ?>: <?php if ($target['admin'] !== '' || $target['href'] !== ''): ?><a href="<?= e($target['admin'] !== '' ? url($target['admin']) : $target['href']) ?>"><?= e($target['label']) ?></a><?php else: ?><?= e($target['label']) ?><?php endif; ?></span><?php endif; ?>
       <?php if (!$done && (string) ($t['created_label'] ?? '') !== ''): ?><span class="adm-muted"><?= e(__('von {name}', ['name' => (string) $t['created_label']])) ?><?= $t['created_at'] ? ' · ' . e(fmt()->relative((string) $t['created_at'])) : '' ?></span><?php endif; ?>
     </p>
-    <?php if (!$done && (string) ($t['body'] ?? '') !== ''): ?><p class="tk-item__body"><?= e(\Core\Support\Markdown::plain((string) $t['body'], 220)) ?></p><?php endif; ?>
+    <?php if (!$done && (string) ($t['body'] ?? '') !== ''):
+        // Text mit klickbaren Links: kurz = ganz gerendert, lang = Auszug + „Mehr“ (aufklappbar, voller Text gerendert)
+        $md = (string) $t['body']; $short = \Core\Support\Markdown::plain($md, 220); ?>
+    <?php if (mb_strlen(\Core\Support\Markdown::plain($md)) <= 220): ?><div class="tk-item__body tk-md"><?= \Core\Support\Markdown::render($md) ?></div>
+    <?php else: ?><details class="tk-item__more"><summary><span class="tk-item__body"><?= e($short) ?></span> <span class="tk-item__morebtn"><?= e(__('Mehr')) ?></span></summary><div class="tk-item__body tk-md"><?= \Core\Support\Markdown::render($md) ?></div></details><?php endif; ?>
+    <?php endif; ?>
     <?php if ($done): ?>
     <p class="tk-item__done"><?= icon('check') ?> <?= e(__('Erledigt {when} von {name}', ['when' => fmt()->datetime((string) $t['done_at']), 'name' => (string) ($t['done_label'] ?? '')])) ?><?php if ((string) ($t['done_comment'] ?? '') !== ''): ?>: <q><?= e((string) $t['done_comment']) ?></q><?php endif; ?></p>
     <?php endif; ?>
   </div>
   <div class="tk-item__act">
+    <?php
+    // Ziel der Aufgabe direkt öffnen: Seiten und Einträge zum Bearbeiten auf der Website, sonst die Adresse
+    if (!$done && !$draft && $target && !$target['missing'] && $target['href'] !== ''):
+        $isPage = str_starts_with((string) $t['link'], 'page:'); $isEntry = str_starts_with((string) $t['link'], 'entry:');
+        $go = $target['href'] . ($isPage ? (str_contains($target['href'], '?') ? '&' : '?') . 'edit=1' : ($isEntry ? '#cms-bearbeiten' : '')); ?>
+    <a class="adm-btn adm-btn--small" href="<?= e($go) ?>"><?= icon($isPage || $isEntry ? 'pencil-simple' : 'arrow-square-out') ?> <?= e($isPage || $isEntry ? __('Auf der Website bearbeiten') : __('Öffnen')) ?><span class="sr-only">: <?= e((string) $t['title']) ?></span></a>
+    <?php endif; ?>
     <?php if ($draft): ?>
     <a class="adm-btn adm-btn--small adm-btn--ghost" href="<?= e(url(Tasks::url($t))) ?>"><?= e(__('In Entwürfe öffnen')) ?><span class="sr-only">: <?= e((string) $t['title']) ?></span></a>
     <?php elseif ($canDone && !$done): ?>

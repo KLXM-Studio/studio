@@ -10518,4 +10518,5 @@ return [
     'Bild, Video, Button …' => 'Image, video, button …',
     'Bild ändern …' => 'Change image …',
     'Bilder, Videos und Buttons dieses Abschnitts hinzufügen oder ändern – den Text bearbeiten Sie direkt im Text.' => 'Add or change the images, videos and buttons of this section – edit the text directly in place.',
+    'Mehr' => 'More',
 ];

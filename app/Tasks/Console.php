@@ -9,7 +9,7 @@ use Core\Cli;
 
 /**
  * Kommandozeile der Aufgaben (Core\Tasks\Tasks) – je Website (--site=…):
- *   tasks:add "Titel" [--text=…] [--link=page:12] [--to=email|ID|role:editor|all] [--due=JJJJ-MM-TT] [--priority=high|normal|low] [--as=email]
+ *   tasks:add "Titel" [--text=…|--text-file=datei|--text=- (stdin)] [--link=page:12] [--to=email|ID|role:editor|all] [--due=JJJJ-MM-TT] [--priority=high|normal|low] [--as=email]
  *   tasks:list [--status=open|done|all] [--all]
  *   tasks:done <id> [--comment=…] [--as=email]
  *   tasks:reopen <id> [--comment=…]
@@ -50,11 +50,11 @@ final class Console
     private static function add(array $args): int
     {
         $title = implode(' ', array_slice(Cli::positional($args), 0));
-        [$vals, $err] = Tasks::clean(['title' => $title, 'body' => str_replace('\n', "\n", (string) Cli::opt($args, 'text')), 'link' => (string) Cli::opt($args, 'link'),
+        [$vals, $err] = Tasks::clean(['title' => $title, 'body' => self::text($args), 'link' => (string) Cli::opt($args, 'link'),
             'assignee' => (string) Cli::opt($args, 'to'), 'due' => (string) Cli::opt($args, 'due'), 'priority' => Cli::opt($args, 'priority') ?? 'normal']);
         if ($err) {
             foreach ($err as $f => $m) fwrite(STDERR, "  $f: $m\n");
-            fwrite(STDERR, "Aufruf: tasks:add \"Titel\" [--text=…] [--link=page:12] [--to=email|role:editor|all] [--due=JJJJ-MM-TT] [--priority=high] --site=…\n");
+            fwrite(STDERR, "Aufruf: tasks:add \"Titel\" [--text=…|--text-file=datei|--text=- (stdin)] [--link=page:12] [--to=email|role:editor|all] [--due=JJJJ-MM-TT] [--priority=high] --site=…\n");
             return 1;
         }
         $id = Tasks::create($vals, self::actor($args), ['source' => 'cli']);
@@ -123,5 +123,15 @@ final class Console
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         return $res['fails'] ? 1 : 0;
+    }
+
+    /** Text der Aufgabe: --text=… (\n = Zeilenumbruch), --text-file=pfad oder --text=- (von stdin, echte Zeilenumbrüche) */
+    private static function text(array $args): string
+    {
+        $file = (string) Cli::opt($args, 'text-file');
+        if ($file !== '') return is_file($file) && is_readable($file) ? mb_substr((string) file_get_contents($file), 0, 20000) : '';
+        $t = (string) Cli::opt($args, 'text');
+        if ($t === '-') return mb_substr((string) stream_get_contents(STDIN), 0, 20000);
+        return str_replace('\n', "\n", $t);
     }
 }

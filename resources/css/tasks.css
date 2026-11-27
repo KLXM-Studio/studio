@@ -7,7 +7,8 @@
 .tk-item__ico{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--adm-card);color:var(--tk-tone,var(--adm-a))}
 .tk-item__ico svg{width:18px;height:18px}
 .tk-item__title{margin:0;font-weight:700;line-height:1.35}
-.tk-item__title a{color:var(--adm-ink);text-decoration:none}
+.tk-item__title a{color:var(--adm-ink);text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 30%,transparent);text-underline-offset:3px}
+.tk-item__title a::after{content:" ›";color:var(--adm-t2)}
 .tk-item__title a:hover,.tk-item__title a:focus-visible{text-decoration:underline}
 .tk-item.is-done .tk-item__title a{color:var(--adm-t2)}
 .tk-item__meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 0;font-size:13px;color:var(--adm-t2)}
@@ -15,6 +16,9 @@
 .tk-item__meta svg{width:14px;height:14px;flex:none}
 .tk-item__target.is-missing{color:var(--adm-err)}
 .tk-item__body{margin:6px 0 0;font-size:13.5px;color:var(--adm-t2)}
+.tk-md>:first-child{margin-top:0}.tk-md>:last-child{margin-bottom:0}.tk-md p{margin:.35em 0}.tk-md a{color:var(--adm-a);text-decoration:underline;overflow-wrap:anywhere}
+.tk-item__more>summary{list-style:none;cursor:pointer}.tk-item__more>summary::-webkit-details-marker{display:none}
+.tk-item__morebtn{color:var(--adm-a);font-weight:600;font-size:13px}.tk-item__more[open] .tk-item__morebtn,.tk-item__more[open]>summary .tk-item__body{display:none}
 .tk-item__done{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:6px 0 0;font-size:13.5px;color:var(--adm-ok)}
 .tk-item__done svg{width:15px;height:15px}
 .tk-item__done q{color:var(--adm-ink)}
