@@ -33,6 +33,18 @@
 .kn-search__row:focus-within{outline:2px solid var(--kn-accent);outline-offset:1px}
 .kn-search__btn{display:grid;place-items:center;padding:0 .7rem;border:0;border-left:1px solid var(--kn-line);background:transparent;color:inherit;cursor:pointer}
 .kn-search__btn:hover{background:var(--kn-soft)}
+.kn-search__key{align-self:center;margin-inline-end:.4rem;padding:.05rem .4rem;border:1px solid var(--kn-line);border-radius:5px;font:600 .75rem/1.4 inherit;color:var(--kn-muted)}
+.kn-search__row:focus-within .kn-search__key{display:none}
+.kn-search__n{margin:.35rem 0 0;font-size:.82rem;color:var(--kn-muted)}
+.kn-search__n:empty{display:none}
+/* Treffer des Live-Filters: Titel (Fundstelle markiert), darunter der Weg dorthin bzw. das gefundene Stichwort */
+.kn-hits{display:grid;gap:.1rem;margin:.5rem 0 0;padding:0;list-style:none}
+.kn-hit{display:grid;gap:.1rem;padding:.4rem .55rem;border-radius:calc(var(--kn-r) - 2px);color:var(--kn-text);text-decoration:none;line-height:1.35}
+.kn-hits [aria-selected="true"] .kn-hit,.kn-hit:hover{background:var(--kn-soft);box-shadow:inset 3px 0 0 var(--kn-accent)}
+.kn-hit__t{color:var(--kn-ink);font-weight:600}
+.kn-hit__p,.kn-hit__k{font-size:.8rem;color:var(--kn-muted)}
+.kn-hit__k::before{content:"„";}.kn-hit__k::after{content:"“"}
+.kn-hit mark{padding:0 .05em;border-radius:3px;background:color-mix(in srgb,var(--kn-accent) 22%,transparent);color:inherit}
 .kn-area{margin:.9rem 0 .35rem;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--kn-muted)}
 .kn-area:first-child{margin-top:0}
 .kn-nav__list,.kn-nav__sub,.kn-secs{margin:0;padding:0;list-style:none}
@@ -148,3 +160,31 @@ a.kn-chip:hover{background:var(--kn-soft);border-color:var(--kn-accent)}
   .kn--focus.is-js .kn-close{display:grid;place-items:center;padding:.4rem;border:0;border-radius:var(--kn-r);background:transparent;color:inherit;cursor:pointer}
 }
 @media (prefers-reduced-motion:reduce){.kn.is-js .kn-side,.kn.is-js.is-open .kn-side{transition:none}}
+
+/* Leiste oben (Block „Kapitelnavigation“, Position „Leiste oben“): Text über die volle Breite; klebt unter einem festen Kopf der Website
+   (--kn-bar-top, js/knowledge.js), zeigt Brotkrumen, Vor/Zurück und den Lesefortschritt; auf dem Telefon schwebt sie unten. */
+.kn--bar{gap:clamp(1rem,2vw,1.5rem)}
+.kn--bar .kn-main{max-width:none!important}
+.kn-bar{position:sticky;z-index:20;top:var(--kn-bar-top,0px);display:flex;align-items:center;gap:.75rem;min-height:3.25rem;padding:.4rem .5rem;border:1px solid var(--kn-line);border-radius:var(--kn-r);background:var(--kn-bg);box-shadow:0 8px 24px -18px rgb(0 0 0/.4)}
+.kn.is-js .kn-bar .kn-toggle{position:static;box-shadow:none;padding:.45rem .8rem}
+.kn-bar__crumbs{flex:1;min-width:0}
+.kn-bar .kn-crumbs ol{flex-wrap:nowrap;margin:0;overflow:hidden}
+.kn-bar .kn-crumbs li{white-space:nowrap}
+.kn-bar .kn-crumbs li:last-child{overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.kn-bar__nav{display:flex;gap:.25rem}
+.kn-bar__pn{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:var(--kn-r);color:var(--kn-ink)}
+a.kn-bar__pn:hover{background:var(--kn-soft)}
+.kn-bar__pn.is-off{opacity:.3}
+.kn-bar__prog{position:absolute;inset:auto .6rem -1px;height:2px;border-radius:2px;background:var(--kn-accent);transform-origin:left;scale:var(--kn-p,0) 1}
+.kn-bar{margin-bottom:.6rem}
+.kn-secbar{margin-bottom:1.25rem;overflow-x:auto;scrollbar-width:thin}
+.kn-secs--bar{display:flex;gap:.4rem;padding-bottom:.25rem}
+.kn-secs--bar a{padding:.3rem .75rem;border:1px solid var(--kn-line);border-radius:99px;white-space:nowrap;font-size:.88rem}
+.kn-secs--bar a[aria-current="true"]{border-color:var(--kn-accent);background:var(--kn-soft)}
+@media (max-width:959.98px){
+  .kn.is-js .kn-bar{position:fixed;z-index:55;top:auto;left:max(.75rem,env(safe-area-inset-left));right:max(.75rem,env(safe-area-inset-right));bottom:max(.75rem,env(safe-area-inset-bottom));box-shadow:0 10px 30px -10px rgb(0 0 0/.45)}
+  .kn.is-js .kn-bar__crumbs{visibility:hidden}
+  .kn.is-js .kn-bar__prog{inset:-1px .6rem auto}
+  .kn.is-js.kn--bar{padding-bottom:5rem}
+}
+@media (prefers-reduced-motion:no-preference){.kn-bar__prog{transition:scale .1s linear}}

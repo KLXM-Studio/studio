@@ -685,7 +685,7 @@ final class CmsService
                 'background' => app()->theme->backgrounds(),
                 'anchor' => 'Sprungmarke, z. B. „ueber-uns“ (a–z, 0–9, -)',
                 'visible' => 'bool', 'showInNav' => 'bool (erfordert anchor)', 'navLabel' => 'string',
-                'spaceTop' => ['normal', 'small', 'none'], 'spaceBottom' => ['normal', 'small', 'none'], 'divider' => 'bool',
+                'spaceTop' => array_keys(app()->theme->spacing()), 'spaceBottom' => array_keys(app()->theme->spacing()), 'divider' => 'bool',
                 'height' => ['auto', 'screen'], 'bgImage' => 'Medien-ID (Bild) oder null', 'overlay' => ['none', 'light', 'dark'],
                 'align' => ['top', 'center', 'bottom'],
                 'row' => 'veraltet – für Blöcke nebeneinander den Blocktyp „layout“ verwenden (php bin/console layout:migrate-rows stellt alte Reihen um)',

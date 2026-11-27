@@ -386,7 +386,7 @@ final class Knowledge
         if (($b['tunes']['section']['visible'] ?? true) === false) return null;
         $d = (array) ($b['data'] ?? []);
         $o = self::NAV_DEFAULTS;
-        $o['position'] = in_array($d['position'] ?? '', ['left', 'right', 'top'], true) ? (string) $d['position'] : 'left';
+        $o['position'] = in_array($d['position'] ?? '', ['left', 'right', 'top', 'bar'], true) ? (string) $d['position'] : 'left';
         foreach (['search', 'sections', 'tree', 'crumbs', 'compact', 'footer'] as $k) if (array_key_exists($k, $d)) $o[$k] = !empty($d[$k]);
         return $o;
     }
@@ -417,8 +417,10 @@ final class Knowledge
         self::$sections = $sections;
         // Nummer vor der H1 nur im Rahmen alter Art; der Block „Datensatz-Felder“ (Kopf) setzt sie selbst bzw. schaltet sie ab
         if ($head === '' && $opt === null && !str_contains($content, 'kn-num--h1') && !str_contains($content, 'data-kn-nonum')) $content = self::numberHeading($content, $num);
-        $layout = $opt === null ? $cfg['layout'] : ($opt['compact'] ? 'compact' : 'classic');
         $o = $opt ?? self::NAV_DEFAULTS;
+        // Leiste oben (Block „Kapitelnavigation“, Position bar): Text über die volle Breite, Kapitel als Schublade wie „Fokus“
+        $bar = $opt !== null && $o['position'] === 'bar';
+        $layout = $opt === null ? $cfg['layout'] : ($bar ? 'focus' : ($opt['compact'] ? 'compact' : 'classic'));
         $handbook = in_array($layout, ['handbook', 'handbook_menu'], true);
         $overview = self::overviewUrl($t);
         $wrap = app()->theme->def['container_class'] ?? 'wrap';
@@ -464,10 +466,20 @@ final class Knowledge
         }
         // Modus „Bearbeiten“ (?edit=inhalt): gleiches Layout, Seitenleiste ohne Suche und inaktiv (inert) – der Zusammenhang bleibt sichtbar,
         // ein Klick führt nicht aus dem Editor
-        $search = $overview === null || $editing || !$o['search'] ? '' : '<form class="kn-search" role="search" aria-label="' . e(lt('Wissensbereich')) . '" method="get" action="' . e($overview) . '">'
-            . '<label class="kn-search__label" for="' . e($uid) . '-q">' . e(lt('Im Wissensbereich suchen')) . '</label>'
-            . '<span class="kn-search__row"><input id="' . e($uid) . '-q" class="kn-search__input" type="search" name="q" maxlength="80" autocomplete="off" enterkeyhint="search">'
-            . '<button class="kn-search__btn" type="submit">' . icon('magnifying-glass', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Suchen')) . '</span></button></span></form>';
+        // Suche: Tippen filtert die Kapitel sofort (js/knowledge.js mit dem Kapitel-Index data-kn-index), Enter ohne gewählten Treffer
+        // durchsucht alle Texte – über die Website-Suche nur in dieser Tabelle (typ), ohne Suchfunktion über die Übersicht (?q=)
+        $searchOn = \Core\Features::on('search');
+        $action = $searchOn ? \Core\Search\Search::url() : $overview;
+        $search = $action === null || $editing || !$o['search'] ? '' : '<form class="kn-search" role="search" aria-label="' . e(lt('Wissensbereich')) . '" method="get" action="' . e($action) . '" data-kn-search>'
+            . '<label class="kn-search__label" for="' . e($uid) . '-q">' . e(lt('Kapitel finden')) . '</label>'
+            . '<span class="kn-search__row"><input id="' . e($uid) . '-q" class="kn-search__input" type="search" name="q" maxlength="80" autocomplete="off" enterkeyhint="search"'
+            . ' placeholder="' . e(lt('Titel, Stichwort …')) . '" aria-describedby="' . e($uid) . '-qn">'
+            . '<kbd class="kn-search__key" aria-hidden="true" hidden>/</kbd>'
+            . '<button class="kn-search__btn" type="submit">' . icon('magnifying-glass', ['class' => 'kn-ico']) . '<span class="kn-sr">' . e(lt('Alle Texte durchsuchen')) . '</span></button></span>'
+            . ($searchOn ? '<input type="hidden" name="typ" value="' . e((string) $t['handle']) . '">' : '')
+            . '<p class="kn-search__n" id="' . e($uid) . '-qn" aria-live="polite" data-kn-count></p>'
+            . '<ol class="kn-hits" id="' . e($uid) . '-hits" role="listbox" aria-label="' . e(lt('Gefundene Kapitel')) . '" data-kn-hits hidden></ol>'
+            . '<script type="application/json" data-kn-index>' . self::searchIndex($t, $tree, $cfg, $sections, $id) . '</script></form>';
         $top = $opt !== null && $o['position'] === 'top';
         // Ohne Kapitelbaum (Block „Kapitelnavigation“): nur die Abschnitte dieses Kapitels in der Seitenleiste
         $navHtml = $o['tree'] ? '<nav class="kn-nav" aria-label="' . e(lt('Kapitel')) . '">' . $nav . '</nav>'
@@ -508,12 +520,66 @@ final class Knowledge
         // Block „Kapitelnavigation“: Position (kn--right, kn--top), ohne Seitenleiste (kn--noside); Knopf „Kapitel“ nur mit Schublade
         $mods = $opt === null ? '' : ' kn--block' . ($o['position'] === 'right' ? ' kn--right' : '') . ($top ? ' kn--top' : '') . ($side === '' ? ' kn--noside' : '');
         if ($top || $side === '') $toggle = '';
+        // Leiste oben: Knopf „Kapitel“, Brotkrumen, Vor/Zurück und Lesefortschritt (auf dem Telefon unten schwebend), darunter die
+        // Abschnitte als Chips mit mitlaufender Markierung
+        $barHtml = '';
+        if ($bar && !$editing) {
+            [$prev, $next] = $node ? self::neighbours($tree, $id) : [null, null];
+            $pn = function (?array $n, string $rel, string $ico, string $lbl): string {
+                if (!$n || !$n['href']) return '<span class="kn-bar__pn is-off" aria-hidden="true">' . icon($ico, ['class' => 'kn-ico']) . '</span>';
+                $l = $lbl . ': ' . $n['title'];
+                return '<a class="kn-bar__pn" href="' . e($n['href']) . '" rel="' . $rel . '" title="' . e($l) . '">' . icon($ico, ['class' => 'kn-ico']) . '<span class="kn-sr">' . e($l) . '</span></a>';
+            };
+            $barHtml = '<div class="kn-bar" data-kn-bar>' . $toggle
+                . '<div class="kn-bar__crumbs">' . $crumbs . '</div>'
+                . '<span class="kn-bar__nav">' . $pn($prev, 'prev', 'arrow-left', lt('Vorheriges Kapitel')) . $pn($next, 'next', 'arrow-right', lt('Nächstes Kapitel')) . '</span>'
+                . '<span class="kn-bar__prog" aria-hidden="true"></span></div>';
+            if ($o['sections'] && count($sections) > 1) $barHtml .= '<nav class="kn-secbar" aria-label="' . e(lt('In diesem Kapitel')) . '">' . $secList('kn-secs--bar') . '</nav>';
+            $crumbs = $toggle = '';
+            $mods .= ' kn--bar';
+        }
         return $head . '<div class="' . e($wrap) . ' kn kn--' . e($layout) . ($aside !== '' ? ' kn--aside' : '') . ($editing ? ' kn--editing' : '') . ($head !== '' ? ' kn--headed' : '') . $mods . '"' . ($editing ? '' : ' data-kn') . '>'
             . ($editing ? '' : ($side !== '' && !$top ? '<a class="kn-skip" href="#' . e($uid) . '-text">' . e(lt('Zum Kapiteltext springen')) . '</a>' : '') . $toggle)
             . $side
-            . '<div class="kn-main" id="' . e($uid) . '-text" tabindex="-1">' . $crumbs . '<div class="kn-content">' . $content . '</div>' . $foot . '</div>'
+            . '<div class="kn-main" id="' . e($uid) . '-text" tabindex="-1">' . $barHtml . $crumbs . '<div class="kn-content">' . $content . '</div>' . $foot . '</div>'
             . $aside
             . '</div>';
+    }
+
+    /**
+     * Kapitel-Index für den Live-Filter (js/knowledge.js): je Kapitel Nummer, Titel, Adresse, Pfad (Titel der Oberkapitel) und
+     * Stichworte (Schlagworte, Zwischenüberschriften der Texte; beim aufgerufenen Kapitel seine Abschnitte). JSON für <script
+     * type="application/json"> – „<“ maskiert, kein ausführbarer Inhalt (CSP).
+     */
+    public static function searchIndex(array $t, array $tree, array $cfg, array $sections = [], int $current = 0): string
+    {
+        $tf = Tables::field($t, 'schlagworte');
+        $rich = array_column(array_filter((array) ($t['fields'] ?? []), fn($f) => in_array($f['type'] ?? '', ['richtext', 'blocks'], true)), 'name');
+        // Zwischenüberschriften: <h2>–<h4> im Rich-Text, bei Blöcken zusätzlich die Titel der Abschnitte (data.title)
+        $heads = function (mixed $v) use (&$heads): array {
+            if (is_string($v)) {
+                $j = str_starts_with(ltrim($v), '[') || str_starts_with(ltrim($v), '{') ? json_decode($v, true) : null;
+                if (is_array($j)) return $heads($j);
+                return preg_match_all('~<h[2-4][^>]*>(.*?)</h[2-4]>~is', $v, $m) ? array_map(fn($h) => trim(html_entity_decode(strip_tags($h))), $m[1]) : [];
+            }
+            if (!is_array($v)) return [];
+            $out = isset($v['title']) && is_string($v['title']) && isset($v['type']) === false ? [trim(strip_tags($v['title']))] : [];
+            foreach ($v as $x) $out = [...$out, ...$heads($x)];
+            return $out;
+        };
+        $out = [];
+        foreach ($tree['order'] as $nid) {
+            $n = $tree['nodes'][$nid] ?? null;
+            if (!$n || !$n['href']) continue;
+            $kw = [];
+            foreach ((array) ($n['entry']['schlagworte'] ?? []) as $k) $kw[] = (string) ($tf['options'][$k] ?? $k);
+            foreach ($rich as $f) $kw = [...$kw, ...$heads($n['entry'][$f] ?? '')];
+            if ($nid === $current) foreach ($sections as $sec) $kw[] = (string) $sec['label'];
+            $out[] = ['n' => $cfg['numbers'] ? (string) $n['number'] : '', 't' => (string) $n['title'], 'u' => (string) $n['href'],
+                'p' => implode(' › ', array_column(self::ancestors($tree, $nid), 'title')), 'k' => mb_substr(implode(' · ', array_unique(array_filter($kw))), 0, 600),
+                'c' => $nid === $current ? 1 : 0];
+        }
+        return (string) json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
     }
 
     /** HTML vor preg_replace schützen ($ und \ im Ersatztext) */

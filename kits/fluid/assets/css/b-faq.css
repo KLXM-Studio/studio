@@ -20,7 +20,8 @@ summary.faq__q:focus-visible{outline:2px solid var(--f-link);outline-offset:3px;
 .faq__icon::before,.faq__icon::after{content:"";position:absolute;top:50%;left:50%;width:.7rem;height:1.5px;margin:-.75px 0 0 -.35rem;border-radius:2px;background:currentColor}
 .faq__icon::after{rotate:90deg;transition:rotate .25s}
 summary.faq__q:hover .faq__icon{border-color:currentColor;color:var(--f-link)}
-.faq__item[open] .faq__icon{border-color:var(--f-a);background:var(--f-a);color:var(--f-a-on)}
+/* offen: Ring und Minus in Akzentfarbe (keine Füllung – Strich bleibt in jedem Farbschema und beim Zeigen sichtbar) */
+.faq__item[open]>summary.faq__q .faq__icon{border-color:currentColor;color:var(--f-link)}
 .faq__item[open] .faq__icon::after{rotate:0deg}
 .faq__a{color:var(--f-text)}
 details .faq__a{padding:0 calc(1.75rem + var(--f-s-m)) var(--f-s-l) 0}

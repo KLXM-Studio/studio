@@ -43,6 +43,7 @@ return [
     'label' => 'Fluid (breakpointlos)',
     // Abstand „Groß“ für Abschnitte (Klassen pt-large/pb-large, assets/css/_base.css) – im Editor auch per Ziehen am Abschnittsrand
     'space_large' => true,
+    'space_xl' => true,
     'description' => 'Breakpointlos: Schrift, Abstände und Raster wachsen stufenlos mit der Bildschirmbreite – sehr viel über den Style-Editor einstellbar.',
     'description_en' => 'Breakpoint-free: type, spacing and grid scale fluidly with the screen width – a lot can be set in the style editor.',
     'category' => 'general',   // Willkommen-Bildschirm: general (Allgemein) | branch (Branchen & Themen) | dev (Entwickler)

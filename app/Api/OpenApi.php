@@ -328,7 +328,7 @@ final class OpenApi
                     'Section' => ['type' => 'object', 'description' => 'Abschnitts-Optionen', 'properties' => [
                         'background' => ['type' => 'string', 'enum' => array_keys(app()->theme->backgrounds())], 'anchor' => ['type' => 'string'],
                         'visible' => ['type' => 'boolean'], 'showInNav' => ['type' => 'boolean'], 'navLabel' => ['type' => 'string'],
-                        'spaceTop' => ['type' => 'string', 'enum' => ['normal', 'small', 'none']], 'spaceBottom' => ['type' => 'string', 'enum' => ['normal', 'small', 'none']],
+                        'spaceTop' => ['type' => 'string', 'enum' => array_keys(app()->theme->spacing())], 'spaceBottom' => ['type' => 'string', 'enum' => array_keys(app()->theme->spacing())],
                         'divider' => ['type' => 'boolean'],
                         'height' => ['type' => 'string', 'enum' => ['auto', 'screen'], 'description' => 'screen = Vollbild (mindestens 100svh, Inhalt vertikal ausgerichtet)'],
                         'bgImage' => ['type' => ['integer', 'null'], 'description' => 'Medien-ID eines Hintergrundbilds (responsiv, hinter dem Inhalt)'],

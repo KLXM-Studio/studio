@@ -9,7 +9,7 @@ if (!is_editing()) return;
 $wrap = app()->theme->def['container_class'] ?? 'wrap';
 $ctx = app()->entry;
 $isKn = $ctx && \Core\Data\Knowledge::is($ctx['table']);
-$pos = ['left' => __('Seitenleiste links'), 'right' => __('Seitenleiste rechts'), 'top' => __('Oben als aufklappbares Menü')][(string) ($d['position'] ?? 'left')] ?? __('Seitenleiste links');
+$pos = ['left' => __('Seitenleiste links'), 'right' => __('Seitenleiste rechts'), 'top' => __('Oben als aufklappbares Menü'), 'bar' => __('Leiste oben – Text über die volle Breite')][(string) ($d['position'] ?? 'left')] ?? __('Seitenleiste links');
 $parts = [];
 foreach (['tree' => __('Kapitelbaum'), 'sections' => __('Abschnitte'), 'search' => __('Suche'), 'crumbs' => __('Brotkrumen'), 'footer' => __('Fuß')] as $k => $l) {
     if (!array_key_exists($k, $d) || !empty($d[$k])) $parts[] = $l;

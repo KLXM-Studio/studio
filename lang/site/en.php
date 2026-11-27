@@ -521,4 +521,10 @@ return [
     'Anfangsbuchstaben' => 'Initial letters',
     'Noch keine Einträge.' => 'No entries yet.',
     '{n} Einträge' => '{n} entries',
+    'Alle Texte durchsuchen' => 'Search all texts',
+    'Gefundene Kapitel' => 'Matching chapters',
+    'Kapitel finden' => 'Find a chapter',
+    'Nächstes Kapitel' => 'Next chapter',
+    'Titel, Stichwort …' => 'Title, keyword …',
+    'Vorheriges Kapitel' => 'Previous chapter',
 ];

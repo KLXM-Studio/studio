@@ -1093,10 +1093,14 @@ final class Theme
         return [];
     }
 
-    /** Abstände eines Abschnitts (oben/unten): „Groß“ nur, wenn das Kit es anbietet (theme.php → 'space_large' => true, Klassen pt-large/pb-large) */
+    /**
+     * Abstände eines Abschnitts (oben/unten) – Stufen statt Pixel, damit es im Design bleibt. „Groß“ bzw. „Sehr groß“ nur, wenn das
+     * Kit sie anbietet (theme.php → 'space_large' => true, Klassen pt-large/pb-large; 'space_xl' => true, Klassen pt-xl/pb-xl).
+     */
     public function spacing(): array
     {
-        return ['none' => __('Kein'), 'small' => __('Klein'), 'normal' => __('Normal')] + (!empty($this->def['space_large']) ? ['large' => __('Groß')] : []);
+        return ['none' => __('Kein'), 'small' => __('Klein'), 'normal' => __('Normal')] + (!empty($this->def['space_large']) ? ['large' => __('Groß')] : [])
+            + (!empty($this->def['space_large']) && !empty($this->def['space_xl']) ? ['xl' => __('Sehr groß')] : []);
     }
 
     /**

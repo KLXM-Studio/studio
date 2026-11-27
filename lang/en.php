@@ -3203,6 +3203,7 @@ return [
     'Logogröße' => 'Logo size',
     'Klein (viel Luft)' => 'Small (lots of space)',
     'Groß' => 'Large',
+    'Sehr groß' => 'Extra large',
     'Kachel' => 'Tile',
     'Dezente Fläche (passt sich an)' => 'Subtle surface (adapts)',
     'Immer hell (für farbige Logos auf dunklem Grund)' => 'Always light (for colour logos on dark backgrounds)',
@@ -10488,4 +10489,5 @@ return [
     'Liste nicht gefunden' => 'List not found',
     'nicht vergeben' => 'not in use',
     'Übersichten & Schlagworte' => 'Overviews & tags',
+    'Leiste oben – Text über die volle Breite' => 'Bar at the top – text uses the full width',
 ];

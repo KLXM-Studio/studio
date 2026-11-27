@@ -30,7 +30,13 @@
   <h3 id="kapitelnavigation">Block „Kapitelnavigation“</h3>
   <p>In Vorlagen der Stile Magazin und Sachlich steckt die Navigation im Block <b>Kapitelnavigation</b>. Blöcke <b>darüber</b> stehen über die volle Breite (z. B. der Einstieg), Blöcke <b>darunter</b> neben bzw. unter der Navigation. Verschieben Sie den Block, ändert sich also, was über die volle Breite läuft. Einstellungen:</p>
   <ul>
-    <li><b>Position:</b> Seitenleiste links, Seitenleiste rechts oder oben als aufklappbares Menü.</li>
+    <li><b>Art der Navigation</b> (mit kleinem Vorschaubild je Art):
+      <ul>
+        <li><b>Seitenleiste links/rechts</b> – Kapitel immer im Blick, gut bei vielen Kapiteln. Auf dem Telefon öffnet der Knopf „Kapitel“ eine Schublade.</li>
+        <li><b>Oben als aufklappbares Menü</b> – ruhig, die Kapitel erscheinen erst auf Klick.</li>
+        <li><b>Leiste oben – Text über die volle Breite</b> – eine schmale Leiste mit Knopf „Kapitel“, Brotkrumen, Zurück/Weiter und einer Fortschrittslinie bleibt beim Lesen oben stehen; darunter die Abschnitte des Kapitels als Knöpfe (der aktuelle ist markiert). Der Text bekommt die ganze Breite – gut für Kapitel mit Bildern, Tabellen und Kennzahlen. Auf dem Telefon schwebt die Leiste unten.</li>
+      </ul></li>
+    <li><b>Kapitel finden:</b> Die Suche filtert die Kapitel schon beim Tippen – nach Titel, Nummer, Zwischenüberschriften und Schlagworten, Groß-/Kleinschreibung und Umlaute egal („ae“ findet „ä“). Treffer zeigen, wo sie stehen; Pfeiltasten wählen, Enter öffnet. Findet sich kein Kapitel, durchsucht Enter alle Texte des Wissensbereichs (nur Wissenseinträge). Tastenkürzel: <kbd>/</kbd> oder <kbd>Strg</kbd>+<kbd>K</kbd> springt ins Suchfeld, <kbd>Esc</kbd> leert es.</li>
     <li><b>Kapitelbaum, Abschnitte, Suche, Brotkrumen, Fuß</b> (Schlagworte, Begriffe, Verwandte, Zurück/Weiter) jeweils an oder aus; <b>Kompakt</b> für eine schmale, dichte Leiste und ruhigere Schrift.</li>
     <li>Block <b>ausblenden</b> (Auge) = keine Navigation, nur der Text. Fehlt der Block ganz (alle bisherigen Vorlagen), legt die Website den Rahmen wie bisher nach dem Layout aus den Einstellungen der Tabelle um die Vorlage.</li>
   </ul>

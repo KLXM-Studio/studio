@@ -64,6 +64,11 @@ final class VariantPreview
         'table' => [['l', 4, 9, 0, 56], ['t', 4, 12, 56, 1], ['l', 4, 18, 0, 56], ['t', 4, 21, 56, 1], ['l', 4, 27, 0, 56], ['t', 4, 30, 56, 1]],
         'accordion' => [['c', 4, 4, 56, 9], ['c', 4, 15, 56, 9], ['c', 4, 26, 56, 9]],
         'tabs' => [['c', 4, 4, 16, 6], ['c', 22, 4, 16, 6], ['c', 40, 4, 16, 6], ['t', 4, 16, 56, 3]],
+        // Kapitelnavigation (Wissen): Seitenleiste links/rechts, Menü oben, Leiste oben mit Abschnitts-Chips
+        'kn_left' => [['c', 3, 4, 15, 32], ['t', 5, 7, 10, 4], ['t', 22, 6, 38, 5], ['t', 22, 24, 38, 2]],
+        'kn_right' => [['t', 4, 6, 38, 5], ['t', 4, 24, 38, 2], ['c', 46, 4, 15, 32], ['t', 48, 7, 10, 4]],
+        'kn_top' => [['c', 10, 3, 44, 6], ['t', 10, 13, 44, 4], ['t', 10, 28, 44, 1]],
+        'kn_bar' => [['c', 2, 3, 60, 7], ['b', 4, 4], ['c', 4, 12, 12, 4], ['c', 18, 12, 12, 4], ['c', 32, 12, 12, 4], ['t', 4, 20, 56, 3]],
     ];
 
     /** Schemata zu den Varianten eines Blocks – oder null, wenn nicht jede Variante eines hat @return ?array<string, string> */

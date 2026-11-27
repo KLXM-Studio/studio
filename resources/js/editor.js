@@ -1236,7 +1236,7 @@ function makeTool(type, def) {
         for (const side of ['top', 'bottom']) {
           const key = side === 'top' ? 'spaceTop' : 'spaceBottom', pre = side === 'top' ? 'pt-' : 'pb-';
           if (!works(pre, side === 'top' ? 'paddingTop' : 'paddingBottom')) continue;
-          this.dragHandle({ kind: 'space', host: sec, apply: sec, axis: 'y', side, options: cfg.spacing, order: ['none', 'small', 'normal', 'large'],
+          this.dragHandle({ kind: 'space', host: sec, apply: sec, axis: 'y', side, options: cfg.spacing, order: ['none', 'small', 'normal', 'large', 'xl'],
             get: () => this.tuneData[key] || 'normal', cls: v => pre + v, label: side === 'top' ? T('Abstand oben') : T('Abstand unten'),
             commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, [key]: v }; markDirty(); this.refresh(); } });
         }
