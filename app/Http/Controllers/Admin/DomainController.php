@@ -179,6 +179,27 @@ final class DomainController extends AdminController
         return $this->back($back, 'success', __('Umgebung auf „{env}“ umgestellt.', ['env' => $env]));
     }
 
+    /** Grundeinstellungen → Umgebung → Zugangsschutz: einschalten/Passwort setzen bzw. ausschalten (Core\StagingAuth) */
+    public function stagingAuth(Request $r): Response
+    {
+        $user = $this->auth($r, 'system.manage');
+        $back = '/admin/system#zugangsschutz';
+        if (\Core\StagingAuth::fromConfig() !== null) return $this->back($back, 'error', __('Der Zugangsschutz ist in der Konfiguration festgelegt (staging_auth) und lässt sich hier nicht ändern.'));
+        if ($r->str('action') === 'off') {
+            \Core\StagingAuth::clear();
+            $this->log($user, 'site.staging_auth', 'aus');
+            return $this->back($back, 'success', __('Zugangsschutz ausgeschaltet.'));
+        }
+        $raw = fn(string $k) => is_string($r->post[$k] ?? null) ? $r->post[$k] : '';   // Passwort ungekürzt (Leerzeichen zählen)
+        $pass = $raw('staging_pass');
+        if ($pass !== $raw('staging_pass2')) return $this->back($back, 'error', __('Die beiden Passwörter stimmen nicht überein.'));
+        if ($err = \Core\StagingAuth::set($r->str('staging_user'), $pass, (string) ($user['email'] ?? ''))) return $this->back($back, 'error', $err);
+        $this->log($user, 'site.staging_auth', 'gesetzt');
+        return $this->back($back, 'success', environment() === 'production'
+            ? __('Zugang gespeichert. Er wirkt, sobald die Website auf „Testumgebung“ steht.')
+            : __('Zugangsschutz eingeschaltet. Der Browser fragt jetzt nach Benutzername und Passwort.'));
+    }
+
     private static function notReady(bool $reachable): string
     {
         return __('Die Domain zeigt noch nicht auf diese Website – DNS/Hosting (Plesk: Alias bzw. zusätzliche Domain, SSL-Zertifikat) einrichten.')

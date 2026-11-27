@@ -137,11 +137,10 @@ final class App
         return $key;
     }
 
-    /** Passwortschutz für Staging (config 'staging_auth' => ['user' => …, 'pass' => …]) */
+    /** Passwortschutz für Staging (config 'staging_auth' => ['user' => …, 'pass' => …] oder Grundeinstellungen → Umgebung, Core\StagingAuth) */
     private function stagingGate(Request $request): ?Response
     {
-        $auth = (array) $this->config->get('staging_auth', []);
-        if (environment() === 'production' || empty($auth['user']) || empty($auth['pass'])
+        if (environment() === 'production' || !StagingAuth::configured()
             // Ohne Staging-Passwort nur die per Schlüssel angemeldeten Schnittstellen (öffentliche /api/live, /api/chat … bleiben geschützt)
             || str_starts_with($request->path, '/api/v1/') || $request->path === '/mcp' || $request->path === '/health'
             // WebDAV-Erweiterungen (CalDAV/CardDAV) melden sich selbst per HTTP Basic an
@@ -156,7 +155,7 @@ final class App
         if ($user === null && str_starts_with($hdr, 'Basic ')) {
             [$user, $pass] = array_pad(explode(':', (string) base64_decode(substr($hdr, 6)), 2), 2, '');
         }
-        if (is_string($user) && hash_equals((string) $auth['user'], $user) && hash_equals((string) $auth['pass'], (string) $pass)) {
+        if (is_string($user) && StagingAuth::check($user, (string) $pass)) {
             return null;
         }
         return new Response('Staging – Zugang nur mit Passwort.', 401, ['Content-Type' => 'text/plain; charset=utf-8',

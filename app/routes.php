@@ -396,7 +396,8 @@ return function (Router $r): void {
     $r->post('/admin/system/domain/check', [Admin\DomainController::class, 'check']);
     $r->post('/admin/system/domain/primary', [Admin\DomainController::class, 'primary']);
     $r->post('/admin/system/domain/redirect', [Admin\DomainController::class, 'redirect']);
-    $r->post('/admin/system/environment', [Admin\DomainController::class, 'environment']);   // Grundeinstellungen → Umgebung (jede Website, auch im Netzwerk)
+    $r->post('/admin/system/environment', [Admin\DomainController::class, 'environment']);
+    $r->post('/admin/system/staging-auth', [Admin\DomainController::class, 'stagingAuth']);   // Umgebung → Zugangsschutz der Testumgebung (Core\StagingAuth)   // Grundeinstellungen → Umgebung (jede Website, auch im Netzwerk)
     // Website-Suche und KI (Grundeinstellungen → Suche / KI)
     $r->post('/admin/system/search/rebuild', [Admin\AiSearchController::class, 'rebuild']);
     $r->post('/admin/system/search/misses-clear', [Admin\AiSearchController::class, 'missesClear']);

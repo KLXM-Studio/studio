@@ -231,6 +231,8 @@ use Core\Fields;
 <form id="keys" method="post" action="<?= e(url('/admin/system/keys')) ?>"><?= csrf_field() ?></form>
 <form id="proxy-clear" method="post" action="<?= e(url('/admin/system/proxy-clear')) ?>"><?= csrf_field() ?></form>
 <form id="environment" method="post" action="<?= e(url('/admin/system/environment')) ?>"><?= csrf_field() ?></form>
+<form id="staging-auth" method="post" action="<?= e(url('/admin/system/staging-auth')) ?>"><?= csrf_field() ?></form>
+<form id="staging-auth-off" method="post" action="<?= e(url('/admin/system/staging-auth')) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="off"></form>
 <?php if (\Core\AdminPath::canManage()): ?><form id="adminpath" method="post" action="<?= e(url('/admin/system/admin-path')) ?>"><?= csrf_field() ?></form><?php endif; ?>
 <?php if (\Core\NetworkHost::canManage()): ?><form id="networkhost" method="post" action="<?= e(url('/admin/system/network-host')) ?>"><?= csrf_field() ?></form><?php endif; ?>
 <?php if (\Core\MediaPools::canManage()): ?>
