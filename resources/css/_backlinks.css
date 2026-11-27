@@ -137,3 +137,33 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-card__foot a:hover{color:var(--adm-ink);text-decoration:underline}
 .dt-card__foot .ico{width:14px;height:14px}
 .dt-card__foot .dt-card__setup{margin-left:auto}
+/* Daten-Übersicht: breite Karten mit Seitenspalte (Listen, Seiten auf der Website) */
+.dt-grid.dt-grid--w{grid-template-columns:repeat(auto-fill,minmax(min(100%,540px),1fr))}
+.dt-card.dt-card--w{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:0;padding:0;overflow:hidden;border-radius:12px}
+.dt-card--w .dt-card__body{display:flex;flex-direction:column;gap:12px;padding:16px 18px}
+.dt-card--w .dt-card__main{gap:12px;align-items:flex-start}
+/* Symbol der Tabelle als Wasserzeichen im Hintergrund der Karte */
+.dt-card--w .dt-card__body{position:relative;overflow:hidden;isolation:isolate}
+.dt-card--w .dt-icon{position:absolute;right:-14px;bottom:-18px;z-index:-1;width:150px;height:150px;border-radius:0;background:none;box-shadow:none;color:var(--adm-a-ink);opacity:.07;pointer-events:none}
+.dt-card--w .dt-icon .ico{width:150px;height:150px}
+.dt-card--w .dt-card__head{display:grid;gap:4px;justify-items:start}
+.dt-card--w .dt-card__main strong{font-size:16.5px;line-height:1.25}
+.dt-card__facts{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:13px;color:var(--adm-t2)}
+.dt-card__facts a{color:var(--adm-ink)}
+.dt-card__facts li{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-card__draft{color:var(--adm-warn,#8a5a00)}
+.dt-card__tech{color:var(--adm-t3);font-size:12.5px}
+.dt-card__tech code{font-size:11.5px;padding:1px 5px}
+.dt-card__bar{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.dt-card__bar .adm-btn{min-width:0}
+.dt-card__side{padding:16px;background:var(--adm-fill);border-left:1px solid var(--adm-line);font-size:13px}
+.dt-card__side h3{margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--adm-t3)}
+.dt-card__side h3:not(:first-child){margin-top:14px}
+.dt-card__side ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.dt-card__side li>a{display:flex;align-items:center;gap:7px;padding:3px 6px;margin:0 -6px;border-radius:6px;color:var(--adm-ink);text-decoration:none}
+.dt-card__side li>a:hover{background:var(--adm-hover)}
+.dt-card__side li>a span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-card__side li>a small{color:var(--adm-t3);font-variant-numeric:tabular-nums}
+.dt-card__side .ico{flex:none;width:14px;height:14px;color:var(--adm-t3)}
+.dt-card__side p{margin:0}
+@media (max-width:640px){.dt-card.dt-card--w{grid-template-columns:1fr}.dt-card__side{border-left:0;border-top:1px solid var(--adm-line)}}

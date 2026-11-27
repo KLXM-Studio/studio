@@ -10555,4 +10555,8 @@ return [
     'Verknüpft mit {table}' => 'Linked with {table}',
     'für {tables}' => 'for {tables}',
     'Seite mit dieser Liste auf der Website öffnen (neuer Tab)' => 'Open the page with this list on the website (new tab)',
+    'Listen und Seiten von {table}' => 'Lists and pages of {table}',
+    'Noch auf keiner Seite.' => 'Not on any page yet.',
+    '{n} Entwurf' => '{n} draft',
+    '{on} online' => '{on} online',
 ];
