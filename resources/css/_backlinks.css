@@ -117,8 +117,9 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 /* Daten-Übersicht: kompakte Karten – Name + Anzahl, Listen, eine Technikzeile, Aktionen (Einträge zuerst) */
 .dt-card--c{gap:10px;padding:14px 16px}
 .dt-card--c .dt-card__main{gap:12px}
-.dt-card--c .dt-icon{width:36px;height:36px;border-radius:8px}
-.dt-card--c .dt-icon .ico{width:19px;height:19px}
+/* Symbol der Tabelle schlicht (keine Kachel – wirkte wie ein Knopf) */
+.dt-card--c .dt-icon{align-self:flex-start;width:22px;height:22px;margin-top:2px;border-radius:0;background:none;box-shadow:none;color:var(--adm-a)}
+.dt-card--c .dt-icon .ico{width:22px;height:22px}
 .dt-card__head{flex:1;min-width:0}
 .dt-card--c .dt-card__main strong{font-size:16px;line-height:1.25}
 .dt-card--c .dt-card__main small{display:block;margin-top:2px;font-size:12.5px;line-height:1.35}
