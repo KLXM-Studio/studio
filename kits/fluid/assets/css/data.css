@@ -37,7 +37,11 @@
 .dl--list .dl-items{gap:var(--f-s-m)}
 @container (min-width:34rem){
   .dl--list .dl-item{flex-direction:row}
-  .dl--list .dl-img{flex:0 0 min(36%,20rem);aspect-ratio:auto}
+  /* Bildspalte folgt der Höhe der Karte (Bild füllt per cover), nicht dem Format des Bildes – Hochformat macht die Karte nicht doppelt
+     so hoch; Mindesthöhe für kurze Texte. Ohne Bild keine leere Fläche: Karte ohne Bildspalte */
+  .dl--list .dl-img{flex:0 0 min(36%,20rem);aspect-ratio:auto;min-height:9rem}
+  .dl--list .dl-img img{position:absolute;inset:0}
+  .dl--list .dl-item:not(:has(:is(.ratio-1-1,.ratio-3-4))) .dl-img:has(> .dl-ph){display:none}
   .dl--list .dl-body{justify-content:center;padding:var(--f-s-l) var(--f-s-xl)}
   .dl--list .dl-name{font-size:var(--f-t2)}
 }

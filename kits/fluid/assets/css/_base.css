@@ -89,6 +89,9 @@ img[class*=fx],img[class*=fy]{object-position:var(--fx,50%) var(--fy,50%)}
 .sec--divider{padding-top:0}
 /* ---------------------------------------------------------------- Typografie */
 .h1,.h2,.h3,.hero-type__title,.cta__big,.ftr__big,.prose :is(h2,h3,h4){font-family:var(--f-font-head);font-weight:var(--f-hw);color:var(--f-ink);letter-spacing:calc(var(--f-track) * .01em);text-wrap:balance;hyphens:auto;-webkit-hyphens:auto;hyphenate-limit-chars:10 4 4}
+/* Große Überschriften ab Tablet-Breite ohne automatische Silbentrennung („Wiederbe-waldung“ wirkt schlecht) – nur weiche Trennstellen (&shy;);
+   auf dem Telefon bleibt auto, sonst laufen lange Wörter über den Rand */
+@media (min-width:48rem){.h1,.hero-type__title,.cta__big,.ftr__big{hyphens:manual;-webkit-hyphens:manual;overflow-wrap:break-word}}
 .h1{font-size:max(var(--f-t3),min(var(--f-t6),13cqi));line-height:1.02}
 .h2{font-size:max(var(--f-t3),min(var(--f-t4),9cqi));line-height:1.08}
 .h3{font-size:var(--f-t2);line-height:1.2}

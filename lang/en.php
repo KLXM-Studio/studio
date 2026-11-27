@@ -10515,4 +10515,7 @@ return [
     'Großzügig' => 'Generous',
     'Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), grün = Füllung eines Kastens (Innenabstand), orange = Breite, pink = Aufteilung. Immer in Stufen, auch per Pfeiltasten am Griff.' => 'Tip – handles in a section: purple = spacing top/bottom (drag the whole area), green = padding of a box, orange = width, pink = split. Always in steps, also with the arrow keys on the handle.',
     'Füllung' => 'Padding',
+    'Bild, Video, Button …' => 'Image, video, button …',
+    'Bild ändern …' => 'Change image …',
+    'Bilder, Videos und Buttons dieses Abschnitts hinzufügen oder ändern – den Text bearbeiten Sie direkt im Text.' => 'Add or change the images, videos and buttons of this section – edit the text directly in place.',
 ];

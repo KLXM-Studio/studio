@@ -541,15 +541,21 @@ const Inline = (() => {
   function panelButtons(n) {
     const parts = n.querySelectorAll('.mt-part[data-mt-index]');
     const targets = parts.length ? [...parts] : [n];
-    // Medien + Text: „Bilder & Buttons“; Kombifelder (Ansprechperson, Fragen & Antworten, Adresse, Downloads): „Bearbeiten“
+    // Medien + Text: „Bild, Video, Button …“ bzw. mit vorhandenem Bild „Bild ändern …“ (Tooltip erklärt: Text direkt im Text);
+    // Kombifelder (Ansprechperson, Fragen & Antworten, Adresse, Downloads): „Bearbeiten“. Abschnitt beim Zeigen umrandet (editor.css)
     const mtField = !!n.querySelector('.mt');
     targets.forEach((el, i) => {
       const idx = el.dataset.mtIndex !== undefined ? +el.dataset.mtIndex : i;
       const b = d.createElement('button');
       b.type = 'button'; b.className = 'cms-mt-edit';
-      const lbl = parts.length ? (T.mtEditSection || 'Bilder & Buttons') : mtField ? (T.mtEdit || 'Bilder & Buttons') : (T.comboEdit || 'Bearbeiten');
-      b.innerHTML = '<span aria-hidden="true">✎</span> ' + window.CMSAdmin.esc(lbl);
-      b.setAttribute('aria-label', lbl + ': ' + (el.querySelector('.mt-part__h')?.textContent || n.dataset.entryLabel || ''));
+      const isMt = parts.length || mtField, hasMedia = isMt && !!el.querySelector('img, video, picture, iframe');
+      const lbl = !isMt ? (T.comboEdit || 'Bearbeiten') : hasMedia ? (T.mtChange || 'Bild ändern …') : (parts.length ? T.mtEditSection : T.mtEdit) || 'Bild, Video, Button …';
+      // Symbol Bild + Plus (Medien) bzw. Stift (Kombifelder)
+      const ico = isMt ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2"/><circle cx="8" cy="10" r="1.5"/><path d="m4 18 4.5-4.5 3 3L14 14l3 3M19 3v6M16 6h6"/></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>';
+      b.innerHTML = ico + '<span>' + window.CMSAdmin.esc(lbl) + '</span>';
+      if (isMt && T.mtHint) b.title = T.mtHint;
+      b.setAttribute('aria-label', lbl + ': ' + (el.querySelector('.mt-part__h')?.textContent || n.dataset.entryLabel || '') + (isMt && T.mtHint ? ' – ' + T.mtHint : ''));
       b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); Panel.open(cfg.endpoint, b, { field: n.dataset.entryField, section: idx }); });
       el.classList.add('cms-mt-target');
       el.prepend(b);

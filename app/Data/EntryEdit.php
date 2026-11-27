@@ -205,7 +205,8 @@ final class EntryEdit
             'mediaRemove' => __('Medium entfernen'),
             'mediaNone' => __('Kein Bild oder Video – „Bild oder Video wählen …“'),
             'mediaHint' => __('Klicken, um ein anderes Bild oder Video zu wählen: {label}'),
-            'mtEditSection' => __('Bilder & Buttons'), 'mtEdit' => __('Bilder & Buttons'), 'comboEdit' => __('Bearbeiten'),   // Text bearbeitet man direkt im Text
+            'mtEditSection' => __('Bild, Video, Button …'), 'mtEdit' => __('Bild, Video, Button …'), 'mtChange' => __('Bild ändern …'), 'comboEdit' => __('Bearbeiten'),
+            'mtHint' => __('Bilder, Videos und Buttons dieses Abschnitts hinzufügen oder ändern – den Text bearbeiten Sie direkt im Text.'),   // Text bearbeitet man direkt im Text
         ];
     }
 
