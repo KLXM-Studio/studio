@@ -8,7 +8,8 @@
  */
 import { t } from './_i18n.js';
 
-const SIZES = { mobile: [390, 844], desktop: [1280, 800] };   // natürliche Ausrichtung: Mobil hoch, Desktop quer
+const SIZES = { mobile: [390, 844], tablet: [820, 1180], desktop: [1280, 800] };   // natürliche Ausrichtung: Mobil/Tablet hoch, Desktop quer
+const NATURAL = { mobile: 'portrait', tablet: 'portrait', desktop: 'landscape' };
 
 export function initPagePreview() {
   const box = document.querySelector('[data-ptpv]');
@@ -18,17 +19,20 @@ export function initPagePreview() {
   const toggle = document.querySelector('[data-ptpv-toggle]');
   const frame = $('[data-ptpv-frame]'), stage = $('[data-ptpv-stage]'), empty = $('[data-ptpv-empty]');
   const title = $('[data-ptpv-title]'), openLink = $('[data-ptpv-open]'), scaleEl = $('[data-ptpv-scale]');
+  const acts = $('[data-ptpv-acts]'), editLink = $('[data-ptpv-edit]'), setLink = $('[data-ptpv-settings]');
+  let pageUrl = '';
   const base = box.dataset.base;
   const store = {
     get(k, d) { try { return JSON.parse(localStorage.getItem('ptpv:' + k)) ?? d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem('ptpv:' + k, JSON.stringify(v)); } catch { /* privates Fenster */ } },
   };
-  let dev = store.get('dev', 'mobile'), orient = store.get('orient', dev === 'mobile' ? 'portrait' : 'landscape'), stand = store.get('stand', '');
+  let dev = store.get('dev', 'mobile'), orient = store.get('orient', NATURAL[dev] || 'portrait'), stand = store.get('stand', '');
+  if (!SIZES[dev]) dev = 'mobile';
   let pageId = null;
 
   const dims = () => {
     const [a, b] = SIZES[dev] || SIZES.mobile;
-    const natural = dev === 'mobile' ? 'portrait' : 'landscape';
+    const natural = NATURAL[dev] || 'portrait';
     return orient === natural ? [a, b] : [b, a];
   };
   const fit = () => {
@@ -44,6 +48,7 @@ export function initPagePreview() {
     scaleEl.textContent = `${w} px · ${Math.round(sc * 100)} %`;
   };
   const load = () => {
+    if (acts) acts.hidden = !pageId;
     if (!pageId) { frame.hidden = true; empty.hidden = false; openLink.hidden = true; return; }
     const url = `${base}/${pageId}/vorschau${stand ? '?stand=' + stand : ''}`;
     if (frame.dataset.src !== url) { frame.dataset.src = url; frame.src = url; }
@@ -51,6 +56,10 @@ export function initPagePreview() {
   };
   const select = n => {
     pageId = n?.dataset.id || null;
+    pageUrl = n?.dataset.url || '';
+    // Hauptknopf „Im Frontend bearbeiten“ und „Einstellungen“ (Seitenformular) für die gezeigte Seite
+    if (editLink) editLink.href = pageUrl ? pageUrl + '?edit=1' : '#';
+    if (setLink) setLink.href = pageId ? `${base}/${pageId}` : '#';
     tree?.querySelectorAll('[data-ptpv-row]').forEach(b => b.setAttribute('aria-pressed', String(!box.hidden && b.closest('.pt-node')?.dataset.id === pageId)));
     title.textContent = n?.dataset.title ? `${t('Vorschau')}: ${n.dataset.title}` : t('Vorschau');
     load();
@@ -60,7 +69,7 @@ export function initPagePreview() {
     box.querySelectorAll('[data-orient]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.orient === orient)));
     box.querySelectorAll('[data-stand]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.stand === stand)));
     box.dataset.dev = dev;
-    document.documentElement.classList.toggle('ptpv-wide', dev === 'desktop');
+    document.documentElement.classList.toggle('ptpv-wide', dev !== 'mobile');
     requestAnimationFrame(fit);
   };
   // Breite per Griff ziehen (Maus/Touch) bzw. Pfeiltasten; gemerkt
@@ -113,7 +122,7 @@ export function initPagePreview() {
     const b = e.target.closest('[data-dev],[data-orient],[data-stand]');
     if (!b) return;
     if (b.dataset.dev) {
-      if (dev !== b.dataset.dev) orient = b.dataset.dev === 'mobile' ? 'portrait' : 'landscape';   // neues Gerät: natürliche Ausrichtung
+      if (dev !== b.dataset.dev) orient = NATURAL[b.dataset.dev] || 'portrait';   // neues Gerät: natürliche Ausrichtung
       dev = b.dataset.dev;
     }
     if (b.dataset.orient) orient = b.dataset.orient;
@@ -129,6 +138,15 @@ export function initPagePreview() {
     }).observe(tree, { subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
   }
   document.addEventListener('ptpv:open', e => open(true, e.detail || null));
+  // Doppelklick auf einen Abschnitt der Vorschau: Editor genau dort öffnen (?edit=1#b-…, gleiche Herkunft)
+  frame.addEventListener('load', () => {
+    try {
+      frame.contentDocument?.addEventListener('dblclick', e => {
+        const sec = e.target.closest?.('[id^="b-"]');
+        if (sec && pageUrl) { e.preventDefault(); location.href = pageUrl + '?edit=1#' + sec.id; }
+      });
+    } catch { /* andere Herkunft */ }
+  });
   if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage); else addEventListener('resize', fit);
   sync();
   if (store.get('open', false) && matchMedia('(min-width: 900px)').matches) open(true);

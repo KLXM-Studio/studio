@@ -135,6 +135,8 @@ $canSpecial = $canSpecial404 || ($templates && can('data.schema')) || !empty($pa
     <label class="fx-search dt-search"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 2a5 5 0 1 0 3 9l3.3 3.3 1-1L11 10A5 5 0 0 0 7 2zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg><input type="search" placeholder="Seiten filtern" aria-label="Seiten filtern" data-filter></label>
     <button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-expand-all>Alle aufklappen</button>
     <button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-collapse-all>Alle zuklappen</button>
+    <?php // Vorschau als Seitenleiste (resources/js/_ptpreview.js) – folgt der markierten Seite, Zustand gemerkt ?>
+    <button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-ptpv-toggle aria-pressed="false" aria-controls="ptpv" title="<?= e(__('Vorschau der markierten Seite als Seitenleiste – Pfeiltasten wechseln die Seite')) ?>"><?= icon('eye') ?> <?= e(__('Vorschau')) ?></button>
     <?php // Adressen nur auf Wunsch (admin.js → Seitenbaum: aria-pressed, gemerkt im Browser); sonst als Tooltip am Titel ?>
     <button type="button" class="adm-btn adm-btn--small adm-btn--ghost pt-pathbtn" data-paths-toggle aria-pressed="false" title="<?= e(__('Adressen der Seiten als eigene Spalte zeigen')) ?>"><?= icon('link') ?> <?= e(__('Adressen')) ?></button>
   </div>
@@ -219,9 +221,14 @@ $nfDefault = $notFound[Lang::default()] ?? null; ?>
     <a class="ptpv__icon" data-ptpv-open href="#" target="_blank" rel="noopener" title="<?= e(__('In neuem Tab öffnen')) ?>" aria-label="<?= e(__('Vorschau in neuem Tab öffnen')) ?>">↗</a>
     <button type="button" class="ptpv__icon" data-ptpv-close aria-label="<?= e(__('Vorschau schließen')) ?>" title="<?= e(__('Schließen')) ?>">✕</button>
   </div>
+  <div class="ptpv__acts" data-ptpv-acts hidden>
+    <a class="adm-btn adm-btn--small adm-btn--primary" data-ptpv-edit href="#"><?= icon('pencil-simple') ?> <?= e(__('Im Frontend bearbeiten')) ?></a>
+    <a class="adm-btn adm-btn--small adm-btn--ghost" data-ptpv-settings href="#"><?= icon('gear') ?> <?= e(__('Einstellungen')) ?></a>
+    <span class="ptpv__hint adm-muted"><?= e(__('Doppelklick auf einen Abschnitt öffnet ihn im Editor.')) ?></span>
+  </div>
   <div class="ptpv__tools">
     <div class="ptpv-seg" role="group" aria-label="<?= e(__('Gerät')) ?>">
-      <button type="button" data-dev="mobile"><?= e(__('Mobil')) ?></button><button type="button" data-dev="desktop"><?= e(__('Desktop')) ?></button>
+      <button type="button" data-dev="mobile"><?= e(__('Mobil')) ?></button><button type="button" data-dev="tablet"><?= e(__('Tablet')) ?></button><button type="button" data-dev="desktop"><?= e(__('Desktop')) ?></button>
     </div>
     <div class="ptpv-seg" role="group" aria-label="<?= e(__('Ausrichtung')) ?>">
       <button type="button" data-orient="portrait"><?= e(__('Hoch')) ?></button><button type="button" data-orient="landscape"><?= e(__('Quer')) ?></button>

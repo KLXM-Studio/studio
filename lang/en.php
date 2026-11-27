@@ -10545,4 +10545,7 @@ return [
     '{n} ältere Sicherungen endgültig löschen? Je Art bleiben die neuesten {keep}.' => 'Permanently delete {n} older backups? The newest {keep} of each kind remain.',
     '{n} ältere Sicherungen gelöscht ({size} frei).' => '{n} older backups deleted ({size} freed).',
     '„{name}“ gelöscht.' => '“{name}” deleted.',
+    'Doppelklick auf einen Abschnitt öffnet ihn im Editor.' => 'Double-click a section to open it in the editor.',
+    'Tablet' => 'Tablet',
+    'Vorschau der markierten Seite als Seitenleiste – Pfeiltasten wechseln die Seite' => 'Preview of the selected page as a sidebar – arrow keys switch pages',
 ];
