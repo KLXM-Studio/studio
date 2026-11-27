@@ -20,7 +20,7 @@ final class Offsite
     private const FILE = 'targets.json';
     private const STATE = 'state.json';
     /** Muster der lokalen Sicherungen: {präfix}-JJJJMMTT-HHMMSS.tar.gz */
-    private const PATTERN = '~^(?<prefix>[a-z0-9][a-z0-9_.-]*?)-(?<stamp>\d{8}-\d{6})\.tar(?:\.gz)?$~';
+    public const PATTERN = '~^(?<prefix>[a-z0-9][a-z0-9_.-]*?)-(?<stamp>\d{8}-\d{6})\.tar(?:\.gz)?$~';
 
     // ------------------------------------------------------------------ Ziele
 

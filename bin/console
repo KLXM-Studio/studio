@@ -171,6 +171,7 @@
  * Sicherungen (storage/backups; --keep=N: nur die neuesten N behalten, Standard config 'backup_keep' = 14, 0 = alle)
  *   site:backup [--out=dir] [--keep=N] [--all]        Datenbank + Medien sichern
  *   site:restore <datei> --force                      Sicherung einspielen (z. B. Live-Inhalte auf Staging)
+ *   backup:prune [--keep=N] [--dry-run]               Sicherungen vor Änderungen (Deploy: code-vor-…, site-vor-…) aufräumen – je Art die neuesten N (Verwaltung: System → Sicherung)
  *   site:extract <key> [--out=ordner] [--archive] [--all-kits]
  *                                                     Website als eigenständige Installation herauslösen (Kopie mit Code, Kit,
  *                                                     Erweiterungen, Daten, Medien, Pools, Schlüsseln; Original bleibt unverändert)
@@ -1564,6 +1565,14 @@ switch ($cmd) {
         foreach ($res['fails'] as $f) echo "  FEHLER: $f\n";
         echo "  {$res['ok']} Prüfungen bestanden, " . count($res['fails']) . " fehlgeschlagen\n";
         exit($res['fails'] ? 1 : 0);
+
+    case 'backup:prune':
+        // Sicherungen vor Änderungen (storage/backups, Core\Backup\Local): je Art die neuesten N behalten (Standard: Einstellung, 10)
+        $keepOpt = Core\Cli::opt($args, 'keep');
+        $res = Core\Backup\Local::prune($keepOpt !== null && $keepOpt !== '' ? max(1, (int) $keepOpt) : null, Core\Cli::flag($args, 'dry-run'));
+        echo (Core\Cli::flag($args, 'dry-run') ? 'Würde löschen: ' : 'Gelöscht: ') . count($res['files']) . ' Dateien, ' . Core\Backup\Offsite::size($res['bytes'])
+            . ' (behalten je Art: ' . ($keepOpt ?: Core\Backup\Local::keep()) . ")\n";
+        break;
 
     case 'site:restore':
         // Sicherung einspielen: Datenbank + Medien (z. B. Live-Inhalte auf Staging). Website-Konfiguration bleibt unangetastet.

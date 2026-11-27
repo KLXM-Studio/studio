@@ -79,6 +79,32 @@ final class OffsiteBackupController extends AdminController
         return $this->back(self::BASE, 'success', __('Sicherung gestartet – sie läuft im Hintergrund (Geplante Aufgaben) und ist meist in wenigen Minuten fertig.'));
     }
 
+    /** Sicherungen auf dem Server: wie viele je Art behalten (Sicherungen vor Änderungen, z. B. vom Deploy) */
+    public function localKeep(Request $r): Response
+    {
+        $this->guard($r);
+        \Core\Backup\Local::setKeep((int) $r->str('keep'));
+        return $this->back(self::BASE . '#bk-server', 'success', __('Gespeichert: je Art bleiben die neuesten {n}.', ['n' => \Core\Backup\Local::keep()]));
+    }
+
+    /** Jetzt aufräumen: ältere Sicherungen vor Änderungen löschen */
+    public function localPrune(Request $r): Response
+    {
+        $this->guard($r);
+        $res = \Core\Backup\Local::prune();
+        return $this->back(self::BASE . '#bk-server', 'success', __('{n} ältere Sicherungen gelöscht ({size} frei).', ['n' => count($res['files']), 'size' => Offsite::size($res['bytes'])]));
+    }
+
+    /** Eine Datei in storage/backups löschen */
+    public function localDelete(Request $r): Response
+    {
+        $this->guard($r);
+        $name = $r->str('name');
+        return \Core\Backup\Local::delete($name)
+            ? $this->back(self::BASE . '#bk-server', 'success', __('„{name}“ gelöscht.', ['name' => $name]))
+            : $this->back(self::BASE . '#bk-server', 'error', __('Datei nicht gefunden.'));
+    }
+
     /** Schlüssel anzeigen (POST, nur auf dieser Seite, nie in Protokollen) */
     public function key(Request $r): Response
     {

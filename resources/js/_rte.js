@@ -238,8 +238,10 @@ function paintArea(area) {
 // ------------------------------------------------------------------ Leiste (HTML)
 const btn = (cmd, label, title, o = {}) => `<button type="button" data-cmd="${cmd}" aria-label="${esc(t(title))}${o.keys ? ' (' + o.keys + ')' : ''}" title="${esc(t(title))}${o.keys ? ' (' + o.keys + ')' : ''}"`
   + `${o.pressed ? ' aria-pressed="false"' : ''}${o.aria ? ` aria-keyshortcuts="${o.aria}"` : ''}${o.cls ? ` class="${o.cls}"` : ''}>${label}</button>`;
-const item = (cmd, label, o = {}) => `<button type="button" role="${o.radio ? 'menuitemradio' : 'menuitem'}" tabindex="-1" data-cmd="${cmd}"${o.radio ? ' aria-checked="false"' : ''}${o.cls ? ` class="${o.cls}"` : ''}>`
-  + `${o.pre || ''}<span class="rte-mi__t">${esc(t(label))}</span>${o.hint ? `<small class="rte-mi__h">${esc(t(o.hint))}</small>` : ''}${o.post || ''}</button>`;
+// Erläuterung (hint) nur als Tooltip und für Screenreader (aria-description) – das Menü bleibt kompakt und einzeilig
+const item = (cmd, label, o = {}) => `<button type="button" role="${o.radio ? 'menuitemradio' : 'menuitem'}" tabindex="-1" data-cmd="${cmd}"${o.radio ? ' aria-checked="false"' : ''}${o.cls ? ` class="${o.cls}"` : ''}`
+  + `${o.hint ? ` title="${esc(t(o.hint))}" aria-description="${esc(t(o.hint))}"` : ''}>`
+  + `${o.pre || ''}<span class="rte-mi__t">${esc(t(label))}</span>${o.post || ''}</button>`;
 // aria: eigener zugänglicher Name – muss den sichtbaren Text enthalten (WCAG 2.5.3), z. B. „Normal (Absatzstil)“
 const menuBtn = (name, label, title, extra = '', aria = '') => `<button type="button" class="rte-mbtn rte-mbtn--${name}" data-menu="${name}" aria-haspopup="menu" aria-expanded="false" aria-controls="" aria-label="${esc(aria || t(title))}" title="${esc(t(title))}">${label}${icon('chevron', 'rte-icon rte-caret')}</button>${extra}`;
 

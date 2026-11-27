@@ -382,6 +382,10 @@ return function (Router $r): void {
     $r->post('/admin/system/sicherung/key', [Admin\OffsiteBackupController::class, 'key']);
     $r->post('/admin/system/sicherung/test/{id}', [Admin\OffsiteBackupController::class, 'test']);
     $r->post('/admin/system/sicherung/delete/{id}', [Admin\OffsiteBackupController::class, 'delete']);
+    // Sicherungen auf diesem Server (Core\Backup\Local): Anzahl je Art, Aufräumen, einzelne Datei löschen
+    $r->post('/admin/system/sicherung/lokal/keep', [Admin\OffsiteBackupController::class, 'localKeep']);
+    $r->post('/admin/system/sicherung/lokal/prune', [Admin\OffsiteBackupController::class, 'localPrune']);
+    $r->post('/admin/system/sicherung/lokal/delete', [Admin\OffsiteBackupController::class, 'localDelete']);
     $r->post('/admin/system/aufgaben/{key}', [Admin\CronController::class, 'save']);
     $r->post('/admin/system/aufgaben/{key}/run', [Admin\CronController::class, 'run']);
     $r->get('/admin/system/kits', [Admin\KitsController::class, 'index']);

@@ -106,5 +106,49 @@ $err = fn(string $k) => isset($errors[$k]) ? '<p class="f-error">' . e($errors[$
   <?php endif; ?>
   <p class="adm-muted"><?= e(__('Wiederherstellen: Entwicklerhandbuch → Betrieb → „Sicherung außer Haus“.')) ?></p>
 </section>
+
+<?php
+// Sicherungen auf diesem Server (Core\Backup\Local): Website-Sicherungen rotieren selbst (backup_keep), Sicherungen vor Änderungen
+// (Deploy, Updates) je Art auf die neuesten N
+$lf = \Core\Backup\Local::files(); $ls = \Core\Backup\Local::summary(); $lkeep = \Core\Backup\Local::keep(); $lprune = \Core\Backup\Local::prune(null, true);
+$lkind = ['before' => __('Vor Änderungen (Deploy, Updates)'), 'site' => __('Website-Sicherungen (nachts)'), 'other' => __('Sonstige Dateien')];
+?>
+<section class="adm-card" aria-labelledby="bk-server" id="bk-server">
+  <h2><?= icon('hard-drives') ?> <span id="bk-server-h"><?= e(__('Sicherungen auf diesem Server')) ?></span></h2>
+  <p class="adm-muted"><?= e(__('Ordner storage/backups. Website-Sicherungen räumen sich selbst auf (Konfiguration backup_keep, Standard 14). Sicherungen vor Änderungen – etwa vor jedem Deploy – behalten je Art die neuesten:')) ?></p>
+  <form method="post" action="<?= e(url('/admin/system/sicherung/lokal/keep')) ?>" class="adm-row bk-keep"><?= csrf_field() ?>
+    <label for="bk-keep"><?= e(__('Behalten je Art')) ?></label>
+    <input id="bk-keep" name="keep" type="number" min="1" max="200" value="<?= (int) $lkeep ?>" class="f-in--short">
+    <button class="adm-btn" type="submit"><?= e(__('Speichern')) ?></button>
+  </form>
+  <table class="adm-table bk-sum">
+    <thead><tr><th><?= e(__('Art')) ?></th><th><?= e(__('Dateien')) ?></th><th><?= e(__('Größe')) ?></th><th><?= e(__('Zeitraum')) ?></th></tr></thead>
+    <tbody>
+    <?php foreach ($lkind as $k => $label): if (empty($ls[$k])) continue; $x = $ls[$k]; ?>
+      <tr><td><?= e($label) ?></td><td><?= (int) $x['count'] ?></td><td><?= e(\Core\Backup\Offsite::size($x['size'])) ?></td><td><?= e($f->date($x['oldest'])) ?> – <?= e($f->date($x['newest'])) ?></td></tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php if ($lprune['files']): ?>
+  <form method="post" action="<?= e(url('/admin/system/sicherung/lokal/prune')) ?>" class="adm-row"><?= csrf_field() ?>
+    <button class="adm-btn adm-btn--primary" type="submit" data-confirm="<?= e(__('{n} ältere Sicherungen endgültig löschen? Je Art bleiben die neuesten {keep}.', ['n' => count($lprune['files']), 'keep' => $lkeep])) ?>"><?= icon('broom') ?> <?= e(__('Aufräumen: {n} ältere löschen ({size})', ['n' => count($lprune['files']), 'size' => \Core\Backup\Offsite::size($lprune['bytes'])])) ?></button>
+  </form>
+  <?php else: ?><p class="adm-muted"><?= e(__('Nichts aufzuräumen.')) ?></p><?php endif; ?>
+  <?php if ($lf): ?>
+  <details class="bk-files"><summary><?= e(__('Einzelne Dateien ({n})', ['n' => count($lf)])) ?></summary>
+    <table class="adm-table">
+      <thead><tr><th><?= e(__('Datei')) ?></th><th><?= e(__('Größe')) ?></th><th><?= e(__('Datum')) ?></th><th><span class="sr-only"><?= e(__('Aktionen')) ?></span></th></tr></thead>
+      <tbody>
+      <?php foreach (array_slice($lf, 0, 300) as $x): ?>
+        <tr><td><code><?= e($x['name']) ?></code></td><td><?= e(\Core\Backup\Offsite::size($x['size'])) ?></td><td><?= e($f->datetime($x['mtime'])) ?></td>
+          <td><form method="post" action="<?= e(url('/admin/system/sicherung/lokal/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="name" value="<?= e($x['name']) ?>">
+            <button class="adm-btn adm-btn--small adm-btn--ghost" type="submit" data-confirm="<?= e(__('„{name}“ endgültig löschen?', ['name' => $x['name']])) ?>" title="<?= e(__('Löschen')) ?>"><?= icon('trash') ?><span class="sr-only"><?= e(__('Löschen')) ?>: <?= e($x['name']) ?></span></button></form></td></tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php if (count($lf) > 300): ?><p class="adm-muted"><?= e(__('Die neuesten 300 von {n} – ältere räumt „Aufräumen“ ab.', ['n' => count($lf)])) ?></p><?php endif; ?>
+  </details>
+  <?php endif; ?>
+</section>
   </div>
 </div>
