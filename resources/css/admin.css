@@ -3849,6 +3849,11 @@ html.adm-ui .adm-tabs-form--side .adm-secnav a[aria-current=page] .adm-tabs__bad
 .rte-mi__i .rte-icon{width:16px;height:16px}
 .rte-mi__h{color:var(--rte-muted)}
 .rte-menu__sep{margin:4px;background:var(--rte-border-soft)}
+/* Abschnittsüberschriften im Menü „Absatzstil“ (Überschriften, Text, Kästen, Aus dem Kit) */
+.rte-menu__h{margin:8px 10px 2px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--rte-muted)}
+.rte-menu__h:first-child{margin-top:4px}
+.rte-menu .rte-menu__h+button,.rte-menu button+.rte-menu__h{margin-top:0}
+.rte-menu > button+.rte-menu__h{border-top:1px solid var(--rte-border-soft);padding-top:8px;margin-top:6px}
 
 /* Breitere Seitenleiste auf großen Bildschirmen (lange Menüs, Beschriftungen) – darunter bleibt es bei 232px bzw. dem Handy-Layout */
 @media (min-width:1400px){body.adm{grid-template-columns:264px minmax(0,1fr)}}

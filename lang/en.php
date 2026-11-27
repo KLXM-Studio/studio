@@ -10529,4 +10529,7 @@ return [
     'Erinnerung an fällige Aufgaben per E-Mail' => 'Email reminders for due tasks',
     'Link als {name}' => 'Link as {name}',
     'Stil der Überschrift' => 'Heading style',
+    'Überschriften' => 'Headings',
+    'Kästen' => 'Boxes',
+    'Aus dem Kit' => 'From the kit',
 ];

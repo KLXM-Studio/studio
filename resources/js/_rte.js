@@ -49,6 +49,23 @@ function styleList() {
   if (!c) return BASE_STYLES;
   return [BASE_STYLES[0], ...c.paragraphs.map(([v, l, sh, h]) => [v, l, sh, h]), ...BASE_STYLES.filter(x => HEADINGS.includes(x[0]) || x[0] === 'blockquote')];
 }
+/**
+ * Menü „Absatzstil“ gegliedert: Normaler Text · Überschriften (H2–H4, Überschriftenstile des Kits) · Text (Hervorgehoben, Klein,
+ * Dachzeile, Zentriert …) · Kästen (Hinweis, Tipp, Achtung) · Aus dem Kit (eigene Absatzstile) · Zitat. Leere Abschnitte entfallen.
+ */
+function styleMenu() {
+  const sec = (label, rows) => rows.length ? `<p class="rte-menu__h" role="presentation">${esc(t(label))}</p>` + rows.join('') : '';
+  const it = ([v, label, , hint]) => item('style:' + v, label, { radio: 1, hint, cls: 'rte-mi rte-mi--' + v });
+  const c = textCfg(), paras = c ? c.paragraphs : BASE_STYLES.filter(x => x[0].startsWith('t-')).map(x => [...x, ['t-note', 't-tip', 't-warn'].includes(x[0]) ? 'box' : 'text']);
+  const heads = BASE_STYLES.filter(x => HEADINGS.includes(x[0])).map(it)
+    .concat(headStyles().map(([v, label, , hint]) => item('hstyle:' + v, label, { radio: 1, hint: hint || t('Stil der Überschrift'), cls: 'rte-mi rte-mi--' + v })));
+  const quote = BASE_STYLES.filter(x => x[0] === 'blockquote').map(it);
+  return it(BASE_STYLES[0])
+    + sec('Überschriften', heads)
+    + sec('Text', paras.filter(x => x[4] === 'text').map(it).concat(quote))
+    + sec('Kästen', paras.filter(x => x[4] === 'box').map(it))
+    + sec('Aus dem Kit', paras.filter(x => x[4] === 'kit' || x[4] === undefined).map(it));
+}
 const pStyles = () => styleList().map(x => x[0]).filter(v => v !== 'p' && v !== 'blockquote' && !HEADINGS.includes(v));
 const colorNames = () => palette().colors.map(c => c.name);
 const headStyles = () => textCfg()?.headings || [];
@@ -253,9 +270,7 @@ function barHtml(mode) {
     + '</span></span>';
   if (mode === 'inline') return inl + more(linkItems) + aiBarHtml();
   const style = `<span class="rte-group"><span class="rte-mwrap">${menuBtn('style', `<span class="rte-style-l">${esc(t('Normal'))}</span>`, 'Absatzstil', '', `${t('Normal')} (${t('Absatzstil')})`)}`
-    + menu('style', 'Absatzstil', styleList().map(([v, label, , hint]) => item('style:' + v, label, { radio: 1, hint, cls: 'rte-mi rte-mi--' + v })).join('')
-      // Überschriftenstile des Kits (Klasse an H2–H4, die Ebene bleibt)
-      + (headStyles().length ? '<span class="rte-menu__sep" role="separator"></span>' + headStyles().map(([v, label, , hint]) => item('hstyle:' + v, label, { radio: 1, hint: hint || t('Stil der Überschrift'), cls: 'rte-mi rte-mi--' + v })).join('') : '')) + '</span></span>';
+    + menu('style', 'Absatzstil', styleMenu()) + '</span></span>';
   const listGroup = `<span class="rte-group rte-wide">${lists.map(([c, l, ti]) => btn(c, l, ti, { pressed: 1 })).join('')}</span>`;
   const listItems = `<span class="rte-narrow">${lists.map(([c, , ti]) => item(c, ti, { radio: 1, pre: `<span class="rte-mi__i">${icon(c === 'checklist' ? 'check' : c === 'insertOrderedList' ? 'ordered' : 'bullet')}</span>` })).join('')}</span>`
     + item('indent', 'Einrücken (Tab)', { pre: `<span class="rte-mi__i">${icon('indent')}</span>` }) + item('outdent', 'Ausrücken (Umschalt+Tab)', { pre: `<span class="rte-mi__i">${icon('outdent')}</span>` })

@@ -108,11 +108,14 @@ final class TextFormats
     public static function editorConfig(): array
     {
         $out = [];
+        $base = self::base();
         foreach (self::active() as $g => $items) {
             $out[$g] = [];
             foreach ($items as $cls => $v) {
                 $row = [$cls, __($v['label']), __($v['short']), $v['hint'] !== '' ? __($v['hint']) : ''];
                 if ($g === 'lists') $row[] = $v['list'];
+                // Absatzstile: Herkunft für die Gliederung im Menü (Kern-Kästen, Kern-Text, Kit)
+                if ($g === 'paragraphs') $row[] = !isset($base['paragraphs'][$cls]) ? 'kit' : (in_array($cls, ['t-note', 't-tip', 't-warn'], true) ? 'box' : 'text');
                 $out[$g][] = $row;
             }
         }
