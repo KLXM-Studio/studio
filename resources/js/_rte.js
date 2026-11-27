@@ -611,6 +611,17 @@ const Rich = {
   mount(bar, getArea, after = () => {}) {
     if (bar._rteMounted) return;
     bar._rteMounted = true;
+    // Einzeilig halten: passt die Leiste nicht in eine Zeile, wandern die Listen-Knöpfe ins Menü „Weitere“ (.is-tight, wie schmal)
+    const fit = () => {
+      if (!bar.isConnected || bar.hidden) return;
+      bar.classList.remove('is-tight');
+      const kids = [...bar.children].filter(c => c.offsetParent !== null || c.getClientRects().length);
+      const wrapped = bar.scrollWidth > bar.clientWidth + 1 || (kids.length > 1 && kids[kids.length - 1].offsetTop > kids[0].offsetTop + 4);
+      bar.classList.toggle('is-tight', wrapped);
+    };
+    if ('ResizeObserver' in window) { let busy = false; new ResizeObserver(() => { if (busy) return; busy = true; requestAnimationFrame(() => { fit(); busy = false; }); }).observe(bar); }
+    addEventListener('resize', fit, { passive: true });
+    requestAnimationFrame(fit);
     bar.addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });   // Auswahl im Text behalten
     bar.addEventListener('click', async e => {
       const area = getArea();

@@ -2473,6 +2473,9 @@ textarea.cb-code:not(.cb-editor textarea){min-height:120px;border:1px solid var(
 .rte-menu__sep{display:block;height:1px;margin:4px 6px;background:var(--adm-line)}
 .rte-menu__note{margin:6px 4px 2px;padding:8px 10px;border-radius:6px;background:var(--adm-warn-bg,#FFF4E5);color:var(--adm-ink);font-size:12.5px;line-height:1.4}
 .rte-narrow{display:none}
+/* Leiste zu schmal für eine Zeile (resources/js/_rte.js mount → .is-tight): Listen ins Menü „Weitere“ */
+.rte-bar.is-tight .rte-wide,.cms-inline-bar.is-tight .rte-wide{display:none!important}
+.rte-bar.is-tight .rte-narrow,.cms-inline-bar.is-tight .rte-narrow{display:contents}
 @media (max-width:560px){
   .rte-wide{display:none!important}
   .rte-narrow{display:contents}

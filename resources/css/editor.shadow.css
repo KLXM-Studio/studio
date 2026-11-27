@@ -450,7 +450,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 @media (pointer:coarse){.cms-addpop__item{min-height:44px}.cms-addpop__view{width:40px;height:40px}}
 
 /* Schwebende Formatierungsleiste für Inline-Bearbeitung */
-.cms-inline-bar{position:fixed;display:flex;flex-wrap:wrap;align-items:center;gap:4px;max-width:calc(100vw - 16px);padding:4px;border:1px solid var(--rte-border-soft,#D5D8E2);border-radius:var(--rte-radius,6px);background:var(--rte-raised,#fff);box-shadow:var(--rte-shadow,0 6px 24px rgb(0 0 0/.12));font:500 13px/1.2 Lato,"Segoe UI",Tahoma,Geneva,Verdana,system-ui,sans-serif;color:var(--rte-text,#1F2430)}
+.cms-inline-bar{position:fixed;display:flex;flex-wrap:nowrap;align-items:center;gap:4px;width:max-content;max-width:calc(100vw - 16px);padding:6px;border:1px solid var(--rte-border-soft,#D5D8E2);border-radius:var(--rte-float-radius,calc(var(--rte-radius,6px) + 4px));background:var(--rte-raised,#fff);box-shadow:var(--rte-shadow,0 6px 24px rgb(0 0 0/.12));font:500 13px/1.2 Lato,"Segoe UI",Tahoma,Geneva,Verdana,system-ui,sans-serif;color:var(--rte-text,#1F2430)}
 /* Knöpfe, Gruppen, Zustände, Menüs: admin.css (Block „wie fluid/tiptap“, über admin.shadow.css) */
 
 /* Zuschneiden direkt auf der Seite: Knopf über Bildern (Dokument-Koordinaten, Host sitzt bei 0/0) */
@@ -965,3 +965,11 @@ button.pp-fold:focus-visible{outline:2px solid var(--adm-a,#314164);outline-offs
 .qg-rte__area:focus{outline:2px solid var(--adm-accent);outline-offset:1px}
 .qg-rte__area :is(p,ul,ol){margin:0 0 .5em}
 .qg-editlink{margin:6px 0 0;font-size:13px}
+
+/* Einzeilige Leiste: schmal → Listen im Menü „Weitere“ (_rte.js mount → .is-tight); [hidden] gewinnt immer gegen display:flex */
+.cms-inline-bar.is-tight .rte-wide{display:none!important}
+.cms-inline-bar.is-tight .rte-narrow{display:contents}
+.cms-inline-bar[hidden],.cms-inline-bar [hidden]{display:none!important}
+/* Wie die schwebende Leiste von TipTap (fluid): Menüs der Leiste mit derselben Rundung, Gruppen ohne Umbruch */
+.cms-inline-bar .rte-menu{border-radius:var(--rte-float-radius,calc(var(--rte-radius,6px) + 4px))}
+.cms-inline-bar .rte-group{flex:none}

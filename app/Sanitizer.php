@@ -172,7 +172,8 @@ final class Sanitizer
                 self::$styled = true;
                 if ($cls !== null && in_array($cls, self::P_EXTRA, true)) self::$extra = true;
             }
-            $out .= $cls !== null ? "<$tag class=\"$cls\">$inner</$tag>" : "<$tag>$inner</$tag>";
+            // Listen mit Format (list-style: none in den Kit-Stilen): role="list", sonst verlieren einige Screenreader die Listen-Semantik
+            $out .= $cls !== null ? "<$tag class=\"$cls\"" . (in_array($tag, ['ul', 'ol'], true) ? ' role="list"' : '') . ">$inner</$tag>" : "<$tag>$inner</$tag>";
         }
         return $out;
     }

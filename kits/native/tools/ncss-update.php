@@ -37,6 +37,8 @@ const NCSS_FILES = [
     'components/morph.css',
     'components/filter.css', 'js/filter.js',
     'components/timeline.css', 'components/testimonial.css', 'components/pricing.css', 'components/leaders.css',
+    // Listenformate im Fließtext (Core\TextFormats, theme.php → 'text' → 'lists'): Punkte, Striche, Trennlinien, Schritte
+    'components/lists.css',
     // Lese-Schriften im Darstellungs-Knopf (Bedienfeld selbst: Kit fluid, kits/fluid/assets/js/preferences*.js, css/preferences.css)
     'components/preferences-fonts.css',
 ];

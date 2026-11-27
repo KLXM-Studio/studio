@@ -1,0 +1,3 @@
+/* NativeCSS components/lists.css – Listenformate im Fließtext (theme.php → 'text' → 'lists', conditional_css '@rich'). Datei unverändert in vendor/ncss/. */
+@layer tokens, reset, base, fluid, helpers, components, native;
+@import "../../vendor/ncss/components/lists.css" layer(components);

@@ -124,6 +124,15 @@ return [
     // Stylesheets und Skripte je Block, Variante oder Merkmal. Merkmale (@…) melden die Blöcke dieses Kits beim Rendern
     // (Theme::markUsed): '@nv-hero' = Einstieg in der Darstellung von NativeCSS, '@fluid-hero' = Variante von fluid (z. B. Collage).
     // So lädt eine Seite nur das CSS der Darstellung, die sie wirklich zeigt. Beim Bearbeiten lädt der Editor alle Stylesheets.
+    // Textformate (Core\TextFormats): zusätzlich zu fluid (erbt Häkchen-Liste und Button-Links) die Listen von NativeCSS
+    'text' => [
+        'lists' => [
+            'ncss-list--dot' => ['label' => 'Punkte', 'hint' => 'Runde Punkte in Akzentfarbe', 'list' => 'ul'],
+            'ncss-list--dash' => ['label' => 'Striche', 'hint' => 'Gedankenstriche statt Punkte', 'list' => 'ul'],
+            'ncss-list--divided' => ['label' => 'Mit Trennlinien', 'hint' => 'Feine Linie zwischen den Einträgen', 'list' => 'both'],
+            'ncss-list--steps' => ['label' => 'Schritte', 'hint' => 'Nummerierte Schritte mit Kreis', 'list' => 'ol'],
+        ],
+    ],
     'conditional_css' => [
         // Blöcke und Varianten von fluid, die hier eine eigene Darstellung haben: CSS von fluid nur für dessen Ausgabe
         'css/hero-x.css' => ['@fluid-hero'],
@@ -148,6 +157,7 @@ return [
         'css/nv-faq.css' => ['@nv-faq'],
         // Komponenten von NativeCSS (Hüllen mit layer(…) in assets/css bzw. assets/js, Dateien in vendor/ncss)
         'css/ncss-reveal.css' => ['@reveal'], 'js/ncss-reveal.js' => ['@reveal'],
+        'css/ncss-lists.css' => ['@rich'],   // Listenformate im Fließtext (Core\TextFormats)
         'css/ncss-morph.css' => ['@morph'],
         'css/ncss-count-up.css' => ['stats:@count'], 'js/ncss-count-up.js' => ['stats:@count'],
         'css/ncss-marquee.css' => ['logos:@marquee'], 'js/ncss-marquee.js' => ['logos:@marquee'],
