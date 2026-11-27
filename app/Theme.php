@@ -144,6 +144,13 @@ final class Theme
                 $out[$k] = array_filter(array_replace((array) ($parent[$k] ?? []), (array) ($child[$k] ?? [])), fn($v) => $v !== null);
             }
         }
+        // Textformate (Core\TextFormats): je Gruppe ergänzen statt ersetzen – false im Kind-Kit entfernt ein geerbtes Format
+        if (isset($parent['text']) || isset($child['text'])) {
+            $out['text'] = [];
+            foreach (TextFormats::GROUPS as $g) {
+                if (isset($parent['text'][$g]) || isset($child['text'][$g])) $out['text'][$g] = array_replace((array) ($parent['text'][$g] ?? []), (array) ($child['text'][$g] ?? []));
+            }
+        }
         return self::applyDesignDefaults(self::extendBlocks($out, (array) ($child['block_extend'] ?? [])));
     }
 

@@ -39,12 +39,16 @@ final class RichText
             return null;
         };
         $auto = ['accent' => $tok(['accent_ink', 'accent']), 'muted' => $tok(['muted'])];
-        $labels = self::labels();
+        // Farben = Textformate des Kits (Core\TextFormats, Gruppe colors, Klassen c-…); Werte aus rich_text, Design-Token gleichen Namens
+        // (z. B. „secondary“) bzw. den Vorgaben des Kerns
         $colors = [];
-        foreach (self::DEFAULTS as $name => $def) {
-            $pair = isset($over[$name]) ? array_values((array) $over[$name]) : ($auto[$name] ?? $def);
+        foreach (TextFormats::active()['colors'] as $cls => $f) {
+            if (!str_starts_with($cls, 'c-')) continue;
+            $name = substr($cls, 2);
+            $def = self::DEFAULTS[$name] ?? ['#555555', '#BBBBBB'];
+            $pair = isset($over[$name]) ? array_values((array) $over[$name]) : ($auto[$name] ?? $tok([$name . '_ink', $name]) ?? $def);
             $light = Design::color($pair[0] ?? null) ?? $def[0];
-            $colors[] = ['name' => $name, 'label' => $labels[$name], 'light' => $light, 'dark' => Design::color($pair[1] ?? null) ?? $def[1]];
+            $colors[] = ['name' => $name, 'label' => __($f['label']), 'light' => $light, 'dark' => Design::color($pair[1] ?? null) ?? $def[1]];
         }
         $bgOver = (array) ((app()->theme->def['rich_text'] ?? [])['background'] ?? []);
         $bg = $bgOver ? [Design::color($bgOver[0] ?? null) ?? '#FFFFFF', Design::color($bgOver[1] ?? null) ?? '#121212'] : ($tok(['background']) ?? ['#FFFFFF', '#121212']);
@@ -54,7 +58,7 @@ final class RichText
             foreach ($colors as &$c) if ($c['dark'] === $c['light']) $c['dark'] = self::mix($c['light'], 0.5);
             unset($c);
         }
-        return ['colors' => $colors, 'bg' => $bg, 'dark' => $hasDark, 'country' => country_code()];
+        return ['colors' => $colors, 'bg' => $bg, 'dark' => $hasDark, 'country' => country_code(), 'text' => TextFormats::editorConfig()];
     }
 
     /** Farbe mit Weiß mischen (Vorschau im dunklen Verwaltungs-Look) */

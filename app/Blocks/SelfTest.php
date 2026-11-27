@@ -142,6 +142,17 @@ final class SelfTest
             [$V::$force, $V::$forceHint] = $prev;
         }
         // Rich-Text-Vertrag: nur data-video-lb="off" bleibt
+        // Textformate aus dem Kit (Core\TextFormats): eine Quelle für Leiste und Sanitizer – Kit-Klassen bleiben, fremde fallen weg
+        try {
+            \Core\TextFormats::useDefinition(['headings' => ['h-display' => 'Groß'], 'colors' => ['c-muted' => false, 'c-secondary' => 'Zweite'], 'lists' => ['steps' => ['label' => 'Schritte', 'list' => 'ol']], 'links' => ['btn btn--primary' => 'Button']]);
+            $html = \Core\Sanitizer::block('<h2 class="h-display x">H</h2><p class="t-lead">A</p><p><span class="c-secondary">s</span><span class="c-muted">m</span><a href="https://example.org" class="btn btn--primary">B</a><a href="https://example.org" class="btn">C</a></p><ol class="steps"><li>1</li></ol><ul class="steps"><li>2</li></ul>');
+            $this->assert($html === '<h2 class="h-display">H</h2><p class="t-lead">A</p><p><span class="c-secondary">s</span>m<a href="https://example.org" class="btn btn--primary">B</a><a href="https://example.org">C</a></p><ol class="steps"><li>1</li></ol><ul><li>2</li></ul>', 'Textformate: Kit-Klassen (Überschrift, Farbe, Liste ol, Button-Link) bleiben, entfernte/fremde fallen weg');
+            $this->assert(array_column(\Core\TextFormats::editorConfig()['colors'], 0) === ['c-accent', 'c-success', 'c-warning', 'c-danger', 'c-secondary'], 'Textformate: Leiste bekommt dieselben Farben (false entfernt)');
+            $m = \Core\Theme::mergeDefinition(['text' => ['links' => ['btn a' => 'A', 'btn b' => 'B']]], ['text' => ['links' => ['btn b' => false]]]);
+            $this->assert(\Core\TextFormats::merge([], $m['text'])['links'] === ['btn a' => ['label' => 'A', 'short' => 'A', 'hint' => '', 'list' => 'ul']], 'Textformate: Kind-Kit erbt je Gruppe, false entfernt Geerbtes');
+        } finally {
+            \Core\TextFormats::useDefinition(null);
+        }
         $this->assert(\Core\Sanitizer::block('<p><a href="https://youtu.be/abcdefghijk" data-video-lb="off">x</a></p>') === '<p><a href="https://youtu.be/abcdefghijk" data-video-lb="off">x</a></p>', 'Video-Links: Rich-Text behält data-video-lb="off"');
         $this->assert(\Core\Sanitizer::block('<p><a href="https://youtu.be/abcdefghijk" data-video-lb="youtube" data-video-id="x">x</a></p>') === '<p><a href="https://youtu.be/abcdefghijk">x</a></p>', 'Video-Links: andere Werte und data-video-id fallen weg');
     }

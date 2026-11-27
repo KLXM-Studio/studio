@@ -10527,4 +10527,6 @@ return [
     'Bild hinzufügen …' => 'Add image …',
     'Erinnerung an Aufgaben' => 'Task reminders',
     'Erinnerung an fällige Aufgaben per E-Mail' => 'Email reminders for due tasks',
+    'Link als {name}' => 'Link as {name}',
+    'Stil der Überschrift' => 'Heading style',
 ];

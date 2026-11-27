@@ -181,12 +181,8 @@ final class Sanitizer
     private static function classOf(string $tag, string $class): ?string
     {
         $tokens = preg_split('~\s+~', trim($class)) ?: [];
-        $allowed = match ($tag) {
-            'p' => self::P_CLASSES,
-            'span' => array_map(fn($c) => 'c-' . $c, self::COLORS),
-            'ul' => ['check'],
-            default => [],
-        };
+        // Erlaubte Klassen aus den Textformaten des Kits (Core\TextFormats – dieselbe Quelle wie die Formatierungsleiste)
+        $allowed = TextFormats::allowed($tag);
         foreach ($tokens as $t) {
             if (in_array($t, $allowed, true)) return $t;
         }
@@ -204,7 +200,10 @@ final class Sanitizer
         }
         $title = trim((string) preg_replace('~\s+~u', ' ', $a->getAttribute('title')));
         $blank = strtolower(trim($a->getAttribute('target'))) === '_blank';
-        return '<a href="' . htmlspecialchars($href, ENT_QUOTES) . '"'
+        // Linkformat des Kits (z. B. „btn btn--primary“ = Button) – nur genau eine erlaubte Kombination
+        $lc = trim((string) preg_replace('~\s+~', ' ', $a->getAttribute('class')));
+        $lc = $lc !== '' && in_array($lc, TextFormats::allowed('a'), true) ? $lc : '';
+        return '<a href="' . htmlspecialchars($href, ENT_QUOTES) . '"' . ($lc !== '' ? ' class="' . htmlspecialchars($lc, ENT_QUOTES) . '"' : '')
             . ($ref !== '' ? ' data-link="' . htmlspecialchars($ref, ENT_QUOTES) . '"' : '')
             . ($title !== '' ? ' title="' . htmlspecialchars(mb_substr($title, 0, 200), ENT_QUOTES) . '"' : '')
             . ($blank ? ' target="_blank" rel="noopener"' : '')

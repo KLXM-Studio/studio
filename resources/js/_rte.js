@@ -24,7 +24,9 @@ import { icon } from './_rte_icons.js';
 const d = document;
 const $$ = (s, c = d) => [...c.querySelectorAll(s)];
 
-const STYLES = [
+// Absatzstile, Farben, Listen- und Linkformate kommen aus dem Kit (Core\TextFormats → RichText::clientScript, palette().text);
+// BASE_STYLES/COLORS nur als Rückfall ohne Konfiguration (gleich den Formaten des Kerns)
+const BASE_STYLES = [
   // [Wert, Name im Menü, Kurzname in der Leiste, Erläuterung]
   ['p', 'Normaler Text', 'Normal', ''],
   ['t-lead', 'Hervorgehoben', 'Hervorgeh.', 'Größerer Text, keine Überschrift'],
@@ -39,8 +41,19 @@ const STYLES = [
   ['h4', 'Unterüberschrift H4', 'H4', ''],
   ['blockquote', 'Zitat', 'Zitat', ''],
 ];
-const P_STYLES = ['t-lead', 't-small', 't-note', 't-tip', 't-warn', 't-kicker', 't-center'];
 const COLORS = ['accent', 'muted', 'success', 'warning', 'danger'];
+const textCfg = () => palette().text || null;
+/** Menü „Absatzstil“: Normal, Absatzstile des Kits, H2–H4, Zitat */
+function styleList() {
+  const c = textCfg();
+  if (!c) return BASE_STYLES;
+  return [BASE_STYLES[0], ...c.paragraphs.map(([v, l, sh, h]) => [v, l, sh, h]), ...BASE_STYLES.filter(x => HEADINGS.includes(x[0]) || x[0] === 'blockquote')];
+}
+const pStyles = () => styleList().map(x => x[0]).filter(v => v !== 'p' && v !== 'blockquote' && !HEADINGS.includes(v));
+const colorNames = () => palette().colors.map(c => c.name);
+const headStyles = () => textCfg()?.headings || [];
+const listFormats = () => textCfg()?.lists || [['check', 'Häkchen-Liste', 'Häkchen-Liste', '', 'ul']];
+const linkFormats = () => textCfg()?.links || [];
 const HEADINGS = ['h2', 'h3', 'h4'];
 const MARK = '#010203';   // Hilfsfarbe: execCommand('foreColor') markiert die Auswahl, danach Klasse statt <font>
 // E-Mail-, Web-Adressen und Telefonnummern erkennen: markiert + „Link“ → sofort Link; beim Tippen nach Leerzeichen/Satzzeichen/Enter automatisch
@@ -217,11 +230,15 @@ let uid = 0;
 function barHtml(mode) {
   const n = ++uid;
   const menu = (name, label, body) => `<div class="rte-menu rte-menu--${name}" role="menu" id="rte-m${n}-${name}" aria-label="${esc(t(label))}" hidden>${body}</div>`;
-  const lists = [['insertUnorderedList', icon('bullet'), 'Aufzählung'], ['insertOrderedList', icon('ordered'), 'Nummerierte Liste'], ['checklist', icon('check'), 'Häkchen-Liste']];
+  const lists = [['insertUnorderedList', icon('bullet'), 'Aufzählung'], ['insertOrderedList', icon('ordered'), 'Nummerierte Liste'],
+    ...(listFormats().some(l => l[0] === 'check') ? [['checklist', icon('check'), listFormats().find(l => l[0] === 'check')[1]]] : [])];
+  const extraLists = listFormats().filter(l => l[0] !== 'check');
+  const linkItems = linkFormats().length ? '<span class="rte-menu__sep" role="separator"></span>' + linkFormats().map(([v, l, , h]) => item('linkfmt:' + v, t('Link als {name}', { name: l }), { radio: 1, hint: h, pre: `<span class="rte-mi__i">${icon('link')}</span>` })).join('') : '';
+  const fmtItems = (extraLists.length ? '<span class="rte-menu__sep" role="separator"></span>' + extraLists.map(([v, l, , h, kind]) => item('listfmt:' + v, l, { radio: 1, hint: h, pre: `<span class="rte-mi__i">${icon(kind === 'ol' ? 'ordered' : 'bullet')}</span>` })).join('') : '') + linkItems;
   const inl = `<span class="rte-group">${btn('bold', icon('bold'), 'Fett', { pressed: 1, keys: kbd('B'), aria: ariaKeys('B') })}${btn('italic', icon('italic'), 'Kursiv', { pressed: 1, keys: kbd('I'), aria: ariaKeys('I') })}`
     + btn('mark', icon('mark'), 'Markieren (Textmarker)', { pressed: 1, keys: kbd('H', 1), aria: ariaKeys('H', 1) })
     + `<span class="rte-mwrap">${menuBtn('color', `<span class="rte-ico-a" aria-hidden="true">${icon('color')}<span class="rte-cbar"></span></span>`, 'Textfarbe')}`
-    + menu('color', 'Textfarbe', COLORS.map(c => item('color:' + c, colorLabel(c), { radio: 1, pre: `<span class="rte-sw" data-sw="${c}" aria-hidden="true"></span>`, post: '<small class="rte-mi__warn" hidden></small>', cls: 'rte-mi rte-mi--c-' + c })).join('')
+    + menu('color', 'Textfarbe', colorNames().map(c => item('color:' + c, colorLabel(c), { radio: 1, pre: `<span class="rte-sw" data-sw="${c}" aria-hidden="true"></span>`, post: '<small class="rte-mi__warn" hidden></small>', cls: 'rte-mi rte-mi--c-' + c })).join('')
       + '<span class="rte-menu__sep" role="separator"></span>' + item('color:none', 'Keine Farbe', { pre: '<span class="rte-sw rte-sw--none" aria-hidden="true"></span>' })
       + `<p class="rte-menu__note" data-contrast-note hidden></p>`) + '</span></span>'
     + `<span class="rte-group">${btn('link', icon('link'), 'Link einfügen oder bearbeiten', { pressed: 1, keys: kbd('K'), aria: ariaKeys('K') })}</span>`;
@@ -234,13 +251,15 @@ function barHtml(mode) {
       + '<span class="rte-menu__sep" role="separator"></span>'
       + item('markdown', 'Markdown einfügen …', { pre: `<span class="rte-mi__i">${icon('markdown')}</span>`, hint: 'Text mit # Überschriften, - Listen, **fett** umwandeln' }))
     + '</span></span>';
-  if (mode === 'inline') return inl + more('') + aiBarHtml();
+  if (mode === 'inline') return inl + more(linkItems) + aiBarHtml();
   const style = `<span class="rte-group"><span class="rte-mwrap">${menuBtn('style', `<span class="rte-style-l">${esc(t('Normal'))}</span>`, 'Absatzstil', '', `${t('Normal')} (${t('Absatzstil')})`)}`
-    + menu('style', 'Absatzstil', STYLES.map(([v, label, , hint]) => item('style:' + v, label, { radio: 1, hint, cls: 'rte-mi rte-mi--' + v })).join('')) + '</span></span>';
+    + menu('style', 'Absatzstil', styleList().map(([v, label, , hint]) => item('style:' + v, label, { radio: 1, hint, cls: 'rte-mi rte-mi--' + v })).join('')
+      // Überschriftenstile des Kits (Klasse an H2–H4, die Ebene bleibt)
+      + (headStyles().length ? '<span class="rte-menu__sep" role="separator"></span>' + headStyles().map(([v, label, , hint]) => item('hstyle:' + v, label, { radio: 1, hint: hint || t('Stil der Überschrift'), cls: 'rte-mi rte-mi--' + v })).join('') : '')) + '</span></span>';
   const listGroup = `<span class="rte-group rte-wide">${lists.map(([c, l, ti]) => btn(c, l, ti, { pressed: 1 })).join('')}</span>`;
   const listItems = `<span class="rte-narrow">${lists.map(([c, , ti]) => item(c, ti, { radio: 1, pre: `<span class="rte-mi__i">${icon(c === 'checklist' ? 'check' : c === 'insertOrderedList' ? 'ordered' : 'bullet')}</span>` })).join('')}</span>`
     + item('indent', 'Einrücken (Tab)', { pre: `<span class="rte-mi__i">${icon('indent')}</span>` }) + item('outdent', 'Ausrücken (Umschalt+Tab)', { pre: `<span class="rte-mi__i">${icon('outdent')}</span>` })
-    + '<span class="rte-menu__sep" role="separator"></span>';
+    + fmtItems + '<span class="rte-menu__sep" role="separator"></span>';
   return style + inl + listGroup + more(listItems) + aiBarHtml();
 }
 
@@ -337,8 +356,38 @@ const Rich = {
     if (q) Rich.unquote(q);
     if (HEADINGS.includes(Rich.blockTag(area)) || !Rich.paragraphs(area).length) d.execCommand('formatBlock', false, 'p');
     const ps = Rich.paragraphs(area);
-    const on = P_STYLES.includes(s) && !ps.every(p => p.classList.contains(s));
-    ps.forEach(p => { P_STYLES.forEach(c => p.classList.remove(c)); if (on) p.classList.add(s); if (!p.className) p.removeAttribute('class'); });
+    const P = pStyles(), on = P.includes(s) && !ps.every(p => p.classList.contains(s));
+    ps.forEach(p => { P.forEach(c => p.classList.remove(c)); if (on) p.classList.add(s); if (!p.className) p.removeAttribute('class'); });
+  },
+  /** Überschriftenstil des Kits (Klasse an der Überschrift, erneut wählen hebt auf) */
+  setHeadingStyle(area, s) {
+    const h = up(area, n => /^H[2-4]$/.test(n.tagName));
+    if (!h) return;
+    const all = headStyles().map(x => x[0]), on = !h.classList.contains(s);
+    all.forEach(c => h.classList.remove(c));
+    if (on) h.classList.add(s);
+    if (!h.className) h.removeAttribute('class');
+  },
+  /** Listenformat des Kits (z. B. Schritte): Liste anlegen, falls nötig, dann Klasse setzen (genau eine) bzw. aufheben */
+  setListFormat(area, s) {
+    const f = listFormats().find(x => x[0] === s);
+    if (!f) return;
+    let list = Rich.closestList(area);
+    const want = f[4] === 'ol' ? 'OL' : 'UL';
+    if (!list || (f[4] !== 'both' && list.tagName !== want)) { d.execCommand(want === 'OL' ? 'insertOrderedList' : 'insertUnorderedList'); list = Rich.closestList(area); }
+    if (!list) return;
+    const on = !list.classList.contains(s);
+    listFormats().forEach(x => list.classList.remove(x[0]));
+    if (on) list.classList.add(s);
+    if (!list.className) list.removeAttribute('class');
+  },
+  /** Linkformat des Kits (z. B. Button): Klassen am Link setzen bzw. aufheben */
+  setLinkFormat(area, s) {
+    const a = up(area, n => n.tagName === 'A');
+    if (!a) return;
+    const on = (a.getAttribute('class') || '').trim() !== s;
+    a.removeAttribute('class');
+    if (on) a.setAttribute('class', s);
   },
   /** Textfarbe (Klasse c-…) bzw. „none“ */
   color(area, name) {
@@ -476,6 +525,9 @@ const Rich = {
     const list = Rich.closestList(area);
     if (cmd === 'link') await Rich.link(area);
     else if (cmd.startsWith('style:')) Rich.setStyle(area, cmd.slice(6));
+    else if (cmd.startsWith('hstyle:')) Rich.setHeadingStyle(area, cmd.slice(7));
+    else if (cmd.startsWith('listfmt:')) Rich.setListFormat(area, cmd.slice(8));
+    else if (cmd.startsWith('linkfmt:')) Rich.setLinkFormat(area, cmd.slice(8));
     else if (cmd.startsWith('color:')) Rich.color(area, cmd.slice(6));
     else if (cmd === 'mark') Rich.mark(area);
     else if (HEADINGS.includes(cmd) || cmd === 'blockquote') Rich.setStyle(area, cmd);
@@ -513,7 +565,8 @@ const Rich = {
     const list = Rich.closestList(area), check = !!list && list.tagName === 'UL' && list.classList.contains('check');
     const tag = Rich.blockTag(area), q = Rich.closestQuote(area);
     const p = up(area, n => n.tagName === 'P');
-    const style = q ? 'blockquote' : HEADINGS.includes(tag) ? tag : (p && P_STYLES.find(c => p.classList.contains(c))) || 'p';
+    const style = q ? 'blockquote' : HEADINGS.includes(tag) ? tag : (p && pStyles().find(c => p.classList.contains(c))) || 'p';
+    const hEl = up(area, n => /^H[2-4]$/.test(n.tagName)), aEl = up(area, n => n.tagName === 'A');
     const color = colorOf(up(area, isColor) || d.createElement('i'));
     const on = c => c === 'insertUnorderedList' ? !!list && list.tagName === 'UL' && !check
       : c === 'insertOrderedList' ? !!list && list.tagName === 'OL'
@@ -524,14 +577,19 @@ const Rich = {
       : c === 'blockquote' ? !!q
       : c.startsWith('style:') ? c.slice(6) === style
       : c.startsWith('color:') ? c.slice(6) === color
+      : c.startsWith('hstyle:') ? !!hEl && hEl.classList.contains(c.slice(7))
+      : c.startsWith('listfmt:') ? !!list && list.classList.contains(c.slice(8))
+      : c.startsWith('linkfmt:') ? !!aEl && (aEl.getAttribute('class') || '').trim() === c.slice(8)
       : ['bold', 'italic', 'superscript', 'subscript'].includes(c) ? d.queryCommandState(c) : false;
     $$('[aria-pressed]', bar).forEach(b => b.setAttribute('aria-pressed', on(b.dataset.cmd) ? 'true' : 'false'));
     $$('[aria-checked]', bar).forEach(b => b.setAttribute('aria-checked', on(b.dataset.cmd) ? 'true' : 'false'));
     // Stile in Listen nicht möglich (Überschriften/Zitat schon)
-    $$('[data-cmd^="style:t-"]', bar).forEach(b => b.setAttribute('aria-disabled', list ? 'true' : 'false'));
+    $$('[data-cmd^="style:"]', bar).forEach(b => { if (!/^style:(p|h[2-4]|blockquote)$/.test(b.dataset.cmd)) b.setAttribute('aria-disabled', list ? 'true' : 'false'); });
+    $$('[data-cmd^="hstyle:"]', bar).forEach(b => b.setAttribute('aria-disabled', hEl ? 'false' : 'true'));
+    $$('[data-cmd^="linkfmt:"]', bar).forEach(b => b.setAttribute('aria-disabled', aEl ? 'false' : 'true'));
     const sb = bar.querySelector('[data-menu=style]');
     if (sb) {
-      const st = STYLES.find(x => x[0] === style);
+      const st = styleList().find(x => x[0] === style) || BASE_STYLES[0];
       const short = list ? t('Liste') : t(st[2]);
       sb.querySelector('.rte-style-l').textContent = short;
       // sichtbarer Kurztext zuerst (WCAG 2.5.3 Label in Name), dann Stilname
