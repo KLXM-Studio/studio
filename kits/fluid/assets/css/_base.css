@@ -33,10 +33,11 @@ main:focus{outline:none}
    frame    Bildrahmen mit aspect-ratio                    switcher (Flex-Umbruch nebeneinander ↔ untereinander) je Block */
 .wrap{width:min(100% - 2 * var(--f-gutter),var(--f-wrap));margin-inline:auto;container-type:inline-size}
 .wrap--text{width:min(100% - 2 * var(--f-gutter),44rem)}
-/* Füllung der Kästen im Abschnitt (Tune fill, Kern-Klassen fill-*): Karten, Boxen, Formulare nutzen --f-pad */
-.fill-compact{--f-pad:calc(var(--f-s-l) * var(--f-density) * .55)}
-.fill-large{--f-pad:calc(var(--f-s-l) * var(--f-density) * 1.6)}
-.fill-xl{--f-pad:calc(var(--f-s-l) * var(--f-density) * 2.3)}
+/* Füllung der Kästen im Abschnitt (Tune fill, Kern-Klassen fill-*): Karten, Boxen, Formulare nutzen --f-pad. Ist der Abschnitt
+   selbst der Kasten (Karte in der Wissen-Spalte, knowledge.css --kn-fill), bleiben die Karten darin unverändert */
+:where(.fill-compact):not(.kn-content .sec[class*="bg-"]:not(.bg-white)){--f-pad:calc(var(--f-s-l) * var(--f-density) * .55)}
+:where(.fill-large):not(.kn-content .sec[class*="bg-"]:not(.bg-white)){--f-pad:calc(var(--f-s-l) * var(--f-density) * 1.6)}
+:where(.fill-xl):not(.kn-content .sec[class*="bg-"]:not(.bg-white)){--f-pad:calc(var(--f-s-l) * var(--f-density) * 2.3)}
 /* Inhaltsbreite des Abschnitts (Tune width, nur mit theme.php 'section_width'): Stufen statt Pixel, Seitenrand (--f-gutter) bleibt immer; in schmalen Spalten
    (Wissen, Layout-Spalten) gilt deren Breite – die Regeln dort sind spezifischer */
 .sw-narrow>.wrap{width:min(100% - 2 * var(--f-gutter),46rem)}
