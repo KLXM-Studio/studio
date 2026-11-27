@@ -817,10 +817,13 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 /* Ziehen zum Einstellen (editor.js dragHandle, decorateResize): je Funktion eigene Farbe und Form, Symbol im Griff –
    Abstand (violett, waagrechte Pille ⇕), Textbreite (bernstein ⇔), Bild/Text (pink ⇔), Spalten (mint ⇔) */
 .cms-drag__h,.cms-lay-resize__h{--k:#7C3AED;all:unset;box-sizing:border-box;position:absolute;inset:0;display:grid;place-items:center;touch-action:none}
-.cms-drag__h--y{cursor:row-resize}
-.cms-drag__h--x,.cms-lay-resize__h{cursor:col-resize}
+.cms-drag__h--y{cursor:ns-resize}
+.cms-drag__h--x{cursor:ew-resize}
+.cms-lay-resize__h{cursor:col-resize}
 .cms-drag__h[data-kind=width]{--k:#D97706}
 .cms-drag__h[data-kind=split]{--k:#DB2777}
+/* Inhaltsbreite des Abschnitts: blau (Abstand lila, Feldbreite orange, Aufteilung pink) */
+.cms-drag__h[data-kind=secwidth]{--k:#2563EB}
 .cms-lay-resize__h{--k:#0F9F74}
 .cms-drag__grip svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .cms-drag__grip{display:grid;place-items:center;border-radius:999px;background:var(--k);color:#fff;font:700 13px/1 system-ui,-apple-system,sans-serif;box-shadow:0 0 0 2px #fff,0 4px 12px rgb(0 0 0/.25);opacity:.7;transition:opacity .15s,scale .15s}
@@ -832,7 +835,9 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-drag__h--x:is(:hover,:focus-visible,.is-drag)::before,.cms-lay-resize__h:is(:hover,:focus-visible,.is-drag)::before{opacity:.55}
 /* Abstand: keine Führungslinie mehr – der Abstand selbst wird im Abschnitt schraffiert (editor.css .cms-drag-band) */
 /* Hinweis beim Griff oben: unterhalb (bleibt im eigenen Abschnitt, nicht über dem Abschnitt davor) */
-.cms-drag__h[data-side=top] .cms-drag__tip{top:30px}
+/* Abstand: Beschriftung („Abstand oben: Normal“) rechts neben dem Griff, sichtbar solange der Griff sichtbar ist */
+.cms-drag__h--y .cms-drag__tip{top:50%;left:calc(100% + 6px);translate:0 -50%;opacity:1}
+.cms-drag__h--y .cms-drag__stick{display:contents}
 .cms-drag__h:focus-visible,.cms-lay-resize__h:focus-visible{outline:2px solid var(--k);outline-offset:3px;border-radius:8px}
 .cms-drag__tip,.cms-lay-resize__tip{position:absolute;left:0;top:-32px;padding:4px 9px;border-radius:999px;background:var(--k);color:#fff;font:600 12px/1.2 Lato,"Segoe UI",system-ui,-apple-system,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 4px 12px rgb(0 0 0/.2)}
 .cms-drag__h--x .cms-drag__tip,.cms-lay-resize__h .cms-lay-resize__tip{top:50%;left:50%;translate:-50% calc(-50% - 44px)}
@@ -843,7 +848,7 @@ button{font:inherit;color:inherit;letter-spacing:inherit;text-transform:none}
 .cms-drag__stick{display:contents}
 .cms-drag__h--x .cms-drag__stick,.cms-lay-resize__h .cms-drag__stick{position:sticky;top:max(72px,30vh);bottom:30vh;display:grid;place-items:center}
 /* Handy: Bild und Text stehen untereinander – Aufteilung/Textbreite ohne Wirkung */
-@media (max-width:760px){.cms-drag__h[data-kind=width],.cms-drag__h[data-kind=split]{display:none}}
+@media (max-width:760px){.cms-drag__h[data-kind=width],.cms-drag__h[data-kind=split],.cms-drag__h[data-kind=secwidth]{display:none}}
 
 /* „Seiten“ (Core\PagesTool, js/pages-panel.mjs): Seitenstruktur auf der Website */
 .pp{display:grid;gap:12px;padding:4px 12px 16px}

@@ -10509,4 +10509,7 @@ return [
     'Zugangsschutz eingeschaltet. Der Browser fragt jetzt nach Benutzername und Passwort.' => 'Access protection switched on. The browser now asks for username and password.',
     'Zugangsschutz einschalten' => 'Switch on access protection',
     'Zuletzt gesetzt am {date} von {by}. Das Passwort selbst wird nicht gespeichert – nur ein Prüfwert; vergessen = neu setzen.' => 'Last set on {date} by {by}. The password itself is not stored – only a check value; if forgotten, set a new one.',
+    'Breit' => 'Wide',
+    'Schmal' => 'Narrow',
+    'Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), blau = Inhaltsbreite links/rechts, pink/orange = Aufteilung bzw. Breite im Block. Immer in Stufen, auch per Pfeiltasten am Griff.' => 'Tip – handles in a section: purple = spacing top/bottom (drag the whole area), blue = content width left/right, pink/orange = split or width within the block. Always in steps, also with the arrow keys on the handle.',
 ];

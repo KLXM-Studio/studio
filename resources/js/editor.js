@@ -90,7 +90,7 @@ const DESIGN_TUNES = cfg.designTunes || [];
 const guardOf = (type, lock) => DESIGN === 'full' ? null : (lock ? 'lock' : (cfg.blocks[type]?.guarded ? 'type' : null));
 const guardNote = (why, lock) => why === 'lock' ? ((lock && lock.note) || CMSAdmin.t('Dieser Block ist von der Agentur gestaltet')) : CMSAdmin.t('Diese Blockart kann Ihre Rolle nicht bearbeiten');
 const lockIco = () => (CMSAdmin.ico ? CMSAdmin.ico('lock') : '');
-const TUNE_DEFAULTS = { background: 'white', anchor: '', visible: true, showInNav: false, navLabel: '', spaceTop: 'normal', spaceBottom: 'normal', divider: false, height: 'auto', bgImage: null, overlay: 'none', align: 'center', row: '', noGlossary: false, noSearch: false, reveal: '' };
+const TUNE_DEFAULTS = { background: 'white', anchor: '', visible: true, showInNav: false, navLabel: '', spaceTop: 'normal', spaceBottom: 'normal', width: 'normal', divider: false, height: 'auto', bgImage: null, overlay: 'none', align: 'center', row: '', noGlossary: false, noSearch: false, reveal: '' };
 let editor, dirty = false, drawerFor = null, drawerSnap = null;
 let History = null;   // Rückgängig/Wiederholen (unten)
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -1241,6 +1241,25 @@ function makeTool(type, def) {
             commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, [key]: v }; markDirty(); this.refresh(); } });
         }
       });
+      // Inhaltsbreite (cfg.widths): Griffe links und rechts an der Kante des Inhalts (.wrap), beide Seiten ziehen gleich weit
+      const wrap = sec?.querySelector(':scope > .wrap, :scope > [class*="wrap"]');
+      if (sec && wrap && cfg.widths && Object.keys(cfg.widths).length > 1 && DESIGN !== 'none') requestAnimationFrame(() => {
+        if (!sec.isConnected) return;
+        // Nur Stufen anbieten, die hier sichtbar etwas ändern (schmale Spalte, Fenster schmaler als „Breit“): gleiche Breite = eine Stufe
+        const keep = sec.className, seen = new Map(), opts = {}, cur = this.tuneData.width || 'normal';
+        for (const v of ['narrow', 'normal', 'wide', 'full'].filter(k => k in cfg.widths)) {
+          sec.classList.remove(...Object.keys(cfg.widths).map(x => 'sw-' + x)); if (v !== 'normal') sec.classList.add('sw-' + v);
+          const w = Math.round(wrap.getBoundingClientRect().width);
+          if (!seen.has(w) || v === cur) { if (seen.has(w)) delete opts[seen.get(w)]; seen.set(w, v); opts[v] = cfg.widths[v]; }
+        }
+        sec.className = keep;
+        if (Object.keys(opts).length < 2) return;   // wirkt hier nicht (schmale Spalte, eigener Inhalt)
+        for (const side of ['left', 'right']) {
+          this.dragHandle({ kind: 'secwidth', host: sec, target: wrap, apply: sec, axis: 'x', side, options: opts, order: ['narrow', 'normal', 'wide', 'full'],
+            get: () => this.tuneData.width || 'normal', cls: v => v === 'normal' ? 'sw-normal' : 'sw-' + v, label: T('Breite'),
+            commit: v => { const tn = tunes.get(this.blockId); if (tn) tn.data = { ...tn.data, width: v }; markDirty(); this.refresh(); } });
+        }
+      });
       for (const g of def.drags || []) {
         const target = pv.querySelector(g.target);
         if (!target || !Object.keys(g.options || {}).length) continue;
@@ -1253,6 +1272,13 @@ function makeTool(type, def) {
     }
 
     dragHandle(o) {
+      const GRIP_ICONS = {
+        // Abstand: Balken mit Pfeilen nach oben und unten · Inhaltsbreite: Kanten mit Pfeilen nach außen · Spalten: Spaltentrenner · Feldbreite
+        space: '<svg viewBox="0 0 24 24"><path d="M4 12h16M12 9V3M9 6l3-3 3 3M12 15v6M9 18l3 3 3-3"/></svg>',
+        secwidth: '<svg viewBox="0 0 24 24"><path d="M3 5v14M21 5v14M7 12h10M10 9l-3 3 3 3M14 9l3 3-3 3"/></svg>',
+        split: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/></svg>',
+        width: '<svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>',
+      };
       const T = CMSAdmin.t;
       const values = o.order.filter(v => v in o.options);
       if (values.length < 2) return;
@@ -1261,16 +1287,20 @@ function makeTool(type, def) {
       if (getComputedStyle(o.host).position === 'static') o.host.style.position = 'relative';
       let dir = 1, drag = null, place = () => {};
       if (o.axis === 'y') {
-        // Griff sitzt in seinem eigenen Abschnitt (oben knapp unter der Oberkante, unten knapp über der Unterkante) – nicht auf der
-        // gemeinsamen Kante zweier Abschnitte; links gegeneinander versetzt, Mitte unten gehört „+ Block einfügen“
-        host.style.cssText = `position:absolute;left:${o.side === 'top' ? 116 : 28}px;${o.side}:4px;width:72px;height:24px;z-index:8`;
+        // Griff mittig auf der Innenkante der Abstandsfläche (oben: Unterkante des oberen Abstands, unten: Oberkante des unteren) –
+        // mit Beschriftung „Abstand oben: Normal“; bei „Kein“ knapp innerhalb des Abschnitts. Mitte der Abschnittskante gehört „+ Block einfügen“.
+        place = () => {
+          const pad = parseFloat(getComputedStyle(o.apply)[o.side === 'top' ? 'paddingTop' : 'paddingBottom']) || 0;
+          host.style.cssText = `position:absolute;left:50%;margin-left:-22px;${o.side}:${Math.max(4, Math.round(pad - 12))}px;width:44px;height:24px;z-index:8`;
+        };
+        o.host.addEventListener('pointerenter', () => { if (!drag) { place(); sizeBand(); } });
       } else {
         // Griff hängt am Abschnitt (nie im bearbeitbaren Text) und sitzt an der Kante des Zielelements – auch während des Ziehens
         // Lage erst messen, wenn die Vorschau steht (nächster Bildaufbau, Zeigen auf den Abschnitt, Fenstergröße)
         place = () => {
           const t = o.target.getBoundingClientRect(), hr = o.host.getBoundingClientRect(), pr = (o.target.parentElement || o.target).getBoundingClientRect();
           if (!t.width) return;
-          const leftEdge = (t.left + t.right) / 2 > (pr.left + pr.right) / 2 + 12;   // Element rechts → Griff links, nach links ziehen = größer
+          const leftEdge = o.side === 'left' ? true : o.side === 'right' ? false : (t.left + t.right) / 2 > (pr.left + pr.right) / 2 + 12;   // Element rechts → Griff links, nach links ziehen = größer
           if (!drag) dir = leftEdge ? -1 : 1;
           host.style.cssText = `position:absolute;top:${t.top - hr.top}px;height:${Math.max(48, t.height)}px;left:${(leftEdge ? t.left : t.right) - hr.left - 12}px;width:24px;z-index:8`;
         };
@@ -1286,13 +1316,14 @@ function makeTool(type, def) {
       if (o.axis === 'y') {
         band = d.createElement('div');
         band.className = 'cms-drag-band cms-drag-band--' + o.side; band.contentEditable = 'false'; band.setAttribute('aria-hidden', 'true');
+        band.title = o.label + ' – ' + T('ziehen');
         o.host.append(band);
       }
-      const sr = S.shadowFor(host, `<button type="button" class="cms-drag__h cms-drag__h--${o.axis}" data-kind="${o.kind || 'width'}" data-side="${o.side}" role="slider" aria-orientation="${o.axis === 'y' ? 'vertical' : 'horizontal'}"><span class="cms-drag__stick"><span class="cms-drag__grip" aria-hidden="true">${o.axis === 'y' ? '<svg viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>'}</span><span class="cms-drag__tip"></span></span></button>`);
+      const sr = S.shadowFor(host, `<button type="button" class="cms-drag__h cms-drag__h--${o.axis}" data-kind="${o.kind || 'width'}" data-side="${o.side}" role="slider" aria-orientation="${o.axis === 'y' ? 'vertical' : 'horizontal'}"><span class="cms-drag__stick"><span class="cms-drag__grip" aria-hidden="true">${GRIP_ICONS[o.kind === 'space' ? 'space' : o.kind === 'secwidth' ? 'secwidth' : o.kind === 'split' ? 'split' : 'width']}</span><span class="cms-drag__tip"></span></span></button>`);
       const h = sr.querySelector('.cms-drag__h'), tip = sr.querySelector('.cms-drag__tip');
       const cur = () => Math.max(0, values.indexOf(o.get()));
       const show = i => {
-        tip.textContent = `${o.label}: ${o.options[values[i]]} · ${o.axis === 'y' ? '↕' : '↔'} ${T('ziehen')}`;
+        tip.textContent = o.axis === 'y' ? `${o.label}: ${o.options[values[i]]}` : `${o.label}: ${o.options[values[i]]} · ↔ ${T('ziehen')}`;
         h.setAttribute('aria-label', T('{label} ziehen – jetzt {v}. Pfeiltasten: kleiner/größer.', { label: o.label, v: o.options[values[i]] }));
         h.setAttribute('aria-valuenow', String(i)); h.setAttribute('aria-valuemin', '0'); h.setAttribute('aria-valuemax', String(values.length - 1));
         h.setAttribute('aria-valuetext', o.options[values[i]]);
@@ -1304,22 +1335,27 @@ function makeTool(type, def) {
       h.addEventListener('pointerleave', () => { if (!drag) own(false); });
       h.addEventListener('focus', () => own(true));
       h.addEventListener('blur', () => { if (!drag) own(false); });
-      h.addEventListener('pointerdown', e => {
+      // Ziehen am Griff – bei Abständen auch auf der ganzen schraffierten Fläche (Band)
+      let dragEl = h;
+      const begin = (el, e) => {
+        if (e.button !== 0) return;
         e.preventDefault(); e.stopPropagation();
-        h.setPointerCapture(e.pointerId); h.classList.add('is-drag'); host.classList.add('is-drag');
+        dragEl = el; el.setPointerCapture(e.pointerId); h.classList.add('is-drag'); host.classList.add('is-drag'); own(true);
         drag = { x: e.clientX, y: e.clientY, i0: cur(), i: cur() };
-      });
-      h.addEventListener('pointermove', e => {
+      };
+      h.addEventListener('pointerdown', e => begin(h, e));
+      const move = e => {
         if (!drag) return;
         const delta = (o.axis === 'y' ? e.clientY - drag.y : e.clientX - drag.x) * dir;
         const i = Math.max(0, Math.min(values.length - 1, drag.i0 + Math.round(delta / 56)));
         if (i !== drag.i) { drag.i = i; preview(i); }
-      });
+      };
+      h.addEventListener('pointermove', move);
       const end = e => {
         if (!drag) return;
         const { i, i0 } = drag; drag = null; h.classList.remove('is-drag'); host.classList.remove('is-drag');
         if (!h.matches(':hover') && sr.activeElement !== h) own(false);
-        if (h.hasPointerCapture?.(e.pointerId)) h.releasePointerCapture(e.pointerId);
+        if (dragEl.hasPointerCapture?.(e.pointerId)) dragEl.releasePointerCapture(e.pointerId);
         if (i !== i0) {
           const st = S.ui('[data-editor-status]');
           if (st) st.textContent = T('{label}: {v} – noch nicht gespeichert.', { label: o.label, v: o.options[values[i]] });
@@ -1328,6 +1364,21 @@ function makeTool(type, def) {
       };
       h.addEventListener('pointerup', end);
       h.addEventListener('pointercancel', end);
+      if (band) {
+        band.addEventListener('pointerdown', e => begin(band, e));
+        band.addEventListener('pointermove', move);
+        band.addEventListener('pointerup', end);
+        band.addEventListener('pointercancel', end);
+        band.addEventListener('click', e => e.stopPropagation());
+        // Einmaliger Hinweis beim ersten Zeigen auf einen Abschnitt mit Abstands-Greifern (je Browser)
+        o.host.addEventListener('pointerenter', () => {
+          try {
+            if (localStorage.getItem('cms-hint-spacing')) return;
+            localStorage.setItem('cms-hint-spacing', '1');
+          } catch { return; }
+          CMSAdmin.toast?.(T('Tipp – Greifer im Abschnitt: lila = Abstand oben/unten (ganze Fläche ziehen), blau = Inhaltsbreite links/rechts, pink/orange = Aufteilung bzw. Breite im Block. Immer in Stufen, auch per Pfeiltasten am Griff.'), 'ok', 10000);
+        }, { once: true });
+      }
       h.addEventListener('click', e => e.stopPropagation());
       h.addEventListener('keydown', e => {
         e.stopPropagation();
@@ -1782,6 +1833,7 @@ function renderTuneForm(tool) {
     <div class="f f--half"><label for="t-anchor">Sprungmarke (Anker)</label><input id="t-anchor" name="anchor" value="${E(t.anchor)}" placeholder="z. B. ueber-uns"></div>
     <div class="f f--half"><label for="t-st">Abstand oben</label><select id="t-st" name="spaceTop">${opt(sp, t.spaceTop)}</select></div>
     <div class="f f--half"><label for="t-sb">Abstand unten</label><select id="t-sb" name="spaceBottom">${opt(sp, t.spaceBottom)}</select></div>
+    ${cfg.widths && Object.keys(cfg.widths).length ? `<div class="f f--half"><label for="t-sw">Inhaltsbreite</label><select id="t-sw" name="width">${opt(cfg.widths, t.width || 'normal')}</select></div>` : ''}
     <div class="f"><label class="f-check"><input type="checkbox" name="divider"${t.divider ? ' checked' : ''}> <span>Trennlinie oben</span></label></div>
     <div class="f"><label class="f-check"><input type="checkbox" name="showInNav"${t.showInNav ? ' checked' : ''}> <span>In Hauptnavigation anzeigen (Anker erforderlich)</span></label></div>
     <div class="f"><label for="t-nav">Beschriftung in der Navigation</label><input id="t-nav" name="navLabel" value="${E(t.navLabel)}" maxlength="40"></div>
@@ -1814,7 +1866,7 @@ function renderTuneForm(tool) {
     const data = {
       background: f.background.value, anchor: f.anchor.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
       visible: tune?.data?.visible !== false, divider: f.divider.checked,   // Sichtbarkeit: Schalter oben (renderVis) showInNav: f.showInNav.checked,
-      navLabel: f.navLabel.value, spaceTop: f.spaceTop.value, spaceBottom: f.spaceBottom.value,
+      navLabel: f.navLabel.value, spaceTop: f.spaceTop.value, spaceBottom: f.spaceBottom.value, width: f.width?.value || this.tuneData?.width || 'normal',
       height: f.height.value, align: f.align.value, bgImage: +f.bgImage.value || null, overlay: f.overlay.value,
       row: f.row ? f.row.value : '',
       noGlossary: f.noGlossary ? f.noGlossary.checked : !!tune?.data?.noGlossary,

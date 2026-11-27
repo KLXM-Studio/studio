@@ -33,6 +33,11 @@ main:focus{outline:none}
    frame    Bildrahmen mit aspect-ratio                    switcher (Flex-Umbruch nebeneinander ↔ untereinander) je Block */
 .wrap{width:min(100% - 2 * var(--f-gutter),var(--f-wrap));margin-inline:auto;container-type:inline-size}
 .wrap--text{width:min(100% - 2 * var(--f-gutter),44rem)}
+/* Inhaltsbreite des Abschnitts (Tune width): Stufen statt Pixel, Seitenrand (--f-gutter) bleibt immer; in schmalen Spalten
+   (Wissen, Layout-Spalten) gilt deren Breite – die Regeln dort sind spezifischer */
+.sw-narrow>.wrap{width:min(100% - 2 * var(--f-gutter),46rem)}
+.sw-wide>.wrap{width:min(100% - 2 * var(--f-gutter),calc(var(--f-wrap) + 14rem))}
+.sw-full>.wrap{width:calc(100% - 2 * var(--f-gutter))}
 .stack{display:flex;flex-direction:column;justify-content:flex-start}
 .stack>*+*{margin-top:var(--stack,var(--f-s-m))}
 .cluster{display:flex;flex-wrap:wrap;align-items:center;gap:var(--gap,var(--f-s-s) var(--f-s-m));margin:0;padding:0;list-style:none}
