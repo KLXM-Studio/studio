@@ -6,7 +6,8 @@
  *  - Mitlaufende Abschnitte: Links „In diesem Kapitel“ [data-kn-sec] bekommen aria-current="true" für den Abschnitt im Blick.
  *  - Kapitel finden [data-kn-search]: Tippen filtert die Kapitel aus dem Index [data-kn-index] (Titel, Nummer, Abschnitte,
  *    Schlagworte; ohne Groß-/Kleinschreibung, ä = ae) – Treffer mit Pfad, Pfeiltasten wählen, Enter öffnet; Enter ohne Auswahl
- *    sendet das Formular (alle Texte). Esc leert. „/“ oder Strg/⌘+K springen ins Suchfeld (öffnet Schublade bzw. Menü).
+ *    sendet das Formular (alle Texte). Esc leert. „/“ springt ins Suchfeld (öffnet Schublade bzw. Menü); Strg/⌘+K bleibt
+ *    bei der Website-Suche im Kopf (ohne sie: ebenfalls Kapitelsuche).
  *  - Leiste oben [data-kn-bar]: sitzt unter einem festen Kopf der Website und zeigt den Lesefortschritt im Kapitel.
  */
 (() => {
@@ -123,15 +124,21 @@
     // „/“ oder Strg/⌘+K: ins Suchfeld (Schublade bzw. Menü oben vorher öffnen)
     const key = form.querySelector('.kn-search__key');
     if (key && matchMedia('(hover:hover)').matches) key.hidden = false;
+    // Aufteilung mit der Suche im Kopf (header-actions.js): „/“ gehört hier der Kapitelsuche (Erfassungsphase, vor dem Kopf),
+    // Strg/⌘+K der Website-Suche – nur ohne Suche im Kopf auch der Kapitelsuche
+    const siteSearch = () => document.querySelector('[data-ha-field], [data-ha-search]');
     document.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.isComposing) return;
       const typing = e.target.closest?.('input,textarea,select,[contenteditable="true"]');
-      if (!((e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) || (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)))) return;
+      const slash = e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey;
+      const cmdK = e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey) && !siteSearch();
+      if (!slash && !cmdK) return;
       e.preventDefault();
       root.querySelector('details.kn-menu')?.setAttribute('open', '');
       if (btn && side && !root.classList.contains('is-open') && getComputedStyle(side).visibility === 'hidden') btn.click();
       const go = (n = 0) => { input.focus({ preventScroll: false }); input.select(); if (document.activeElement !== input && n < 20) requestAnimationFrame(() => go(n + 1)); };
       go();
-    });
+    }, true);
   }
 
   // ---- Leiste oben: unter einem festen/klebenden Kopf der Website, Lesefortschritt im Kapitel (--kn-p 0…1)

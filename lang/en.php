@@ -10490,4 +10490,7 @@ return [
     'nicht vergeben' => 'not in use',
     'Übersichten & Schlagworte' => 'Overviews & tags',
     'Leiste oben – Text über die volle Breite' => 'Bar at the top – text uses the full width',
+    'Seitenleiste, Menü oder Leiste mit Kapiteln, Suche und Abschnitten – für Detailseiten-Vorlagen eines Wissensbereichs.' => 'Sidebar, menu or bar with chapters, search and sections – for detail page templates of a knowledge area.',
+    'Art der Navigation' => 'Type of navigation',
+    'Seitenleiste: Kapitel immer im Blick (gut für viele Kapitel). Menü oben: ruhig, Kapitel auf Klick. Leiste oben: der Text bekommt die volle Breite, die Leiste bleibt beim Lesen sichtbar (Knopf „Kapitel“, Vor/Zurück, Abschnitte als Knöpfe; auf dem Telefon unten). In allen Arten filtert die Suche die Kapitel schon beim Tippen; „/“ springt ins Suchfeld.' => 'Sidebar: chapters always in view (good for many chapters). Menu at the top: calm, chapters on click. Bar at the top: the text gets the full width, the bar stays visible while reading (“Chapters” button, previous/next, sections as buttons; at the bottom on phones). In every type the search filters the chapters as you type; “/” jumps into the search field.',
 ];

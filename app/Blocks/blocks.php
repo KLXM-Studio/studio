@@ -144,7 +144,7 @@ return [
             ['name' => 'position', 'label' => 'Art der Navigation', 'type' => 'select', 'required' => true, 'default' => 'left',
                 'options' => ['left' => 'Seitenleiste links', 'right' => 'Seitenleiste rechts', 'top' => 'Oben als aufklappbares Menü', 'bar' => 'Leiste oben – Text über die volle Breite'],
                 'previews' => ['left' => 'kn_left', 'right' => 'kn_right', 'top' => 'kn_top', 'bar' => 'kn_bar'],
-                'help' => 'Seitenleiste: Kapitel immer im Blick (gut für viele Kapitel). Menü oben: ruhig, Kapitel auf Klick. Leiste oben: der Text bekommt die volle Breite, die Leiste bleibt beim Lesen sichtbar (Knopf „Kapitel“, Vor/Zurück, Abschnitte als Knöpfe; auf dem Telefon unten). In allen Arten filtert die Suche die Kapitel schon beim Tippen; „/“ oder Strg+K springt ins Suchfeld.'],
+                'help' => 'Seitenleiste: Kapitel immer im Blick (gut für viele Kapitel). Menü oben: ruhig, Kapitel auf Klick. Leiste oben: der Text bekommt die volle Breite, die Leiste bleibt beim Lesen sichtbar (Knopf „Kapitel“, Vor/Zurück, Abschnitte als Knöpfe; auf dem Telefon unten). In allen Arten filtert die Suche die Kapitel schon beim Tippen; „/“ springt ins Suchfeld.'],
             ['name' => 'compact', 'label' => 'Kompakt (schmal, dichte Einträge)', 'type' => 'bool', 'default' => false, 'width' => 'half'],
             ['name' => 'tree', 'label' => 'Kapitelbaum', 'type' => 'bool', 'default' => true, 'width' => 'half'],
             ['name' => 'sections', 'label' => 'Abschnitte des Kapitels („In diesem Kapitel“)', 'type' => 'bool', 'default' => true, 'width' => 'half'],
