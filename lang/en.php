@@ -10559,4 +10559,5 @@ return [
     'Noch auf keiner Seite.' => 'Not on any page yet.',
     '{n} Entwurf' => '{n} draft',
     '{on} online' => '{on} online',
+    'Listen & Seiten' => 'Lists & pages',
 ];

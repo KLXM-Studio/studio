@@ -79,10 +79,12 @@ $isAdmin = can('data.schema'); ?>
         <?php if ($site !== ''): ?><a class="adm-btn adm-btn--small" href="<?= e($site) ?>" target="_blank" rel="noopener" title="<?= e(__('Seite mit dieser Liste auf der Website öffnen (neuer Tab)')) ?>"><?= e(__('Website')) ?></a><?php endif; ?>
         <?php if ($feed): ?><a class="adm-btn adm-btn--small" href="<?= e(url(\Core\Data\Feed::path($t))) ?>" target="_blank" rel="noopener" title="<?= e(__('RSS-Feed dieser Tabelle (öffnet in neuem Tab)')) ?>">RSS</a><?php endif; ?>
         <?php if ($isAdmin): ?><a class="adm-btn adm-btn--small" href="<?= e($base . '/schema') ?>"><?= e(__('Einrichten')) ?></a><?php endif; ?>
+        <?php // Schmal: die Seitenspalte als Popover (nativ, ohne Skript) ?>
+        <button type="button" class="adm-btn adm-btn--small dt-card__sidebtn" popovertarget="dt-side-<?= e($t['handle']) ?>"><?= e($lists ? __('Listen & Seiten') : __('Seiten')) ?> ▾</button>
       </div>
     </div>
     <?php // Seitenspalte: Auswahllisten der Tabelle und Seiten, auf denen sie steht ?>
-    <aside class="dt-card__side" aria-label="<?= e(__('Listen und Seiten von {table}', ['table' => $t['name']])) ?>"><div class="dt-card__sidein" tabindex="0">
+    <aside class="dt-card__side" id="dt-side-<?= e($t['handle']) ?>" popover aria-label="<?= e(__('Listen und Seiten von {table}', ['table' => $t['name']])) ?>"><div class="dt-card__sidein" tabindex="0">
       <?php if ($lists): ?>
       <h3><?= e(__('Listen')) ?></h3>
       <ul><?php foreach ($lists as $l): ?><li><a href="<?= e(url('/admin/data/' . $l['handle'])) ?>"><?= icon($l['icon'] ?: 'tag') ?><span><?= e($l['name']) ?></span><small><?= (int) $l['count'] ?></small></a></li><?php endforeach; ?></ul>

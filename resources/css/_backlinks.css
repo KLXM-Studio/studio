@@ -169,4 +169,15 @@ body.adm--embed .adm-main{max-width:none;padding:16px 18px 40px}
 .dt-card__side li>a small{color:var(--adm-t3);font-variant-numeric:tabular-nums}
 .dt-card__side .ico{flex:none;width:14px;height:14px;color:var(--adm-t3)}
 .dt-card__side p{margin:0}
-@media (max-width:640px){.dt-card.dt-card--w{grid-template-columns:1fr}.dt-card__side{border-left:0;border-top:1px solid var(--adm-line);min-height:0}.dt-card__sidein{position:static;max-height:220px}}
+/* Seitenspalte ist ein Popover (data/index.php): breit immer sichtbar als Spalte, schmal über „Listen & Seiten ▾“ */
+.dt-card__sidebtn{display:none}
+@media (min-width:641px){
+  .dt-card__side[popover]{display:block;position:relative;inset:auto;width:auto;height:auto;margin:0;padding:0;border:0;border-left:1px solid var(--adm-line);overflow:visible;color:inherit;background:var(--adm-fill)}
+}
+@media (max-width:640px){
+  .dt-card.dt-card--w{grid-template-columns:1fr}
+  .dt-card__sidebtn{display:inline-flex}
+  .dt-card__side[popover]{width:min(92vw,360px);max-height:70vh;min-height:0;padding:0;border:1px solid var(--adm-line);border-radius:12px;background:var(--adm-surface);color:var(--adm-ink);box-shadow:0 18px 48px rgba(0,0,0,.25)}
+  .dt-card__side[popover]::backdrop{background:rgba(15,23,42,.35)}
+  .dt-card__sidein{position:static;max-height:70vh}
+}
