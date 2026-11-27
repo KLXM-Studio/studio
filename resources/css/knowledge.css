@@ -29,8 +29,9 @@
 .kn-search__label{display:block;margin-bottom:.3rem;font-size:.85rem;color:var(--kn-muted)}
 .kn-search__row{display:flex;border:1px solid var(--kn-line);border-radius:var(--kn-r);overflow:hidden;background:var(--kn-bg)}
 .kn-search__input{flex:1;min-width:0;padding:.5rem .65rem;border:0;background:transparent;color:inherit;font:inherit}
-.kn-search__input:focus{outline:none}
-.kn-search__row:focus-within{outline:2px solid var(--kn-accent);outline-offset:1px}
+.kn-search__input:is(:focus,:focus-visible){outline:none;box-shadow:none}
+/* Fokus innen (Rahmen + Schatten nach innen): die mitlaufende Seitenleiste scrollt (overflow) und schnitte einen Ring außen ab */
+.kn-search__row:focus-within{border-color:var(--kn-accent);box-shadow:inset 0 0 0 1px var(--kn-accent)}
 .kn-search__btn{display:grid;place-items:center;padding:0 .7rem;border:0;border-left:1px solid var(--kn-line);background:transparent;color:inherit;cursor:pointer}
 .kn-search__btn:hover{background:var(--kn-soft)}
 .kn-search__key{align-self:center;margin-inline-end:.4rem;padding:.05rem .4rem;border:1px solid var(--kn-line);border-radius:5px;font:600 .75rem/1.4 inherit;color:var(--kn-muted)}
